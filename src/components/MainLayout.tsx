@@ -9,6 +9,10 @@ import { Plus, Calendar, CheckSquare, Upload, HelpCircle } from "lucide-react";
 import { Session } from "@supabase/supabase-js";
 import { BookMeetingDialog } from "@/components/meetings/BookMeetingDialog";
 import { ViewScheduleDialog } from "@/components/meetings/ViewScheduleDialog";
+import { CreateMeetingDialog } from "@/components/meetings/CreateMeetingDialog";
+import { CreateTaskDialog } from "@/components/tasks/CreateTaskDialog";
+import { CreateAssetDialog } from "@/components/assets/CreateAssetDialog";
+import { CreateTicketDialog } from "@/components/support/CreateTicketDialog";
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -23,6 +27,10 @@ function MainLayoutContent({ children }: MainLayoutProps) {
   const [fmmProfile, setFmmProfile] = useState<any>(null);
   const [bookingDialogOpen, setBookingDialogOpen] = useState(false);
   const [viewScheduleDialogOpen, setViewScheduleDialogOpen] = useState(false);
+  const [createMeetingDialogOpen, setCreateMeetingDialogOpen] = useState(false);
+  const [createTaskDialogOpen, setCreateTaskDialogOpen] = useState(false);
+  const [createAssetDialogOpen, setCreateAssetDialogOpen] = useState(false);
+  const [createTicketDialogOpen, setCreateTicketDialogOpen] = useState(false);
 
   useEffect(() => {
     // Set up auth state listener
@@ -115,7 +123,7 @@ function MainLayoutContent({ children }: MainLayoutProps) {
     } else if (meetingButton.action === "view") {
       setViewScheduleDialogOpen(true);
     } else if (meetingButton.action === "manual") {
-      navigate("/meetings?new=true");
+      setCreateMeetingDialogOpen(true);
     }
   };
 
@@ -147,15 +155,15 @@ function MainLayoutContent({ children }: MainLayoutProps) {
                   {meetingButton.label}
                 </Button>
               )}
-              <Button variant="ghost" size="sm">
+              <Button variant="ghost" size="sm" onClick={() => setCreateTaskDialogOpen(true)}>
                 <CheckSquare className="h-4 w-4 mr-2" />
                 New Task
               </Button>
-              <Button variant="ghost" size="sm">
+              <Button variant="ghost" size="sm" onClick={() => setCreateAssetDialogOpen(true)}>
                 <Upload className="h-4 w-4 mr-2" />
                 Upload Asset
               </Button>
-              <Button variant="ghost" size="sm">
+              <Button variant="ghost" size="sm" onClick={() => setCreateTicketDialogOpen(true)}>
                 <HelpCircle className="h-4 w-4 mr-2" />
                 New Ticket
               </Button>
@@ -179,6 +187,24 @@ function MainLayoutContent({ children }: MainLayoutProps) {
         onOpenChange={setViewScheduleDialogOpen}
         fmmUsername={fmmProfile?.cal_username}
         fmmEventTypeId={fmmProfile?.cal_event_type_id}
+      />
+
+      {/* Creation Dialogs */}
+      <CreateMeetingDialog
+        open={createMeetingDialogOpen}
+        onOpenChange={setCreateMeetingDialogOpen}
+      />
+      <CreateTaskDialog
+        open={createTaskDialogOpen}
+        onOpenChange={setCreateTaskDialogOpen}
+      />
+      <CreateAssetDialog
+        open={createAssetDialogOpen}
+        onOpenChange={setCreateAssetDialogOpen}
+      />
+      <CreateTicketDialog
+        open={createTicketDialogOpen}
+        onOpenChange={setCreateTicketDialogOpen}
       />
     </SidebarProvider>
   );
