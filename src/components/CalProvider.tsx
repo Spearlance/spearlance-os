@@ -108,9 +108,14 @@ export function CalProvider({ children }: CalProviderProps) {
     );
   }
 
-  // Warn if Cal.com configuration is missing
+  // Prevent rendering if Cal.com configuration is missing
   if (!clientId) {
     console.warn("Cal.com OAuth Client ID is not configured. Calendar integration will not work.");
+    return (
+      <CalContext.Provider value={{ isCalReady: false, isLoading: false }}>
+        {children}
+      </CalContext.Provider>
+    );
   }
 
   // Render CalAtomsProvider for FMM/Admin users, even without token

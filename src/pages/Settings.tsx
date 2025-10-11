@@ -185,6 +185,18 @@ export default function Settings() {
                 <div className="text-center py-8">
                   <p className="text-muted-foreground">Loading calendar integration...</p>
                 </div>
+              ) : !import.meta.env.VITE_CAL_OAUTH_CLIENT_ID ? (
+                <div className="text-center py-8 space-y-4">
+                  <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-yellow-100 dark:bg-yellow-900/20 mb-4">
+                    <svg className="w-6 h-6 text-yellow-600 dark:text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <h3 className="font-semibold text-foreground">Calendar Integration Not Configured</h3>
+                  <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                    Cal.com credentials need to be configured to enable calendar integration. Please add VITE_CAL_OAUTH_CLIENT_ID and VITE_CAL_ORG_ID to your environment variables.
+                  </p>
+                </div>
               ) : (
                 <div className="space-y-6">
                   <div>
