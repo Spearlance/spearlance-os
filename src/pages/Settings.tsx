@@ -10,12 +10,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Connect } from "@calcom/atoms";
 import { AvailabilitySettings } from "@calcom/atoms";
 import { useCalReady } from "@/components/CalProvider";
+import { InviteTeamMemberDialog } from "@/components/settings/InviteTeamMemberDialog";
+import { TeamMembersList } from "@/components/settings/TeamMembersList";
 
 export default function Settings() {
   const { selectedClient, refreshClients } = useClient();
   const [client, setClient] = useState<any>(null);
   const [userProfile, setUserProfile] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [teamRefresh, setTeamRefresh] = useState(0);
   const { toast } = useToast();
   const { isCalReady, isLoading: isCalLoading } = useCalReady();
 
@@ -81,6 +84,7 @@ export default function Settings() {
 
   const canEditClient = client && (userProfile?.role === 'admin' || userProfile?.role === 'fmm');
   const showCalendarTab = userProfile?.role === 'fmm' || userProfile?.role === 'admin';
+  const canManageTeam = userProfile?.role === 'admin' || userProfile?.role === 'fmm';
 
   return (
     <div className="space-y-6">
@@ -250,13 +254,20 @@ export default function Settings() {
 
         <TabsContent value="team" className="space-y-4">
           <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Team Members</CardTitle>
+              <InviteTeamMemberDialog 
+                clientId={client.id}
+                canManageTeam={canManageTeam}
+                onInviteSuccess={() => setTeamRefresh(prev => prev + 1)}
+              />
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Team management coming soon
-              </p>
+              <TeamMembersList 
+                clientId={client.id}
+                canManageTeam={canManageTeam}
+                refreshTrigger={teamRefresh}
+              />
             </CardContent>
           </Card>
         </TabsContent>

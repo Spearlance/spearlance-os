@@ -1,0 +1,166 @@
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
+import { Trash2 } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+
+interface TeamMember {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  created_at: string;
+}
+
+interface TeamMembersListProps {
+  clientId: string;
+  canManageTeam: boolean;
+  refreshTrigger?: number;
+}
+
+export function TeamMembersList({ clientId, canManageTeam, refreshTrigger }: TeamMembersListProps) {
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
+
+  const fetchTeamMembers = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, name, email, role, created_at")
+        .contains("associated_client_ids", [clientId])
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setTeamMembers(data || []);
+    } catch (error: any) {
+      console.error("Error fetching team members:", error);
+      toast({
+        title: "Error loading team members",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchTeamMembers();
+  }, [clientId, refreshTrigger]);
+
+  const handleRemoveMember = async (memberId: string, memberName: string) => {
+    try {
+      // Remove the client from the user's associated_client_ids
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("associated_client_ids")
+        .eq("id", memberId)
+        .single();
+
+      if (profile) {
+        const updatedClientIds = (profile.associated_client_ids || []).filter(
+          (id: string) => id !== clientId
+        );
+
+        const { error } = await supabase
+          .from("profiles")
+          .update({ associated_client_ids: updatedClientIds })
+          .eq("id", memberId);
+
+        if (error) throw error;
+
+        toast({
+          title: "Team member removed",
+          description: `${memberName} has been removed from the team`,
+        });
+
+        fetchTeamMembers();
+      }
+    } catch (error: any) {
+      console.error("Error removing team member:", error);
+      toast({
+        title: "Failed to remove team member",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  if (loading) {
+    return <p className="text-sm text-muted-foreground">Loading team members...</p>;
+  }
+
+  if (teamMembers.length === 0) {
+    return (
+      <p className="text-sm text-muted-foreground">
+        No team members yet. Invite your first team member to get started.
+      </p>
+    );
+  }
+
+  return (
+    <div className="border rounded-md">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Name</TableHead>
+            <TableHead>Email</TableHead>
+            <TableHead>Role</TableHead>
+            <TableHead>Joined</TableHead>
+            {canManageTeam && <TableHead className="text-right">Actions</TableHead>}
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {teamMembers.map((member) => (
+            <TableRow key={member.id}>
+              <TableCell className="font-medium">{member.name}</TableCell>
+              <TableCell>{member.email}</TableCell>
+              <TableCell>
+                <Badge variant={member.role === "admin" ? "default" : "secondary"}>
+                  {member.role.toUpperCase()}
+                </Badge>
+              </TableCell>
+              <TableCell>{new Date(member.created_at).toLocaleDateString()}</TableCell>
+              {canManageTeam && (
+                <TableCell className="text-right">
+                  {member.role !== "admin" && (
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="sm">
+                          <Trash2 className="w-4 h-4 text-destructive" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Remove team member</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Are you sure you want to remove {member.name} from this client? They will
+                            lose access to all client data and settings.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => handleRemoveMember(member.id, member.name)}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          >
+                            Remove
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  )}
+                </TableCell>
+              )}
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
