@@ -17,7 +17,7 @@ export default function Settings() {
   const [userProfile, setUserProfile] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
-  const { isCalReady } = useCalReady();
+  const { isCalReady, isLoading: isCalLoading } = useCalReady();
 
   useEffect(() => {
     if (selectedClient) {
@@ -181,7 +181,7 @@ export default function Settings() {
               <CardTitle>Calendar Integration</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              {!isCalReady ? (
+              {isCalLoading ? (
                 <div className="text-center py-8">
                   <p className="text-muted-foreground">Loading calendar integration...</p>
                 </div>

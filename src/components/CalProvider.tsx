@@ -9,9 +9,10 @@ interface CalProviderProps {
 
 interface CalContextValue {
   isCalReady: boolean;
+  isLoading: boolean;
 }
 
-const CalContext = createContext<CalContextValue>({ isCalReady: false });
+const CalContext = createContext<CalContextValue>({ isCalReady: false, isLoading: true });
 
 export const useCalReady = () => useContext(CalContext);
 
@@ -82,19 +83,21 @@ export function CalProvider({ children }: CalProviderProps) {
   const apiUrl = import.meta.env.VITE_CAL_API_URL || "https://api.cal.com/v2";
   const refreshUrl = import.meta.env.VITE_CAL_REFRESH_URL || `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/cal-refresh-token`;
 
-  // Render without Cal.com if still loading or no token
-  if (isLoading || !accessToken) {
+  // Still loading initial profile data
+  if (isLoading) {
     return (
-      <CalContext.Provider value={{ isCalReady: false }}>
+      <CalContext.Provider value={{ isCalReady: false, isLoading: true }}>
         {children}
       </CalContext.Provider>
     );
   }
 
+  // Always render CalAtomsProvider for FMM/Admin users, even without token
+  // The Atoms will show their own "Connect Google Calendar" flow
   return (
-    <CalContext.Provider value={{ isCalReady: true }}>
+    <CalContext.Provider value={{ isCalReady: !!accessToken, isLoading: false }}>
       <CalAtomsProvider
-        accessToken={accessToken}
+        accessToken={accessToken || ""}
         clientId={clientId}
         organizationId={organizationId}
         options={{
