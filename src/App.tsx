@@ -15,6 +15,7 @@ import Assets from "./pages/Assets";
 import Avatar from "./pages/Avatar";
 import LaunchPad from "./pages/LaunchPad";
 import Support from "./pages/Support";
+import TicketDetail from "./pages/TicketDetail";
 import Settings from "./pages/Settings";
 import Admin from "./pages/Admin";
 import CalendarCallback from "./pages/CalendarCallback";
@@ -45,6 +46,7 @@ const App = () => (
             <Route path="/avatar" element={<MainLayout><Avatar /></MainLayout>} />
             <Route path="/launchpad" element={<MainLayout><LaunchPad /></MainLayout>} />
             <Route path="/support" element={<MainLayout><Support /></MainLayout>} />
+            <Route path="/support/:id" element={<MainLayout><TicketDetail /></MainLayout>} />
             <Route path="/settings" element={<MainLayout><Settings /></MainLayout>} />
             <Route path="/admin" element={<MainLayout><Admin /></MainLayout>} />
             <Route path="/calendar/callback" element={<CalendarCallback />} />

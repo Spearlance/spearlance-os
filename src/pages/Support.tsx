@@ -35,16 +35,25 @@ export default function Support() {
 
     const { data, error } = await supabase
       .from("tickets")
-      .select("*")
+      .select(`
+        *,
+        requester_profile:profiles!tickets_requester_user_id_fkey (name)
+      `)
       .eq("client_id", selectedClient.id)
       .order("created_at", { ascending: false });
 
     if (error) {
-      toast({ title: "Error loading tickets", variant: "destructive" });
+      console.error("Error loading tickets:", error);
       return;
     }
 
-    setTickets(data || []);
+    // Map data to match our interface
+    const mappedData = (data || []).map((ticket: any) => ({
+      ...ticket,
+      requester: ticket.requester_profile
+    }));
+
+    setTickets(mappedData as Ticket[]);
   };
 
   const getStatusColor = (status: string) => {
@@ -63,6 +72,10 @@ export default function Support() {
       case "high": return "default";
       default: return "secondary";
     }
+  };
+
+  const getCategoryBadge = (category: string): "default" | "destructive" | "outline" | "secondary" => {
+    return "outline";
   };
 
   return (
@@ -92,7 +105,7 @@ export default function Support() {
               >
                 <TableCell className="font-medium">{ticket.title}</TableCell>
                 <TableCell>
-                  <Badge variant="outline">{ticket.category}</Badge>
+                  <Badge variant={getCategoryBadge(ticket.category)}>{ticket.category}</Badge>
                 </TableCell>
                 <TableCell>
                   <Badge variant={getPriorityColor(ticket.priority)}>
@@ -104,7 +117,7 @@ export default function Support() {
                     {ticket.status.replace("_", " ")}
                   </Badge>
                 </TableCell>
-                <TableCell>—</TableCell>
+                <TableCell>{ticket.requester?.name || "Unknown"}</TableCell>
                 <TableCell>
                   {new Date(ticket.created_at).toLocaleDateString()}
                 </TableCell>

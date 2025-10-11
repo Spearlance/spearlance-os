@@ -10,6 +10,10 @@ import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { FileText, Image, Link as LinkIcon, FileVideo, FileAudio, ExternalLink } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 interface TaskDrawerProps {
   task: any;
@@ -28,11 +32,15 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate }: TaskDrawerPro
   const [newComment, setNewComment] = useState("");
   const [users, setUsers] = useState<any[]>([]);
   const [assigneeId, setAssigneeId] = useState(task.assignee_user_id || "");
+  const [relatedAssets, setRelatedAssets] = useState<any[]>([]);
+  const [relatedMeetings, setRelatedMeetings] = useState<any[]>([]);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
     loadComments();
     loadUsers();
+    loadRelatedItems();
   }, [task.id]);
 
   const loadComments = async () => {
@@ -55,6 +63,41 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate }: TaskDrawerPro
       .neq("role", "client");
 
     setUsers(data || []);
+  };
+
+  const loadRelatedItems = async () => {
+    if (task.related_asset_ids && task.related_asset_ids.length > 0) {
+      const { data: assets } = await supabase
+        .from("assets")
+        .select("id, title, type, preview_url")
+        .in("id", task.related_asset_ids);
+
+      setRelatedAssets(assets || []);
+    }
+
+    if (task.related_meeting_ids && task.related_meeting_ids.length > 0) {
+      const { data: meetings } = await supabase
+        .from("meetings")
+        .select("id, summary, date_time, status")
+        .in("id", task.related_meeting_ids);
+
+      setRelatedMeetings(meetings || []);
+    }
+  };
+
+  const getTypeIcon = (type: string) => {
+    switch (type) {
+      case "image":
+        return <Image className="h-4 w-4" />;
+      case "video":
+        return <FileVideo className="h-4 w-4" />;
+      case "audio":
+        return <FileAudio className="h-4 w-4" />;
+      case "document":
+        return <FileText className="h-4 w-4" />;
+      default:
+        return <LinkIcon className="h-4 w-4" />;
+    }
   };
 
   const handleSave = async () => {
@@ -111,9 +154,10 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate }: TaskDrawerPro
         </SheetHeader>
 
         <Tabs defaultValue="details" className="mt-6">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="details">Details</TabsTrigger>
             <TabsTrigger value="comments">Comments</TabsTrigger>
+            <TabsTrigger value="related">Related</TabsTrigger>
           </TabsList>
 
           <TabsContent value="details" className="space-y-4 mt-4">
@@ -227,6 +271,74 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate }: TaskDrawerPro
                 rows={3}
               />
               <Button onClick={handleAddComment}>Add Comment</Button>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="related" className="mt-4 space-y-6">
+            <div>
+              <h3 className="font-medium mb-3">Related Assets</h3>
+              {relatedAssets.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No assets linked to this task</p>
+              ) : (
+                <div className="grid grid-cols-2 gap-3">
+                  {relatedAssets.map((asset) => (
+                    <Card
+                      key={asset.id}
+                      className="cursor-pointer hover:bg-accent transition-colors"
+                      onClick={() => navigate("/assets")}
+                    >
+                      <CardContent className="p-3">
+                        <div className="space-y-2">
+                          {asset.preview_url ? (
+                            <div className="w-full h-24 bg-muted rounded overflow-hidden">
+                              <img
+                                src={asset.preview_url}
+                                alt={asset.title}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          ) : (
+                            <div className="w-full h-24 bg-muted rounded flex items-center justify-center">
+                              {getTypeIcon(asset.type)}
+                            </div>
+                          )}
+                          <div>
+                            <div className="font-medium text-sm truncate">{asset.title}</div>
+                            <Badge variant="outline" className="text-xs mt-1">
+                              {asset.type}
+                            </Badge>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div>
+              <h3 className="font-medium mb-3">Related Meetings</h3>
+              {relatedMeetings.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No meetings linked to this task</p>
+              ) : (
+                <div className="space-y-2">
+                  {relatedMeetings.map((meeting) => (
+                    <div
+                      key={meeting.id}
+                      className="flex items-center justify-between p-3 bg-muted rounded-lg cursor-pointer hover:bg-muted/80"
+                      onClick={() => navigate(`/meetings/${meeting.id}`)}
+                    >
+                      <div className="flex-1">
+                        <div className="font-medium text-sm">{meeting.summary}</div>
+                        <div className="text-xs text-muted-foreground mt-1">
+                          {new Date(meeting.date_time).toLocaleString()}
+                        </div>
+                      </div>
+                      <Badge variant="outline">{meeting.status}</Badge>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </TabsContent>
         </Tabs>
