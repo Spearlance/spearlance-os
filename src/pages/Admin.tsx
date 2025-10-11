@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Users, Building2, BarChart3, Loader2 } from "lucide-react";
+import { AddUserDialog } from "@/components/admin/AddUserDialog";
 
 export default function Admin() {
   const navigate = useNavigate();
@@ -227,7 +228,10 @@ export default function Admin() {
         <TabsContent value="users" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>User Management</CardTitle>
+              <div className="flex justify-between items-center">
+                <CardTitle>User Management</CardTitle>
+                <AddUserDialog clients={clients} onUserCreated={loadData} />
+              </div>
             </CardHeader>
             <CardContent>
               <Table>
