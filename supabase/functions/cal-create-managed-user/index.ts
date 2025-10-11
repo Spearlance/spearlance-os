@@ -66,21 +66,62 @@ Deno.serve(async (req) => {
       })
     });
 
+    let managedUserId: number;
+    let accessToken: string;
+    let refreshToken: string;
+    let calUsername = username;
+
     if (!createUserResponse.ok) {
       const errorText = await createUserResponse.text();
       console.error('Cal.com API error:', errorText);
-      throw new Error(`Failed to create managed user: ${errorText}`);
-    }
+      
+      // Check if user already exists
+      if (errorText.includes('User with the provided e-mail already exists')) {
+        // Extract existing user ID from error message
+        const match = errorText.match(/Existing user ID=(\d+)/);
+        if (match) {
+          managedUserId = parseInt(match[1]);
+          console.log('User already exists with ID:', managedUserId);
+          
+          // Get tokens for existing user using force refresh
+          const refreshResponse = await fetch('https://api.cal.com/v2/oauth/refresh', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams({
+              client_id: clientId,
+              client_secret: clientSecret,
+              grant_type: 'refresh_token',
+              refresh_token: 'force-refresh'
+            })
+          });
 
-    const userData = await createUserResponse.json();
-    const managedUserId = userData.data?.id || userData.id;
-    const accessToken = userData.data?.accessToken;
-    const refreshToken = userData.data?.refreshToken;
-    
-    console.log('Created managed user:', managedUserId);
+          if (!refreshResponse.ok) {
+            throw new Error('Failed to get tokens for existing user');
+          }
 
-    if (!accessToken || !refreshToken) {
-      throw new Error('Failed to get access and refresh tokens from Cal.com');
+          const tokenData = await refreshResponse.json();
+          accessToken = tokenData.access_token;
+          refreshToken = tokenData.refresh_token;
+        } else {
+          throw new Error(`Failed to create managed user: ${errorText}`);
+        }
+      } else {
+        throw new Error(`Failed to create managed user: ${errorText}`);
+      }
+    } else {
+      const userData = await createUserResponse.json();
+      managedUserId = userData.data?.id || userData.id;
+      accessToken = userData.data?.accessToken;
+      refreshToken = userData.data?.refreshToken;
+      calUsername = userData.data?.username || username;
+      
+      console.log('Created managed user:', managedUserId);
+
+      if (!accessToken || !refreshToken) {
+        throw new Error('Failed to get access and refresh tokens from Cal.com');
+      }
     }
 
     // Calculate token expiry (60 minutes from now)
@@ -111,8 +152,7 @@ Deno.serve(async (req) => {
       eventTypeId = eventTypeData.data?.id || eventTypeData.id;
       console.log('Created event type:', eventTypeId);
       
-      // Construct booking link using the username from user data
-      const calUsername = userData.data?.username || username;
+      // Construct booking link
       bookingLink = `https://cal.com/${calUsername}/strategy-session`;
     }
 

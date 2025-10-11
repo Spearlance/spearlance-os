@@ -31,7 +31,7 @@ const Auth = () => {
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -44,6 +44,24 @@ const Auth = () => {
       });
 
       if (error) throw error;
+
+      // Auto-create managed Cal.com user for FMM/Admin roles
+      if (data.user) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", data.user.id)
+          .single();
+
+        if (profile && (profile.role === "fmm" || profile.role === "admin")) {
+          // Call edge function to create managed user (fire and forget)
+          supabase.functions
+            .invoke("cal-create-managed-user", {
+              body: { user_id: data.user.id },
+            })
+            .catch((err) => console.error("Failed to create Cal.com managed user:", err));
+        }
+      }
 
       toast({
         title: "Account created!",

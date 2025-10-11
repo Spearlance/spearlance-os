@@ -76,35 +76,6 @@ export default function Settings() {
     setLoading(false);
   };
 
-  const handleCreateManagedUser = async () => {
-    setLoading(true);
-    try {
-      const { data, error } = await supabase.functions.invoke(
-        'cal-create-managed-user',
-        { body: { user_id: userProfile?.id } }
-      );
-      
-      if (error) throw error;
-      
-      toast({
-        title: "Cal.com Account Created",
-        description: "Your managed Cal.com account has been set up successfully!"
-      });
-      
-      // Refresh profile to get tokens
-      await fetchUserProfile();
-    } catch (error) {
-      console.error('Create managed user error:', error);
-      toast({
-        title: "Setup Failed",
-        description: error.message || "Could not create managed user",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const canEditClient = client && (userProfile?.role === 'admin' || userProfile?.role === 'fmm');
   const showCalendarTab = userProfile?.role === 'fmm' || userProfile?.role === 'admin';
 
@@ -208,51 +179,40 @@ export default function Settings() {
               <CardTitle>Calendar Integration</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              {!userProfile?.cal_managed_user_id ? (
-                <div className="space-y-4">
-                  <p className="text-sm text-muted-foreground">
-                    To use calendar features, you need to set up your Cal.com account first.
-                  </p>
-                  <Button onClick={handleCreateManagedUser} disabled={loading}>
-                    {loading ? "Setting up..." : "Set Up Cal.com Account"}
-                  </Button>
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-sm font-medium mb-3">Connect Google Calendar</h3>
+                  <Connect.GoogleCalendar 
+                    className="w-full"
+                    onSuccess={() => {
+                      toast({
+                        title: "Calendar Connected",
+                        description: "Your Google Calendar has been connected successfully!"
+                      });
+                      fetchUserProfile();
+                    }}
+                  />
                 </div>
-              ) : (
-                <div className="space-y-6">
-                  <div>
-                    <h3 className="text-sm font-medium mb-3">Connect Google Calendar</h3>
-                    <Connect.GoogleCalendar 
-                      className="w-full"
-                      onSuccess={() => {
-                        toast({
-                          title: "Calendar Connected",
-                          description: "Your Google Calendar has been connected successfully!"
-                        });
-                        fetchUserProfile();
-                      }}
-                    />
-                  </div>
 
-                  <div>
-                    <h3 className="text-sm font-medium mb-3">Availability Settings</h3>
-                    <AvailabilitySettings 
-                      onUpdateSuccess={() => {
-                        toast({
-                          title: "Availability Updated",
-                          description: "Your availability has been saved"
-                        });
-                      }}
-                      onUpdateError={() => {
-                        toast({
-                          title: "Update Failed",
-                          description: "Failed to update availability",
-                          variant: "destructive"
-                        });
-                      }}
-                    />
-                  </div>
+                <div>
+                  <h3 className="text-sm font-medium mb-3">Availability Settings</h3>
+                  <AvailabilitySettings 
+                    onUpdateSuccess={() => {
+                      toast({
+                        title: "Availability Updated",
+                        description: "Your availability has been saved"
+                      });
+                    }}
+                    onUpdateError={() => {
+                      toast({
+                        title: "Update Failed",
+                        description: "Failed to update availability",
+                        variant: "destructive"
+                      });
+                    }}
+                  />
                 </div>
-              )}
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
