@@ -358,7 +358,13 @@ export default function Assets() {
                 onClick={() => handleAssetClick(asset)}
               >
                 <CardHeader className="p-0">
-                  {asset.preview_url ? (
+                  {asset.type === 'image' && asset.file_url ? (
+                    <img
+                      src={asset.file_url}
+                      alt={asset.title}
+                      className="w-full h-48 object-cover"
+                    />
+                  ) : asset.preview_url ? (
                     <img
                       src={asset.preview_url}
                       alt={asset.title}
