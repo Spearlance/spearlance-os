@@ -13,10 +13,11 @@ import { useClient } from "@/contexts/ClientContext";
 interface CreateAssetDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  folderId?: string | null;
   onSuccess?: () => void;
 }
 
-export function CreateAssetDialog({ open, onOpenChange, onSuccess }: CreateAssetDialogProps) {
+export function CreateAssetDialog({ open, onOpenChange, folderId, onSuccess }: CreateAssetDialogProps) {
   const { toast } = useToast();
   const { selectedClient } = useClient();
   const [loading, setLoading] = useState(false);
@@ -123,13 +124,13 @@ export function CreateAssetDialog({ open, onOpenChange, onSuccess }: CreateAsset
         setUploadProgress(70);
       }
 
-      // Insert asset record
       const { error } = await supabase
         .from("assets")
         .insert([{
           id: assetId,
           client_id: selectedClient.id,
-          type: formData.type as "image" | "video" | "doc" | "link" | "other",
+          folder_id: folderId,
+          type: formData.type as "image" | "video" | "doc" | "link" | "other" | "copy",
           title: formData.title,
           file_url: fileUrl,
           storage_type: storageType,

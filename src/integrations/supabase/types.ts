@@ -14,6 +14,61 @@ export type Database = {
   }
   public: {
     Tables: {
+      asset_folders: {
+        Row: {
+          client_id: string
+          color: string | null
+          created_at: string | null
+          created_by: string | null
+          id: string
+          name: string
+          parent_folder_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          client_id: string
+          color?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          name: string
+          parent_folder_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          client_id?: string
+          color?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          name?: string
+          parent_folder_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asset_folders_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asset_folders_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asset_folders_parent_folder_id_fkey"
+            columns: ["parent_folder_id"]
+            isOneToOne: false
+            referencedRelation: "asset_folders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       asset_versions: {
         Row: {
           asset_id: string
@@ -69,6 +124,7 @@ export type Database = {
           created_by: string | null
           current_version_id: string | null
           file_url: string | null
+          folder_id: string | null
           id: string
           preview_url: string | null
           storage_type: Database["public"]["Enums"]["storage_type"]
@@ -83,6 +139,7 @@ export type Database = {
           created_by?: string | null
           current_version_id?: string | null
           file_url?: string | null
+          folder_id?: string | null
           id?: string
           preview_url?: string | null
           storage_type: Database["public"]["Enums"]["storage_type"]
@@ -97,6 +154,7 @@ export type Database = {
           created_by?: string | null
           current_version_id?: string | null
           file_url?: string | null
+          folder_id?: string | null
           id?: string
           preview_url?: string | null
           storage_type?: Database["public"]["Enums"]["storage_type"]
@@ -125,6 +183,13 @@ export type Database = {
             columns: ["current_version_id"]
             isOneToOne: false
             referencedRelation: "asset_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assets_folder_id_fkey"
+            columns: ["folder_id"]
+            isOneToOne: false
+            referencedRelation: "asset_folders"
             referencedColumns: ["id"]
           },
         ]
