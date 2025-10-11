@@ -1,1 +1,10 @@
 project_id = "hrmhqybdsdngsvhjqwma"
+
+[functions.avatar-generate-summary]
+verify_jwt = true
+
+[functions.avatar-generate-image]
+verify_jwt = true
+
+[functions.launchpad-analyze]
+verify_jwt = true
