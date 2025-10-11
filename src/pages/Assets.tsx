@@ -60,12 +60,18 @@ export default function Assets() {
   const loadAssets = async () => {
     if (!selectedClient) return;
 
-    const { data, error } = await supabase
+    let query = supabase
       .from("assets")
       .select("*")
-      .eq("client_id", selectedClient.id)
-      .eq("folder_id", currentFolderId)
-      .order("created_at", { ascending: false });
+      .eq("client_id", selectedClient.id);
+
+    if (currentFolderId === null) {
+      query = query.is("folder_id", null);
+    } else {
+      query = query.eq("folder_id", currentFolderId);
+    }
+
+    const { data, error } = await query.order("created_at", { ascending: false });
 
     if (!error && data) {
       setAssets(data);
@@ -75,12 +81,18 @@ export default function Assets() {
   const loadFolders = async () => {
     if (!selectedClient) return;
 
-    const { data, error } = await supabase
+    let query = supabase
       .from("asset_folders")
       .select("*")
-      .eq("client_id", selectedClient.id)
-      .eq("parent_folder_id", currentFolderId)
-      .order("created_at", { ascending: false });
+      .eq("client_id", selectedClient.id);
+
+    if (currentFolderId === null) {
+      query = query.is("parent_folder_id", null);
+    } else {
+      query = query.eq("parent_folder_id", currentFolderId);
+    }
+
+    const { data, error } = await query.order("created_at", { ascending: false });
 
     if (error) {
       console.error("Error loading folders:", error);
