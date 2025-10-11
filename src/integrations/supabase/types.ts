@@ -259,6 +259,33 @@ export type Database = {
         }
         Relationships: []
       }
+      cal_webhook_logs: {
+        Row: {
+          created_at: string | null
+          error_message: string | null
+          event_type: string
+          id: string
+          payload: Json
+          processed: boolean | null
+        }
+        Insert: {
+          created_at?: string | null
+          error_message?: string | null
+          event_type: string
+          id?: string
+          payload: Json
+          processed?: boolean | null
+        }
+        Update: {
+          created_at?: string | null
+          error_message?: string | null
+          event_type?: string
+          id?: string
+          payload?: Json
+          processed?: boolean | null
+        }
+        Relationships: []
+      }
       clients: {
         Row: {
           billing_plan_id: string | null
@@ -408,42 +435,66 @@ export type Database = {
       meetings: {
         Row: {
           attendees: string | null
+          cal_attendee_emails: string[] | null
+          cal_booking_id: string | null
+          cal_event_id: string | null
+          cal_event_type_id: string | null
+          cal_organizer_email: string | null
           client_id: string
           created_at: string | null
           created_by: string | null
           date_time: string
           decisions: string[] | null
           id: string
+          join_url: string | null
           next_steps: string[] | null
           recording_url: string | null
+          source_system: string | null
+          status: string | null
           summary: string
           tags: string[] | null
           transcript_text: string | null
         }
         Insert: {
           attendees?: string | null
+          cal_attendee_emails?: string[] | null
+          cal_booking_id?: string | null
+          cal_event_id?: string | null
+          cal_event_type_id?: string | null
+          cal_organizer_email?: string | null
           client_id: string
           created_at?: string | null
           created_by?: string | null
           date_time: string
           decisions?: string[] | null
           id?: string
+          join_url?: string | null
           next_steps?: string[] | null
           recording_url?: string | null
+          source_system?: string | null
+          status?: string | null
           summary: string
           tags?: string[] | null
           transcript_text?: string | null
         }
         Update: {
           attendees?: string | null
+          cal_attendee_emails?: string[] | null
+          cal_booking_id?: string | null
+          cal_event_id?: string | null
+          cal_event_type_id?: string | null
+          cal_organizer_email?: string | null
           client_id?: string
           created_at?: string | null
           created_by?: string | null
           date_time?: string
           decisions?: string[] | null
           id?: string
+          join_url?: string | null
           next_steps?: string[] | null
           recording_url?: string | null
+          source_system?: string | null
+          status?: string | null
           summary?: string
           tags?: string[] | null
           transcript_text?: string | null
