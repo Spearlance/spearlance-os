@@ -185,28 +185,25 @@ export default function Admin() {
 
   const handleInitializePlatform = async () => {
     try {
-      const clientId = import.meta.env.VITE_CAL_PLATFORM_CLIENT_ID;
-      if (!clientId) {
+      // Call edge function to get OAuth URL (secure - uses backend secrets)
+      const { data, error } = await supabase.functions.invoke('cal-platform-oauth-url', {
+        body: { origin: window.location.origin }
+      });
+      
+      if (error || !data?.url) {
         toast({
           title: "Configuration Error",
-          description: "Cal.com Platform Client ID is not configured",
+          description: error?.message || "Failed to generate OAuth URL",
           variant: "destructive"
         });
         return;
       }
 
-      const redirectUri = `${window.location.origin}/calendar/platform-callback`;
-      const state = crypto.randomUUID();
+      // Store state for CSRF validation on callback
+      localStorage.setItem('cal_platform_oauth_state', data.state);
       
-      localStorage.setItem('cal_platform_oauth_state', state);
-      
-      const oauthUrl = `https://app.cal.com/oauth/authorize?` +
-        `client_id=${clientId}&` +
-        `response_type=code&` +
-        `redirect_uri=${encodeURIComponent(redirectUri)}&` +
-        `state=${state}`;
-      
-      window.location.href = oauthUrl;
+      // Redirect to Cal.com OAuth
+      window.location.href = data.url;
     } catch (error) {
       toast({
         title: "Failed to initialize platform",

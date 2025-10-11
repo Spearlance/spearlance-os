@@ -23,7 +23,8 @@ Deno.serve(async (req) => {
   );
 
   try {
-    const { code, action } = await req.json();
+    const body = await req.json();
+    const { code, action, origin } = body;
 
     // Get client credentials from secrets
     const clientId = Deno.env.get('CAL_PLATFORM_CLIENT_ID');
@@ -82,6 +83,10 @@ Deno.serve(async (req) => {
 
     // Handle initial token exchange
     if (action === 'exchange' && code) {
+      const redirectUri = origin ? `${origin}/calendar/platform-callback` : `${Deno.env.get('SUPABASE_URL')}/calendar/platform-callback`;
+      
+      console.log('Exchanging code with redirect_uri:', redirectUri);
+      
       const tokenResponse = await fetch('https://api.cal.com/v2/oauth/token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -90,7 +95,7 @@ Deno.serve(async (req) => {
           code: code,
           client_id: clientId,
           client_secret: clientSecret,
-          redirect_uri: `${Deno.env.get('SUPABASE_URL')}/functions/v1/cal-oauth-exchange`
+          redirect_uri: redirectUri
         })
       });
 

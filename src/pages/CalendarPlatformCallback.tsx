@@ -23,7 +23,7 @@ export default function CalendarPlatformCallback() {
           description: "Invalid OAuth state. Please try again.",
           variant: "destructive"
         });
-        navigate('/settings');
+        navigate('/admin');
         return;
       }
       localStorage.removeItem('cal_platform_oauth_state');
@@ -34,15 +34,15 @@ export default function CalendarPlatformCallback() {
           description: error,
           variant: "destructive"
         });
-        navigate('/settings');
+        navigate('/admin');
         return;
       }
 
       if (code) {
-        // Exchange code for tokens
+        // Exchange code for tokens - pass origin for redirect_uri validation
         const { data, error: exchangeError } = await supabase.functions.invoke(
           'cal-oauth-exchange',
-          { body: { action: 'exchange', code } }
+          { body: { action: 'exchange', code, origin: window.location.origin } }
         );
 
         if (exchangeError) {
@@ -59,7 +59,7 @@ export default function CalendarPlatformCallback() {
         }
       }
 
-      navigate('/settings');
+      navigate('/admin');
     };
 
     handleCallback();

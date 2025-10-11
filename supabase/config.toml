@@ -15,6 +15,9 @@ verify_jwt = false
 [functions.cal-oauth-exchange]
 verify_jwt = true
 
+[functions.cal-platform-oauth-url]
+verify_jwt = true
+
 [functions.cal-create-managed-user]
 verify_jwt = true
 
