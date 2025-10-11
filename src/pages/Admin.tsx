@@ -21,11 +21,9 @@ export default function Admin() {
   const [clients, setClients] = useState<any[]>([]);
   const [stats, setStats] = useState<any>({});
   const [newClientName, setNewClientName] = useState("");
-  const [platformInitialized, setPlatformInitialized] = useState(false);
 
   useEffect(() => {
     checkAdminAccess();
-    checkPlatformStatus();
   }, []);
 
   const checkAdminAccess = async () => {
@@ -156,62 +154,6 @@ export default function Admin() {
     }
   };
 
-  const handleCalendarSettings = async (userId: string, settings: any) => {
-    try {
-      await supabase
-        .from("profiles")
-        .update(settings)
-        .eq("id", userId);
-
-      toast({ title: "Calendar settings updated" });
-      loadData();
-    } catch (error) {
-      toast({
-        title: "Error updating calendar settings",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const checkPlatformStatus = async () => {
-    const { data } = await supabase
-      .from('cal_platform_tokens')
-      .select('id')
-      .eq('token_type', 'access_token')
-      .maybeSingle();
-    
-    setPlatformInitialized(!!data);
-  };
-
-  const handleInitializePlatform = async () => {
-    try {
-      // Call edge function to get OAuth URL (secure - uses backend secrets)
-      const { data, error } = await supabase.functions.invoke('cal-platform-oauth-url', {
-        body: { origin: window.location.origin }
-      });
-      
-      if (error || !data?.url) {
-        toast({
-          title: "Configuration Error",
-          description: error?.message || "Failed to generate OAuth URL",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      // Store state for CSRF validation on callback
-      localStorage.setItem('cal_platform_oauth_state', data.state);
-      
-      // Redirect to Cal.com OAuth
-      window.location.href = data.url;
-    } catch (error) {
-      toast({
-        title: "Failed to initialize platform",
-        description: error.message,
-        variant: "destructive"
-      });
-    }
-  };
 
   if (loading || !userRole) {
     return (
@@ -233,7 +175,6 @@ export default function Admin() {
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="users">User Management</TabsTrigger>
           <TabsTrigger value="clients">Client Management</TabsTrigger>
-          <TabsTrigger value="platform">Platform Setup</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
@@ -430,32 +371,6 @@ export default function Admin() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="platform" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Cal.com Platform Setup</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {platformInitialized ? (
-                <div className="flex items-center gap-2 p-4 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-lg">
-                  <svg className="h-5 w-5 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <span className="text-green-800 dark:text-green-200">Platform OAuth Initialized</span>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  <p className="text-sm text-muted-foreground">
-                    Initialize Cal.com platform access to enable calendar features for your team. This is a one-time admin setup required for the entire system.
-                  </p>
-                  <Button onClick={handleInitializePlatform}>
-                    Initialize Platform OAuth
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
       </Tabs>
     </div>
   );

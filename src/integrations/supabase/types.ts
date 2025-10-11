@@ -259,33 +259,6 @@ export type Database = {
         }
         Relationships: []
       }
-      cal_platform_tokens: {
-        Row: {
-          created_at: string | null
-          expires_at: string | null
-          id: string
-          token_type: string
-          token_value: string
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          expires_at?: string | null
-          id?: string
-          token_type: string
-          token_value: string
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          expires_at?: string | null
-          id?: string
-          token_type?: string
-          token_value?: string
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
       cal_webhook_logs: {
         Row: {
           created_at: string | null

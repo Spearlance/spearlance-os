@@ -5,43 +5,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-async function getValidToken(supabase: any): Promise<string> {
-  const { data: tokenData } = await supabase
-    .from('cal_platform_tokens')
-    .select('token_value, expires_at')
-    .eq('token_type', 'access_token')
-    .single();
-
-  if (!tokenData) {
-    throw new Error('No access token found. Please complete OAuth flow first.');
-  }
-
-  // Check if expired
-  const expiresAt = new Date(tokenData.expires_at);
-  const now = new Date();
-
-  if (expiresAt <= now) {
-    // Refresh token
-    const refreshResponse = await fetch(
-      `${Deno.env.get('SUPABASE_URL')}/functions/v1/cal-oauth-exchange`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'refresh' })
-      }
-    );
-
-    const refreshData = await refreshResponse.json();
-    if (!refreshData.success) {
-      throw new Error('Failed to refresh token');
-    }
-
-    return refreshData.access_token;
-  }
-
-  return tokenData.token_value;
-}
-
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -74,32 +37,32 @@ Deno.serve(async (req) => {
       throw new Error('Only FMM and Admin users can have managed Cal.com accounts');
     }
 
-    // Get valid access token
-    const accessToken = await getValidToken(supabase);
-    const orgSlug = Deno.env.get('CAL_ORG_SLUG');
+    // Get Cal.com credentials
+    const clientId = Deno.env.get('CAL_PLATFORM_CLIENT_ID');
+    const clientSecret = Deno.env.get('CAL_PLATFORM_CLIENT_SECRET');
 
-    if (!orgSlug) {
-      throw new Error('CAL_ORG_SLUG not configured');
+    if (!clientId || !clientSecret) {
+      throw new Error('Cal.com credentials not configured');
     }
 
     // Generate username from email
     const username = profile.email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
 
-    // Create managed user in Cal.com
-    const createUserResponse = await fetch('https://api.cal.com/v2/users', {
+    console.log('Creating managed user with email:', profile.email);
+
+    // Create managed user using Managed Users API
+    const createUserResponse = await fetch(`https://api.cal.com/v2/oauth-clients/${clientId}/users`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${accessToken}`,
+        'x-cal-secret-key': clientSecret,
         'Content-Type': 'application/json',
         'cal-api-version': '2024-08-13'
       },
       body: JSON.stringify({
         email: profile.email,
         name: profile.name,
-        username: username,
         timeZone: 'America/New_York',
-        weekStart: 'Monday',
-        organizationId: orgSlug
+        weekStart: 'Monday'
       })
     });
 
@@ -118,7 +81,7 @@ Deno.serve(async (req) => {
     const createEventTypeResponse = await fetch('https://api.cal.com/v2/event-types', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${accessToken}`,
+        'x-cal-secret-key': clientSecret,
         'Content-Type': 'application/json',
         'cal-api-version': '2024-08-13'
       },
@@ -132,10 +95,16 @@ Deno.serve(async (req) => {
     });
 
     let eventTypeId = null;
+    let bookingLink = null;
+    
     if (createEventTypeResponse.ok) {
       const eventTypeData = await createEventTypeResponse.json();
       eventTypeId = eventTypeData.data?.id || eventTypeData.id;
       console.log('Created event type:', eventTypeId);
+      
+      // Construct booking link using the username from user data
+      const calUsername = userData.data?.username || username;
+      bookingLink = `https://cal.com/${calUsername}/strategy-session`;
     }
 
     // Update profile with Cal.com data
@@ -152,8 +121,6 @@ Deno.serve(async (req) => {
       console.error('Failed to update profile:', updateError);
       throw new Error('Failed to update profile with Cal.com data');
     }
-
-    const bookingLink = `https://cal.com/${orgSlug}/${username}/strategy-session`;
 
     console.log('Managed user created successfully:', bookingLink);
 
