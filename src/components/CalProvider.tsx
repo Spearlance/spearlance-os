@@ -75,6 +75,7 @@ export function CalProvider({ children }: CalProviderProps) {
   }
 
   const clientId = import.meta.env.VITE_CAL_OAUTH_CLIENT_ID || "";
+  const organizationId = import.meta.env.VITE_CAL_ORG_ID;
   const apiUrl = import.meta.env.VITE_CAL_API_URL || "https://api.cal.com/v2";
   const refreshUrl = import.meta.env.VITE_CAL_REFRESH_URL || `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/cal-refresh-token`;
 
@@ -82,6 +83,7 @@ export function CalProvider({ children }: CalProviderProps) {
     <CalAtomsProvider
       accessToken={accessToken}
       clientId={clientId}
+      organizationId={organizationId}
       options={{
         apiUrl,
         refreshUrl

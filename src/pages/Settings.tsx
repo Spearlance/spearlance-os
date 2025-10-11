@@ -184,11 +184,21 @@ export default function Settings() {
                   <h3 className="text-sm font-medium mb-3">Connect Google Calendar</h3>
                   <Connect.GoogleCalendar 
                     className="w-full"
-                    onSuccess={() => {
+                    onSuccess={async () => {
                       toast({
                         title: "Calendar Connected",
                         description: "Your Google Calendar has been connected successfully!"
                       });
+                      
+                      // Update cal_connected status
+                      const { data: { user } } = await supabase.auth.getUser();
+                      if (user) {
+                        await supabase
+                          .from("profiles")
+                          .update({ cal_connected: true })
+                          .eq("id", user.id);
+                      }
+                      
                       fetchUserProfile();
                     }}
                   />

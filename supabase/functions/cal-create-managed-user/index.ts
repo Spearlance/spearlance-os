@@ -165,7 +165,8 @@ Deno.serve(async (req) => {
         cal_event_type_id: eventTypeId?.toString(),
         cal_access_token: accessToken,
         cal_refresh_token: refreshToken,
-        cal_token_expires_at: tokenExpiresAt
+        cal_token_expires_at: tokenExpiresAt,
+        cal_connected: true
       })
       .eq('id', user_id);
 
