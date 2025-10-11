@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Users, Building2, BarChart3, Loader2 } from "lucide-react";
 import { AddUserDialog } from "@/components/admin/AddUserDialog";
 import { UserInfoDialog } from "@/components/admin/UserInfoDialog";
+import { EditClientDialog } from "@/components/admin/EditClientDialog";
 
 export default function Admin() {
   const navigate = useNavigate();
@@ -361,9 +362,11 @@ export default function Admin() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Button variant="outline" size="sm">
-                            Edit
-                          </Button>
+                          <EditClientDialog
+                            client={client}
+                            assignedUsers={assignedUsers}
+                            onClientUpdated={loadData}
+                          />
                         </TableCell>
                       </TableRow>
                     );
