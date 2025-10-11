@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Connect } from "@calcom/atoms";
 import { AvailabilitySettings } from "@calcom/atoms";
+import { useCalReady } from "@/components/CalProvider";
 
 export default function Settings() {
   const { selectedClient } = useClient();
@@ -16,6 +17,7 @@ export default function Settings() {
   const [userProfile, setUserProfile] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const { isCalReady } = useCalReady();
 
   useEffect(() => {
     if (selectedClient) {
@@ -179,50 +181,56 @@ export default function Settings() {
               <CardTitle>Calendar Integration</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="space-y-6">
-                <div>
-                  <h3 className="text-sm font-medium mb-3">Connect Google Calendar</h3>
-                  <Connect.GoogleCalendar 
-                    className="w-full"
-                    onSuccess={async () => {
-                      toast({
-                        title: "Calendar Connected",
-                        description: "Your Google Calendar has been connected successfully!"
-                      });
-                      
-                      // Update cal_connected status
-                      const { data: { user } } = await supabase.auth.getUser();
-                      if (user) {
-                        await supabase
-                          .from("profiles")
-                          .update({ cal_connected: true })
-                          .eq("id", user.id);
-                      }
-                      
-                      fetchUserProfile();
-                    }}
-                  />
+              {!isCalReady ? (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground">Loading calendar integration...</p>
                 </div>
+              ) : (
+                <div className="space-y-6">
+                  <div>
+                    <h3 className="text-sm font-medium mb-3">Connect Google Calendar</h3>
+                    <Connect.GoogleCalendar 
+                      className="w-full"
+                      onSuccess={async () => {
+                        toast({
+                          title: "Calendar Connected",
+                          description: "Your Google Calendar has been connected successfully!"
+                        });
+                        
+                        // Update cal_connected status
+                        const { data: { user } } = await supabase.auth.getUser();
+                        if (user) {
+                          await supabase
+                            .from("profiles")
+                            .update({ cal_connected: true })
+                            .eq("id", user.id);
+                        }
+                        
+                        fetchUserProfile();
+                      }}
+                    />
+                  </div>
 
-                <div>
-                  <h3 className="text-sm font-medium mb-3">Availability Settings</h3>
-                  <AvailabilitySettings 
-                    onUpdateSuccess={() => {
-                      toast({
-                        title: "Availability Updated",
-                        description: "Your availability has been saved"
-                      });
-                    }}
-                    onUpdateError={() => {
-                      toast({
-                        title: "Update Failed",
-                        description: "Failed to update availability",
-                        variant: "destructive"
-                      });
-                    }}
-                  />
+                  <div>
+                    <h3 className="text-sm font-medium mb-3">Availability Settings</h3>
+                    <AvailabilitySettings 
+                      onUpdateSuccess={() => {
+                        toast({
+                          title: "Availability Updated",
+                          description: "Your availability has been saved"
+                        });
+                      }}
+                      onUpdateError={() => {
+                        toast({
+                          title: "Update Failed",
+                          description: "Failed to update availability",
+                          variant: "destructive"
+                        });
+                      }}
+                    />
+                  </div>
                 </div>
-              </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

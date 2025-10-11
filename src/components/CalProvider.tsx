@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode, useEffect, useState, createContext, useContext } from "react";
 import { CalProvider as CalAtomsProvider } from "@calcom/atoms";
 import "@calcom/atoms/globals.min.css";
 import { supabase } from "@/integrations/supabase/client";
@@ -6,6 +6,14 @@ import { supabase } from "@/integrations/supabase/client";
 interface CalProviderProps {
   children: ReactNode;
 }
+
+interface CalContextValue {
+  isCalReady: boolean;
+}
+
+const CalContext = createContext<CalContextValue>({ isCalReady: false });
+
+export const useCalReady = () => useContext(CalContext);
 
 export function CalProvider({ children }: CalProviderProps) {
   const [accessToken, setAccessToken] = useState<string>("");
@@ -69,28 +77,34 @@ export function CalProvider({ children }: CalProviderProps) {
     fetchUserToken();
   }, []);
 
-  // Don't render Cal provider if still loading or no token
-  if (isLoading || !accessToken) {
-    return <>{children}</>;
-  }
-
   const clientId = import.meta.env.VITE_CAL_OAUTH_CLIENT_ID || "";
   const organizationId = import.meta.env.VITE_CAL_ORG_ID;
   const apiUrl = import.meta.env.VITE_CAL_API_URL || "https://api.cal.com/v2";
   const refreshUrl = import.meta.env.VITE_CAL_REFRESH_URL || `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/cal-refresh-token`;
 
+  // Render without Cal.com if still loading or no token
+  if (isLoading || !accessToken) {
+    return (
+      <CalContext.Provider value={{ isCalReady: false }}>
+        {children}
+      </CalContext.Provider>
+    );
+  }
+
   return (
-    <CalAtomsProvider
-      accessToken={accessToken}
-      clientId={clientId}
-      organizationId={organizationId}
-      options={{
-        apiUrl,
-        refreshUrl
-      }}
-      autoUpdateTimezone={true}
-    >
-      {children}
-    </CalAtomsProvider>
+    <CalContext.Provider value={{ isCalReady: true }}>
+      <CalAtomsProvider
+        accessToken={accessToken}
+        clientId={clientId}
+        organizationId={organizationId}
+        options={{
+          apiUrl,
+          refreshUrl
+        }}
+        autoUpdateTimezone={true}
+      >
+        {children}
+      </CalAtomsProvider>
+    </CalContext.Provider>
   );
 }
