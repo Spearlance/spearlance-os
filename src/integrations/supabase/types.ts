@@ -317,6 +317,7 @@ export type Database = {
         Row: {
           billing_plan_id: string | null
           billing_status: Database["public"]["Enums"]["billing_status"] | null
+          booking_permissions: string | null
           canva_folder_url: string | null
           created_at: string | null
           domain: string | null
@@ -332,6 +333,7 @@ export type Database = {
         Insert: {
           billing_plan_id?: string | null
           billing_status?: Database["public"]["Enums"]["billing_status"] | null
+          booking_permissions?: string | null
           canva_folder_url?: string | null
           created_at?: string | null
           domain?: string | null
@@ -347,6 +349,7 @@ export type Database = {
         Update: {
           billing_plan_id?: string | null
           billing_status?: Database["public"]["Enums"]["billing_status"] | null
+          booking_permissions?: string | null
           canva_folder_url?: string | null
           created_at?: string | null
           domain?: string | null
@@ -581,6 +584,9 @@ export type Database = {
       profiles: {
         Row: {
           associated_client_ids: string[] | null
+          cal_availability_view_only: boolean | null
+          cal_booking_enabled: boolean | null
+          cal_connected: boolean | null
           cal_event_type_id: string | null
           cal_managed_user_id: string | null
           cal_username: string | null
@@ -592,6 +598,9 @@ export type Database = {
         }
         Insert: {
           associated_client_ids?: string[] | null
+          cal_availability_view_only?: boolean | null
+          cal_booking_enabled?: boolean | null
+          cal_connected?: boolean | null
           cal_event_type_id?: string | null
           cal_managed_user_id?: string | null
           cal_username?: string | null
@@ -603,6 +612,9 @@ export type Database = {
         }
         Update: {
           associated_client_ids?: string[] | null
+          cal_availability_view_only?: boolean | null
+          cal_booking_enabled?: boolean | null
+          cal_connected?: boolean | null
           cal_event_type_id?: string | null
           cal_managed_user_id?: string | null
           cal_username?: string | null

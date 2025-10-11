@@ -17,3 +17,6 @@ verify_jwt = true
 
 [functions.cal-create-managed-user]
 verify_jwt = true
+
+[functions.cal-connect-calendar]
+verify_jwt = true
