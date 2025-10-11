@@ -21,28 +21,30 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
     
     // Create admin client for user creation
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
     
-    // Create regular client to check caller permissions
-    const authHeader = req.headers.get('Authorization')!;
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } }
-    });
+    // Extract user ID from JWT token (already validated by Edge Runtime)
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      throw new Error('Unauthorized');
+    }
 
-    // Get the caller's user ID
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) {
+    // Parse JWT to get user ID (token is already validated by verify_jwt = true)
+    const token = authHeader.replace('Bearer ', '');
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    const userId = payload.sub;
+
+    if (!userId) {
       throw new Error('Unauthorized');
     }
 
     // Check if caller has permission (admin or FMM)
-    const { data: callerProfile, error: profileError } = await supabase
+    const { data: callerProfile, error: profileError } = await supabaseAdmin
       .from('profiles')
       .select('role, associated_client_ids')
-      .eq('id', user.id)
+      .eq('id', userId)
       .single();
 
     if (profileError || !callerProfile) {
