@@ -41,8 +41,8 @@ export function InviteTeamMemberDialog({ clientId, canManageTeam, onInviteSucces
       if (error) throw error;
 
       toast({
-        title: "Team member invited",
-        description: `${formData.name} has been invited successfully`,
+        title: "Invitation sent",
+        description: `Invitation email sent to ${formData.email}`,
       });
 
       setFormData({ email: "", name: "", role: "client" });

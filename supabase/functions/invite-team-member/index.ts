@@ -1,5 +1,8 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { Resend } from "https://esm.sh/resend@2.0.0";
+
+const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -130,12 +133,50 @@ serve(async (req) => {
 
     console.log('Team member invited successfully');
 
+    // Get client name for the email
+    const { data: clientData } = await supabaseAdmin
+      .from('clients')
+      .select('name')
+      .eq('id', client_id)
+      .single();
+
+    const clientName = clientData?.name || 'the team';
+    const appUrl = Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '.lovable.app') || 'your app';
+
+    // Send invitation email
+    try {
+      await resend.emails.send({
+        from: 'Team Invitation <onboarding@resend.dev>',
+        to: [email],
+        subject: `You've been invited to ${clientName}`,
+        html: `
+          <h1>Welcome to ${clientName}!</h1>
+          <p>Hi ${name},</p>
+          <p>You've been invited to join <strong>${clientName}</strong>'s account.</p>
+          
+          <h2>Your login credentials:</h2>
+          <p><strong>Email:</strong> ${email}<br>
+          <strong>Temporary Password:</strong> ${tempPassword}</p>
+          
+          <p><a href="${appUrl}/auth" style="display: inline-block; padding: 12px 24px; background-color: #0070f3; color: white; text-decoration: none; border-radius: 5px; margin: 16px 0;">Log in here</a></p>
+          
+          <p><strong>Important:</strong> Please change your password after your first login.</p>
+          
+          <p>Best regards,<br>The Team</p>
+        `,
+      });
+
+      console.log('Invitation email sent to:', email);
+    } catch (emailError) {
+      console.error('Error sending email:', emailError);
+      // Continue anyway - user was created successfully
+    }
+
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: 'Team member invited successfully',
+        message: 'Invitation email sent successfully',
         user_id: newUser.user.id,
-        temp_password: tempPassword, // In production, send via email instead
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
