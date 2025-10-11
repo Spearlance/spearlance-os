@@ -4,7 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2 } from "lucide-react";
+import { Trash2, KeyRound } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 interface TeamMember {
@@ -91,6 +91,28 @@ export function TeamMembersList({ clientId, canManageTeam, refreshTrigger }: Tea
     }
   };
 
+  const handlePasswordReset = async (email: string, memberName: string) => {
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth`,
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Password reset sent",
+        description: `Password reset link has been sent to ${memberName}`,
+      });
+    } catch (error: any) {
+      console.error("Error sending password reset:", error);
+      toast({
+        title: "Failed to send password reset",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   if (loading) {
     return <p className="text-sm text-muted-foreground">Loading team members...</p>;
   }
@@ -128,33 +150,45 @@ export function TeamMembersList({ clientId, canManageTeam, refreshTrigger }: Tea
               <TableCell>{new Date(member.created_at).toLocaleDateString()}</TableCell>
               {canManageTeam && (
                 <TableCell className="text-right">
-                  {member.role !== "admin" && (
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="sm">
-                          <Trash2 className="w-4 h-4 text-destructive" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Remove team member</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Are you sure you want to remove {member.name} from this client? They will
-                            lose access to all client data and settings.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() => handleRemoveMember(member.id, member.name)}
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                          >
-                            Remove
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  )}
+                  <div className="flex items-center justify-end gap-2">
+                    {member.role === "client" && (
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => handlePasswordReset(member.email, member.name)}
+                        title="Send password reset"
+                      >
+                        <KeyRound className="w-4 h-4" />
+                      </Button>
+                    )}
+                    {member.role !== "admin" && (
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            <Trash2 className="w-4 h-4 text-destructive" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Remove team member</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to remove {member.name} from this client? They will
+                              lose access to all client data and settings.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => handleRemoveMember(member.id, member.name)}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              Remove
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    )}
+                  </div>
                 </TableCell>
               )}
             </TableRow>
