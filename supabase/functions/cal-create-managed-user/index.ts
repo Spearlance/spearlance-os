@@ -74,8 +74,17 @@ Deno.serve(async (req) => {
 
     const userData = await createUserResponse.json();
     const managedUserId = userData.data?.id || userData.id;
+    const accessToken = userData.data?.accessToken;
+    const refreshToken = userData.data?.refreshToken;
     
     console.log('Created managed user:', managedUserId);
+
+    if (!accessToken || !refreshToken) {
+      throw new Error('Failed to get access and refresh tokens from Cal.com');
+    }
+
+    // Calculate token expiry (60 minutes from now)
+    const tokenExpiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
 
     // Create default event type
     const createEventTypeResponse = await fetch('https://api.cal.com/v2/event-types', {
@@ -107,13 +116,16 @@ Deno.serve(async (req) => {
       bookingLink = `https://cal.com/${calUsername}/strategy-session`;
     }
 
-    // Update profile with Cal.com data
+    // Update profile with Cal.com data including access tokens
     const { error: updateError } = await supabase
       .from('profiles')
       .update({
         cal_managed_user_id: managedUserId.toString(),
         cal_username: username,
-        cal_event_type_id: eventTypeId?.toString()
+        cal_event_type_id: eventTypeId?.toString(),
+        cal_access_token: accessToken,
+        cal_refresh_token: refreshToken,
+        cal_token_expires_at: tokenExpiresAt
       })
       .eq('id', user_id);
 

@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Connect } from "@calcom/atoms";
+import { AvailabilitySettings } from "@calcom/atoms";
 
 export default function Settings() {
   const { selectedClient } = useClient();
@@ -36,32 +38,6 @@ export default function Settings() {
   useEffect(() => {
     fetchUserProfile();
   }, []);
-
-  useEffect(() => {
-    // Check if returning from OAuth flow
-    const urlParams = new URLSearchParams(window.location.search);
-    const calendarConnected = urlParams.get('calendar_connected');
-    
-    if (calendarConnected === 'true') {
-      // Verify connection status
-      supabase.functions.invoke('cal-connect-calendar', {
-        body: { action: 'verify' }
-      }).then(({ data }) => {
-        if (data?.connected) {
-          toast({
-            title: "Calendar Connected",
-            description: "Your Google Calendar has been successfully connected!"
-          });
-          
-          // Refresh profile
-          fetchUserProfile();
-        }
-      });
-      
-      // Clean up URL
-      window.history.replaceState({}, '', window.location.pathname);
-    }
-  }, [toast]);
 
   const handleSave = async () => {
     if (!client) return;
@@ -100,80 +76,28 @@ export default function Settings() {
     setLoading(false);
   };
 
-  const handleConnectCalendar = async () => {
+  const handleCreateManagedUser = async () => {
     setLoading(true);
     try {
-      // First ensure FMM has a managed Cal.com account
-      if (!userProfile?.cal_managed_user_id) {
-        // Create managed user first
-        const { data: createData, error: createError } = await supabase.functions.invoke(
-          'cal-create-managed-user',
-          { body: { user_id: userProfile?.id } }
-        );
-        
-        if (createError) throw createError;
-        
-        // Refresh profile to get cal_managed_user_id
-        await fetchUserProfile();
-      }
-
-      // Initiate calendar connection
-      const { data, error } = await supabase.functions.invoke('cal-connect-calendar', {
-        body: { action: 'connect' }
-      });
-
+      const { data, error } = await supabase.functions.invoke(
+        'cal-create-managed-user',
+        { body: { user_id: userProfile?.id } }
+      );
+      
       if (error) throw error;
-
-      // Redirect to Cal.com OAuth flow
-      if (data.oauthUrl) {
-        toast({
-          title: "Redirecting to Cal.com",
-          description: "You'll be redirected to connect your Google Calendar"
-        });
-        
-        // Store return URL in localStorage for callback
-        localStorage.setItem('cal_oauth_return', window.location.href);
-        
-        // Redirect to Cal.com
-        window.open(data.oauthUrl, '_blank');
-      }
-    } catch (error) {
-      console.error('Calendar connection error:', error);
+      
       toast({
-        title: "Connection Failed",
-        description: error.message || "Could not initiate calendar connection",
-        variant: "destructive"
+        title: "Cal.com Account Created",
+        description: "Your managed Cal.com account has been set up successfully!"
       });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDisconnectCalendar = async () => {
-    if (!confirm('Are you sure you want to disconnect your Google Calendar?')) {
-      return;
-    }
-    
-    setLoading(true);
-    try {
-      const { error } = await supabase.functions.invoke('cal-connect-calendar', {
-        body: { action: 'disconnect' }
-      });
-
-      if (error) throw error;
-
-      toast({
-        title: "Calendar Disconnected",
-        description: "Your Google Calendar has been disconnected"
-      });
-
-      // Refresh profile
+      
+      // Refresh profile to get tokens
       await fetchUserProfile();
     } catch (error) {
-      console.error('Disconnect error:', error);
+      console.error('Create managed user error:', error);
       toast({
-        title: "Disconnect Failed",
-        description: error.message,
+        title: "Setup Failed",
+        description: error.message || "Could not create managed user",
         variant: "destructive"
       });
     } finally {
@@ -281,98 +205,53 @@ export default function Settings() {
         <TabsContent value="calendar" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Calendar Connection</CardTitle>
+              <CardTitle>Calendar Integration</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              {userProfile?.cal_connected ? (
+            <CardContent className="space-y-6">
+              {!userProfile?.cal_managed_user_id ? (
                 <div className="space-y-4">
-                  <div className="flex items-center gap-2 p-4 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-lg">
-                    <svg className="h-5 w-5 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <span className="text-green-800 dark:text-green-200">Google Calendar Connected</span>
-                  </div>
-                  <Button 
-                    variant="destructive" 
-                    onClick={handleDisconnectCalendar}
-                    disabled={loading}
-                  >
-                    {loading ? "Disconnecting..." : "Disconnect Calendar"}
+                  <p className="text-sm text-muted-foreground">
+                    To use calendar features, you need to set up your Cal.com account first.
+                  </p>
+                  <Button onClick={handleCreateManagedUser} disabled={loading}>
+                    {loading ? "Setting up..." : "Set Up Cal.com Account"}
                   </Button>
                 </div>
               ) : (
-                <div className="flex items-center justify-between p-4 border rounded-lg">
+                <div className="space-y-6">
                   <div>
-                    <p className="font-medium">Google Calendar</p>
-                    <p className="text-sm text-muted-foreground">
-                      Connect your Google Calendar to enable booking
-                    </p>
+                    <h3 className="text-sm font-medium mb-3">Connect Google Calendar</h3>
+                    <Connect.GoogleCalendar 
+                      className="w-full"
+                      onSuccess={() => {
+                        toast({
+                          title: "Calendar Connected",
+                          description: "Your Google Calendar has been connected successfully!"
+                        });
+                        fetchUserProfile();
+                      }}
+                    />
                   </div>
-                  <Button onClick={handleConnectCalendar} disabled={loading}>
-                    {loading ? "Connecting..." : "Connect Calendar"}
-                  </Button>
+
+                  <div>
+                    <h3 className="text-sm font-medium mb-3">Availability Settings</h3>
+                    <AvailabilitySettings 
+                      onUpdateSuccess={() => {
+                        toast({
+                          title: "Availability Updated",
+                          description: "Your availability has been saved"
+                        });
+                      }}
+                      onUpdateError={() => {
+                        toast({
+                          title: "Update Failed",
+                          description: "Failed to update availability",
+                          variant: "destructive"
+                        });
+                      }}
+                    />
+                  </div>
                 </div>
-              )}
-              
-              {userProfile?.cal_connected && (
-                <>
-                  <div className="space-y-2">
-                    <Label>Booking Preferences</Label>
-                    <div className="space-y-2">
-                      <div className="flex items-center space-x-2">
-                        <input
-                          type="checkbox"
-                          id="booking-enabled"
-                          checked={userProfile?.cal_booking_enabled || false}
-                          onChange={(e) =>
-                            setUserProfile({ ...userProfile, cal_booking_enabled: e.target.checked })
-                          }
-                          className="rounded"
-                        />
-                        <Label htmlFor="booking-enabled" className="font-normal">
-                          Allow clients to book appointments
-                        </Label>
-                      </div>
-                      
-                      {userProfile?.cal_booking_enabled && (
-                        <div className="ml-6 space-y-2">
-                          <div className="flex items-center space-x-2">
-                            <input
-                              type="radio"
-                              id="can-book"
-                              checked={!userProfile?.cal_availability_view_only}
-                              onChange={() =>
-                                setUserProfile({ ...userProfile, cal_availability_view_only: false })
-                              }
-                              name="booking-mode"
-                            />
-                            <Label htmlFor="can-book" className="font-normal">
-                              Clients can book appointments
-                            </Label>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <input
-                              type="radio"
-                              id="view-only"
-                              checked={userProfile?.cal_availability_view_only || false}
-                              onChange={() =>
-                                setUserProfile({ ...userProfile, cal_availability_view_only: true })
-                              }
-                              name="booking-mode"
-                            />
-                            <Label htmlFor="view-only" className="font-normal">
-                              Clients can only view schedule
-                            </Label>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  
-                  <Button onClick={handleSave} disabled={loading}>
-                    Save Calendar Settings
-                  </Button>
-                </>
               )}
             </CardContent>
           </Card>

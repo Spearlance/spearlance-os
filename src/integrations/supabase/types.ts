@@ -557,11 +557,14 @@ export type Database = {
       profiles: {
         Row: {
           associated_client_ids: string[] | null
+          cal_access_token: string | null
           cal_availability_view_only: boolean | null
           cal_booking_enabled: boolean | null
           cal_connected: boolean | null
           cal_event_type_id: string | null
           cal_managed_user_id: string | null
+          cal_refresh_token: string | null
+          cal_token_expires_at: string | null
           cal_username: string | null
           created_at: string | null
           email: string
@@ -571,11 +574,14 @@ export type Database = {
         }
         Insert: {
           associated_client_ids?: string[] | null
+          cal_access_token?: string | null
           cal_availability_view_only?: boolean | null
           cal_booking_enabled?: boolean | null
           cal_connected?: boolean | null
           cal_event_type_id?: string | null
           cal_managed_user_id?: string | null
+          cal_refresh_token?: string | null
+          cal_token_expires_at?: string | null
           cal_username?: string | null
           created_at?: string | null
           email: string
@@ -585,11 +591,14 @@ export type Database = {
         }
         Update: {
           associated_client_ids?: string[] | null
+          cal_access_token?: string | null
           cal_availability_view_only?: boolean | null
           cal_booking_enabled?: boolean | null
           cal_connected?: boolean | null
           cal_event_type_id?: string | null
           cal_managed_user_id?: string | null
+          cal_refresh_token?: string | null
+          cal_token_expires_at?: string | null
           cal_username?: string | null
           created_at?: string | null
           email?: string
