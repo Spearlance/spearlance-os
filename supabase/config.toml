@@ -8,3 +8,12 @@ verify_jwt = true
 
 [functions.launchpad-analyze]
 verify_jwt = true
+
+[functions.cal-webhook-handler]
+verify_jwt = false
+
+[functions.cal-oauth-exchange]
+verify_jwt = true
+
+[functions.cal-create-managed-user]
+verify_jwt = true
