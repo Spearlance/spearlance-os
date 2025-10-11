@@ -16,6 +16,7 @@ import LaunchPad from "./pages/LaunchPad";
 import Support from "./pages/Support";
 import Settings from "./pages/Settings";
 import Admin from "./pages/Admin";
+import CalendarCallback from "./pages/CalendarCallback";
 
 const queryClient = new QueryClient();
 
@@ -44,6 +45,7 @@ const App = () => (
           <Route path="/support" element={<MainLayout><Support /></MainLayout>} />
           <Route path="/settings" element={<MainLayout><Settings /></MainLayout>} />
           <Route path="/admin" element={<MainLayout><Admin /></MainLayout>} />
+          <Route path="/calendar/callback" element={<CalendarCallback />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

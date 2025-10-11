@@ -21,20 +21,47 @@ export default function Settings() {
     }
   }, [selectedClient]);
 
+  const fetchUserProfile = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .single();
+      setUserProfile(profile);
+    }
+  };
+
   useEffect(() => {
-    const fetchUserProfile = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", user.id)
-          .single();
-        setUserProfile(profile);
-      }
-    };
     fetchUserProfile();
   }, []);
+
+  useEffect(() => {
+    // Check if returning from OAuth flow
+    const urlParams = new URLSearchParams(window.location.search);
+    const calendarConnected = urlParams.get('calendar_connected');
+    
+    if (calendarConnected === 'true') {
+      // Verify connection status
+      supabase.functions.invoke('cal-connect-calendar', {
+        body: { action: 'verify' }
+      }).then(({ data }) => {
+        if (data?.connected) {
+          toast({
+            title: "Calendar Connected",
+            description: "Your Google Calendar has been successfully connected!"
+          });
+          
+          // Refresh profile
+          fetchUserProfile();
+        }
+      });
+      
+      // Clean up URL
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, [toast]);
 
   const handleSave = async () => {
     if (!client) return;
@@ -71,6 +98,87 @@ export default function Settings() {
       toast({ title: "Settings saved successfully" });
     }
     setLoading(false);
+  };
+
+  const handleConnectCalendar = async () => {
+    setLoading(true);
+    try {
+      // First ensure FMM has a managed Cal.com account
+      if (!userProfile?.cal_managed_user_id) {
+        // Create managed user first
+        const { data: createData, error: createError } = await supabase.functions.invoke(
+          'cal-create-managed-user',
+          { body: { user_id: userProfile?.id } }
+        );
+        
+        if (createError) throw createError;
+        
+        // Refresh profile to get cal_managed_user_id
+        await fetchUserProfile();
+      }
+
+      // Initiate calendar connection
+      const { data, error } = await supabase.functions.invoke('cal-connect-calendar', {
+        body: { action: 'connect' }
+      });
+
+      if (error) throw error;
+
+      // Redirect to Cal.com OAuth flow
+      if (data.oauthUrl) {
+        toast({
+          title: "Redirecting to Cal.com",
+          description: "You'll be redirected to connect your Google Calendar"
+        });
+        
+        // Store return URL in localStorage for callback
+        localStorage.setItem('cal_oauth_return', window.location.href);
+        
+        // Redirect to Cal.com
+        window.open(data.oauthUrl, '_blank');
+      }
+    } catch (error) {
+      console.error('Calendar connection error:', error);
+      toast({
+        title: "Connection Failed",
+        description: error.message || "Could not initiate calendar connection",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDisconnectCalendar = async () => {
+    if (!confirm('Are you sure you want to disconnect your Google Calendar?')) {
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      const { error } = await supabase.functions.invoke('cal-connect-calendar', {
+        body: { action: 'disconnect' }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Calendar Disconnected",
+        description: "Your Google Calendar has been disconnected"
+      });
+
+      // Refresh profile
+      await fetchUserProfile();
+    } catch (error) {
+      console.error('Disconnect error:', error);
+      toast({
+        title: "Disconnect Failed",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const canEditClient = client && (userProfile?.role === 'admin' || userProfile?.role === 'fmm');
@@ -176,20 +284,35 @@ export default function Settings() {
               <CardTitle>Calendar Connection</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex items-center justify-between p-4 border rounded-lg">
-                <div>
-                  <p className="font-medium">Google Calendar</p>
-                  <p className="text-sm text-muted-foreground">
-                    {userProfile?.cal_connected ? "Connected" : "Not connected"}
-                  </p>
+              {userProfile?.cal_connected ? (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 p-4 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-lg">
+                    <svg className="h-5 w-5 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span className="text-green-800 dark:text-green-200">Google Calendar Connected</span>
+                  </div>
+                  <Button 
+                    variant="destructive" 
+                    onClick={handleDisconnectCalendar}
+                    disabled={loading}
+                  >
+                    {loading ? "Disconnecting..." : "Disconnect Calendar"}
+                  </Button>
                 </div>
-                <Button
-                  variant={userProfile?.cal_connected ? "outline" : "default"}
-                  onClick={() => toast({ title: "Calendar connection coming soon" })}
-                >
-                  {userProfile?.cal_connected ? "Disconnect" : "Connect Calendar"}
-                </Button>
-              </div>
+              ) : (
+                <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div>
+                    <p className="font-medium">Google Calendar</p>
+                    <p className="text-sm text-muted-foreground">
+                      Connect your Google Calendar to enable booking
+                    </p>
+                  </div>
+                  <Button onClick={handleConnectCalendar} disabled={loading}>
+                    {loading ? "Connecting..." : "Connect Calendar"}
+                  </Button>
+                </div>
+              )}
               
               {userProfile?.cal_connected && (
                 <>

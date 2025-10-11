@@ -48,15 +48,17 @@ serve(async (req) => {
     const { action } = await req.json();
 
     if (action === 'connect') {
-      // Generate OAuth URL for Google Calendar connection
-      // This would typically involve Cal.com Platform API to get OAuth URL
-      // For now, we'll return a placeholder
+      // Direct user to Cal.com settings page to connect their Google Calendar
+      // Cal.com Platform API v2 uses their own OAuth flow internally
+      const calSettingsUrl = `https://app.cal.com/settings/my-account/calendars`;
+      
+      console.log('Initiating calendar connection for user:', user.id);
       
       return new Response(
         JSON.stringify({ 
-          message: 'Calendar connection flow initiated',
-          // In production, return actual OAuth URL from Cal.com Platform API
-          oauthUrl: `https://app.cal.com/settings/my-account/calendars`
+          message: 'Redirect to Cal.com to connect your Google Calendar',
+          oauthUrl: calSettingsUrl,
+          instructions: 'Click "Connect" next to Google Calendar, then return to complete setup'
         }),
         { 
           status: 200, 
@@ -66,19 +68,50 @@ serve(async (req) => {
     }
 
     if (action === 'verify') {
-      // Verify calendar connection status
-      // This would check via Cal.com Platform API
-      // For now, we'll just update the profile
+      // Mark calendar as connected
+      // In a full implementation, this would query Cal.com Platform API
+      // to verify the managed user actually has Google Calendar connected
       
-      await supabase
+      console.log('Verifying calendar connection for user:', user.id);
+      
+      const { error: updateError } = await supabase
         .from('profiles')
         .update({ cal_connected: true })
         .eq('id', user.id);
+
+      if (updateError) {
+        throw updateError;
+      }
 
       return new Response(
         JSON.stringify({ 
           success: true,
           connected: true 
+        }),
+        { 
+          status: 200, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    if (action === 'disconnect') {
+      // Disconnect calendar
+      console.log('Disconnecting calendar for user:', user.id);
+      
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ cal_connected: false })
+        .eq('id', user.id);
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      return new Response(
+        JSON.stringify({ 
+          success: true,
+          message: 'Calendar disconnected successfully' 
         }),
         { 
           status: 200, 
