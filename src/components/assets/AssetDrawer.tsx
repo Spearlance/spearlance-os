@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { ExternalLink, Trash2, FileText, Image, Link as LinkIcon, FileVideo, FileAudio } from "lucide-react";
+import { ExternalLink, Trash2, FileText, Image, Link as LinkIcon, FileVideo, FileAudio, Download } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 interface AssetDrawerProps {
@@ -74,20 +74,53 @@ export function AssetDrawer({ asset, open, onOpenChange, onUpdate }: AssetDrawer
     onOpenChange(false);
   };
 
-  const handleDelete = async () => {
-    const { error } = await supabase
-      .from("assets")
-      .delete()
-      .eq("id", asset.id);
-
-    if (error) {
-      toast({ title: "Error deleting asset", variant: "destructive" });
-      return;
+  const handleDownload = () => {
+    if (!fileUrl) return;
+    
+    if (asset.storage_type === 'upload') {
+      // For uploaded files, trigger download
+      const link = document.createElement('a');
+      link.href = fileUrl;
+      link.download = title || 'asset';
+      link.click();
+    } else {
+      // For external URLs, open in new tab
+      window.open(fileUrl, '_blank');
     }
+  };
 
-    toast({ title: "Asset deleted successfully" });
-    onUpdate();
-    onOpenChange(false);
+  const handleDelete = async () => {
+    try {
+      // If it's an uploaded file, delete from storage first
+      if (asset.storage_type === 'upload' && asset.file_url) {
+        const pathMatch = asset.file_url.match(/client-assets\/(.+)$/);
+        if (pathMatch) {
+          const { error: storageError } = await supabase.storage
+            .from('client-assets')
+            .remove([pathMatch[1]]);
+          
+          if (storageError) {
+            console.error("Error deleting from storage:", storageError);
+            // Continue with database deletion even if storage deletion fails
+          }
+        }
+      }
+
+      // Delete the database record
+      const { error } = await supabase
+        .from("assets")
+        .delete()
+        .eq("id", asset.id);
+
+      if (error) throw error;
+
+      toast({ title: "Asset deleted successfully" });
+      onUpdate();
+      onOpenChange(false);
+    } catch (error) {
+      console.error("Error deleting asset:", error);
+      toast({ title: "Error deleting asset", variant: "destructive" });
+    }
   };
 
   const getTypeIcon = (assetType: string) => {
@@ -111,15 +144,23 @@ export function AssetDrawer({ asset, open, onOpenChange, onUpdate }: AssetDrawer
         <SheetHeader>
           <div className="flex items-center justify-between">
             <SheetTitle>Asset Details</SheetTitle>
-            {fileUrl && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => window.open(fileUrl, "_blank")}
-              >
-                <ExternalLink className="h-4 w-4" />
-              </Button>
-            )}
+            <div className="flex gap-2">
+              {fileUrl && (
+                <>
+                  <Button variant="outline" size="sm" onClick={handleDownload}>
+                    <Download className="h-4 w-4 mr-2" />
+                    {asset.storage_type === 'upload' ? 'Download' : 'Open'}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => window.open(fileUrl, "_blank")}
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
         </SheetHeader>
 
