@@ -100,22 +100,19 @@ serve(async (req) => {
 
     console.log('User created successfully:', newUser.user.id);
 
-    // Create profile entry
-    const { error: profileInsertError } = await supabaseAdmin
+    // Update the auto-created profile to add client association
+    const { error: profileUpdateError } = await supabaseAdmin
       .from('profiles')
-      .insert({
-        id: newUser.user.id,
-        name,
-        email,
-        role,
+      .update({
         associated_client_ids: [client_id],
-      });
+      })
+      .eq('id', newUser.user.id);
 
-    if (profileInsertError) {
-      console.error('Error creating profile:', profileInsertError);
+    if (profileUpdateError) {
+      console.error('Error updating profile:', profileUpdateError);
       // Try to clean up the created user
       await supabaseAdmin.auth.admin.deleteUser(newUser.user.id);
-      throw new Error(`Failed to create profile: ${profileInsertError.message}`);
+      throw new Error(`Failed to update profile: ${profileUpdateError.message}`);
     }
 
     // Create user_roles entry
