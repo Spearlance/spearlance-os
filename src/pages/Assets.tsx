@@ -82,7 +82,17 @@ export default function Assets() {
       .eq("parent_folder_id", currentFolderId)
       .order("created_at", { ascending: false });
 
-    if (!error && data) {
+    if (error) {
+      console.error("Error loading folders:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load folders",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (data) {
       setFolders(data);
     }
   };

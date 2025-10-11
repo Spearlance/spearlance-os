@@ -50,9 +50,9 @@ export function CreateFolderDialog({
         description: "Folder created successfully",
       });
       
-      onOpenChange(false);
       setName("");
       onSuccess?.();
+      onOpenChange(false);
     } catch (error) {
       console.error("Error creating folder:", error);
       toast({
