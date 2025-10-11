@@ -70,8 +70,8 @@ Deno.serve(async (req) => {
       throw new Error('User not found');
     }
 
-    if (profile.role !== 'fmm') {
-      throw new Error('Only FMM users can have managed Cal.com accounts');
+    if (profile.role !== 'fmm' && profile.role !== 'admin') {
+      throw new Error('Only FMM and Admin users can have managed Cal.com accounts');
     }
 
     // Get valid access token
