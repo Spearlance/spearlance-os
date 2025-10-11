@@ -13,9 +13,17 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      process: "process/browser",
     },
   },
   define: {
-    'process.env': {},
+    "process.env": "{}",
+  },
+  optimizeDeps: {
+    esbuildOptions: {
+      define: {
+        global: "globalThis",
+      },
+    },
   },
 }));
