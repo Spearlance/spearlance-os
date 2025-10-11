@@ -13,7 +13,6 @@ export default function Settings() {
   const [client, setClient] = useState<any>(null);
   const [userProfile, setUserProfile] = useState<any>(null);
   const [loading, setLoading] = useState(false);
-  const [platformInitialized, setPlatformInitialized] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -36,18 +35,7 @@ export default function Settings() {
 
   useEffect(() => {
     fetchUserProfile();
-    checkPlatformStatus();
   }, []);
-
-  const checkPlatformStatus = async () => {
-    const { data } = await supabase
-      .from('cal_platform_tokens')
-      .select('id')
-      .eq('token_type', 'access_token')
-      .maybeSingle();
-    
-    setPlatformInitialized(!!data);
-  };
 
   useEffect(() => {
     // Check if returning from OAuth flow
@@ -193,41 +181,6 @@ export default function Settings() {
     }
   };
 
-  const handleInitializePlatform = async () => {
-    try {
-      // Cal.com Platform OAuth URL
-      const clientId = import.meta.env.VITE_CAL_PLATFORM_CLIENT_ID;
-      if (!clientId) {
-        toast({
-          title: "Configuration Error",
-          description: "Cal.com Platform Client ID is not configured",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      const redirectUri = `${window.location.origin}/calendar/platform-callback`;
-      const state = crypto.randomUUID();
-      
-      // Store state for CSRF validation
-      localStorage.setItem('cal_platform_oauth_state', state);
-      
-      const oauthUrl = `https://app.cal.com/oauth/authorize?` +
-        `client_id=${clientId}&` +
-        `response_type=code&` +
-        `redirect_uri=${encodeURIComponent(redirectUri)}&` +
-        `state=${state}`;
-      
-      window.location.href = oauthUrl;
-    } catch (error) {
-      toast({
-        title: "Failed to initialize platform",
-        description: error.message,
-        variant: "destructive"
-      });
-    }
-  };
-
   const canEditClient = client && (userProfile?.role === 'admin' || userProfile?.role === 'fmm');
   const showCalendarTab = userProfile?.role === 'fmm' || userProfile?.role === 'admin';
 
@@ -326,33 +279,6 @@ export default function Settings() {
         </TabsContent>
 
         <TabsContent value="calendar" className="space-y-4">
-          {userProfile?.role === 'admin' && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Cal.com Platform Setup</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {platformInitialized ? (
-                  <div className="flex items-center gap-2 p-4 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-lg">
-                    <svg className="h-5 w-5 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <span className="text-green-800 dark:text-green-200">Platform OAuth Initialized</span>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    <p className="text-sm text-muted-foreground">
-                      Initialize Cal.com platform access to enable calendar features for your team. This is a one-time setup required by an admin.
-                    </p>
-                    <Button onClick={handleInitializePlatform}>
-                      Initialize Platform OAuth
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
-
           <Card>
             <CardHeader>
               <CardTitle>Calendar Connection</CardTitle>
