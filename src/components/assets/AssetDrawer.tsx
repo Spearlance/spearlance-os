@@ -74,15 +74,30 @@ export function AssetDrawer({ asset, open, onOpenChange, onUpdate }: AssetDrawer
     onOpenChange(false);
   };
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     if (!fileUrl) return;
     
     if (asset.storage_type === 'upload') {
-      // For uploaded files, trigger download
-      const link = document.createElement('a');
-      link.href = fileUrl;
-      link.download = title || 'asset';
-      link.click();
+      try {
+        // Fetch the file as a blob to ensure proper download
+        const response = await fetch(fileUrl);
+        const blob = await response.blob();
+        
+        // Create object URL and trigger download
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = title || 'asset';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Clean up the object URL
+        window.URL.revokeObjectURL(url);
+      } catch (error) {
+        console.error('Download failed:', error);
+        toast({ title: "Download failed", variant: "destructive" });
+      }
     } else {
       // For external URLs, open in new tab
       window.open(fileUrl, '_blank');
