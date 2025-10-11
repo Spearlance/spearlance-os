@@ -52,26 +52,29 @@ function MainLayoutContent({ children }: MainLayoutProps) {
     if (!session?.user) return;
 
     const fetchProfiles = async () => {
-      // Get current user's profile
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", session.user.id)
-        .single();
-
-      setUserProfile(profile);
-
-      // If user is a client, fetch their FMM's profile
-      if (profile?.role === "client" && selectedClient) {
-        // Find FMM assigned to this client (simplified - in real app would need proper assignment logic)
-        const { data: fmm } = await supabase
+      try {
+        // Get current user's profile
+        const { data: profile } = await supabase
           .from("profiles")
           .select("*")
-          .contains("associated_client_ids", [selectedClient.id])
-          .eq("role", "fmm")
-          .single();
+          .eq("id", session.user.id)
+          .maybeSingle();
 
-        setFmmProfile(fmm);
+        setUserProfile(profile);
+
+        // If user is a client, fetch their FMM's profile
+        if (profile?.role === "client" && selectedClient) {
+          const { data: fmm } = await supabase
+            .from("profiles")
+            .select("*")
+            .contains("associated_client_ids", [selectedClient.id])
+            .eq("role", "fmm")
+            .maybeSingle();
+
+          setFmmProfile(fmm);
+        }
+      } catch (error) {
+        console.error("Error fetching profiles:", error);
       }
     };
 

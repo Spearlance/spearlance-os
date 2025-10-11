@@ -73,9 +73,8 @@ export default function Settings() {
     setLoading(false);
   };
 
-  if (!client) {
-    return <div>Loading...</div>;
-  }
+  const canEditClient = client && (userProfile?.role === 'admin' || userProfile?.role === 'fmm');
+  const showCalendarTab = userProfile?.role === 'fmm' || userProfile?.role === 'admin';
 
   return (
     <div className="space-y-6">
@@ -83,15 +82,24 @@ export default function Settings() {
         <h1 className="text-3xl font-bold">Settings</h1>
       </div>
 
-      <Tabs defaultValue="general" className="w-full">
-        <TabsList>
-          <TabsTrigger value="general">General</TabsTrigger>
-          <TabsTrigger value="bookmarks">Bookmarks</TabsTrigger>
-          <TabsTrigger value="calendar">Calendar</TabsTrigger>
-          <TabsTrigger value="team">Team</TabsTrigger>
-        </TabsList>
+      {!client ? (
+        <Card>
+          <CardContent className="py-8">
+            <p className="text-center text-muted-foreground">
+              Please select a client from the sidebar to manage settings.
+            </p>
+          </CardContent>
+        </Card>
+      ) : (
+        <Tabs defaultValue="general" className="w-full">
+          <TabsList>
+            <TabsTrigger value="general">General</TabsTrigger>
+            <TabsTrigger value="bookmarks">Bookmarks</TabsTrigger>
+            {showCalendarTab && <TabsTrigger value="calendar">Calendar</TabsTrigger>}
+            <TabsTrigger value="team">Team</TabsTrigger>
+          </TabsList>
 
-        <TabsContent value="general" className="space-y-4">
+          <TabsContent value="general" className="space-y-4">
           <Card>
             <CardHeader>
               <CardTitle>Client Information</CardTitle>
@@ -259,7 +267,8 @@ export default function Settings() {
             </CardContent>
           </Card>
         </TabsContent>
-      </Tabs>
+        </Tabs>
+      )}
     </div>
   );
 }

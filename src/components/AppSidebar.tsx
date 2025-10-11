@@ -1,6 +1,7 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import { useClient } from "@/contexts/ClientContext";
 import { supabase } from "@/integrations/supabase/client";
+import { useEffect, useState } from "react";
 import {
   Sidebar,
   SidebarContent,
@@ -30,6 +31,7 @@ import {
   HelpCircle,
   Settings,
   LogOut,
+  Shield,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -51,6 +53,22 @@ export function AppSidebar() {
   const { selectedClient, setSelectedClient, clients } = useClient();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [userRole, setUserRole] = useState<string>("");
+
+  useEffect(() => {
+    const fetchUserRole = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", user.id)
+          .maybeSingle();
+        setUserRole(profile?.role || "");
+      }
+    };
+    fetchUserRole();
+  }, []);
 
   const handleSignOut = async () => {
     try {
@@ -127,6 +145,16 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+              {userRole === "admin" && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild>
+                    <NavLink to="/admin" end className={getNavClass}>
+                      <Shield className="h-4 w-4" />
+                      {!collapsed && <span>Admin</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

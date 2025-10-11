@@ -15,6 +15,7 @@ import Avatar from "./pages/Avatar";
 import LaunchPad from "./pages/LaunchPad";
 import Support from "./pages/Support";
 import Settings from "./pages/Settings";
+import Admin from "./pages/Admin";
 
 const queryClient = new QueryClient();
 
@@ -39,9 +40,10 @@ const App = () => (
           <Route path="/tasks" element={<MainLayout><Tasks /></MainLayout>} />
           <Route path="/assets" element={<MainLayout><Assets /></MainLayout>} />
           <Route path="/avatar" element={<MainLayout><Avatar /></MainLayout>} />
-          <Route path="/launch-pad" element={<MainLayout><LaunchPad /></MainLayout>} />
+          <Route path="/launchpad" element={<MainLayout><LaunchPad /></MainLayout>} />
           <Route path="/support" element={<MainLayout><Support /></MainLayout>} />
           <Route path="/settings" element={<MainLayout><Settings /></MainLayout>} />
+          <Route path="/admin" element={<MainLayout><Admin /></MainLayout>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

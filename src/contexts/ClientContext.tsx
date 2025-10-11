@@ -31,11 +31,24 @@ export const ClientProvider = ({ children }: { children: ReactNode }) => {
 
   const loadClients = async () => {
     try {
-      const { data, error } = await supabase
-        .from('clients')
-        .select('*')
-        .order('name');
+      // Fetch current user's profile to check role
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('No user');
 
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role, associated_client_ids')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      let query = supabase.from('clients').select('*').order('name');
+
+      // If not admin, filter by associated_client_ids
+      if (profile?.role !== 'admin' && profile?.associated_client_ids) {
+        query = query.in('id', profile.associated_client_ids);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
 
       setClients(data || []);
