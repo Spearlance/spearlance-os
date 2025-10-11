@@ -19,6 +19,7 @@ export const useCalReady = () => useContext(CalContext);
 export function CalProvider({ children }: CalProviderProps) {
   const [accessToken, setAccessToken] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
+  const [userRole, setUserRole] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchUserToken = async () => {
@@ -35,6 +36,10 @@ export function CalProvider({ children }: CalProviderProps) {
           .select("cal_access_token, cal_token_expires_at, role")
           .eq("id", user.id)
           .single();
+
+        if (profile) {
+          setUserRole(profile.role);
+        }
 
         // Only provide access token for FMM and Admin users who have managed accounts
         if (profile && (profile.role === "fmm" || profile.role === "admin")) {
@@ -92,7 +97,23 @@ export function CalProvider({ children }: CalProviderProps) {
     );
   }
 
-  // Always render CalAtomsProvider for FMM/Admin users, even without token
+  // Only render CalAtomsProvider for FMM and Admin users
+  const shouldRenderCalProvider = userRole === "fmm" || userRole === "admin";
+
+  if (!shouldRenderCalProvider) {
+    return (
+      <CalContext.Provider value={{ isCalReady: false, isLoading: false }}>
+        {children}
+      </CalContext.Provider>
+    );
+  }
+
+  // Warn if Cal.com configuration is missing
+  if (!clientId) {
+    console.warn("Cal.com OAuth Client ID is not configured. Calendar integration will not work.");
+  }
+
+  // Render CalAtomsProvider for FMM/Admin users, even without token
   // The Atoms will show their own "Connect Google Calendar" flow
   return (
     <CalContext.Provider value={{ isCalReady: !!accessToken, isLoading: false }}>
