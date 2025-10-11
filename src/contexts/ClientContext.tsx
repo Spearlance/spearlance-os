@@ -16,6 +16,7 @@ interface ClientContextType {
   setSelectedClient: (client: Client | null) => void;
   clients: Client[];
   loading: boolean;
+  refreshClients: () => Promise<void>;
 }
 
 const ClientContext = createContext<ClientContextType | undefined>(undefined);
@@ -64,6 +65,42 @@ export const ClientProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const refreshClients = async () => {
+    const currentSelectedId = selectedClient?.id;
+    
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role, associated_client_ids')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      let query = supabase.from('clients').select('*').order('name');
+
+      if (profile?.role !== 'admin' && profile?.associated_client_ids) {
+        query = query.in('id', profile.associated_client_ids);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+
+      setClients(data || []);
+      
+      // If we had a selected client, re-select the refreshed version
+      if (currentSelectedId && data) {
+        const refreshedClient = data.find(c => c.id === currentSelectedId);
+        if (refreshedClient) {
+          setSelectedClient(refreshedClient);
+        }
+      }
+    } catch (error) {
+      console.error('Error refreshing clients:', error);
+    }
+  };
+
   return (
     <ClientContext.Provider
       value={{
@@ -71,6 +108,7 @@ export const ClientProvider = ({ children }: { children: ReactNode }) => {
         setSelectedClient,
         clients,
         loading,
+        refreshClients,
       }}
     >
       {children}

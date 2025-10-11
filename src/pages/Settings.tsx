@@ -12,7 +12,7 @@ import { AvailabilitySettings } from "@calcom/atoms";
 import { useCalReady } from "@/components/CalProvider";
 
 export default function Settings() {
-  const { selectedClient } = useClient();
+  const { selectedClient, refreshClients } = useClient();
   const [client, setClient] = useState<any>(null);
   const [userProfile, setUserProfile] = useState<any>(null);
   const [loading, setLoading] = useState(false);
@@ -74,6 +74,7 @@ export default function Settings() {
       toast({ title: "Error saving settings", variant: "destructive" });
     } else {
       toast({ title: "Settings saved successfully" });
+      await refreshClients();
     }
     setLoading(false);
   };
