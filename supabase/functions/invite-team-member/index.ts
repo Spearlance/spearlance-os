@@ -146,7 +146,7 @@ serve(async (req) => {
     // Send invitation email
     try {
       await resend.emails.send({
-        from: 'Team Invitation <onboarding@resend.dev>',
+        from: 'Team Invitation <noreply@em.os.spearlance.com>',
         to: [email],
         subject: `You've been invited to ${clientName}`,
         html: `
