@@ -12,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Users, Building2, BarChart3, Loader2 } from "lucide-react";
 import { AddUserDialog } from "@/components/admin/AddUserDialog";
+import { UserInfoDialog } from "@/components/admin/UserInfoDialog";
 
 export default function Admin() {
   const navigate = useNavigate();
@@ -288,9 +289,7 @@ export default function Admin() {
                         )}
                       </TableCell>
                       <TableCell>
-                        <Button variant="outline" size="sm">
-                          Edit
-                        </Button>
+                        <UserInfoDialog user={user} clients={clients} />
                       </TableCell>
                     </TableRow>
                   ))}
