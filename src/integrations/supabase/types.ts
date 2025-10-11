@@ -259,6 +259,33 @@ export type Database = {
         }
         Relationships: []
       }
+      cal_platform_tokens: {
+        Row: {
+          created_at: string | null
+          expires_at: string | null
+          id: string
+          token_type: string
+          token_value: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          token_type: string
+          token_value: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          token_type?: string
+          token_value?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       cal_webhook_logs: {
         Row: {
           created_at: string | null
@@ -554,6 +581,9 @@ export type Database = {
       profiles: {
         Row: {
           associated_client_ids: string[] | null
+          cal_event_type_id: string | null
+          cal_managed_user_id: string | null
+          cal_username: string | null
           created_at: string | null
           email: string
           id: string
@@ -562,6 +592,9 @@ export type Database = {
         }
         Insert: {
           associated_client_ids?: string[] | null
+          cal_event_type_id?: string | null
+          cal_managed_user_id?: string | null
+          cal_username?: string | null
           created_at?: string | null
           email: string
           id: string
@@ -570,6 +603,9 @@ export type Database = {
         }
         Update: {
           associated_client_ids?: string[] | null
+          cal_event_type_id?: string | null
+          cal_managed_user_id?: string | null
+          cal_username?: string | null
           created_at?: string | null
           email?: string
           id?: string
