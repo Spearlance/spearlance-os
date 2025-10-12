@@ -42,16 +42,16 @@ export interface DiscoveryData {
 
 export interface AccessData {
   ads: {
-    google_ads_id?: string;
-    meta_bm_url?: string;
-  };
-  analytics: {
-    ga_property_id?: string;
-    gsc_property_url?: string;
+    meta_business_id?: string;
+    google_ads_customer_id?: string;
+    google_analytics_property_id?: string;
+    search_console_invite_confirmed: boolean;
+    search_console_screenshot_asset_id?: string;
   };
   web: {
     platform: string;
     admin_url?: string;
+    runs_meta_ads?: boolean;
   };
   crm: {
     name?: string;
@@ -61,8 +61,8 @@ export interface AccessData {
     drive_folder_url?: string;
     canva_folder_url?: string;
   };
-  consent: {
-    ack_shared_access: boolean;
+  reporting: {
+    oviond_url?: string;
   };
 }
 
