@@ -64,10 +64,29 @@ export function LaunchPadWizard() {
     }
   };
 
-  const handleStageChange = (newStage: LaunchPadStage) => {
-    if (submission) {
+  const handleStageChange = async (newStage: LaunchPadStage) => {
+    if (!submission) return;
+
+    try {
+      // Update database with new stage
+      const { error } = await supabase
+        .from("launchpad_submissions")
+        .update({ stage: newStage })
+        .eq("id", submission.id);
+
+      if (error) throw error;
+
+      // Update local state
       setSubmission({ ...submission, stage: newStage });
-      loadOrCreateSubmission(); // Reload to get fresh data
+
+      // Reload to get fresh data
+      loadOrCreateSubmission();
+    } catch (error) {
+      console.error("Error changing stage:", error);
+      toast({
+        title: "Error changing stage",
+        variant: "destructive",
+      });
     }
   };
 
@@ -124,6 +143,7 @@ export function LaunchPadWizard() {
         <ProgressHeader
           currentStage={submission.stage}
           completedAt={submission.completed_at as Record<string, string>}
+          onStageClick={handleStageChange}
         />
       )}
 

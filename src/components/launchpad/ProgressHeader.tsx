@@ -4,6 +4,7 @@ import { LaunchPadStage } from "@/lib/launchpadTypes";
 interface ProgressHeaderProps {
   currentStage: LaunchPadStage;
   completedAt: Record<string, string>;
+  onStageClick?: (stage: LaunchPadStage) => void;
 }
 
 const stages = [
@@ -13,12 +14,24 @@ const stages = [
   { id: "avatar" as LaunchPadStage, label: "Avatar", description: "AI insights" },
 ];
 
-export function ProgressHeader({ currentStage, completedAt }: ProgressHeaderProps) {
+export function ProgressHeader({ currentStage, completedAt, onStageClick }: ProgressHeaderProps) {
   const getStageStatus = (stageId: LaunchPadStage) => {
     if (currentStage === "complete") return "complete";
     if (completedAt[stageId]) return "complete";
     if (stageId === currentStage) return "current";
     return "upcoming";
+  };
+
+  const canNavigateToStage = (stageId: LaunchPadStage) => {
+    if (completedAt[stageId]) return true;
+    if (stageId === currentStage) return true;
+    return false;
+  };
+
+  const handleStageClick = (stageId: LaunchPadStage) => {
+    if (canNavigateToStage(stageId) && onStageClick) {
+      onStageClick(stageId);
+    }
   };
 
   return (
@@ -30,21 +43,25 @@ export function ProgressHeader({ currentStage, completedAt }: ProgressHeaderProp
             return (
               <div key={stage.id} className="flex items-center flex-1">
                 <div className="flex flex-col items-center gap-2 flex-1">
-                  <div
+                  <button
+                    onClick={() => handleStageClick(stage.id)}
+                    disabled={!canNavigateToStage(stage.id)}
                     className={`flex items-center justify-center w-12 h-12 rounded-full border-2 transition-all ${
                       status === "complete"
-                        ? "bg-[#13cf48] border-[#13cf48] text-white"
+                        ? "bg-[#13cf48] border-[#13cf48] text-white cursor-pointer hover:opacity-80"
                         : status === "current"
-                        ? "border-[#13cf48] text-[#13cf48] bg-background"
-                        : "border-muted text-muted-foreground bg-background"
+                        ? "border-[#13cf48] text-[#13cf48] bg-background cursor-pointer hover:opacity-80"
+                        : "border-muted text-muted-foreground bg-background cursor-not-allowed opacity-50"
                     }`}
+                    aria-label={`Navigate to ${stage.label}`}
+                    title={canNavigateToStage(stage.id) ? `Go to ${stage.label}` : `Complete previous stages first`}
                   >
                     {status === "complete" ? (
                       <CheckCircle2 className="h-6 w-6" />
                     ) : (
                       <Circle className="h-6 w-6" />
                     )}
-                  </div>
+                  </button>
                   <div className="text-center">
                     <p
                       className={`font-medium text-sm ${
