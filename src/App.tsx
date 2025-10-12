@@ -12,6 +12,7 @@ import Meetings from "./pages/Meetings";
 import MeetingDetail from "./pages/MeetingDetail";
 import Tasks from "./pages/Tasks";
 import Assets from "./pages/Assets";
+import Marketing from "./pages/Marketing";
 import Avatar from "./pages/Avatar";
 import LaunchPad from "./pages/LaunchPad";
 import Support from "./pages/Support";
@@ -43,6 +44,7 @@ const App = () => (
             <Route path="/meetings/:id" element={<MainLayout><MeetingDetail /></MainLayout>} />
             <Route path="/tasks" element={<MainLayout><Tasks /></MainLayout>} />
             <Route path="/assets" element={<MainLayout><Assets /></MainLayout>} />
+            <Route path="/marketing" element={<MainLayout><Marketing /></MainLayout>} />
             <Route path="/avatar" element={<MainLayout><Avatar /></MainLayout>} />
             <Route path="/launchpad" element={<MainLayout><LaunchPad /></MainLayout>} />
             <Route path="/support" element={<MainLayout><Support /></MainLayout>} />

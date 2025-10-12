@@ -5,6 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { LaunchPadStage, LaunchPadSubmission } from "@/lib/launchpadTypes";
 import { ProgressHeader } from "./ProgressHeader";
 import { StageDiscovery } from "./StageDiscovery";
+import { StageMarketing } from "./StageMarketing";
 import { StageAccess } from "./StageAccess";
 import { StageAssets } from "./StageAssets";
 import { StageAvatar } from "./StageAvatar";
@@ -152,7 +153,16 @@ export function LaunchPadWizard() {
           <StageDiscovery
             submissionId={submission.id}
             initialData={submission.responses_json?.discovery}
+            onContinue={() => handleStageChange("marketing")}
+            onSaveExit={handleSaveExit}
+          />
+        )}
+
+        {submission.stage === "marketing" && (
+          <StageMarketing
+            submissionId={submission.id}
             onContinue={() => handleStageChange("access")}
+            onBack={() => handleStageChange("discovery")}
             onSaveExit={handleSaveExit}
           />
         )}
@@ -162,7 +172,7 @@ export function LaunchPadWizard() {
             submissionId={submission.id}
             initialData={submission.responses_json?.access}
             onContinue={() => handleStageChange("assets")}
-            onBack={() => handleStageChange("discovery")}
+            onBack={() => handleStageChange("marketing")}
             onSaveExit={handleSaveExit}
           />
         )}

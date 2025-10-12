@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { X } from "lucide-react";
+import { X, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -44,7 +44,7 @@ const discoverySchema = z.object({
     decision_makers: z.array(z.string()).optional(),
   }),
   model: z.object({
-    core_offers: z.string().min(1, "Required"),
+    services: z.array(z.string().min(1, "Service name required")).min(1, "At least one service is required"),
     aov: z.number().nullable().optional(),
     ltv: z.number().nullable().optional(),
     sales_process: z.string().optional(),
@@ -95,6 +95,7 @@ export function StageDiscovery({ submissionId, initialData, onContinue, onSaveEx
   const [goalInput, setGoalInput] = useState("");
   const [competitorInput, setCompetitorInput] = useState("");
   const [storyModalOpen, setStoryModalOpen] = useState(false);
+  const [newService, setNewService] = useState("");
 
   const form = useForm<DiscoveryData>({
     resolver: zodResolver(discoverySchema),
@@ -108,7 +109,7 @@ export function StageDiscovery({ submissionId, initialData, onContinue, onSaveEx
         hq_city: initialData?.company?.hq_city || "",
       },
       contacts: initialData?.contacts || { primary_name: "", primary_email: "", decision_makers: [] },
-      model: initialData?.model || { core_offers: "", aov: null, ltv: null },
+      model: initialData?.model || { services: [], aov: null, ltv: null },
       goals: initialData?.goals || { quarter_goals: [], annual_revenue_goal: null },
       state: initialData?.state || {},
       competition: initialData?.competition || { competitors: [] },
@@ -170,11 +171,38 @@ export function StageDiscovery({ submissionId, initialData, onContinue, onSaveEx
       const data = form.getValues();
       await saveData(data);
 
-      // Advance stage
+      // Create service records from service names
+      if (selectedClient && data.model.services?.length > 0) {
+        const { data: user } = await supabase.auth.getUser();
+        
+        const { error: servicesError } = await supabase
+          .from("services")
+          .upsert(
+            data.model.services.map((serviceName) => ({
+              client_id: selectedClient.id,
+              name: serviceName,
+              created_by: user.user?.id,
+            })),
+            { onConflict: 'client_id,name', ignoreDuplicates: false }
+          );
+
+        if (servicesError) {
+          console.error("Error creating services:", servicesError);
+          toast({
+            title: "Error",
+            description: "Failed to save services",
+            variant: "destructive",
+          });
+          setIsSaving(false);
+          return;
+        }
+      }
+
+      // Advance stage to marketing
       const { error } = await supabase
         .from("launchpad_submissions")
         .update({
-          stage: "access",
+          stage: "marketing",
           completed_at: { discovery: new Date().toISOString() } as any,
         })
         .eq("id", submissionId);
@@ -331,10 +359,65 @@ export function StageDiscovery({ submissionId, initialData, onContinue, onSaveEx
           <div className="space-y-4">
             <h3 className="font-semibold">Business Model</h3>
             <div>
-              <Label htmlFor="core_offers">Core Offers *</Label>
-              <Textarea id="core_offers" rows={3} {...form.register("model.core_offers")} onBlur={() => form.trigger("model.core_offers")} />
-              {form.formState.errors.model?.core_offers && (
-                <p className="text-xs text-destructive mt-1">{form.formState.errors.model.core_offers.message}</p>
+              <Label>Core Offers/Services *</Label>
+              <p className="text-sm text-muted-foreground mb-2">
+                Add your primary services or product offerings
+              </p>
+              <div className="space-y-2">
+                {form.watch("model.services")?.map((service, index) => (
+                  <div key={index} className="flex items-center gap-2">
+                    <Badge variant="secondary" className="text-sm py-1.5 px-3 flex-1">
+                      {service}
+                    </Badge>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        const current = form.getValues("model.services");
+                        form.setValue("model.services", current.filter((_, i) => i !== index));
+                      }}
+                    >
+                      ×
+                    </Button>
+                  </div>
+                ))}
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Enter service name"
+                    value={newService}
+                    onChange={(e) => setNewService(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        if (newService.trim()) {
+                          const current = form.getValues("model.services") || [];
+                          form.setValue("model.services", [...current, newService.trim()]);
+                          setNewService("");
+                        }
+                      }
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      if (newService.trim()) {
+                        const current = form.getValues("model.services") || [];
+                        form.setValue("model.services", [...current, newService.trim()]);
+                        setNewService("");
+                      }
+                    }}
+                  >
+                    <Plus className="h-4 w-4" />
+                    Add
+                  </Button>
+                </div>
+              </div>
+              {form.formState.errors.model?.services && (
+                <p className="text-xs text-destructive mt-1">
+                  {form.formState.errors.model.services.message}
+                </p>
               )}
             </div>
             <div className="grid sm:grid-cols-2 gap-4">
