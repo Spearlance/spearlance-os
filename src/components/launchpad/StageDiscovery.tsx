@@ -19,7 +19,21 @@ const discoverySchema = z.object({
   company: z.object({
     legal_name: z.string().min(1, "Required"),
     brand_name: z.string().min(1, "Required"),
-    website_url: z.string().url("Must be a valid URL").refine((url) => url.startsWith("http"), "Must start with http:// or https://"),
+    website_url: z.string().min(1, "Required").refine((url) => {
+      // Allow URLs with or without protocol
+      if (!url) return false;
+      // If it already has a protocol, validate as URL
+      if (url.startsWith("http://") || url.startsWith("https://")) {
+        try {
+          new URL(url);
+          return true;
+        } catch {
+          return false;
+        }
+      }
+      // If no protocol, validate domain format (basic check)
+      return /^[a-zA-Z0-9][a-zA-Z0-9-]{0,61}[a-zA-Z0-9]?(\.[a-zA-Z]{2,})+/.test(url);
+    }, "Must be a valid URL or domain"),
     hq_city: z.string().optional(),
     service_areas: z.array(z.string()).optional(),
     industry: z.string().min(1, "Required"),
@@ -65,6 +79,14 @@ interface StageDiscoveryProps {
   onSaveExit: () => void;
 }
 
+const normalizeUrl = (url: string): string => {
+  if (!url) return url;
+  if (url.startsWith("http://") || url.startsWith("https://")) {
+    return url;
+  }
+  return `https://${url}`;
+};
+
 export function StageDiscovery({ submissionId, initialData, onContinue, onSaveExit }: StageDiscoveryProps) {
   const { selectedClient } = useClient();
   const { toast } = useToast();
@@ -76,15 +98,22 @@ export function StageDiscovery({ submissionId, initialData, onContinue, onSaveEx
 
   const form = useForm<DiscoveryData>({
     resolver: zodResolver(discoverySchema),
-    defaultValues: initialData || {
-      company: { legal_name: "", brand_name: "", website_url: "", industry: "", service_areas: [] },
-      contacts: { primary_name: "", primary_email: "", decision_makers: [] },
-      model: { core_offers: "", aov: null, ltv: null },
-      goals: { quarter_goals: [], annual_revenue_goal: null },
-      state: {},
-      competition: { competitors: [] },
-      voice: { tone: "" },
-      story: { recording_url: "", recording_asset_id: "", completed: false },
+    defaultValues: {
+      company: { 
+        legal_name: initialData?.company?.legal_name || "", 
+        brand_name: initialData?.company?.brand_name || "", 
+        website_url: initialData?.company?.website_url || selectedClient?.website_url || "", 
+        industry: initialData?.company?.industry || "", 
+        service_areas: initialData?.company?.service_areas || [],
+        hq_city: initialData?.company?.hq_city || "",
+      },
+      contacts: initialData?.contacts || { primary_name: "", primary_email: "", decision_makers: [] },
+      model: initialData?.model || { core_offers: "", aov: null, ltv: null },
+      goals: initialData?.goals || { quarter_goals: [], annual_revenue_goal: null },
+      state: initialData?.state || {},
+      competition: initialData?.competition || { competitors: [] },
+      voice: initialData?.voice || { tone: "" },
+      story: initialData?.story || { recording_url: "", recording_asset_id: "", completed: false },
     },
   });
 
@@ -93,6 +122,8 @@ export function StageDiscovery({ submissionId, initialData, onContinue, onSaveEx
     try {
       // Mirror website_url to clients table if empty
       if (selectedClient && data.company.website_url) {
+        const normalizedUrl = normalizeUrl(data.company.website_url);
+        
         const { data: clientData } = await supabase
           .from("clients")
           .select("website_url")
@@ -102,7 +133,7 @@ export function StageDiscovery({ submissionId, initialData, onContinue, onSaveEx
         if (clientData && !clientData.website_url) {
           await supabase
             .from("clients")
-            .update({ website_url: data.company.website_url })
+            .update({ website_url: normalizedUrl })
             .eq("id", selectedClient.id);
         }
       }
@@ -242,7 +273,7 @@ export function StageDiscovery({ submissionId, initialData, onContinue, onSaveEx
             </div>
             <div>
               <Label htmlFor="website_url">Website URL *</Label>
-              <Input id="website_url" type="url" placeholder="https://example.com" {...form.register("company.website_url")} onBlur={() => form.trigger("company.website_url")} />
+              <Input id="website_url" type="text" placeholder="example.com or https://example.com" {...form.register("company.website_url")} onBlur={() => form.trigger("company.website_url")} />
               {form.formState.errors.company?.website_url && (
                 <p className="text-xs text-destructive mt-1">{form.formState.errors.company.website_url.message}</p>
               )}
