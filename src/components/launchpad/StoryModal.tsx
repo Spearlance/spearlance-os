@@ -276,7 +276,7 @@ export function StoryModal({ open, onOpenChange, submissionId, clientId, initial
           <Button
             type="button"
             variant="outline"
-            className="flex-1 border-[#13cf48] text-[#13cf48] hover:bg-[#13cf48]/10"
+            className="flex-1 border-[#13cf48] text-[#13cf48] hover:bg-[#13cf48]/10 hover:text-[#13cf48]"
             onClick={() => window.open('https://vocaroo.com', '_blank')}
           >
             <ExternalLink className="h-4 w-4 mr-2" />
@@ -285,7 +285,7 @@ export function StoryModal({ open, onOpenChange, submissionId, clientId, initial
           <Button
             type="button"
             variant="outline"
-            className="flex-1 border-[#13cf48] text-[#13cf48] hover:bg-[#13cf48]/10"
+            className="flex-1 border-[#13cf48] text-[#13cf48] hover:bg-[#13cf48]/10 hover:text-[#13cf48]"
             onClick={() => window.open('https://loom.com', '_blank')}
           >
             <ExternalLink className="h-4 w-4 mr-2" />
