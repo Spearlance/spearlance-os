@@ -32,7 +32,10 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Building2 } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
+import { Loader2, Building2, Globe, BarChart3, FolderOpen, Palette, Calendar, Clock, LinkIcon } from "lucide-react";
+import { ClientLogoUpload } from "./ClientLogoUpload";
+import { format } from "date-fns";
 
 const clientEditSchema = z.object({
   name: z.string().trim().min(1, "Client name is required").max(255),
@@ -43,6 +46,23 @@ const clientEditSchema = z.object({
   drive_folder_url: z.string().url("Invalid URL").optional().or(z.literal('')),
   canva_folder_url: z.string().url("Invalid URL").optional().or(z.literal('')),
   domain: z.string().optional(),
+  logo_url: z.string().optional(),
+}).refine((data) => {
+  // Validate domain matches website URL hostname
+  if (data.website_url && data.domain) {
+    try {
+      const url = new URL(data.website_url);
+      const websiteDomain = url.hostname.replace('www.', '');
+      const providedDomain = data.domain.replace('www.', '').toLowerCase();
+      return websiteDomain.toLowerCase() === providedDomain;
+    } catch {
+      return true; // If URL parsing fails, let the URL validation handle it
+    }
+  }
+  return true;
+}, {
+  message: "Domain doesn't match website URL hostname",
+  path: ["domain"],
 });
 
 type ClientEditForm = z.infer<typeof clientEditSchema>;
@@ -58,6 +78,9 @@ interface EditClientDialogProps {
     drive_folder_url?: string;
     canva_folder_url?: string;
     domain?: string;
+    logo_url?: string;
+    created_at?: string;
+    updated_at?: string;
   };
   assignedUsers: Array<{ id: string; name: string }>;
   onClientUpdated: () => void;
@@ -79,8 +102,30 @@ export function EditClientDialog({ client, assignedUsers, onClientUpdated }: Edi
       drive_folder_url: client.drive_folder_url || "",
       canva_folder_url: client.canva_folder_url || "",
       domain: client.domain || "",
+      logo_url: client.logo_url || "",
     },
   });
+
+  const handleAutoFillDomain = () => {
+    const websiteUrl = form.getValues("website_url");
+    if (websiteUrl) {
+      try {
+        const url = new URL(websiteUrl);
+        const domain = url.hostname.replace('www.', '');
+        form.setValue("domain", domain);
+        toast({
+          title: "Domain auto-filled",
+          description: `Set to: ${domain}`,
+        });
+      } catch {
+        toast({
+          title: "Invalid URL",
+          description: "Cannot extract domain from website URL",
+          variant: "destructive",
+        });
+      }
+    }
+  };
 
   const onSubmit = async (data: ClientEditForm) => {
     setIsLoading(true);
@@ -94,6 +139,7 @@ export function EditClientDialog({ client, assignedUsers, onClientUpdated }: Edi
         drive_folder_url: data.drive_folder_url || null,
         canva_folder_url: data.canva_folder_url || null,
         domain: data.domain || null,
+        logo_url: data.logo_url || null,
       };
 
       const { error } = await supabase
@@ -131,17 +177,78 @@ export function EditClientDialog({ client, assignedUsers, onClientUpdated }: Edi
       </DialogTrigger>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Building2 className="h-5 w-5" />
-            Edit Client Information
-          </DialogTitle>
-          <DialogDescription>
-            Update client details and configuration
-          </DialogDescription>
+          <div className="flex items-start justify-between">
+            <div>
+              <DialogTitle className="flex items-center gap-2">
+                <Building2 className="h-5 w-5" />
+                Edit Client Information
+              </DialogTitle>
+              <DialogDescription>
+                Update client details and configuration
+              </DialogDescription>
+            </div>
+            {/* Quick Links */}
+            <div className="flex gap-1">
+              {client.website_url && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => window.open(client.website_url, "_blank", "noopener,noreferrer")}
+                  title={client.website_url}
+                >
+                  <Globe className="h-4 w-4" />
+                </Button>
+              )}
+              {client.oviond_url && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => window.open(client.oviond_url, "_blank", "noopener,noreferrer")}
+                  title="Oviond Dashboard"
+                >
+                  <BarChart3 className="h-4 w-4" />
+                </Button>
+              )}
+              {client.drive_folder_url && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => window.open(client.drive_folder_url, "_blank", "noopener,noreferrer")}
+                  title="Google Drive Folder"
+                >
+                  <FolderOpen className="h-4 w-4" />
+                </Button>
+              )}
+              {client.canva_folder_url && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => window.open(client.canva_folder_url, "_blank", "noopener,noreferrer")}
+                  title="Canva Folder"
+                >
+                  <Palette className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+          </div>
         </DialogHeader>
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            {/* Logo Upload Section */}
+            <ClientLogoUpload
+              clientId={client.id}
+              clientName={client.name}
+              currentLogoUrl={client.logo_url}
+              onLogoChange={(logoUrl) => form.setValue("logo_url", logoUrl || "")}
+            />
+
+            <Separator />
+
             <FormField
               control={form.control}
               name="name"
@@ -266,18 +373,35 @@ export function EditClientDialog({ client, assignedUsers, onClientUpdated }: Edi
               name="domain"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Domain</FormLabel>
-                  <FormControl>
-                    <Input placeholder="example.com" {...field} />
-                  </FormControl>
+                  <FormLabel className="flex items-center gap-2">
+                    <LinkIcon className="h-4 w-4" />
+                    Domain
+                  </FormLabel>
+                  <div className="flex gap-2">
+                    <FormControl>
+                      <Input placeholder="example.com" {...field} />
+                    </FormControl>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleAutoFillDomain}
+                      disabled={!form.watch("website_url")}
+                    >
+                      Auto-fill
+                    </Button>
+                  </div>
+                  <FormDescription className="text-xs">
+                    Should match your website URL hostname
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
             <div className="space-y-2">
-              <FormLabel>Assigned Users (Read-only)</FormLabel>
-              <div className="flex flex-wrap gap-2">
+              <FormLabel>Assigned Users</FormLabel>
+              <div className="flex flex-wrap gap-2 p-3 border rounded-md bg-muted/50">
                 {assignedUsers.length > 0 ? (
                   assignedUsers.map((user) => (
                     <Badge key={user.id} variant="outline">
@@ -290,10 +414,36 @@ export function EditClientDialog({ client, assignedUsers, onClientUpdated }: Edi
                   </span>
                 )}
               </div>
-              <p className="text-xs text-muted-foreground">
-                User assignments are managed in the User Management tab
-              </p>
             </div>
+
+            <Separator />
+
+            {/* Metadata Section */}
+            {(client.created_at || client.updated_at) && (
+              <div className="space-y-2 p-3 border rounded-md bg-muted/50">
+                <div className="text-sm font-medium text-muted-foreground">Metadata</div>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  {client.created_at && (
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      <div>
+                        <div className="text-xs text-muted-foreground">Created</div>
+                        <div>{format(new Date(client.created_at), 'PPp')}</div>
+                      </div>
+                    </div>
+                  )}
+                  {client.updated_at && (
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-4 w-4 text-muted-foreground" />
+                      <div>
+                        <div className="text-xs text-muted-foreground">Last Modified</div>
+                        <div>{format(new Date(client.updated_at), 'PPp')}</div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             <DialogFooter>
               <Button

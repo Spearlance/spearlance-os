@@ -361,6 +361,7 @@ export type Database = {
           domain: string | null
           drive_folder_url: string | null
           id: string
+          logo_url: string | null
           name: string
           oviond_url: string | null
           primary_contact_user_id: string | null
@@ -377,6 +378,7 @@ export type Database = {
           domain?: string | null
           drive_folder_url?: string | null
           id?: string
+          logo_url?: string | null
           name: string
           oviond_url?: string | null
           primary_contact_user_id?: string | null
@@ -393,6 +395,7 @@ export type Database = {
           domain?: string | null
           drive_folder_url?: string | null
           id?: string
+          logo_url?: string | null
           name?: string
           oviond_url?: string | null
           primary_contact_user_id?: string | null

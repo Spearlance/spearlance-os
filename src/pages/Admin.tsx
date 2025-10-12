@@ -10,7 +10,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Users, Building2, BarChart3, Loader2 } from "lucide-react";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Users, Building2, BarChart3, Loader2, Globe } from "lucide-react";
 import { AddUserDialog } from "@/components/admin/AddUserDialog";
 import { UserInfoDialog } from "@/components/admin/UserInfoDialog";
 import { EditClientDialog } from "@/components/admin/EditClientDialog";
@@ -325,7 +326,7 @@ export default function Admin() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Name</TableHead>
+                    <TableHead>Client</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Booking Permissions</TableHead>
                     <TableHead>Assigned Users</TableHead>
@@ -340,7 +341,33 @@ export default function Admin() {
 
                     return (
                       <TableRow key={client.id}>
-                        <TableCell className="font-medium">{client.name}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <Avatar className="h-8 w-8">
+                              {client.logo_url ? (
+                                <AvatarImage src={client.logo_url} alt={client.name} />
+                              ) : (
+                                <AvatarFallback className="bg-primary/10">
+                                  <Building2 className="h-4 w-4 text-muted-foreground" />
+                                </AvatarFallback>
+                              )}
+                            </Avatar>
+                            <div>
+                              <div className="font-medium">{client.name}</div>
+                              {client.website_url && (
+                                <a
+                                  href={client.website_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1"
+                                >
+                                  <Globe className="h-3 w-3" />
+                                  Website
+                                </a>
+                              )}
+                            </div>
+                          </div>
+                        </TableCell>
                         <TableCell>
                           <Badge
                             variant={client.status === "active" ? "default" : "secondary"}
