@@ -38,6 +38,11 @@ export interface DiscoveryData {
     tone: string;
     words_to_avoid?: string;
   };
+  story?: {
+    recording_url?: string;
+    recording_asset_id?: string;
+    completed: boolean;
+  };
 }
 
 export interface AccessData {

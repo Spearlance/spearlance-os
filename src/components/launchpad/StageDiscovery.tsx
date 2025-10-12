@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { DiscoveryData } from "@/lib/launchpadTypes";
 import { useClient } from "@/contexts/ClientContext";
+import { StoryModal } from "./StoryModal";
 
 const discoverySchema = z.object({
   company: z.object({
@@ -50,6 +51,11 @@ const discoverySchema = z.object({
     tone: z.string().min(1, "Required"),
     words_to_avoid: z.string().optional(),
   }),
+  story: z.object({
+    recording_url: z.string().optional(),
+    recording_asset_id: z.string().optional(),
+    completed: z.boolean(),
+  }).optional(),
 });
 
 interface StageDiscoveryProps {
@@ -66,6 +72,7 @@ export function StageDiscovery({ submissionId, initialData, onContinue, onSaveEx
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
   const [goalInput, setGoalInput] = useState("");
   const [competitorInput, setCompetitorInput] = useState("");
+  const [storyModalOpen, setStoryModalOpen] = useState(false);
 
   const form = useForm<DiscoveryData>({
     resolver: zodResolver(discoverySchema),
@@ -77,6 +84,7 @@ export function StageDiscovery({ submissionId, initialData, onContinue, onSaveEx
       state: {},
       competition: { competitors: [] },
       voice: { tone: "" },
+      story: { recording_url: "", recording_asset_id: "", completed: false },
     },
   });
 
@@ -193,7 +201,7 @@ export function StageDiscovery({ submissionId, initialData, onContinue, onSaveEx
     return () => subscription.unsubscribe();
   }, [form.watch]);
 
-  const isFormValid = form.formState.isValid;
+  const isFormValid = form.formState.isValid && form.watch("story.completed");
 
   return (
     <div className="space-y-6">
@@ -421,6 +429,32 @@ export function StageDiscovery({ submissionId, initialData, onContinue, onSaveEx
               <Textarea id="words_to_avoid" rows={2} {...form.register("voice.words_to_avoid")} />
             </div>
           </div>
+
+          {/* Tell Your Story Section */}
+          <div className="bg-[#1a1a1f] p-6 rounded-lg border border-white/10 space-y-4">
+            <div className="flex items-start justify-between">
+              <div>
+                <h3 className="text-xl font-semibold mb-2">Tell Your Story (Required)</h3>
+                <p className="text-sm text-muted-foreground">
+                  We use your story to capture your authentic voice and build your brand messaging. 
+                  Take 5–10 minutes to record your answers.
+                </p>
+              </div>
+              {form.watch("story.completed") && (
+                <Badge className="bg-[#13cf48] text-white">
+                  ✓ Completed
+                </Badge>
+              )}
+            </div>
+            <Button
+              type="button"
+              onClick={() => setStoryModalOpen(true)}
+              variant="outline"
+              className="w-full border-[#13cf48] text-[#13cf48] hover:bg-[#13cf48]/10"
+            >
+              {form.watch("story.completed") ? "View/Edit Story" : "Record or Upload Story"}
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -433,9 +467,22 @@ export function StageDiscovery({ submissionId, initialData, onContinue, onSaveEx
           disabled={!isFormValid || isSaving}
           className="bg-[#13cf48] hover:bg-[#10b93d] text-white"
         >
-          Continue →
+          {isSaving ? "Saving..." : "Continue"}
         </Button>
       </div>
+
+      <StoryModal
+        open={storyModalOpen}
+        onOpenChange={setStoryModalOpen}
+        submissionId={submissionId}
+        clientId={selectedClient?.id || ""}
+        initialData={form.watch("story")}
+        onSuccess={(storyData) => {
+          form.setValue("story", storyData);
+          saveData(form.getValues());
+          setStoryModalOpen(false);
+        }}
+      />
     </div>
   );
 }
