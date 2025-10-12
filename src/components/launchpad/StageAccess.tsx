@@ -582,7 +582,7 @@ export function StageAccess({
 
         {/* Storage & Design */}
         <div className="space-y-4">
-          <h3 className="font-semibold">Storage & Design</h3>
+          <h3 className="font-semibold">Storage & Design (Optional)</h3>
           <div className="grid sm:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="drive_folder_url">Google Drive Marketing Folder URL</Label>
