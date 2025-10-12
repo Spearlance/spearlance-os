@@ -34,9 +34,6 @@ const accessSchema = z.object({
     drive_folder_url: z.string().optional(),
     canva_folder_url: z.string().optional()
   }),
-  reporting: z.object({
-    oviond_url: z.string().optional()
-  }),
   access_confirmed: z.boolean()
 }).refine(
   (data) => data.access_confirmed === true,
@@ -78,7 +75,6 @@ export function StageAccess({
       },
       crm: {},
       storage: {},
-      reporting: {},
       access_confirmed: false
     },
   });
@@ -224,18 +220,6 @@ export function StageAccess({
         
         if (client && !client.canva_folder_url) {
           clientUpdates.canva_folder_url = data.storage.canva_folder_url;
-        }
-      }
-
-      if (data.reporting?.oviond_url) {
-        const { data: client } = await supabase
-          .from("clients")
-          .select("oviond_url")
-          .eq("id", submissionData.client_id)
-          .single();
-        
-        if (client && !client.oviond_url) {
-          clientUpdates.oviond_url = data.reporting.oviond_url;
         }
       }
 
@@ -622,22 +606,6 @@ export function StageAccess({
                 Paste your shared Canva folder link if applicable.
               </p>
             </div>
-          </div>
-        </div>
-
-        {/* Reporting */}
-        <div className="space-y-4">
-          <h3 className="font-semibold">Reporting</h3>
-          <div>
-            <Label htmlFor="oviond_url">Oviond Dashboard URL</Label>
-            <Input 
-              id="oviond_url" 
-              placeholder="https://app.oviond.com/..."
-              {...form.register("reporting.oviond_url")}
-            />
-            <p className="text-xs text-muted-foreground mt-1.5">
-              If you already have an Oviond dashboard, share it here. Otherwise, we'll create one for you and connect your data.
-            </p>
           </div>
         </div>
         

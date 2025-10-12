@@ -63,9 +63,6 @@ export interface AccessData {
     drive_folder_url?: string;
     canva_folder_url?: string;
   };
-  reporting: {
-    oviond_url?: string;
-  };
   access_confirmed: boolean;
 }
 
