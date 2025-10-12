@@ -424,7 +424,7 @@ export type Database = {
         Row: {
           avatar_image_url: string | null
           client_id: string
-          completed_at: string | null
+          completed_at: Json | null
           created_at: string | null
           id: string
           ideal_client_story: string | null
@@ -436,7 +436,7 @@ export type Database = {
         Insert: {
           avatar_image_url?: string | null
           client_id: string
-          completed_at?: string | null
+          completed_at?: Json | null
           created_at?: string | null
           id?: string
           ideal_client_story?: string | null
@@ -448,7 +448,7 @@ export type Database = {
         Update: {
           avatar_image_url?: string | null
           client_id?: string
-          completed_at?: string | null
+          completed_at?: Json | null
           created_at?: string | null
           id?: string
           ideal_client_story?: string | null
