@@ -402,7 +402,7 @@ export function StageAccess({
                 Then go to <span className="font-medium">Business Settings → Users → Partners → Add</span>.
               </p>
               <p>
-                Enter our Business ID: <span className="font-mono font-medium">{import.meta.env.VITE_AGENCY_META_BUSINESS_ID || '[AGENCY_META_BUSINESS_ID]'}</span> and grant access to Ad Accounts, Pages, and Pixels.
+                Enter our Business ID: <span className="font-mono font-medium">1224352331649750</span> and grant access to Ad Accounts, Pages, and Pixels.
               </p>
             </div>
           </div>
