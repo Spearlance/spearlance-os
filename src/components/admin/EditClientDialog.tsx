@@ -245,6 +245,7 @@ export function EditClientDialog({ client, assignedUsers, onClientUpdated }: Edi
               clientName={client.name}
               currentLogoUrl={client.logo_url}
               onLogoChange={(logoUrl) => form.setValue("logo_url", logoUrl || "")}
+              onLogoSaved={onClientUpdated}
             />
 
             <Separator />

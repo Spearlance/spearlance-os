@@ -10,6 +10,7 @@ interface ClientLogoUploadProps {
   clientName: string;
   currentLogoUrl?: string;
   onLogoChange: (logoUrl: string | null) => void;
+  onLogoSaved?: () => void;
 }
 
 export function ClientLogoUpload({
@@ -17,6 +18,7 @@ export function ClientLogoUpload({
   clientName,
   currentLogoUrl,
   onLogoChange,
+  onLogoSaved,
 }: ClientLogoUploadProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(currentLogoUrl || null);
@@ -63,13 +65,26 @@ export function ClientLogoUpload({
       // Get public URL
       const { data } = supabase.storage.from("client-assets").getPublicUrl(filePath);
 
+      // Auto-save to database
+      const { error: updateError } = await supabase
+        .from("clients")
+        .update({ logo_url: data.publicUrl })
+        .eq("id", clientId);
+
+      if (updateError) throw updateError;
+
       setPreviewUrl(data.publicUrl);
       onLogoChange(data.publicUrl);
 
       toast({
-        title: "Logo uploaded",
+        title: "Logo saved",
         description: "Client logo has been updated successfully",
       });
+
+      // Notify parent to refresh
+      if (onLogoSaved) {
+        onLogoSaved();
+      }
     } catch (error) {
       console.error("Error uploading logo:", error);
       toast({
