@@ -263,10 +263,10 @@ export function StoryModal({ open, onOpenChange, submissionId, clientId, initial
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-hidden flex flex-col bg-[#0b0b0d] text-white border-white/10">
+      <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle className="text-2xl">Tell Your Story</DialogTitle>
-          <DialogDescription className="text-white/70">
+          <DialogDescription>
             Click <strong>Open Vocaroo</strong> or <strong>Open Loom</strong> to record your answers to the questions below.
             When finished, upload your file or paste your recording link before closing.
           </DialogDescription>
@@ -296,15 +296,15 @@ export function StoryModal({ open, onOpenChange, submissionId, clientId, initial
         <div className="flex-1 overflow-y-auto pr-2 space-y-4">
           <Accordion type="multiple" className="w-full">
             {questionSections.map((section) => (
-              <AccordionItem key={section.id} value={section.id} className="border-white/10">
-                <AccordionTrigger className="text-white hover:text-[#13cf48] hover:no-underline">
+              <AccordionItem key={section.id} value={section.id}>
+                <AccordionTrigger className="hover:text-[#13cf48] hover:no-underline">
                   <div className="text-left">
                     <div className="font-semibold">{section.title}</div>
-                    <div className="text-sm text-white/60 font-normal">{section.description}</div>
+                    <div className="text-sm text-muted-foreground font-normal">{section.description}</div>
                   </div>
                 </AccordionTrigger>
                 <AccordionContent>
-                  <ul className="space-y-2 text-white/80">
+                  <ul className="space-y-2 text-muted-foreground">
                     {section.questions.map((question, idx) => (
                       <li key={idx} className="flex gap-2">
                         <span className="text-[#13cf48] font-semibold">•</span>
@@ -318,10 +318,10 @@ export function StoryModal({ open, onOpenChange, submissionId, clientId, initial
           </Accordion>
         </div>
 
-        <div className="border-t border-white/10 pt-4 mt-4 space-y-4">
+        <div className="border-t pt-4 mt-4 space-y-4">
           <div>
-            <Label className="text-white font-semibold mb-2 block">Upload Your Recording (Required)</Label>
-            <div className="border-2 border-dashed border-white/20 hover:border-[#13cf48] rounded-lg p-6 text-center transition-colors">
+            <Label className="font-semibold mb-2 block">Upload Your Recording (Required)</Label>
+            <div className="border-2 border-dashed hover:border-[#13cf48] rounded-lg p-6 text-center transition-colors">
               <input
                 type="file"
                 accept=".mp3,.m4a,.wav,.mp4,.mov"
@@ -330,18 +330,18 @@ export function StoryModal({ open, onOpenChange, submissionId, clientId, initial
                 id="story-file-upload"
               />
               <label htmlFor="story-file-upload" className="cursor-pointer">
-                <Upload className="h-8 w-8 mx-auto mb-2 text-white/60" />
-                <p className="text-sm text-white/70">
+                <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                <p className="text-sm text-foreground">
                   Click to upload or drag and drop
                 </p>
-                <p className="text-xs text-white/50 mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                   .mp3, .m4a, .wav, .mp4, .mov (max 25MB)
                 </p>
               </label>
               {selectedFile && (
-                <div className="mt-3 p-3 bg-white/5 rounded-lg">
-                  <p className="text-sm font-medium text-white">{selectedFile.name}</p>
-                  <p className="text-xs text-white/60 mt-1">
+                <div className="mt-3 p-3 bg-muted rounded-lg">
+                  <p className="text-sm font-medium">{selectedFile.name}</p>
+                  <p className="text-xs text-muted-foreground mt-1">
                     {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
                   </p>
                 </div>
@@ -350,7 +350,7 @@ export function StoryModal({ open, onOpenChange, submissionId, clientId, initial
           </div>
 
           <div>
-            <Label htmlFor="recording-url" className="text-white/70 text-sm">
+            <Label htmlFor="recording-url" className="text-sm">
               Or paste your Vocaroo/Loom link here:
             </Label>
             <Input
@@ -359,13 +359,13 @@ export function StoryModal({ open, onOpenChange, submissionId, clientId, initial
               value={recordingUrl}
               onChange={(e) => setRecordingUrl(e.target.value)}
               placeholder="https://vocaroo.com/..."
-              className="mt-1 bg-white/5 border-white/20 text-white placeholder:text-white/40"
+              className="mt-1 bg-background placeholder:text-muted-foreground"
             />
           </div>
 
           {uploadProgress > 0 && uploadProgress < 100 && (
             <div>
-              <Label className="text-white/70 text-sm">Uploading...</Label>
+              <Label className="text-sm">Uploading...</Label>
               <Progress value={uploadProgress} className="mt-2" />
             </div>
           )}
@@ -383,7 +383,6 @@ export function StoryModal({ open, onOpenChange, submissionId, clientId, initial
               variant="outline"
               onClick={() => onOpenChange(false)}
               disabled={loading}
-              className="border-white/20 text-white hover:bg-white/5"
             >
               Cancel
             </Button>

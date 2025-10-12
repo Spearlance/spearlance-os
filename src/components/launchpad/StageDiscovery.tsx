@@ -431,7 +431,7 @@ export function StageDiscovery({ submissionId, initialData, onContinue, onSaveEx
           </div>
 
           {/* Tell Your Story Section */}
-          <div className="bg-[#1a1a1f] p-6 rounded-lg border border-white/10 space-y-4">
+          <div className="bg-card p-6 rounded-lg border space-y-4">
             <div className="flex items-start justify-between">
               <div>
                 <h3 className="text-xl font-semibold mb-2">Tell Your Story (Required)</h3>
