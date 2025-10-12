@@ -61,9 +61,6 @@ export interface AccessData {
     drive_folder_url?: string;
     canva_folder_url?: string;
   };
-  reporting: {
-    oviond_url?: string;
-  };
   consent: {
     ack_shared_access: boolean;
   };

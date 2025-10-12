@@ -32,9 +32,6 @@ const accessSchema = z.object({
     drive_folder_url: z.string().optional(),
     canva_folder_url: z.string().optional()
   }),
-  reporting: z.object({
-    oviond_url: z.string().optional()
-  }),
   consent: z.object({
     ack_shared_access: z.boolean().refine(val => val === true, "You must acknowledge")
   })
@@ -71,7 +68,6 @@ export function StageAccess({
       },
       crm: {},
       storage: {},
-      reporting: {},
       consent: {
         ack_shared_access: false
       }
@@ -85,17 +81,15 @@ export function StageAccess({
         const updates: any = {};
         if (data.storage.drive_folder_url) updates.drive_folder_url = data.storage.drive_folder_url;
         if (data.storage.canva_folder_url) updates.canva_folder_url = data.storage.canva_folder_url;
-        if (data.reporting.oviond_url) updates.oviond_url = data.reporting.oviond_url;
         if (Object.keys(updates).length > 0) {
           const {
             data: clientData
-          } = await supabase.from("clients").select("drive_folder_url, canva_folder_url, oviond_url").eq("id", selectedClient.id).single();
+          } = await supabase.from("clients").select("drive_folder_url, canva_folder_url").eq("id", selectedClient.id).single();
 
           // Only update if fields are empty
           const finalUpdates: any = {};
           if (updates.drive_folder_url && !clientData?.drive_folder_url) finalUpdates.drive_folder_url = updates.drive_folder_url;
           if (updates.canva_folder_url && !clientData?.canva_folder_url) finalUpdates.canva_folder_url = updates.canva_folder_url;
-          if (updates.oviond_url && !clientData?.oviond_url) finalUpdates.oviond_url = updates.oviond_url;
           if (Object.keys(finalUpdates).length > 0) {
             await supabase.from("clients").update(finalUpdates).eq("id", selectedClient.id);
           }
