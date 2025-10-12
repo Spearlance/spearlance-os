@@ -52,7 +52,7 @@ export function ClientLogoUpload({
       // Upload to storage
       const fileExt = file.name.split(".").pop();
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-      const filePath = `logos/${clientId}/${fileName}`;
+      const filePath = `${clientId}/logos/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from("client-assets")
