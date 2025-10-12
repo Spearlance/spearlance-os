@@ -107,7 +107,7 @@ export function StageAvatar({ submissionId, onFinish, onBack, onSaveExit }: Stag
         .from("launchpad_submissions")
         .update({
           stage: "complete",
-          completed_at: { ...(submissionData?.completed_at || {}), avatar: new Date().toISOString() } as any,
+          completed_at: { ...((submissionData?.completed_at as Record<string, any>) || {}), avatar: new Date().toISOString() } as any,
         })
         .eq("id", submissionId);
 

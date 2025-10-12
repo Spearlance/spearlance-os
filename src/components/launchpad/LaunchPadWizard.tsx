@@ -91,7 +91,7 @@ export function LaunchPadWizard() {
         .from("launchpad_submissions")
         .update({
           stage: "complete",
-          completed_at: { ...(submissionData?.completed_at || {}), complete: new Date().toISOString() } as any,
+          completed_at: { ...((submissionData?.completed_at as Record<string, any>) || {}), complete: new Date().toISOString() } as any,
         })
         .eq("id", submission.id);
 

@@ -164,11 +164,11 @@ export function StageAssets({ submissionId, onContinue, onBack, onSaveExit }: St
         .from("launchpad_submissions")
         .update({
           responses_json: {
-            ...(submissionData?.responses_json || {}),
+            ...((submissionData?.responses_json as Record<string, any>) || {}),
             assets: { ids: uploadedFiles.map((f) => f.id) },
           } as any,
           stage: "avatar",
-          completed_at: { ...(submissionData?.completed_at || {}), assets: new Date().toISOString() } as any,
+          completed_at: { ...((submissionData?.completed_at as Record<string, any>) || {}), assets: new Date().toISOString() } as any,
           updated_at: new Date().toISOString(),
         })
         .eq("id", submissionId);

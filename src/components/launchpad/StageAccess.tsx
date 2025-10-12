@@ -110,7 +110,7 @@ export function StageAccess({ submissionId, initialData, onContinue, onBack, onS
       const { error } = await supabase
         .from("launchpad_submissions")
         .update({
-          responses_json: { ...(submissionData?.responses_json || {}), access: data } as any,
+          responses_json: { ...((submissionData?.responses_json as Record<string, any>) || {}), access: data } as any,
           updated_at: new Date().toISOString(),
         })
         .eq("id", submissionId);
@@ -151,7 +151,7 @@ export function StageAccess({ submissionId, initialData, onContinue, onBack, onS
         .from("launchpad_submissions")
         .update({
           stage: "assets",
-          completed_at: { ...(submissionData?.completed_at || {}), access: new Date().toISOString() } as any,
+          completed_at: { ...((submissionData?.completed_at as Record<string, any>) || {}), access: new Date().toISOString() } as any,
         })
         .eq("id", submissionId);
 
