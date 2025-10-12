@@ -44,14 +44,16 @@ export interface AccessData {
   ads: {
     meta_business_id?: string;
     google_ads_customer_id?: string;
-    google_analytics_property_id?: string;
-    search_console_invite_confirmed: boolean;
-    search_console_screenshot_asset_id?: string;
+    ga_property_id?: string;
+  };
+  domain: {
+    provider: string;
+    login_url?: string;
+    proof_asset_id?: string;
   };
   web: {
     platform: string;
     admin_url?: string;
-    runs_meta_ads?: boolean;
   };
   crm: {
     name?: string;
@@ -64,6 +66,7 @@ export interface AccessData {
   reporting: {
     oviond_url?: string;
   };
+  access_confirmed: boolean;
 }
 
 export interface AssetsData {
