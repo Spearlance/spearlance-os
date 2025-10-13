@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Users, Building2, BarChart3, Loader2, Globe } from "lucide-react";
+import { Users, Building2, BarChart3, Loader2, Globe, KeyRound } from "lucide-react";
 import { AddUserDialog } from "@/components/admin/AddUserDialog";
 import { UserInfoDialog } from "@/components/admin/UserInfoDialog";
 import { EditClientDialog } from "@/components/admin/EditClientDialog";
@@ -158,6 +158,26 @@ export default function Admin() {
     }
   };
 
+  const handlePasswordReset = async (email: string, userName: string) => {
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: 'https://os.spearlance.com/auth',
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Password reset email sent",
+        description: `A password reset link has been sent to ${userName} at ${email}`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error sending password reset",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
 
   if (loading || !userRole) {
     return (
@@ -291,7 +311,19 @@ export default function Admin() {
                         )}
                       </TableCell>
                       <TableCell>
-                        <UserInfoDialog user={user} clients={clients} />
+                        <div className="flex items-center gap-2">
+                          {user.role !== 'admin' && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handlePasswordReset(user.email, user.name)}
+                              title="Send password reset email"
+                            >
+                              <KeyRound className="h-4 w-4" />
+                            </Button>
+                          )}
+                          <UserInfoDialog user={user} clients={clients} />
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
