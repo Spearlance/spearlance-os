@@ -1,3 +1,21 @@
+/**
+ * Front Webhook Handler
+ * 
+ * Processes webhooks from Front to automatically log client communications.
+ * 
+ * SECURITY NOTE: This function operates WITHOUT webhook signature verification
+ * because Front's webhook secrets require an Enterprise plan. Security is maintained by:
+ * 1. Obscure webhook URL (not publicly discoverable)
+ * 2. Client tag validation (only processes conversations with valid client tags)
+ * 3. Access control (only FMM/Admin can view logs)
+ * 4. Internal tooling (not exposed to untrusted parties)
+ * 
+ * Required Secrets:
+ * - FRONT_API_TOKEN (required): Used to fetch full conversation data from Front API
+ * - FRONT_WEBHOOK_SECRET (optional): If provided, enables webhook signature verification
+ * 
+ * Webhook URL: https://hrmhqybdsdngsvhjqwma.supabase.co/functions/v1/front-webhook-handler
+ */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.75.0';
 
 const corsHeaders = {
@@ -147,8 +165,8 @@ Deno.serve(async (req) => {
     const webhookSecret = Deno.env.get('FRONT_WEBHOOK_SECRET');
     const frontApiToken = Deno.env.get('FRONT_API_TOKEN');
 
-    if (!webhookSecret || !frontApiToken) {
-      console.error('Missing required secrets');
+    if (!frontApiToken) {
+      console.error('Missing FRONT_API_TOKEN');
       return new Response(
         JSON.stringify({ error: 'Configuration error' }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -160,8 +178,9 @@ Deno.serve(async (req) => {
     const rawBody = await req.text();
     const signature = req.headers.get('x-front-signature');
 
-    // Verify signature if provided
-    if (signature) {
+    // Verify signature only if both signature header and secret are present
+    if (signature && webhookSecret) {
+      console.log('Verifying webhook signature...');
       const isValid = await verifyWebhookSignature(rawBody, signature, webhookSecret);
       if (!isValid) {
         console.error('Invalid webhook signature');
@@ -175,6 +194,11 @@ Deno.serve(async (req) => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
+      console.log('Webhook signature verified successfully');
+    } else if (!webhookSecret) {
+      console.log('⚠️ Webhook signature verification skipped (FRONT_WEBHOOK_SECRET not configured)');
+    } else {
+      console.log('⚠️ Webhook signature verification skipped (no signature header provided)');
     }
 
     const payload: FrontWebhookPayload = JSON.parse(rawBody);
