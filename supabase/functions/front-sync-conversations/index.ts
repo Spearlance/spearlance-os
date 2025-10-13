@@ -295,7 +295,7 @@ Deno.serve(async (req) => {
               .insert({
                 client_id: client.id,
                 type: 'email',
-                source: 'front_sync',
+                source: 'front_webhook',
                 subject_line: conversation.subject || 'No Subject',
                 participants,
                 message_thread: messageThread,
