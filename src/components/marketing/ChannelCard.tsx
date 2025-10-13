@@ -15,19 +15,19 @@ interface ChannelCardProps {
 const ownershipStyles = {
   spearlance: {
     border: "#13CF48",
-    bg: "#EAFBF0",
+    bg: "#FFFFFF",
     text: "#0E7E2A",
-    label: "Spearlance Handles",
+    label: "Spearlance",
   },
   client: {
     border: "#D1D5DB",
-    bg: "#F9FAFB",
+    bg: "#FFFFFF",
     text: "#374151",
-    label: "Client Handles",
+    label: "Client",
   },
   both: {
     border: "#D1D5DB",
-    bg: "#F9FAFB",
+    bg: "#FFFFFF",
     text: "#374151",
     label: "Both",
     accentBar: true,
@@ -45,7 +45,7 @@ const statusLabels = {
   active: "Active",
   in_progress: "In Progress",
   paused: "Paused",
-  not_used: "Not Used",
+  not_used: "Not Started",
 };
 
 export function ChannelCard({ channel, onClick }: ChannelCardProps) {
