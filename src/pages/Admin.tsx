@@ -143,11 +143,18 @@ export default function Admin() {
     }
 
     try {
-      await supabase
+      const { data, error } = await supabase
         .from("clients")
-        .insert({ name: newClientName, status: "active" });
+        .insert([{ name: newClientName, status: "active" } as any])
+        .select()
+        .single();
 
-      toast({ title: "Client created successfully" });
+      if (error) throw error;
+
+      toast({ 
+        title: "Client created successfully",
+        description: data?.front_tag ? `Front tag: ${data.front_tag}` : undefined
+      });
       setNewClientName("");
       loadData();
     } catch (error) {

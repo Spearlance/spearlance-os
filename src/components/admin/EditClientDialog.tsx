@@ -33,7 +33,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, Building2, Globe, BarChart3, FolderOpen, Palette, Calendar, Clock, LinkIcon } from "lucide-react";
+import { Loader2, Building2, Globe, BarChart3, FolderOpen, Palette, Calendar, Clock, LinkIcon, Copy } from "lucide-react";
 import { ClientLogoUpload } from "./ClientLogoUpload";
 import { format } from "date-fns";
 

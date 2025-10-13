@@ -294,7 +294,7 @@ export default function Settings() {
                       </AlertDescription>
                     </Alert>
 
-                    {selectedClient && (userRole === 'admin' || userRole === 'fmm') && (
+                    {selectedClient && (userProfile?.role === 'admin' || userProfile?.role === 'fmm') && (
                       <div className="space-y-2 pt-4">
                         <Label className="text-base font-semibold">Front Integration</Label>
                         <div className="p-4 border rounded-md bg-muted/50 space-y-3">
