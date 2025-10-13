@@ -41,52 +41,71 @@ serve(async (req) => {
       throw new Error('Avatar not found');
     }
 
-    // Build image generation prompt
-    const imagePrompt = `Create a professional, realistic portrait photograph of a person representing this customer avatar:
-
-Name: ${avatar.avatar_name || 'Professional'}
-Demographics: ${avatar.demographics || 'N/A'}
-Firmographics: ${avatar.firmographics || 'N/A'}
-Professional Context: ${avatar.goals || 'N/A'}
-
-Style: Professional headshot, neutral background, business casual attire, friendly and approachable expression, high quality photography, natural lighting.`;
-
-    console.log('Calling Lovable AI for image generation...');
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash-image-preview',
-        messages: [
-          { role: 'user', content: imagePrompt }
-        ],
-        modalities: ['image', 'text'],
-      }),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('AI gateway error:', response.status, errorText);
-      throw new Error(`AI gateway error: ${response.status}`);
+    // Require AI summary to be generated first
+    if (!avatar.ai_summary) {
+      throw new Error('Please generate an AI summary first before creating avatar images');
     }
 
-    const data = await response.json();
-    const imageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+    // Build image generation prompt based on AI summary
+    const imagePrompt = `Create a realistic portrait representing the ideal customer described below.
+Use demographic hints, occupation, and tone from the text.
+The background should be neutral or loosely connected to their industry.
+Avoid logos or text. Focus on realism and personality.
+
+DESCRIPTION:
+${avatar.ai_summary}`;
+
+    console.log('Calling Lovable AI for image generation (generating 3 images)...');
     
-    if (!imageUrl) {
-      throw new Error('No image in AI response');
+    // Generate 3 images
+    const imageUrls: string[] = [];
+    for (let i = 0; i < 3; i++) {
+      console.log(`Generating image ${i + 1}/3...`);
+      const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'google/gemini-2.5-flash-image-preview',
+          messages: [
+            { role: 'user', content: imagePrompt }
+          ],
+          modalities: ['image', 'text'],
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('AI gateway error:', response.status, errorText);
+        throw new Error(`AI gateway error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const imageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+      
+      if (!imageUrl) {
+        throw new Error('No image in AI response');
+      }
+      
+      imageUrls.push(imageUrl);
     }
 
-    // Update avatar with generated image URL
+    // Update avatar with generated image URLs
+    // Set first image as primary if no primary image exists
+    const updateData: any = {
+      generated_image_urls: imageUrls,
+      updated_at: new Date().toISOString(),
+    };
+    
+    if (!avatar.primary_image_url) {
+      updateData.primary_image_url = imageUrls[0];
+    }
+
     const { error: updateError } = await supabase
       .from('avatars')
-      .update({
-        generated_image_url: imageUrl,
-        updated_at: new Date().toISOString(),
-      })
+      .update(updateData)
       .eq('id', avatar.id);
 
     if (updateError) {
@@ -94,11 +113,12 @@ Style: Professional headshot, neutral background, business casual attire, friend
       throw new Error('Failed to update avatar');
     }
 
-    console.log('Successfully generated avatar image');
+    console.log('Successfully generated 3 avatar images');
     return new Response(
       JSON.stringify({ 
         success: true, 
-        image_url: imageUrl,
+        image_urls: imageUrls,
+        primary_image_url: updateData.primary_image_url || avatar.primary_image_url,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

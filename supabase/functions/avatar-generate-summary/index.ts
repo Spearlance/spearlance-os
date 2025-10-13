@@ -47,9 +47,26 @@ serve(async (req) => {
       .select('*')
       .eq('avatar_id', avatar.id);
 
-    // Build prompt
-    const prompt = `You are a marketing expert analyzing a customer avatar. Generate a comprehensive summary and ad hooks based on the following information:
+    // Build prompt - 250-400 word narrative format
+    const prompt = `You are a senior marketing strategist building a customer avatar for ad targeting and messaging.
+Given the data below, write a 250–400 word narrative describing the client's ideal customer.
+The narrative should feel human, story-based, and useful for writing ads or website copy.
 
+Use third-person ("they," "this person") and include:
+- Daily life, habits, and priorities
+- Values and personality traits
+- What motivates them to buy
+- What they worry about or struggle with
+- How they make decisions
+- Where they spend time online or offline
+- How they perceive premium services or pricing
+
+End with a short paragraph on how to communicate effectively with them in marketing copy.
+
+Avoid restating bullet points. Interpret and humanize the data.
+Use concise, natural language that reads like a customer profile.
+
+CLIENT INPUTS:
 Avatar Name: ${avatar.avatar_name || 'N/A'}
 Demographics: ${avatar.demographics || 'N/A'}
 Firmographics: ${avatar.firmographics || 'N/A'}
@@ -58,16 +75,19 @@ Pains: ${avatar.pains || 'N/A'}
 Objections: ${avatar.objections || 'N/A'}
 Motivators: ${avatar.motivators || 'N/A'}
 Tone & Voice: ${avatar.tone_voice || 'N/A'}
+Service Areas: ${avatar.service_areas?.join(', ') || 'N/A'}
+Pricing Model: ${avatar.pricing_model || 'N/A'}
+Price Range: ${avatar.price_range || 'N/A'}
 
 ${evidence && evidence.length > 0 ? `Evidence:\n${evidence.map(e => `- ${e.evidence_type}: ${e.excerpt_text || e.source_url || ''}`).join('\n')}` : ''}
 
 Please provide:
-1. A comprehensive 3-paragraph AI summary that synthesizes all this information
-2. Three compelling ad hooks that would resonate with this avatar (provide exactly 3 hooks, separated by newlines)
+1. A 250-400 word narrative summary as described above
+2. Three compelling ad hooks that would resonate with this avatar
 
 Format your response as JSON:
 {
-  "summary": "your comprehensive summary here",
+  "summary": "your 250-400 word narrative here",
   "hooks": ["hook 1", "hook 2", "hook 3"]
 }`;
 
@@ -110,13 +130,15 @@ Format your response as JSON:
       throw new Error('AI returned invalid JSON');
     }
 
-    // Update avatar with AI summary and hooks
+    // Update avatar with AI summary, hooks, and timestamp
+    const generatedAt = new Date().toISOString();
     const { error: updateError } = await supabase
       .from('avatars')
       .update({
         ai_summary: aiResponse.summary,
         ad_hooks: aiResponse.hooks,
-        updated_at: new Date().toISOString(),
+        ai_summary_generated_at: generatedAt,
+        updated_at: generatedAt,
       })
       .eq('id', avatar.id);
 
@@ -131,6 +153,7 @@ Format your response as JSON:
         success: true, 
         summary: aiResponse.summary,
         ad_hooks: aiResponse.hooks,
+        generated_at: generatedAt,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

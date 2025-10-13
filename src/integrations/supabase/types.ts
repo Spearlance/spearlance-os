@@ -236,12 +236,14 @@ export type Database = {
         Row: {
           ad_hooks: string[] | null
           ai_summary: string | null
+          ai_summary_generated_at: string | null
           avatar_name: string
           channels: string[] | null
           client_id: string
           demographics: string | null
           firmographics: string | null
           generated_image_url: string | null
+          generated_image_urls: string[] | null
           goals: string | null
           id: string
           keywords: string[] | null
@@ -250,6 +252,7 @@ export type Database = {
           pains: string | null
           price_range: string | null
           pricing_model: string | null
+          primary_image_url: string | null
           service_areas: string[] | null
           tone_voice: string | null
           updated_at: string | null
@@ -257,12 +260,14 @@ export type Database = {
         Insert: {
           ad_hooks?: string[] | null
           ai_summary?: string | null
+          ai_summary_generated_at?: string | null
           avatar_name: string
           channels?: string[] | null
           client_id: string
           demographics?: string | null
           firmographics?: string | null
           generated_image_url?: string | null
+          generated_image_urls?: string[] | null
           goals?: string | null
           id?: string
           keywords?: string[] | null
@@ -271,6 +276,7 @@ export type Database = {
           pains?: string | null
           price_range?: string | null
           pricing_model?: string | null
+          primary_image_url?: string | null
           service_areas?: string[] | null
           tone_voice?: string | null
           updated_at?: string | null
@@ -278,12 +284,14 @@ export type Database = {
         Update: {
           ad_hooks?: string[] | null
           ai_summary?: string | null
+          ai_summary_generated_at?: string | null
           avatar_name?: string
           channels?: string[] | null
           client_id?: string
           demographics?: string | null
           firmographics?: string | null
           generated_image_url?: string | null
+          generated_image_urls?: string[] | null
           goals?: string | null
           id?: string
           keywords?: string[] | null
@@ -292,6 +300,7 @@ export type Database = {
           pains?: string | null
           price_range?: string | null
           pricing_model?: string | null
+          primary_image_url?: string | null
           service_areas?: string[] | null
           tone_voice?: string | null
           updated_at?: string | null
