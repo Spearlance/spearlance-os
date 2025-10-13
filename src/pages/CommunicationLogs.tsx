@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { LogCommunicationDialog } from "@/components/communications/LogCommunicationDialog";
-import { Plus, Mail, Phone, MessageSquare, ExternalLink } from "lucide-react";
+import { Plus, Mail, Phone, MessageSquare, ExternalLink, RefreshCw } from "lucide-react";
 
 interface CommunicationLog {
   id: string;
@@ -31,6 +31,7 @@ export default function CommunicationLogs() {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -92,6 +93,45 @@ export default function CommunicationLogs() {
     setLogs((data || []) as any);
   };
 
+  const handleSyncFromFront = async () => {
+    if (!selectedClient) return;
+    
+    setIsSyncing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('front-sync-conversations', {
+        body: { client_id: selectedClient.id },
+      });
+
+      if (error) throw error;
+
+      const { synced, created, updated, errors } = data;
+      
+      if (errors && errors.length > 0) {
+        toast({
+          title: "Sync completed with errors",
+          description: `Synced ${synced} conversations (${created} new, ${updated} updated). ${errors.length} errors occurred.`,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Sync complete",
+          description: `Synced ${synced} conversations (${created} new, ${updated} updated)`,
+        });
+      }
+
+      loadLogs();
+    } catch (error) {
+      console.error('Error syncing from Front:', error);
+      toast({
+        title: "Sync failed",
+        description: "Failed to sync conversations from Front",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   const getTypeBadge = (type: string) => {
     const config = {
       email: { icon: Mail, variant: "default" as const, label: "EMAIL" },
@@ -135,6 +175,14 @@ export default function CommunicationLogs() {
             onChange={(e) => setSearchQuery(e.target.value)}
             className="max-w-sm"
           />
+          <Button 
+            onClick={handleSyncFromFront} 
+            disabled={isSyncing}
+            variant="outline"
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${isSyncing ? 'animate-spin' : ''}`} />
+            {isSyncing ? 'Syncing...' : 'Sync from Front'}
+          </Button>
           <Button onClick={() => setShowCreateDialog(true)}>
             <Plus className="h-4 w-4 mr-2" />
             Log Communication
