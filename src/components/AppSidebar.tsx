@@ -113,7 +113,7 @@ export function AppSidebar() {
             <img 
               src="https://irp.cdn-website.com/e8531a5e/dms3rep/multi/Asset+1.svg" 
               alt="Spearlance Logo"
-              className="h-8 w-auto"
+              className="h-6 w-auto"
             />
           </div>
         )}
