@@ -72,7 +72,7 @@ export function LaunchPadWizard() {
       // Update database with new stage
       const { error } = await supabase
         .from("launchpad_submissions")
-        .update({ stage: newStage })
+        .update({ stage: newStage as any })
         .eq("id", submission.id);
 
       if (error) throw error;

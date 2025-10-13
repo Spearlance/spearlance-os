@@ -173,7 +173,7 @@ export function StageDiscovery({ submissionId, initialData, onContinue, onSaveEx
 
       // Create service records from service names
       if (selectedClient && data.model.services?.length > 0) {
-        const { data: user } = await supabase.auth.getUser();
+        const { data: userData } = await supabase.auth.getUser();
         
         const { error: servicesError } = await supabase
           .from("services")
@@ -181,16 +181,16 @@ export function StageDiscovery({ submissionId, initialData, onContinue, onSaveEx
             data.model.services.map((serviceName) => ({
               client_id: selectedClient.id,
               name: serviceName,
-              created_by: user.user?.id,
+              created_by: userData.user?.id,
             })),
-            { onConflict: 'client_id,name', ignoreDuplicates: false }
+            { onConflict: 'client_id,name' }
           );
 
         if (servicesError) {
           console.error("Error creating services:", servicesError);
           toast({
             title: "Error",
-            description: "Failed to save services",
+            description: servicesError.message || "Failed to save services",
             variant: "destructive",
           });
           setIsSaving(false);
@@ -202,7 +202,7 @@ export function StageDiscovery({ submissionId, initialData, onContinue, onSaveEx
       const { error } = await supabase
         .from("launchpad_submissions")
         .update({
-          stage: "marketing",
+          stage: "marketing" as any,
           completed_at: { discovery: new Date().toISOString() } as any,
         })
         .eq("id", submissionId);
