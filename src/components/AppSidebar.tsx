@@ -43,6 +43,7 @@ import {
   TrendingUp,
   GitBranch,
   ChevronDown,
+  FileText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -61,6 +62,7 @@ const menuItems = [
 const marketingSubItems = [
   { title: "Services", url: "/marketing/services", icon: TrendingUp },
   { title: "Flowchart", url: "/marketing/flowchart", icon: GitBranch },
+  { title: "Reports", url: "/marketing/reports", icon: FileText },
 ];
 
 export function AppSidebar() {

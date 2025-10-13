@@ -957,6 +957,69 @@ export type Database = {
         }
         Relationships: []
       }
+      reports: {
+        Row: {
+          client_id: string
+          created_at: string | null
+          date_range_end: string | null
+          date_range_start: string | null
+          id: string
+          name: string
+          oviond_url: string
+          owner_user_id: string | null
+          pinned: boolean | null
+          status: string | null
+          summary: string | null
+          tags: string[] | null
+          updated_at: string | null
+        }
+        Insert: {
+          client_id: string
+          created_at?: string | null
+          date_range_end?: string | null
+          date_range_start?: string | null
+          id?: string
+          name: string
+          oviond_url: string
+          owner_user_id?: string | null
+          pinned?: boolean | null
+          status?: string | null
+          summary?: string | null
+          tags?: string[] | null
+          updated_at?: string | null
+        }
+        Update: {
+          client_id?: string
+          created_at?: string | null
+          date_range_end?: string | null
+          date_range_start?: string | null
+          id?: string
+          name?: string
+          oviond_url?: string
+          owner_user_id?: string | null
+          pinned?: boolean | null
+          status?: string | null
+          summary?: string | null
+          tags?: string[] | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reports_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reports_owner_user_id_fkey"
+            columns: ["owner_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       services: {
         Row: {
           client_id: string
