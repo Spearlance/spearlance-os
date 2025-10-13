@@ -120,7 +120,7 @@ serve(async (req) => {
     console.log('User created successfully');
 
     // Prepare email content
-    const appUrl = Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '.lovable.app') || 'your app';
+    const appUrl = 'https://os.spearlance.com';
     
     let clientNamesText = '';
     if (client_ids.length > 0) {
