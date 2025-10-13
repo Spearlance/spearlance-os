@@ -1,7 +1,10 @@
 import { ChatMessage as ChatMessageType } from './types';
 import { format } from 'date-fns';
-import { Bot, User } from 'lucide-react';
+import { Bot, User, Calendar } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { useNavigate } from 'react-router-dom';
 
 interface ChatMessageProps {
   message: ChatMessageType;
@@ -10,6 +13,11 @@ interface ChatMessageProps {
 export const ChatMessage = ({ message }: ChatMessageProps) => {
   const isUser = message.role === 'user';
   const isSystem = message.role === 'system';
+  const navigate = useNavigate();
+
+  // Check if message contains meeting data
+  const hasMeetingData = message.content.includes('"date_time"') && 
+                          message.content.includes('"summary"');
 
   if (isSystem) {
     return (
@@ -19,6 +27,22 @@ export const ChatMessage = ({ message }: ChatMessageProps) => {
         </div>
       </div>
     );
+  }
+
+  // Try to parse meeting cards from AI response
+  let meetingCards = null;
+  if (!isUser && hasMeetingData) {
+    try {
+      const jsonMatch = message.content.match(/\{[\s\S]*"items"[\s\S]*\}/);
+      if (jsonMatch) {
+        const data = JSON.parse(jsonMatch[0]);
+        if (data.items && Array.isArray(data.items) && data.items.length > 0 && data.items[0].date_time) {
+          meetingCards = data.items.slice(0, 3); // Show max 3 meetings
+        }
+      }
+    } catch (e) {
+      // Not valid JSON or not meeting data, continue normally
+    }
   }
 
   return (
@@ -45,6 +69,61 @@ export const ChatMessage = ({ message }: ChatMessageProps) => {
           <div className="text-sm whitespace-pre-wrap break-words">
             {message.content}
           </div>
+          
+          {meetingCards && (
+            <div className="mt-3 space-y-2">
+              {meetingCards.map((meeting: any) => (
+                <div 
+                  key={meeting.id}
+                  className="p-3 bg-muted/50 rounded-md border border-border hover:bg-muted/70 transition-colors cursor-pointer"
+                  onClick={() => navigate(`/meetings/${meeting.id}`)}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-start gap-2 flex-1 min-w-0">
+                      <Calendar className="h-4 w-4 mt-0.5 flex-shrink-0 text-muted-foreground" />
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-sm line-clamp-2">
+                          {meeting.summary?.split('\n')[0]?.replace(/^#+\s*/, '') || 'Meeting'}
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-1">
+                          {new Date(meeting.date_time).toLocaleDateString()} at{' '}
+                          {new Date(meeting.date_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </div>
+                        {meeting.attendees && (
+                          <div className="text-xs text-muted-foreground mt-1">
+                            {meeting.attendees}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex gap-1 flex-shrink-0">
+                      <Badge variant="outline" className="text-xs">
+                        {meeting.status}
+                      </Badge>
+                      {meeting.decisions_count > 0 && (
+                        <Badge variant="secondary" className="text-xs">
+                          {meeting.decisions_count} decisions
+                        </Badge>
+                      )}
+                      {meeting.next_steps_count > 0 && (
+                        <Badge variant="secondary" className="text-xs">
+                          {meeting.next_steps_count} steps
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="w-full mt-2"
+                onClick={() => navigate('/meetings')}
+              >
+                View All Meetings
+              </Button>
+            </div>
+          )}
         </div>
         <div className="text-xs text-muted-foreground mt-1 px-1">
           {format(message.timestamp, 'h:mm a')}

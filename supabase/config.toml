@@ -26,3 +26,6 @@ verify_jwt = true
 
 [functions.chat-assistant]
 verify_jwt = true
+
+[functions.calendar-ical]
+verify_jwt = false

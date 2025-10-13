@@ -260,34 +260,6 @@ async function getAvatars(supabase: any, clientId: string) {
   };
 }
 
-async function getMeetings(supabase: any, params: any, clientId: string, userRole: string) {
-  let query = supabase
-    .from('meetings')
-    .select('id, summary, date_time, attendees, status, join_url', { count: 'exact' })
-    .eq('client_id', clientId);
-  
-  if (params.date_from) query = query.gte('date_time', params.date_from);
-  if (params.date_to) query = query.lte('date_time', params.date_to);
-  
-  const limit = Math.min(params.limit || 20, 50);
-  const offset = params.offset || 0;
-  
-  query = query.order('date_time', { ascending: false }).range(offset, offset + limit - 1);
-  
-  const { data, count, error } = await query;
-  
-  if (error) throw error;
-  
-  const redacted = redactForRole(data || [], userRole);
-  
-  return {
-    items: sanitizeDataForPrompt(redacted),
-    result_count: data?.length || 0,
-    total_count: count || 0,
-    next_offset: (data?.length || 0) >= limit ? offset + limit : null
-  };
-}
-
 async function getMarketingChannels(supabase: any, params: any, clientId: string) {
   // First get the flow for this client
   const { data: flow } = await supabase
@@ -402,7 +374,7 @@ async function getMeetings(supabase: any, params: any, clientId: string) {
   if (error) throw error;
   
   // Truncate summaries for list view
-  const truncated = (data || []).map(m => ({
+  const truncated = (data || []).map((m: any) => ({
     ...m,
     summary: m.summary?.substring(0, 200) + (m.summary?.length > 200 ? '...' : ''),
     decisions_count: m.decisions?.length || 0,
@@ -533,22 +505,6 @@ const tools = [
   {
     type: "function",
     function: {
-      name: "get_meetings",
-      description: "Get meetings for the current client",
-      parameters: {
-        type: "object",
-        properties: {
-          date_from: { type: "string", format: "date", description: "Filter meetings from this date" },
-          date_to: { type: "string", format: "date", description: "Filter meetings to this date" },
-          limit: { type: "number", description: "Number of results (max 50)", default: 20 },
-          offset: { type: "number", description: "Offset for pagination", default: 0 }
-        }
-      }
-    }
-  },
-  {
-    type: "function",
-    function: {
       name: "get_marketing_channels",
       description: "Get marketing flow channels for the current client",
       parameters: {
@@ -667,6 +623,12 @@ Context you always have:
 - user_role: ${userRole}
 - today: ${new Date().toISOString().split('T')[0]}
 
+Capabilities:
+- Access client info, tasks, reports, avatars, assets, tickets, support tickets, and marketing channels
+- Access meeting history including summaries, decisions, and next steps
+- Search across meeting notes and content
+- View meeting details with dates, attendees, and status
+
 Rules you must follow:
 1) Only retrieve or discuss data for client_id. Never ask for or accept a different client id.
 2) Use tools to fetch facts. Do not guess. If a tool returns no data, say so clearly.
@@ -675,6 +637,7 @@ Rules you must follow:
 5) Respect roles. Hide internal notes and full contact details from client users.
 6) When creating or updating anything, ask for confirmation first and show what will be saved.
 7) If the user asks for something outside your permissions, explain what is possible and suggest an alternative.
+8) When referencing meetings, always include the date and suggest viewing full details on the Meetings page.
 
 Formatting:
 - Use short headings when helpful.
@@ -825,7 +788,7 @@ Safety:
               result = await getAvatars(supabaseClient, client_id);
               break;
             case 'get_meetings':
-              result = await getMeetings(supabaseClient, args, client_id, userRole);
+              result = await getMeetings(supabaseClient, args, client_id);
               break;
             case 'get_marketing_channels':
               result = await getMarketingChannels(supabaseClient, args, client_id);
