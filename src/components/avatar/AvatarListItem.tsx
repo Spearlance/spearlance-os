@@ -24,8 +24,10 @@ export function AvatarListItem({ avatar, isSelected, onClick }: AvatarListItemPr
     <div
       onClick={onClick}
       className={cn(
-        "p-3 rounded-lg border cursor-pointer transition-all hover:bg-accent/50",
-        isSelected ? "border-primary bg-gray-800 text-white" : "border-border"
+        "px-3 py-2 cursor-pointer transition-all border-l-2",
+        isSelected 
+          ? "border-l-primary bg-transparent" 
+          : "border-l-transparent hover:border-l-muted-foreground/20"
       )}
     >
       <div className="flex items-start justify-between gap-2">
