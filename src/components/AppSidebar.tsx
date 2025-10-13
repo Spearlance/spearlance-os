@@ -110,10 +110,11 @@ export function AppSidebar() {
       <div className="flex items-center justify-between p-4 border-b border-sidebar-border">
         {!collapsed && (
           <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-gradient-primary flex items-center justify-center">
-              <span className="text-lg font-bold text-white">S</span>
-            </div>
-            <span className="font-semibold text-sidebar-foreground">Spearlance</span>
+            <img 
+              src="https://irp.cdn-website.com/e8531a5e/dms3rep/multi/Asset+1.svg" 
+              alt="Spearlance Logo"
+              className="h-8 w-auto"
+            />
           </div>
         )}
         <SidebarTrigger className="text-sidebar-foreground" />
