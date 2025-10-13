@@ -45,10 +45,10 @@ const App = () => (
             <Route path="/meetings/:id" element={<MainLayout><MeetingDetail /></MainLayout>} />
             <Route path="/tasks" element={<MainLayout><Tasks /></MainLayout>} />
             <Route path="/assets" element={<MainLayout><Assets /></MainLayout>} />
-            <Route path="/marketing" element={<MainLayout><Marketing /></MainLayout>} />
+            <Route path="/marketing/services" element={<MainLayout><Marketing /></MainLayout>} />
             <Route path="/avatar" element={<MainLayout><Avatar /></MainLayout>} />
             <Route path="/launchpad" element={<MainLayout><LaunchPad /></MainLayout>} />
-            <Route path="/marketing-flowchart" element={<MainLayout><MarketingFlowchart /></MainLayout>} />
+            <Route path="/marketing/flowchart" element={<MainLayout><MarketingFlowchart /></MainLayout>} />
             <Route path="/support" element={<MainLayout><Support /></MainLayout>} />
             <Route path="/support/:id" element={<MainLayout><TicketDetail /></MainLayout>} />
             <Route path="/settings" element={<MainLayout><Settings /></MainLayout>} />

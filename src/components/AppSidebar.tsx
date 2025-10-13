@@ -59,8 +59,8 @@ const menuItems = [
 ];
 
 const marketingSubItems = [
-  { title: "Services", url: "/marketing", icon: TrendingUp },
-  { title: "Flowchart", url: "/marketing-flowchart", icon: GitBranch },
+  { title: "Services", url: "/marketing/services", icon: TrendingUp },
+  { title: "Flowchart", url: "/marketing/flowchart", icon: GitBranch },
 ];
 
 export function AppSidebar() {
