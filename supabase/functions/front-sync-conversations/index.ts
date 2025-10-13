@@ -96,9 +96,48 @@ async function fetchConversationMessages(conversationId: string, apiToken: strin
   }
 }
 
+async function getTagId(tagName: string, apiToken: string): Promise<string | null> {
+  try {
+    const response = await fetch('https://api2.frontapp.com/tags', {
+      headers: {
+        'Authorization': `Bearer ${apiToken}`,
+        'Accept': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      console.error(`Failed to fetch tags: ${response.status}`);
+      return null;
+    }
+
+    const data = await response.json();
+    const tags = data._results || [];
+    const tag = tags.find((t: any) => t.name === tagName);
+    
+    if (!tag) {
+      console.error(`Tag "${tagName}" not found in Front`);
+      return null;
+    }
+
+    return tag.id;
+  } catch (error) {
+    console.error(`Error fetching tag ID for ${tagName}:`, error);
+    return null;
+  }
+}
+
 async function fetchConversationsByTag(tag: string, apiToken: string): Promise<FrontConversation[]> {
   try {
-    const response = await fetch(`https://api2.frontapp.com/conversations?q[tags][]=${encodeURIComponent(tag)}`, {
+    // First, get the tag ID from the tag name
+    const tagId = await getTagId(tag, apiToken);
+    
+    if (!tagId) {
+      console.error(`Could not find tag ID for "${tag}"`);
+      return [];
+    }
+
+    // Use the correct endpoint with the tag ID
+    const response = await fetch(`https://api2.frontapp.com/tags/${tagId}/conversations`, {
       headers: {
         'Authorization': `Bearer ${apiToken}`,
         'Accept': 'application/json',
