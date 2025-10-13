@@ -60,6 +60,7 @@ export function StageAssets({ submissionId, onContinue, onBack, onSaveExit }: St
   const [assets, setAssets] = useState<Asset[]>([]);
   const [folderDialogOpen, setFolderDialogOpen] = useState(false);
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
+  const [currentFolder, setCurrentFolder] = useState<Folder | null>(null);
 
   useEffect(() => {
     loadBrandColors();
@@ -67,8 +68,22 @@ export function StageAssets({ submissionId, onContinue, onBack, onSaveExit }: St
     loadAssets(null);
   }, [submissionId, selectedClient]);
 
-  const navigateToFolder = (folderId: string | null) => {
+  const navigateToFolder = async (folderId: string | null) => {
     setSelectedFolderId(folderId);
+    
+    // Load current folder details if navigating to a folder
+    if (folderId) {
+      const { data } = await supabase
+        .from("asset_folders")
+        .select("id, name, color")
+        .eq("id", folderId)
+        .single();
+      
+      setCurrentFolder(data || null);
+    } else {
+      setCurrentFolder(null);
+    }
+    
     loadFolders(folderId);
     loadAssets(folderId);
   };
@@ -484,9 +499,9 @@ export function StageAssets({ submissionId, onContinue, onBack, onSaveExit }: St
 
             {/* Upload Destination Display */}
             <div className="text-sm p-2 bg-muted rounded mb-2">
-              {selectedFolderId ? (
+              {currentFolder ? (
                 <span>
-                  📁 Uploading to: <strong>{folders.find(f => f.id === selectedFolderId)?.name}</strong>
+                  📁 Uploading to: <strong>{currentFolder.name}</strong>
                 </span>
               ) : (
                 <span>📂 Uploading to: <strong>Root folder</strong></span>
