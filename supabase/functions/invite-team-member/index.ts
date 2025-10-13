@@ -141,7 +141,7 @@ serve(async (req) => {
       .single();
 
     const clientName = clientData?.name || 'the team';
-    const appUrl = Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '.lovable.app') || 'your app';
+    const appUrl = 'https://os.spearlance.com';
 
     // Send invitation email
     try {
