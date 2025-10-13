@@ -48,7 +48,7 @@ export default function Avatar() {
       .from("avatars")
       .select("*")
       .eq("client_id", selectedClient.id)
-      .order("created_at", { ascending: false });
+      .order("updated_at", { ascending: false });
 
     if (error) {
       toast({ title: "Error loading avatars", variant: "destructive" });
