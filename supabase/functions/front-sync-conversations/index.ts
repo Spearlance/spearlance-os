@@ -187,9 +187,10 @@ function extractMessageThread(messages: FrontMessage[]): any[] {
   return messages.map(msg => ({
     id: msg.id,
     type: msg.type,
-    author: msg.author?.email || 'unknown',
+    sender: msg.author?.email || 'unknown',
     body: msg.body || msg.text || '',
-    created_at: msg.created_at ? new Date(msg.created_at * 1000).toISOString() : new Date().toISOString(),
+    timestamp: msg.created_at ? new Date(msg.created_at * 1000).toISOString() : new Date().toISOString(),
+    is_internal: false,
   }));
 }
 
