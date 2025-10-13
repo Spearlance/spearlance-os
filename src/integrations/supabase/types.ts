@@ -432,6 +432,7 @@ export type Database = {
       launchpad_submissions: {
         Row: {
           avatar_image_url: string | null
+          brand_colors: Json | null
           client_id: string
           completed_at: Json | null
           created_at: string | null
@@ -444,6 +445,7 @@ export type Database = {
         }
         Insert: {
           avatar_image_url?: string | null
+          brand_colors?: Json | null
           client_id: string
           completed_at?: Json | null
           created_at?: string | null
@@ -456,6 +458,7 @@ export type Database = {
         }
         Update: {
           avatar_image_url?: string | null
+          brand_colors?: Json | null
           client_id?: string
           completed_at?: Json | null
           created_at?: string | null

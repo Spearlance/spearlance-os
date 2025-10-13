@@ -1,13 +1,14 @@
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
-import { useState } from "react";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent } from "@/components/ui/card";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useClient } from "@/contexts/ClientContext";
-import { Upload, FileText, X } from "lucide-react";
+import { Upload, FileText, X, Folder, FolderPlus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { CreateFolderDialog } from "@/components/assets/CreateFolderDialog";
 
 interface StageAssetsProps {
   submissionId: string;
@@ -22,23 +23,138 @@ interface UploadedFile {
   category: string;
 }
 
+interface BrandColors {
+  primary: string;
+  secondary: string;
+  accent1: string;
+  accent2: string;
+  accent3: string;
+}
+
+interface Folder {
+  id: string;
+  name: string;
+  color: string | null;
+}
+
+interface Asset {
+  id: string;
+  title: string;
+  type: string;
+}
+
 export function StageAssets({ submissionId, onContinue, onBack, onSaveExit }: StageAssetsProps) {
   const { selectedClient } = useClient();
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
-  const [headlines, setHeadlines] = useState("");
-  const [imageRightsAck, setImageRightsAck] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [brandColors, setBrandColors] = useState<BrandColors>({
+    primary: "#000000",
+    secondary: "#666666",
+    accent1: "#13cf48",
+    accent2: "#0ea5e9",
+    accent3: "#8b5cf6",
+  });
+  const [folders, setFolders] = useState<Folder[]>([]);
+  const [assets, setAssets] = useState<Asset[]>([]);
+  const [folderDialogOpen, setFolderDialogOpen] = useState(false);
 
-  const uploadFile = async (file: File, category: "Brand" | "Creative") => {
+  useEffect(() => {
+    loadBrandColors();
+    loadFolders();
+    loadAssets();
+  }, [submissionId, selectedClient]);
+
+  const loadBrandColors = async () => {
+    const { data, error } = await supabase
+      .from("launchpad_submissions")
+      .select("brand_colors")
+      .eq("id", submissionId)
+      .single();
+
+    if (error) {
+      console.error("Error loading brand colors:", error);
+      return;
+    }
+
+    if (data?.brand_colors) {
+      const colors = data.brand_colors as any;
+      setBrandColors({
+        primary: colors.primary || "#000000",
+        secondary: colors.secondary || "#666666",
+        accent1: colors.accent1 || "#13cf48",
+        accent2: colors.accent2 || "#0ea5e9",
+        accent3: colors.accent3 || "#8b5cf6",
+      });
+    }
+  };
+
+  const loadFolders = async () => {
+    if (!selectedClient?.id) return;
+
+    const { data, error } = await supabase
+      .from("asset_folders")
+      .select("id, name, color")
+      .eq("client_id", selectedClient.id)
+      .is("parent_folder_id", null);
+
+    if (error) {
+      console.error("Error loading folders:", error);
+      return;
+    }
+
+    setFolders(data || []);
+  };
+
+  const loadAssets = async () => {
+    if (!selectedClient?.id) return;
+
+    const { data, error } = await supabase
+      .from("assets")
+      .select("id, title, type")
+      .eq("client_id", selectedClient.id)
+      .is("folder_id", null);
+
+    if (error) {
+      console.error("Error loading assets:", error);
+      return;
+    }
+
+    setAssets(data || []);
+    
+    // Set uploaded files for validation
+    const files: UploadedFile[] = data?.map((asset) => ({
+      id: asset.id,
+      name: asset.title,
+      category: asset.type,
+    })) || [];
+    setUploadedFiles(files);
+  };
+
+  const sanitizeFilename = (filename: string): string => {
+    const lastDotIndex = filename.lastIndexOf(".");
+    const name = filename.substring(0, lastDotIndex);
+    const ext = filename.substring(lastDotIndex);
+    
+    const sanitized = name
+      .replace(/[^a-zA-Z0-9-_]/g, "-")
+      .replace(/-+/g, "-")
+      .replace(/^-|-$/g, "");
+    
+    return sanitized + ext;
+  };
+
+  const uploadFile = async (file: File, category: "logo" | "creative" | "document") => {
     if (!selectedClient) return null;
 
     try {
       // Validate file type
-      const allowedTypes = category === "Brand" 
-        ? ["image/png", "image/jpeg", "image/svg+xml", "application/pdf", "application/zip"]
-        : ["image/png", "image/jpeg", "image/jpg"];
+      const allowedTypes = category === "logo" 
+        ? ["image/png", "image/jpeg", "image/svg+xml"]
+        : category === "creative"
+        ? ["image/png", "image/jpeg", "image/jpg"]
+        : ["image/png", "image/jpeg", "image/jpg", "application/pdf"];
 
       if (!allowedTypes.includes(file.type)) {
         toast({ title: "Invalid file type", variant: "destructive" });
@@ -51,7 +167,8 @@ export function StageAssets({ submissionId, onContinue, onBack, onSaveExit }: St
         return null;
       }
 
-      const filePath = `${selectedClient.id}/launchpad/${category.toLowerCase()}/${Date.now()}-${file.name}`;
+      const sanitizedName = sanitizeFilename(file.name);
+      const filePath = `${selectedClient.id}/launchpad/${category}/${Date.now()}-${sanitizedName}`;
       
       // Upload to storage
       const { error: uploadError } = await supabase.storage
@@ -69,6 +186,7 @@ export function StageAssets({ submissionId, onContinue, onBack, onSaveExit }: St
       const { data: { user } } = await supabase.auth.getUser();
 
       // Create asset record
+      const assetType = category === "logo" || category === "creative" ? "image" : "doc";
       const { data: asset, error: assetError } = await supabase
         .from("assets")
         .insert({
@@ -76,6 +194,7 @@ export function StageAssets({ submissionId, onContinue, onBack, onSaveExit }: St
           title: file.name,
           storage_type: "upload",
           file_url: urlData.publicUrl,
+          type: assetType,
           tags: ["Launch Pad Upload", category],
           created_by: user?.id,
         })
@@ -112,7 +231,7 @@ export function StageAssets({ submissionId, onContinue, onBack, onSaveExit }: St
     }
   };
 
-  const handleFileUpload = async (files: FileList | null, category: "Brand" | "Creative") => {
+  const handleFileUpload = async (files: FileList | null, category: "logo" | "creative" | "document") => {
     if (!files || files.length === 0) return;
 
     setUploading(true);
@@ -128,6 +247,7 @@ export function StageAssets({ submissionId, onContinue, onBack, onSaveExit }: St
 
     if (uploaded.length > 0) {
       toast({ title: `${uploaded.length} file(s) uploaded successfully` });
+      loadAssets();
     }
   };
 
@@ -137,16 +257,9 @@ export function StageAssets({ submissionId, onContinue, onBack, onSaveExit }: St
 
   const handleContinue = async () => {
     // Validate: Logo required
-    const hasLogo = uploadedFiles.some((f) => f.category === "Brand" && f.name.toLowerCase().includes("logo"));
+    const hasLogo = uploadedFiles.some((f) => f.category === "logo");
     if (!hasLogo) {
       toast({ title: "Logo upload required", variant: "destructive" });
-      return;
-    }
-
-    // Validate: If creative uploads exist, rights acknowledgment required
-    const hasCreative = uploadedFiles.some((f) => f.category === "Creative");
-    if (hasCreative && !imageRightsAck) {
-      toast({ title: "Please acknowledge image rights", variant: "destructive" });
       return;
     }
 
@@ -159,7 +272,7 @@ export function StageAssets({ submissionId, onContinue, onBack, onSaveExit }: St
         .eq("id", submissionId)
         .single();
 
-      // Update with asset IDs
+      // Update with asset IDs and brand colors
       const { error } = await supabase
         .from("launchpad_submissions")
         .update({
@@ -167,6 +280,7 @@ export function StageAssets({ submissionId, onContinue, onBack, onSaveExit }: St
             ...((submissionData?.responses_json as Record<string, any>) || {}),
             assets: { ids: uploadedFiles.map((f) => f.id) },
           } as any,
+          brand_colors: brandColors as any,
           stage: "avatar",
           completed_at: { ...((submissionData?.completed_at as Record<string, any>) || {}), assets: new Date().toISOString() } as any,
           updated_at: new Date().toISOString(),
@@ -184,9 +298,8 @@ export function StageAssets({ submissionId, onContinue, onBack, onSaveExit }: St
     }
   };
 
-  const hasLogo = uploadedFiles.some((f) => f.category === "Brand");
-  const hasCreative = uploadedFiles.some((f) => f.category === "Creative");
-  const canContinue = hasLogo && (!hasCreative || imageRightsAck);
+  const hasLogo = uploadedFiles.some((f) => f.category === "logo");
+  const canContinue = hasLogo;
 
   return (
     <div className="space-y-6">
@@ -195,7 +308,7 @@ export function StageAssets({ submissionId, onContinue, onBack, onSaveExit }: St
           <div>
             <h2 className="text-xl font-semibold mb-2">Assets Stage</h2>
             <p className="text-sm text-muted-foreground">
-              Upload your brand materials, logos, and marketing assets. These will be used to maintain brand consistency.
+              Upload your logo, define your brand colors, and upload any creative assets. You can also organize files into folders for easy access later.
             </p>
           </div>
         </div>
@@ -205,11 +318,12 @@ export function StageAssets({ submissionId, onContinue, onBack, onSaveExit }: St
           <div className="space-y-4">
             <h3 className="font-semibold">Brand Kit</h3>
             <div className="space-y-4">
+              {/* Logo Upload */}
               <div>
                 <Label htmlFor="logo">Logo Upload * (PNG, JPG, SVG - Max 10MB)</Label>
-                <div className="mt-2 border-2 border-dashed rounded-lg p-6 text-center hover:border-[#13cf48] transition-colors">
+                <div className="mt-2 border-2 border-dashed rounded-lg p-6 text-center hover:border-primary transition-colors">
                   <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                  <Label htmlFor="logo" className="cursor-pointer text-sm text-[#13cf48] hover:underline">
+                  <Label htmlFor="logo" className="cursor-pointer text-sm text-primary hover:underline">
                     Click to upload logo
                   </Label>
                   <input
@@ -217,101 +331,159 @@ export function StageAssets({ submissionId, onContinue, onBack, onSaveExit }: St
                     type="file"
                     accept=".png,.jpg,.jpeg,.svg"
                     className="hidden"
-                    onChange={(e) => handleFileUpload(e.target.files, "Brand")}
+                    onChange={(e) => handleFileUpload(e.target.files, "logo")}
                     disabled={uploading}
                   />
                 </div>
               </div>
 
+              {/* Brand Colors */}
               <div>
-                <Label htmlFor="brand_guide">Brand Guide (PDF)</Label>
-                <div className="mt-2 border-2 border-dashed rounded-lg p-4 text-center hover:border-[#13cf48] transition-colors">
-                  <Label htmlFor="brand_guide" className="cursor-pointer text-sm text-muted-foreground hover:text-[#13cf48]">
-                    Upload brand guide
-                  </Label>
-                  <input
-                    id="brand_guide"
-                    type="file"
-                    accept=".pdf"
-                    className="hidden"
-                    onChange={(e) => handleFileUpload(e.target.files, "Brand")}
-                    disabled={uploading}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <Label htmlFor="fonts">Fonts (ZIP)</Label>
-                <div className="mt-2 border-2 border-dashed rounded-lg p-4 text-center hover:border-[#13cf48] transition-colors">
-                  <Label htmlFor="fonts" className="cursor-pointer text-sm text-muted-foreground hover:text-[#13cf48]">
-                    Upload fonts
-                  </Label>
-                  <input
-                    id="fonts"
-                    type="file"
-                    accept=".zip"
-                    className="hidden"
-                    onChange={(e) => handleFileUpload(e.target.files, "Brand")}
-                    disabled={uploading}
-                  />
+                <Label>Brand Colors</Label>
+                <div className="mt-2 space-y-3">
+                  <div className="flex items-center gap-3">
+                    <Label htmlFor="primary" className="w-32 text-sm">Primary Color</Label>
+                    <Input
+                      id="primary"
+                      type="color"
+                      value={brandColors.primary}
+                      onChange={(e) => setBrandColors({ ...brandColors, primary: e.target.value })}
+                      className="w-20 h-10 cursor-pointer"
+                    />
+                    <span className="text-sm text-muted-foreground font-mono">{brandColors.primary}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Label htmlFor="secondary" className="w-32 text-sm">Secondary Color</Label>
+                    <Input
+                      id="secondary"
+                      type="color"
+                      value={brandColors.secondary}
+                      onChange={(e) => setBrandColors({ ...brandColors, secondary: e.target.value })}
+                      className="w-20 h-10 cursor-pointer"
+                    />
+                    <span className="text-sm text-muted-foreground font-mono">{brandColors.secondary}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Label htmlFor="accent1" className="w-32 text-sm">Accent Color 1</Label>
+                    <Input
+                      id="accent1"
+                      type="color"
+                      value={brandColors.accent1}
+                      onChange={(e) => setBrandColors({ ...brandColors, accent1: e.target.value })}
+                      className="w-20 h-10 cursor-pointer"
+                    />
+                    <span className="text-sm text-muted-foreground font-mono">{brandColors.accent1}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Label htmlFor="accent2" className="w-32 text-sm">Accent Color 2</Label>
+                    <Input
+                      id="accent2"
+                      type="color"
+                      value={brandColors.accent2}
+                      onChange={(e) => setBrandColors({ ...brandColors, accent2: e.target.value })}
+                      className="w-20 h-10 cursor-pointer"
+                    />
+                    <span className="text-sm text-muted-foreground font-mono">{brandColors.accent2}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Label htmlFor="accent3" className="w-32 text-sm">Accent Color 3</Label>
+                    <Input
+                      id="accent3"
+                      type="color"
+                      value={brandColors.accent3}
+                      onChange={(e) => setBrandColors({ ...brandColors, accent3: e.target.value })}
+                      className="w-20 h-10 cursor-pointer"
+                    />
+                    <span className="text-sm text-muted-foreground font-mono">{brandColors.accent3}</span>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Creative & Copy */}
+          {/* Creative Assets */}
           <div className="space-y-4">
-            <h3 className="font-semibold">Creative & Copy</h3>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="past_ads">Past Ads (PNG, JPG - Multiple files)</Label>
-                <div className="mt-2 border-2 border-dashed rounded-lg p-6 text-center hover:border-[#13cf48] transition-colors">
-                  <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                  <Label htmlFor="past_ads" className="cursor-pointer text-sm text-muted-foreground hover:text-[#13cf48]">
-                    Upload creative assets
-                  </Label>
-                  <input
-                    id="past_ads"
-                    type="file"
-                    accept=".png,.jpg,.jpeg"
-                    multiple
-                    className="hidden"
-                    onChange={(e) => handleFileUpload(e.target.files, "Creative")}
-                    disabled={uploading}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <Label htmlFor="headlines">Existing Headlines or Scripts</Label>
-                <Textarea
-                  id="headlines"
-                  rows={4}
-                  placeholder="Paste any existing ad copy, headlines, or scripts..."
-                  value={headlines}
-                  onChange={(e) => setHeadlines(e.target.value)}
+            <h3 className="font-semibold">Creative Assets</h3>
+            <div>
+              <Label htmlFor="past_ads">Past Ads (PNG, JPG - Multiple files)</Label>
+              <div className="mt-2 border-2 border-dashed rounded-lg p-6 text-center hover:border-primary transition-colors">
+                <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                <Label htmlFor="past_ads" className="cursor-pointer text-sm text-muted-foreground hover:text-primary">
+                  Upload creative assets
+                </Label>
+                <input
+                  id="past_ads"
+                  type="file"
+                  accept=".png,.jpg,.jpeg"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => handleFileUpload(e.target.files, "creative")}
+                  disabled={uploading}
                 />
               </div>
-
-              {hasCreative && (
-                <div className="flex items-start space-x-2">
-                  <Checkbox
-                    id="image_rights"
-                    checked={imageRightsAck}
-                    onCheckedChange={(checked) => setImageRightsAck(checked as boolean)}
-                  />
-                  <Label htmlFor="image_rights" className="cursor-pointer">
-                    I confirm I have the rights to use these creative assets *
-                  </Label>
-                </div>
-              )}
             </div>
+          </div>
+
+          {/* Organize Your Assets */}
+          <div className="space-y-4">
+            <div>
+              <h3 className="font-semibold">Organize Your Assets</h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                Create folders and upload files to stay organized. Don't have everything ready? No problem - you can continue organizing in the Assets tab later.
+              </p>
+            </div>
+            
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setFolderDialogOpen(true)}
+                disabled={uploading}
+              >
+                <FolderPlus className="h-4 w-4 mr-2" />
+                Create Folder
+              </Button>
+              <Label htmlFor="general_upload" className="cursor-pointer">
+                <Button variant="outline" asChild disabled={uploading}>
+                  <span>
+                    <Upload className="h-4 w-4 mr-2" />
+                    Upload Files
+                  </span>
+                </Button>
+              </Label>
+              <input
+                id="general_upload"
+                type="file"
+                accept=".png,.jpg,.jpeg,.pdf"
+                multiple
+                className="hidden"
+                onChange={(e) => handleFileUpload(e.target.files, "document")}
+                disabled={uploading}
+              />
+            </div>
+
+            {/* Display folders and assets */}
+            {(folders.length > 0 || assets.length > 0) && (
+              <div className="space-y-2 mt-4">
+                {folders.map((folder) => (
+                  <div key={folder.id} className="flex items-center gap-2 p-2 bg-muted rounded">
+                    <Folder className="h-4 w-4 text-primary" />
+                    <span className="text-sm">{folder.name}</span>
+                  </div>
+                ))}
+                {assets.map((asset) => (
+                  <div key={asset.id} className="flex items-center gap-2 p-2 bg-muted rounded">
+                    <FileText className="h-4 w-4" />
+                    <span className="text-sm">{asset.title}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Uploaded Files List */}
           {uploadedFiles.length > 0 && (
             <div className="space-y-2">
-              <h4 className="font-medium text-sm">Uploaded Files</h4>
+              <h4 className="font-medium text-sm">Uploaded Files (This Stage)</h4>
               <div className="space-y-2">
                 {uploadedFiles.map((file) => (
                   <div key={file.id} className="flex items-center justify-between p-2 bg-muted rounded">
@@ -351,11 +523,21 @@ export function StageAssets({ submissionId, onContinue, onBack, onSaveExit }: St
         <Button
           onClick={handleContinue}
           disabled={!canContinue || isSaving || uploading}
-          className="bg-[#13cf48] hover:bg-[#10b93d] text-white"
+          className="bg-primary hover:bg-primary/90"
         >
           Continue →
         </Button>
       </div>
+
+      <CreateFolderDialog
+        open={folderDialogOpen}
+        onOpenChange={setFolderDialogOpen}
+        parentFolderId={null}
+        onSuccess={() => {
+          loadFolders();
+          toast({ title: "Folder created successfully" });
+        }}
+      />
     </div>
   );
 }
