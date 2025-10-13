@@ -293,6 +293,35 @@ export function StageAvatar({ submissionId, onFinish, onBack, onSaveExit }: Stag
                   />
                 </div>
 
+                <div>
+                  <Label>Service Areas</Label>
+                  <Input
+                    placeholder="Add service area (comma-separated)"
+                    defaultValue=""
+                    onBlur={(e) => {
+                      if (e.target.value.trim()) {
+                        // This would need state management - simplified for now
+                      }
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="pricing_model">Pricing Model</Label>
+                  <Input
+                    id="pricing_model"
+                    placeholder="e.g., Hourly, Project-based, Monthly retainer"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="price_range">Price Range</Label>
+                  <Input
+                    id="price_range"
+                    placeholder="e.g., $500-$1000 or Starting at $1500"
+                  />
+                </div>
+
                 <Button onClick={handleSaveEdits} variant="outline" className="w-full">
                   Save Edits
                 </Button>

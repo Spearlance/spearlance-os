@@ -26,13 +26,7 @@ interface Service {
   name: string;
   description?: string;
   differentiators?: string;
-  target_audience?: string;
-  service_areas?: string[];
-  pricing_model?: string;
-  price_range?: string;
   key_benefits?: string[];
-  common_objections?: string;
-  ideal_client_profile?: string;
 }
 
 export default function Marketing() {
@@ -45,7 +39,6 @@ export default function Marketing() {
   const [newServiceName, setNewServiceName] = useState("");
   const [deleteServiceId, setDeleteServiceId] = useState<string | null>(null);
   const [newBenefit, setNewBenefit] = useState("");
-  const [newServiceArea, setNewServiceArea] = useState("");
 
   useEffect(() => {
     if (selectedClient) {
@@ -301,102 +294,6 @@ export default function Marketing() {
                       />
                     </div>
 
-                    <div>
-                      <Label htmlFor="target_audience">Target Audience</Label>
-                      <Textarea
-                        id="target_audience"
-                        placeholder="Who is this service for?"
-                        value={service.target_audience || ""}
-                        onChange={(e) => updateService(service.id, { target_audience: e.target.value })}
-                        rows={3}
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="ideal_client_profile">Ideal Client Profile</Label>
-                      <Textarea
-                        id="ideal_client_profile"
-                        placeholder="Describe your ideal client for this service"
-                        value={service.ideal_client_profile || ""}
-                        onChange={(e) => updateService(service.id, { ideal_client_profile: e.target.value })}
-                        rows={3}
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="pricing_model">Pricing Model</Label>
-                      <Input
-                        id="pricing_model"
-                        placeholder="e.g., Hourly, Project-based, Monthly retainer"
-                        value={service.pricing_model || ""}
-                        onChange={(e) => updateService(service.id, { pricing_model: e.target.value })}
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="price_range">Price Range</Label>
-                      <Input
-                        id="price_range"
-                        placeholder="e.g., $500-$1000 or Starting at $1500"
-                        value={service.price_range || ""}
-                        onChange={(e) => updateService(service.id, { price_range: e.target.value })}
-                      />
-                    </div>
-
-                    <div className="col-span-2">
-                      <Label>Service Areas (Geographic Locations)</Label>
-                      <div className="space-y-2">
-                        <div className="flex flex-wrap gap-2 mb-2">
-                          {service.service_areas?.map((area, index) => (
-                            <Badge key={index} variant="secondary">
-                              {area}
-                              <button
-                                type="button"
-                                className="ml-2 text-muted-foreground hover:text-foreground"
-                                onClick={() => {
-                                  const updated = service.service_areas?.filter((_, i) => i !== index);
-                                  updateService(service.id, { service_areas: updated });
-                                }}
-                              >
-                                ×
-                              </button>
-                            </Badge>
-                          ))}
-                        </div>
-                        <div className="flex gap-2">
-                          <Input
-                            placeholder="Add location (e.g., San Francisco, CA)"
-                            value={newServiceArea}
-                            onChange={(e) => setNewServiceArea(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter" && newServiceArea.trim()) {
-                                e.preventDefault();
-                                updateService(service.id, {
-                                  service_areas: [...(service.service_areas || []), newServiceArea.trim()]
-                                });
-                                setNewServiceArea("");
-                              }
-                            }}
-                          />
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              if (newServiceArea.trim()) {
-                                updateService(service.id, {
-                                  service_areas: [...(service.service_areas || []), newServiceArea.trim()]
-                                });
-                                setNewServiceArea("");
-                              }
-                            }}
-                          >
-                            <Plus className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-
                     <div className="col-span-2">
                       <Label>Key Benefits</Label>
                       <div className="space-y-2">
@@ -449,17 +346,6 @@ export default function Marketing() {
                           </Button>
                         </div>
                       </div>
-                    </div>
-
-                    <div className="col-span-2">
-                      <Label htmlFor="common_objections">Common Objections</Label>
-                      <Textarea
-                        id="common_objections"
-                        placeholder="What concerns or objections do prospects typically have?"
-                        value={service.common_objections || ""}
-                        onChange={(e) => updateService(service.id, { common_objections: e.target.value })}
-                        rows={3}
-                      />
                     </div>
                   </div>
                 </TabsContent>

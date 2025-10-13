@@ -196,6 +196,63 @@ export default function Avatar() {
                 />
               </div>
 
+              <div className="space-y-2">
+                <Label>Service Areas</Label>
+                <div className="flex gap-2 mb-2">
+                  <Input
+                    placeholder="Add service area (press Enter)"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && e.currentTarget.value.trim()) {
+                        e.preventDefault();
+                        const newArea = e.currentTarget.value.trim();
+                        setAvatar({
+                          ...avatar,
+                          service_areas: [...(avatar.service_areas || []), newArea]
+                        });
+                        e.currentTarget.value = "";
+                      }
+                    }}
+                  />
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {avatar.service_areas?.map((area: string, i: number) => (
+                    <Badge key={i} variant="secondary">
+                      {area}
+                      <button
+                        type="button"
+                        className="ml-2 text-muted-foreground hover:text-foreground"
+                        onClick={() => {
+                          setAvatar({
+                            ...avatar,
+                            service_areas: avatar.service_areas?.filter((_: string, idx: number) => idx !== i)
+                          });
+                        }}
+                      >
+                        ×
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Pricing Model</Label>
+                <Input
+                  value={avatar.pricing_model || ""}
+                  onChange={(e) => setAvatar({ ...avatar, pricing_model: e.target.value })}
+                  placeholder="e.g., Hourly, Project-based, Monthly retainer"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Price Range</Label>
+                <Input
+                  value={avatar.price_range || ""}
+                  onChange={(e) => setAvatar({ ...avatar, price_range: e.target.value })}
+                  placeholder="e.g., $500-$1000 or Starting at $1500"
+                />
+              </div>
+
               <Button onClick={handleSave} className="w-full">
                 Save Avatar
               </Button>

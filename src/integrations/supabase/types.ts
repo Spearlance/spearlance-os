@@ -248,6 +248,9 @@ export type Database = {
           motivators: string | null
           objections: string | null
           pains: string | null
+          price_range: string | null
+          pricing_model: string | null
+          service_areas: string[] | null
           tone_voice: string | null
           updated_at: string | null
         }
@@ -266,6 +269,9 @@ export type Database = {
           motivators?: string | null
           objections?: string | null
           pains?: string | null
+          price_range?: string | null
+          pricing_model?: string | null
+          service_areas?: string[] | null
           tone_voice?: string | null
           updated_at?: string | null
         }
@@ -284,6 +290,9 @@ export type Database = {
           motivators?: string | null
           objections?: string | null
           pains?: string | null
+          price_range?: string | null
+          pricing_model?: string | null
+          service_areas?: string[] | null
           tone_voice?: string | null
           updated_at?: string | null
         }
@@ -679,53 +688,35 @@ export type Database = {
       services: {
         Row: {
           client_id: string
-          common_objections: string | null
           created_at: string | null
           created_by: string | null
           description: string | null
           differentiators: string | null
           id: string
-          ideal_client_profile: string | null
           key_benefits: string[] | null
           name: string
-          price_range: string | null
-          pricing_model: string | null
-          service_areas: string[] | null
-          target_audience: string | null
           updated_at: string | null
         }
         Insert: {
           client_id: string
-          common_objections?: string | null
           created_at?: string | null
           created_by?: string | null
           description?: string | null
           differentiators?: string | null
           id?: string
-          ideal_client_profile?: string | null
           key_benefits?: string[] | null
           name: string
-          price_range?: string | null
-          pricing_model?: string | null
-          service_areas?: string[] | null
-          target_audience?: string | null
           updated_at?: string | null
         }
         Update: {
           client_id?: string
-          common_objections?: string | null
           created_at?: string | null
           created_by?: string | null
           description?: string | null
           differentiators?: string | null
           id?: string
-          ideal_client_profile?: string | null
           key_benefits?: string[] | null
           name?: string
-          price_range?: string | null
-          pricing_model?: string | null
-          service_areas?: string[] | null
-          target_audience?: string | null
           updated_at?: string | null
         }
         Relationships: [
