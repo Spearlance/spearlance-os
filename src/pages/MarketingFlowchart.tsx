@@ -195,6 +195,7 @@ const MarketingFlowchart = () => {
                           key={channel.id}
                           channel={channel}
                           onClick={() => handleChannelClick(channel)}
+                          clientName={selectedClient.name}
                         />
                       ))}
                     </div>
@@ -218,6 +219,7 @@ const MarketingFlowchart = () => {
           channel={selectedChannel}
           onUpdate={handleChannelUpdate}
           isAdminOrFMM={isAdminOrFMM}
+          clientName={selectedClient.name}
         />
       )}
 

@@ -22,9 +22,10 @@ interface ChannelDrawerProps {
   channel: Channel;
   onUpdate: () => void;
   isAdminOrFMM: boolean;
+  clientName: string;
 }
 
-export function ChannelDrawer({ open, onOpenChange, channel, onUpdate, isAdminOrFMM }: ChannelDrawerProps) {
+export function ChannelDrawer({ open, onOpenChange, channel, onUpdate, isAdminOrFMM, clientName }: ChannelDrawerProps) {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [notes, setNotes] = useState<Note[]>([]);
@@ -192,7 +193,7 @@ export function ChannelDrawer({ open, onOpenChange, channel, onUpdate, isAdminOr
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="spearlance">Spearlance</SelectItem>
-                  <SelectItem value="client">Client</SelectItem>
+                  <SelectItem value="client">{clientName}</SelectItem>
                   <SelectItem value="both">Both</SelectItem>
                 </SelectContent>
               </Select>

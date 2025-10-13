@@ -10,28 +10,32 @@ type Channel = Database["public"]["Tables"]["marketing_flow_channels"]["Row"] & 
 interface ChannelCardProps {
   channel: Channel;
   onClick: () => void;
+  clientName: string;
 }
 
-const ownershipStyles = {
-  spearlance: {
-    border: "#13CF48",
-    bg: "#FFFFFF",
-    text: "#0E7E2A",
-    label: "Spearlance",
-  },
-  client: {
-    border: "#D1D5DB",
-    bg: "#FFFFFF",
-    text: "#374151",
-    label: "Client",
-  },
-  both: {
-    border: "#D1D5DB",
-    bg: "#FFFFFF",
-    text: "#374151",
-    label: "Both",
-    accentBar: true,
-  },
+const getOwnershipStyles = (ownership: string, clientName: string) => {
+  const styles: Record<string, any> = {
+    spearlance: {
+      border: "#13CF48",
+      bg: "#FFFFFF",
+      text: "#0E7E2A",
+      label: "Spearlance",
+    },
+    client: {
+      border: "#D1D5DB",
+      bg: "#FFFFFF",
+      text: "#374151",
+      label: clientName,
+    },
+    both: {
+      border: "#D1D5DB",
+      bg: "#FFFFFF",
+      text: "#374151",
+      label: "Both",
+      accentBar: true,
+    },
+  };
+  return styles[ownership];
 };
 
 const statusColors = {
@@ -48,8 +52,8 @@ const statusLabels = {
   not_used: "Not Started",
 };
 
-export function ChannelCard({ channel, onClick }: ChannelCardProps) {
-  const styles = ownershipStyles[channel.ownership];
+export function ChannelCard({ channel, onClick, clientName }: ChannelCardProps) {
+  const styles = getOwnershipStyles(channel.ownership, clientName);
   const statusClass = statusColors[channel.status];
   const showAccentBar = channel.ownership === "both";
 
