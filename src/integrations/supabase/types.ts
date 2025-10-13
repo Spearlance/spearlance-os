@@ -488,6 +488,266 @@ export type Database = {
           },
         ]
       }
+      marketing_flow_channel_notes: {
+        Row: {
+          body: string
+          channel_id: string
+          created_at: string | null
+          created_by: string | null
+          id: string
+          visibility: string | null
+        }
+        Insert: {
+          body: string
+          channel_id: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          visibility?: string | null
+        }
+        Update: {
+          body?: string
+          channel_id?: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          visibility?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketing_flow_channel_notes_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_flow_channels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketing_flow_channel_notes_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marketing_flow_channels: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          id: string
+          name: string
+          ownership: Database["public"]["Enums"]["channel_ownership"]
+          progress: number | null
+          stage_id: string
+          status: Database["public"]["Enums"]["channel_status"] | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          name: string
+          ownership: Database["public"]["Enums"]["channel_ownership"]
+          progress?: number | null
+          stage_id: string
+          status?: Database["public"]["Enums"]["channel_status"] | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          name?: string
+          ownership?: Database["public"]["Enums"]["channel_ownership"]
+          progress?: number | null
+          stage_id?: string
+          status?: Database["public"]["Enums"]["channel_status"] | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketing_flow_channels_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketing_flow_channels_stage_id_fkey"
+            columns: ["stage_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_flow_stages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marketing_flow_stages: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          flow_id: string
+          id: string
+          name: string
+          order_index: number
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          flow_id: string
+          id?: string
+          name: string
+          order_index: number
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          flow_id?: string
+          id?: string
+          name?: string
+          order_index?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketing_flow_stages_flow_id_fkey"
+            columns: ["flow_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_flows"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marketing_flow_task_links: {
+        Row: {
+          channel_id: string
+          created_at: string | null
+          created_by: string | null
+          id: string
+          task_id: string
+        }
+        Insert: {
+          channel_id: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          task_id: string
+        }
+        Update: {
+          channel_id?: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketing_flow_task_links_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_flow_channels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketing_flow_task_links_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketing_flow_task_links_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marketing_flow_task_templates: {
+        Row: {
+          channel_name: string
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string
+          priority: Database["public"]["Enums"]["task_priority"] | null
+          stage_name: string
+          title: string
+        }
+        Insert: {
+          channel_name: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          priority?: Database["public"]["Enums"]["task_priority"] | null
+          stage_name: string
+          title: string
+        }
+        Update: {
+          channel_name?: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          priority?: Database["public"]["Enums"]["task_priority"] | null
+          stage_name?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketing_flow_task_templates_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marketing_flows: {
+        Row: {
+          client_id: string
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string
+          title: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          client_id: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          title?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          client_id?: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          title?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketing_flows_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: true
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketing_flows_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       meeting_tasks: {
         Row: {
           created_at: string | null
@@ -790,6 +1050,7 @@ export type Database = {
           description: string | null
           due_date: string | null
           id: string
+          linked_channel_id: string | null
           priority: Database["public"]["Enums"]["task_priority"] | null
           related_asset_ids: string[] | null
           related_meeting_ids: string[] | null
@@ -806,6 +1067,7 @@ export type Database = {
           description?: string | null
           due_date?: string | null
           id?: string
+          linked_channel_id?: string | null
           priority?: Database["public"]["Enums"]["task_priority"] | null
           related_asset_ids?: string[] | null
           related_meeting_ids?: string[] | null
@@ -822,6 +1084,7 @@ export type Database = {
           description?: string | null
           due_date?: string | null
           id?: string
+          linked_channel_id?: string | null
           priority?: Database["public"]["Enums"]["task_priority"] | null
           related_asset_ids?: string[] | null
           related_meeting_ids?: string[] | null
@@ -849,6 +1112,13 @@ export type Database = {
             columns: ["creator_user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_linked_channel_id_fkey"
+            columns: ["linked_channel_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_flow_channels"
             referencedColumns: ["id"]
           },
         ]
@@ -1005,11 +1275,17 @@ export type Database = {
         }
         Returns: boolean
       }
+      initialize_marketing_flow: {
+        Args: { p_client_id: string; p_user_id: string }
+        Returns: string
+      }
     }
     Enums: {
       app_role: "admin" | "fmm" | "client"
       asset_type: "image" | "video" | "copy" | "doc" | "link" | "other"
       billing_status: "good" | "delinquent" | "cancelled"
+      channel_ownership: "spearlance" | "client" | "both"
+      channel_status: "active" | "in_progress" | "paused" | "not_used"
       client_status: "active" | "paused" | "archived"
       launchpad_stage:
         | "discovery"
@@ -1153,6 +1429,8 @@ export const Constants = {
       app_role: ["admin", "fmm", "client"],
       asset_type: ["image", "video", "copy", "doc", "link", "other"],
       billing_status: ["good", "delinquent", "cancelled"],
+      channel_ownership: ["spearlance", "client", "both"],
+      channel_status: ["active", "in_progress", "paused", "not_used"],
       client_status: ["active", "paused", "archived"],
       launchpad_stage: [
         "discovery",

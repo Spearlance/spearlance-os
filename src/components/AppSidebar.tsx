@@ -33,6 +33,7 @@ import {
   LogOut,
   Shield,
   TrendingUp,
+  GitBranch,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -43,6 +44,7 @@ const menuItems = [
   { title: "Tasks", url: "/tasks", icon: CheckSquare },
   { title: "Assets", url: "/assets", icon: FolderOpen },
   { title: "Marketing", url: "/marketing", icon: TrendingUp },
+  { title: "Marketing Flowchart", url: "/marketing-flowchart", icon: GitBranch },
   { title: "Avatar", url: "/avatar", icon: Users },
   { title: "Launch Pad", url: "/launchpad", icon: Rocket },
   { title: "Support", url: "/support", icon: HelpCircle },
