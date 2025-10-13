@@ -59,6 +59,7 @@ export function StageAssets({ submissionId, onContinue, onBack, onSaveExit }: St
   const [folders, setFolders] = useState<Folder[]>([]);
   const [assets, setAssets] = useState<Asset[]>([]);
   const [folderDialogOpen, setFolderDialogOpen] = useState(false);
+  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
 
   useEffect(() => {
     loadBrandColors();
@@ -197,6 +198,7 @@ export function StageAssets({ submissionId, onContinue, onBack, onSaveExit }: St
           type: assetType,
           tags: ["Launch Pad Upload", category],
           created_by: user?.id,
+          folder_id: selectedFolderId,
         })
         .select()
         .single();
@@ -433,6 +435,27 @@ export function StageAssets({ submissionId, onContinue, onBack, onSaveExit }: St
               </p>
             </div>
             
+            {selectedFolderId && (
+              <div className="text-sm p-2 bg-muted rounded flex items-center justify-between mb-2">
+                <span>
+                  📁 Uploading to: <strong>{folders.find(f => f.id === selectedFolderId)?.name}</strong>
+                </span>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => setSelectedFolderId(null)}
+                >
+                  Upload to root instead
+                </Button>
+              </div>
+            )}
+            
+            {!selectedFolderId && (
+              <div className="text-sm text-muted-foreground p-2 bg-muted rounded mb-2">
+                📂 Uploading to: <strong>Root folder</strong>
+              </div>
+            )}
+            
             <div className="flex gap-2">
               <Button
                 variant="outline"
@@ -465,9 +488,20 @@ export function StageAssets({ submissionId, onContinue, onBack, onSaveExit }: St
             {(folders.length > 0 || assets.length > 0) && (
               <div className="space-y-2 mt-4">
                 {folders.map((folder) => (
-                  <div key={folder.id} className="flex items-center gap-2 p-2 bg-muted rounded">
-                    <Folder className="h-4 w-4 text-primary" />
+                  <div 
+                    key={folder.id} 
+                    onClick={() => setSelectedFolderId(folder.id === selectedFolderId ? null : folder.id)}
+                    className={`flex items-center gap-2 p-2 rounded cursor-pointer transition-colors ${
+                      folder.id === selectedFolderId 
+                        ? 'bg-primary text-primary-foreground' 
+                        : 'bg-muted hover:bg-muted/80'
+                    }`}
+                  >
+                    <Folder className="h-4 w-4" />
                     <span className="text-sm">{folder.name}</span>
+                    {folder.id === selectedFolderId && (
+                      <Badge variant="secondary" className="ml-auto">Selected</Badge>
+                    )}
                   </div>
                 ))}
                 {assets.map((asset) => (
