@@ -5,13 +5,13 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { ClientProvider, useClient } from "@/contexts/ClientContext";
 import { Button } from "@/components/ui/button";
-import { Plus, Calendar, CheckSquare, Upload, HelpCircle } from "lucide-react";
+import { Plus, Calendar, CheckSquare, HelpCircle } from "lucide-react";
 import { Session } from "@supabase/supabase-js";
 import { BookMeetingDialog } from "@/components/meetings/BookMeetingDialog";
 import { ViewScheduleDialog } from "@/components/meetings/ViewScheduleDialog";
 import { CreateMeetingDialog } from "@/components/meetings/CreateMeetingDialog";
 import { CreateTaskDialog } from "@/components/tasks/CreateTaskDialog";
-import { CreateAssetDialog } from "@/components/assets/CreateAssetDialog";
+
 import { CreateTicketDialog } from "@/components/support/CreateTicketDialog";
 
 interface MainLayoutProps {
@@ -29,7 +29,7 @@ function MainLayoutContent({ children }: MainLayoutProps) {
   const [viewScheduleDialogOpen, setViewScheduleDialogOpen] = useState(false);
   const [createMeetingDialogOpen, setCreateMeetingDialogOpen] = useState(false);
   const [createTaskDialogOpen, setCreateTaskDialogOpen] = useState(false);
-  const [createAssetDialogOpen, setCreateAssetDialogOpen] = useState(false);
+  
   const [createTicketDialogOpen, setCreateTicketDialogOpen] = useState(false);
 
   useEffect(() => {
@@ -159,10 +159,6 @@ function MainLayoutContent({ children }: MainLayoutProps) {
                 <CheckSquare className="h-4 w-4 mr-2" />
                 New Task
               </Button>
-              <Button variant="ghost" size="sm" onClick={() => setCreateAssetDialogOpen(true)}>
-                <Upload className="h-4 w-4 mr-2" />
-                Upload Asset
-              </Button>
               <Button variant="ghost" size="sm" onClick={() => setCreateTicketDialogOpen(true)}>
                 <HelpCircle className="h-4 w-4 mr-2" />
                 New Ticket
@@ -197,10 +193,6 @@ function MainLayoutContent({ children }: MainLayoutProps) {
       <CreateTaskDialog
         open={createTaskDialogOpen}
         onOpenChange={setCreateTaskDialogOpen}
-      />
-      <CreateAssetDialog
-        open={createAssetDialogOpen}
-        onOpenChange={setCreateAssetDialogOpen}
       />
       <CreateTicketDialog
         open={createTicketDialogOpen}
