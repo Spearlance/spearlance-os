@@ -19,7 +19,7 @@ verify_jwt = false
 verify_jwt = true
 
 [functions.cal-refresh-token]
-verify_jwt = false
+verify_jwt = true
 
 [functions.invite-team-member]
 verify_jwt = true

@@ -16,19 +16,29 @@ Deno.serve(async (req) => {
   );
 
   try {
-    // Get the expired access token from Authorization header
+    // Validate the caller's identity using a valid session token
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       throw new Error('Missing Authorization header');
     }
 
-    const expiredToken = authHeader.replace('Bearer ', '');
+    const sessionToken = authHeader.replace('Bearer ', '');
 
-    // Find user by their current access token
+    // Authenticate the user
+    const { data: { user }, error: authError } = await supabase.auth.getUser(sessionToken);
+    
+    if (authError || !user) {
+      console.error('Authentication failed:', authError);
+      throw new Error('Invalid session token');
+    }
+
+    console.log('Refreshing tokens for authenticated user:', user.id);
+
+    // Fetch tokens for the authenticated user
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('id, cal_refresh_token')
-      .eq('cal_access_token', expiredToken)
+      .select('cal_refresh_token, cal_access_token')
+      .eq('id', user.id)
       .single();
 
     if (profileError || !profile || !profile.cal_refresh_token) {
@@ -42,8 +52,6 @@ Deno.serve(async (req) => {
     if (!clientId || !clientSecret) {
       throw new Error('Cal.com credentials not configured');
     }
-
-    console.log('Refreshing tokens for user:', profile.id);
 
     // Call Cal.com refresh endpoint
     const refreshResponse = await fetch('https://api.cal.com/v2/oauth/refresh', {
@@ -84,14 +92,14 @@ Deno.serve(async (req) => {
         cal_refresh_token: newRefreshToken,
         cal_token_expires_at: tokenExpiresAt
       })
-      .eq('id', profile.id);
+      .eq('id', user.id);
 
     if (updateError) {
       console.error('Failed to update tokens:', updateError);
       throw new Error('Failed to save new tokens');
     }
 
-    console.log('Tokens refreshed successfully for user:', profile.id);
+    console.log('Tokens refreshed successfully for user:', user.id);
 
     // Return new access token in the format atoms expect
     return new Response(
