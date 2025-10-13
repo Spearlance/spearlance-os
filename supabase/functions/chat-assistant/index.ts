@@ -631,146 +631,247 @@ Safety:
       throw new Error(`Lovable AI error: ${response.status}`);
     }
 
-    // Stream the response back, handling function calls
+    // Two-phase function calling: collect functions, execute them, then get final response
     const reader = response.body?.getReader();
-    const encoder = new TextEncoder();
     const decoder = new TextDecoder();
+    
+    if (!reader) {
+      throw new Error('No response body from AI');
+    }
 
-    const stream = new ReadableStream({
-      async start(controller) {
-        if (!reader) return;
-        
-        let buffer = '';
-        
+    // Phase 1: Collect function calls from initial stream
+    interface FunctionCall {
+      id: string;
+      name: string;
+      arguments: string;
+    }
+
+    const functionCalls: Record<number, FunctionCall> = {};
+    let assistantMessage = '';
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+
+      for (const line of lines) {
+        if (!line.trim() || line.startsWith(':')) continue;
+        if (!line.startsWith('data: ')) continue;
+
+        const data = line.slice(6).trim();
+        if (data === '[DONE]') continue;
+
         try {
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            
-            buffer += decoder.decode(value, { stream: true });
-            const lines = buffer.split('\n');
-            buffer = lines.pop() || '';
-            
-            for (const line of lines) {
-              if (!line.trim() || line.startsWith(':')) continue;
-              if (!line.startsWith('data: ')) continue;
+          const parsed = JSON.parse(data);
+          const delta = parsed.choices?.[0]?.delta;
+
+          // Accumulate assistant message content
+          if (delta?.content) {
+            assistantMessage += delta.content;
+          }
+
+          // Accumulate function calls
+          if (delta?.tool_calls) {
+            for (const toolCall of delta.tool_calls) {
+              const index = toolCall.index;
               
-              const data = line.slice(6);
-              if (data === '[DONE]') {
-                controller.enqueue(encoder.encode('data: [DONE]\n\n'));
-                continue;
+              if (!functionCalls[index]) {
+                functionCalls[index] = {
+                  id: toolCall.id || `call_${index}`,
+                  name: '',
+                  arguments: ''
+                };
               }
-              
-              try {
-                const parsed = JSON.parse(data);
-                const toolCalls = parsed.choices?.[0]?.delta?.tool_calls;
-                
-                // Handle function calls
-                if (toolCalls && toolCalls.length > 0) {
-                  for (const toolCall of toolCalls) {
-                    if (toolCall.function?.name && toolCall.function?.arguments) {
-                      const functionName = toolCall.function.name;
-                      const args = JSON.parse(toolCall.function.arguments);
-                      
-                      console.log(`Executing function: ${functionName}`, args);
-                      
-                      let result;
-                      let error = null;
-                      
-                      try {
-                        // Execute the appropriate function
-                        switch (functionName) {
-                          case 'get_client_info':
-                            result = await getClientInfo(supabaseClient, client_id);
-                            break;
-                          case 'search_tasks':
-                            result = await searchTasks(supabaseClient, args, client_id, userRole);
-                            break;
-                          case 'get_reports':
-                            result = await getReports(supabaseClient, args, client_id);
-                            break;
-                          case 'get_services':
-                            result = await getServices(supabaseClient, client_id);
-                            break;
-                          case 'get_avatars':
-                            result = await getAvatars(supabaseClient, client_id);
-                            break;
-                          case 'get_meetings':
-                            result = await getMeetings(supabaseClient, args, client_id, userRole);
-                            break;
-                          case 'get_marketing_channels':
-                            result = await getMarketingChannels(supabaseClient, args, client_id);
-                            break;
-                          case 'search_assets':
-                            result = await searchAssets(supabaseClient, args, client_id);
-                            break;
-                          case 'get_tickets':
-                            result = await getTickets(supabaseClient, args, client_id);
-                            break;
-                          default:
-                            result = { error: 'Unknown function' };
-                        }
-                        
-                        // Log the tool call
-                        await logToolCall(
-                          supabaseClient,
-                          user.id,
-                          client_id,
-                          functionName,
-                          args,
-                          (result as any).result_count || 0,
-                          null
-                        );
-                        
-                      } catch (err: any) {
-                        console.error(`Function ${functionName} error:`, err);
-                        error = err.message;
-                        result = { error: err.message };
-                        
-                        await logToolCall(
-                          supabaseClient,
-                          user.id,
-                          client_id,
-                          functionName,
-                          args,
-                          0,
-                          error
-                        );
-                      }
-                      
-                      // Send function result back to AI
-                      // Note: This is simplified - in production you'd need to handle
-                      // the full function calling flow with the AI
-                      console.log(`Function ${functionName} result:`, result);
-                    }
-                  }
-                }
-                
-                // Forward the chunk to the client
-                controller.enqueue(encoder.encode(`data: ${data}\n\n`));
-                
-              } catch (e) {
-                console.error('Parse error:', e);
+
+              if (toolCall.function?.name) {
+                functionCalls[index].name = toolCall.function.name;
+              }
+              if (toolCall.function?.arguments) {
+                functionCalls[index].arguments += toolCall.function.arguments;
               }
             }
           }
-        } catch (err) {
-          console.error('Stream error:', err);
-          controller.error(err);
-        } finally {
-          controller.close();
+        } catch (e) {
+          // Ignore parse errors for incomplete chunks
         }
       }
-    });
+    }
 
-    return new Response(stream, {
-      headers: {
-        ...corsHeaders,
-        'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache',
-        'Connection': 'keep-alive'
+    // Convert functionCalls object to array
+    const functionCallsArray = Object.values(functionCalls).filter(
+      (fc): fc is FunctionCall => fc.name !== ''
+    );
+
+    console.log('Collected function calls:', functionCallsArray.length);
+
+    // Phase 2: Execute functions and make second API call if needed
+    if (functionCallsArray.length > 0) {
+      // Execute all function calls
+      const toolMessages: any[] = [];
+
+      for (const fc of functionCallsArray) {
+        console.log(`Executing function: ${fc.name}`, fc.arguments);
+
+        let result: any;
+        let error: string | null = null;
+
+        try {
+          const args = JSON.parse(fc.arguments);
+
+          // Execute the appropriate function
+          switch (fc.name) {
+            case 'get_client_info':
+              result = await getClientInfo(supabaseClient, client_id);
+              break;
+            case 'search_tasks':
+              result = await searchTasks(supabaseClient, args, client_id, userRole);
+              break;
+            case 'get_reports':
+              result = await getReports(supabaseClient, args, client_id);
+              break;
+            case 'get_services':
+              result = await getServices(supabaseClient, client_id);
+              break;
+            case 'get_avatars':
+              result = await getAvatars(supabaseClient, client_id);
+              break;
+            case 'get_meetings':
+              result = await getMeetings(supabaseClient, args, client_id, userRole);
+              break;
+            case 'get_marketing_channels':
+              result = await getMarketingChannels(supabaseClient, args, client_id);
+              break;
+            case 'search_assets':
+              result = await searchAssets(supabaseClient, args, client_id);
+              break;
+            case 'get_tickets':
+              result = await getTickets(supabaseClient, args, client_id);
+              break;
+            default:
+              result = { error: 'Unknown function' };
+          }
+
+          console.log(`Function ${fc.name} result:`, result);
+
+          // Log the tool call
+          await logToolCall(
+            supabaseClient,
+            user.id,
+            client_id,
+            fc.name,
+            args,
+            (result as any).result_count || 0,
+            null
+          );
+        } catch (err: any) {
+          console.error(`Function ${fc.name} error:`, err);
+          error = err.message;
+          result = { error: err.message };
+
+          await logToolCall(
+            supabaseClient,
+            user.id,
+            client_id,
+            fc.name,
+            {},
+            0,
+            error
+          );
+        }
+
+        // Add tool result message
+        toolMessages.push({
+          role: 'tool',
+          tool_call_id: fc.id,
+          content: JSON.stringify(result)
+        });
       }
-    });
+
+      // Build messages with function results
+      const messagesWithResults = [
+        { role: 'system', content: systemPrompt },
+        ...messages,
+        {
+          role: 'assistant',
+          content: assistantMessage || null,
+          tool_calls: functionCallsArray.map(fc => ({
+            id: fc.id,
+            type: 'function',
+            function: {
+              name: fc.name,
+              arguments: fc.arguments
+            }
+          }))
+        },
+        ...toolMessages
+      ];
+
+      console.log('Making second API call with function results');
+
+      // Make second API call with function results
+      const finalResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: 'google/gemini-2.5-flash',
+          messages: messagesWithResults,
+          stream: true
+        })
+      });
+
+      if (!finalResponse.ok) {
+        const errorText = await finalResponse.text();
+        console.error('Final response error:', finalResponse.status, errorText);
+        throw new Error(`Lovable AI error: ${finalResponse.status}`);
+      }
+
+      // Stream the final response
+      return new Response(finalResponse.body, {
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+          'Connection': 'keep-alive'
+        }
+      });
+    } else {
+      // No function calls - reconstruct and stream the original response
+      console.log('No function calls detected, returning original response');
+      
+      const encoder = new TextEncoder();
+      const stream = new ReadableStream({
+        start(controller) {
+          // Send the accumulated message as a stream
+          if (assistantMessage) {
+            const chunk = {
+              choices: [{
+                delta: { content: assistantMessage },
+                index: 0
+              }]
+            };
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify(chunk)}\n\n`));
+          }
+          controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+          controller.close();
+        }
+      });
+
+      return new Response(stream, {
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+          'Connection': 'keep-alive'
+        }
+      });
+    }
 
   } catch (error: any) {
     console.error('Chat assistant error:', error);
