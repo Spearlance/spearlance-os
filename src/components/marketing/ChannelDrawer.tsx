@@ -191,8 +191,8 @@ export function ChannelDrawer({ open, onOpenChange, channel, onUpdate, isAdminOr
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="spearlance">Spearlance Handles</SelectItem>
-                  <SelectItem value="client">Client Handles</SelectItem>
+                  <SelectItem value="spearlance">Spearlance</SelectItem>
+                  <SelectItem value="client">Client</SelectItem>
                   <SelectItem value="both">Both</SelectItem>
                 </SelectContent>
               </Select>
@@ -212,7 +212,7 @@ export function ChannelDrawer({ open, onOpenChange, channel, onUpdate, isAdminOr
                   <SelectItem value="active">Active</SelectItem>
                   <SelectItem value="in_progress">In Progress</SelectItem>
                   <SelectItem value="paused">Paused</SelectItem>
-                  <SelectItem value="not_used">Not Used</SelectItem>
+                  <SelectItem value="not_used">Not Started</SelectItem>
                 </SelectContent>
               </Select>
             </div>
