@@ -1008,7 +1008,13 @@ export type Database = {
       asset_type: "image" | "video" | "copy" | "doc" | "link" | "other"
       billing_status: "good" | "delinquent" | "cancelled"
       client_status: "active" | "paused" | "archived"
-      launchpad_stage: "discovery" | "access" | "assets" | "avatar" | "complete"
+      launchpad_stage:
+        | "discovery"
+        | "marketing"
+        | "access"
+        | "assets"
+        | "avatar"
+        | "complete"
       storage_type: "upload" | "url"
       task_priority: "low" | "normal" | "high" | "urgent"
       task_status: "to_do" | "in_progress" | "done"
@@ -1145,7 +1151,14 @@ export const Constants = {
       asset_type: ["image", "video", "copy", "doc", "link", "other"],
       billing_status: ["good", "delinquent", "cancelled"],
       client_status: ["active", "paused", "archived"],
-      launchpad_stage: ["discovery", "access", "assets", "avatar", "complete"],
+      launchpad_stage: [
+        "discovery",
+        "marketing",
+        "access",
+        "assets",
+        "avatar",
+        "complete",
+      ],
       storage_type: ["upload", "url"],
       task_priority: ["low", "normal", "high", "urgent"],
       task_status: ["to_do", "in_progress", "done"],
