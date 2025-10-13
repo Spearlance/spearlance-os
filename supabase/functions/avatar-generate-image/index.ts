@@ -46,11 +46,30 @@ serve(async (req) => {
       throw new Error('Please generate an AI summary first before creating avatar images');
     }
 
+    // Build formatted service areas string
+    const serviceAreasText = avatar.service_areas && avatar.service_areas.length > 0
+      ? avatar.service_areas.join(', ')
+      : 'general market area';
+
     // Build image generation prompt based on AI summary
-    const imagePrompt = `Create a realistic portrait representing the ideal customer described below.
-Use demographic hints, occupation, and tone from the text.
-The background should be neutral or loosely connected to their industry.
-Avoid logos or text. Focus on realism and personality.
+    const imagePrompt = `Create a natural, cinematic-style portrait of the ideal customer described below. 
+Focus on authenticity and realism rather than perfection or glamour. Capture their environment, posture, and facial expression in a way that tells a story about their daily life and work.
+
+They should look approachable, confident, and genuine — not like a stock photo model. 
+Avoid stiff poses, formal headshots, or generic office skyscraper backgrounds.
+
+Depict them in a believable real-world setting that reflects their profession and location. 
+Incorporate subtle environmental cues that match the client's service area (${serviceAreasText}), such as lighting, architecture, or surroundings common to that region. 
+If the area is coastal, use warm natural light; if urban, show a soft city background; if suburban or rural, use open space or small-business scenery.
+
+Clothing should match their industry — clean, casual-professional, or job-specific — rather than corporate suits. 
+Lighting should feel natural, with soft shadows and a realistic depth of field. 
+Facial expression should convey focus, thoughtfulness, or warmth, depending on the tone from the avatar summary. 
+Props or background elements (like tools, a laptop, signage, or workspace items) should feel authentic but never cluttered.
+
+If the demographic implies age, gender, or ethnicity, represent it naturally without exaggeration. 
+Avoid hyper-realistic rendering, AI filters, or over-sharpened looks. 
+This should look like a real photo of a genuine person running their business in their real environment.
 
 DESCRIPTION:
 ${avatar.ai_summary}`;
