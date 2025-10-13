@@ -10,6 +10,8 @@ import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import Meetings from "./pages/Meetings";
 import MeetingDetail from "./pages/MeetingDetail";
+import CommunicationLogs from "./pages/CommunicationLogs";
+import CommunicationDetail from "./pages/CommunicationDetail";
 import Tasks from "./pages/Tasks";
 import Assets from "./pages/Assets";
 import Marketing from "./pages/Marketing";
@@ -42,8 +44,10 @@ const App = () => (
                 </MainLayout>
               }
             />
-            <Route path="/meetings" element={<MainLayout><Meetings /></MainLayout>} />
-            <Route path="/meetings/:id" element={<MainLayout><MeetingDetail /></MainLayout>} />
+          <Route path="/meetings" element={<MainLayout><Meetings /></MainLayout>} />
+          <Route path="/meetings/:id" element={<MainLayout><MeetingDetail /></MainLayout>} />
+          <Route path="/communications/logs" element={<MainLayout><CommunicationLogs /></MainLayout>} />
+          <Route path="/communications/logs/:id" element={<MainLayout><CommunicationDetail /></MainLayout>} />
             <Route path="/tasks" element={<MainLayout><Tasks /></MainLayout>} />
             <Route path="/assets" element={<MainLayout><Assets /></MainLayout>} />
             <Route path="/marketing/services" element={<MainLayout><Marketing /></MainLayout>} />

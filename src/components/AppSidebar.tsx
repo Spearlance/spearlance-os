@@ -44,13 +44,13 @@ import {
   GitBranch,
   ChevronDown,
   FileText,
+  MessageSquare,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 
 const menuItems = [
   { title: "Home", url: "/", icon: Home },
-  { title: "Meetings", url: "/meetings", icon: Calendar },
   { title: "Tasks", url: "/tasks", icon: CheckSquare },
   { title: "Assets", url: "/assets", icon: FolderOpen },
   { title: "Avatar", url: "/avatar", icon: Users },
@@ -65,6 +65,11 @@ const marketingSubItems = [
   { title: "Reports", url: "/marketing/reports", icon: FileText },
 ];
 
+const communicationsSubItems = [
+  { title: "Meetings", url: "/meetings", icon: Calendar },
+  { title: "Logs", url: "/communications/logs", icon: MessageSquare },
+];
+
 export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
@@ -73,6 +78,7 @@ export function AppSidebar() {
   const { toast } = useToast();
   const [userRole, setUserRole] = useState<string>("");
   const [marketingOpen, setMarketingOpen] = useState(true);
+  const [communicationsOpen, setCommunicationsOpen] = useState(false);
 
   useEffect(() => {
     const fetchUserRole = async () => {
@@ -155,7 +161,56 @@ export function AppSidebar() {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {menuItems.slice(0, 4).map((item) => (
+              {menuItems.slice(0, 1).map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild>
+                    <NavLink to={item.url} end className={getNavClass}>
+                      <item.icon className="h-4 w-4" />
+                      {!collapsed && <span>{item.title}</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+
+              {(userRole === 'admin' || userRole === 'fmm') && (
+                <Collapsible open={communicationsOpen} onOpenChange={setCommunicationsOpen}>
+                  <SidebarMenuItem>
+                    <CollapsibleTrigger asChild>
+                      <SidebarMenuButton>
+                        <MessageSquare className="h-4 w-4" />
+                        {!collapsed && (
+                          <>
+                            <span>Communications</span>
+                            <ChevronDown 
+                              className={`ml-auto h-4 w-4 transition-transform ${
+                                communicationsOpen ? "rotate-180" : ""
+                              }`}
+                            />
+                          </>
+                        )}
+                      </SidebarMenuButton>
+                    </CollapsibleTrigger>
+                    {!collapsed && (
+                      <CollapsibleContent>
+                        <SidebarMenuSub>
+                          {communicationsSubItems.map((subItem) => (
+                            <SidebarMenuSubItem key={subItem.title}>
+                              <SidebarMenuSubButton asChild>
+                                <NavLink to={subItem.url} className={getNavClass}>
+                                  <subItem.icon className="h-4 w-4" />
+                                  <span>{subItem.title}</span>
+                                </NavLink>
+                              </SidebarMenuSubButton>
+                            </SidebarMenuSubItem>
+                          ))}
+                        </SidebarMenuSub>
+                      </CollapsibleContent>
+                    )}
+                  </SidebarMenuItem>
+                </Collapsible>
+              )}
+
+              {menuItems.slice(1, 4).map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <NavLink to={item.url} end className={getNavClass}>

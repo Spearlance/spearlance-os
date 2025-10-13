@@ -12,8 +12,9 @@ import { AvailabilitySettings } from "@calcom/atoms";
 import { useCalReady } from "@/components/CalProvider";
 import { InviteTeamMemberDialog } from "@/components/settings/InviteTeamMemberDialog";
 import { TeamMembersList } from "@/components/settings/TeamMembersList";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Clock } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Clock, Copy, Info } from "lucide-react";
 
 export default function Settings() {
   const { selectedClient, refreshClients } = useClient();
@@ -292,6 +293,45 @@ export default function Settings() {
                         Newly logged meetings may not appear immediately in your external calendar.
                       </AlertDescription>
                     </Alert>
+
+                    {selectedClient && (userRole === 'admin' || userRole === 'fmm') && (
+                      <div className="space-y-2 pt-4">
+                        <Label className="text-base font-semibold">Front Integration</Label>
+                        <div className="p-4 border rounded-md bg-muted/50 space-y-3">
+                          <div>
+                            <Label className="text-sm text-muted-foreground">Front Tag</Label>
+                            <div className="flex items-center gap-2 mt-1">
+                              <Badge variant="secondary" className="font-mono text-sm px-3 py-1">
+                                {(selectedClient as any).front_tag}
+                              </Badge>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  navigator.clipboard.writeText((selectedClient as any).front_tag);
+                                  toast({ title: "Front tag copied to clipboard" });
+                                }}
+                              >
+                                <Copy className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                          
+                          <Alert className="bg-blue-50 dark:bg-blue-950/50 border-blue-200">
+                            <Info className="h-4 w-4 text-blue-600" />
+                            <AlertTitle>How to use</AlertTitle>
+                            <AlertDescription className="text-sm space-y-1">
+                              <p>Tag any conversation in Front with <code className="bg-blue-100 dark:bg-blue-900 px-1 rounded">{(selectedClient as any).front_tag}</code> to automatically log it in Communications → Logs.</p>
+                              <p className="text-xs text-muted-foreground mt-2">
+                                Make sure your Front webhook is configured to send to:<br />
+                                <code className="text-xs break-all">https://hrmhqybdsdngsvhjqwma.supabase.co/functions/v1/front-webhook-handler</code>
+                              </p>
+                            </AlertDescription>
+                          </Alert>
+                        </div>
+                      </div>
+                    )}
                     <div className="text-xs text-muted-foreground">
                       <p className="font-medium mb-1">How to use:</p>
                       <ul className="list-disc list-inside space-y-1">

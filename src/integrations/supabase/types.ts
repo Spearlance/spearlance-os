@@ -446,6 +446,7 @@ export type Database = {
           created_at: string | null
           domain: string | null
           drive_folder_url: string | null
+          front_tag: string
           id: string
           logo_url: string | null
           name: string
@@ -463,6 +464,7 @@ export type Database = {
           created_at?: string | null
           domain?: string | null
           drive_folder_url?: string | null
+          front_tag: string
           id?: string
           logo_url?: string | null
           name: string
@@ -480,6 +482,7 @@ export type Database = {
           created_at?: string | null
           domain?: string | null
           drive_folder_url?: string | null
+          front_tag?: string
           id?: string
           logo_url?: string | null
           name?: string
@@ -502,6 +505,129 @@ export type Database = {
             columns: ["primary_contact_user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      communication_logs: {
+        Row: {
+          attachments: Json | null
+          call_duration_minutes: number | null
+          call_recording_url: string | null
+          client_id: string
+          created_at: string | null
+          created_by: string | null
+          front_conversation_id: string | null
+          front_conversation_url: string | null
+          id: string
+          internal_notes: string | null
+          last_message_at: string | null
+          message_thread: Json
+          participants: Json
+          search_vector: unknown | null
+          source: string
+          subject_line: string
+          tags: string[] | null
+          type: Database["public"]["Enums"]["communication_type"]
+        }
+        Insert: {
+          attachments?: Json | null
+          call_duration_minutes?: number | null
+          call_recording_url?: string | null
+          client_id: string
+          created_at?: string | null
+          created_by?: string | null
+          front_conversation_id?: string | null
+          front_conversation_url?: string | null
+          id?: string
+          internal_notes?: string | null
+          last_message_at?: string | null
+          message_thread?: Json
+          participants?: Json
+          search_vector?: unknown | null
+          source?: string
+          subject_line: string
+          tags?: string[] | null
+          type: Database["public"]["Enums"]["communication_type"]
+        }
+        Update: {
+          attachments?: Json | null
+          call_duration_minutes?: number | null
+          call_recording_url?: string | null
+          client_id?: string
+          created_at?: string | null
+          created_by?: string | null
+          front_conversation_id?: string | null
+          front_conversation_url?: string | null
+          id?: string
+          internal_notes?: string | null
+          last_message_at?: string | null
+          message_thread?: Json
+          participants?: Json
+          search_vector?: unknown | null
+          source?: string
+          subject_line?: string
+          tags?: string[] | null
+          type?: Database["public"]["Enums"]["communication_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "communication_logs_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "communication_logs_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      front_webhook_logs: {
+        Row: {
+          client_id: string | null
+          communication_log_id: string | null
+          created_at: string | null
+          error_message: string | null
+          id: string
+          payload: Json
+          processed: boolean | null
+        }
+        Insert: {
+          client_id?: string | null
+          communication_log_id?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          payload: Json
+          processed?: boolean | null
+        }
+        Update: {
+          client_id?: string | null
+          communication_log_id?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          payload?: Json
+          processed?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "front_webhook_logs_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "front_webhook_logs_communication_log_id_fkey"
+            columns: ["communication_log_id"]
+            isOneToOne: false
+            referencedRelation: "communication_logs"
             referencedColumns: ["id"]
           },
         ]
@@ -1434,6 +1560,7 @@ export type Database = {
       channel_ownership: "spearlance" | "client" | "both"
       channel_status: "active" | "in_progress" | "paused" | "not_used"
       client_status: "active" | "paused" | "archived"
+      communication_type: "email" | "text" | "call"
       launchpad_stage:
         | "discovery"
         | "marketing"
@@ -1579,6 +1706,7 @@ export const Constants = {
       channel_ownership: ["spearlance", "client", "both"],
       channel_status: ["active", "in_progress", "paused", "not_used"],
       client_status: ["active", "paused", "archived"],
+      communication_type: ["email", "text", "call"],
       launchpad_stage: [
         "discovery",
         "marketing",

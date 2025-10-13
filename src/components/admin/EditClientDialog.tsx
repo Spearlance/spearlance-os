@@ -248,6 +248,31 @@ export function EditClientDialog({ client, assignedUsers, onClientUpdated }: Edi
               onLogoSaved={onClientUpdated}
             />
 
+            {(client as any).front_tag && (
+              <div className="space-y-2 p-3 border rounded-md bg-muted/50">
+                <div className="text-sm font-medium">Front Integration</div>
+                <div className="flex items-center gap-2">
+                  <Badge variant="secondary" className="font-mono">
+                    {(client as any).front_tag}
+                  </Badge>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      navigator.clipboard.writeText((client as any).front_tag);
+                      toast({ title: "Front tag copied" });
+                    }}
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Tag conversations in Front to auto-log communications.
+                </p>
+              </div>
+            )}
+
             <Separator />
 
             <FormField
