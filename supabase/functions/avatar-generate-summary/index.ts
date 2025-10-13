@@ -124,7 +124,15 @@ Format your response as JSON:
     // Parse JSON response
     let aiResponse;
     try {
-      aiResponse = JSON.parse(content);
+      // Strip markdown code block wrapper if present
+      let cleanedContent = content.trim();
+      if (cleanedContent.startsWith('```json')) {
+        cleanedContent = cleanedContent.replace(/^```json\n/, '').replace(/\n```$/, '');
+      } else if (cleanedContent.startsWith('```')) {
+        cleanedContent = cleanedContent.replace(/^```\n/, '').replace(/\n```$/, '');
+      }
+      
+      aiResponse = JSON.parse(cleanedContent);
     } catch (e) {
       console.error('Failed to parse AI response as JSON:', content);
       throw new Error('AI returned invalid JSON');
