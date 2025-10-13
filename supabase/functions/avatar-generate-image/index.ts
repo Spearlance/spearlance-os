@@ -12,11 +12,11 @@ serve(async (req) => {
   }
 
   try {
-    const { client_id } = await req.json();
-    console.log('Generating avatar image for client:', client_id);
+    const { avatar_id } = await req.json();
+    console.log('Generating avatar image for avatar:', avatar_id);
 
-    if (!client_id) {
-      throw new Error('client_id is required');
+    if (!avatar_id) {
+      throw new Error('avatar_id is required');
     }
 
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
@@ -33,7 +33,7 @@ serve(async (req) => {
     const { data: avatar, error: avatarError } = await supabase
       .from('avatars')
       .select('*')
-      .eq('client_id', client_id)
+      .eq('id', avatar_id)
       .single();
 
     if (avatarError) {
