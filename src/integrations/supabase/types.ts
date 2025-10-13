@@ -369,6 +369,74 @@ export type Database = {
         }
         Relationships: []
       }
+      chat_audit_logs: {
+        Row: {
+          client_id: string
+          created_at: string
+          error: string | null
+          function_name: string
+          id: string
+          parameters: Json | null
+          result_count: number | null
+          user_id: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          error?: string | null
+          function_name: string
+          id?: string
+          parameters?: Json | null
+          result_count?: number | null
+          user_id: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          error?: string | null
+          function_name?: string
+          id?: string
+          parameters?: Json | null
+          result_count?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_audit_logs_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_rate_limits: {
+        Row: {
+          created_at: string
+          id: string
+          request_count: number
+          updated_at: string
+          user_id: string
+          window_start: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          request_count?: number
+          updated_at?: string
+          user_id: string
+          window_start: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          request_count?: number
+          updated_at?: string
+          user_id?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
       clients: {
         Row: {
           billing_plan_id: string | null

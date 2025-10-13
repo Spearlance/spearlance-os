@@ -11,8 +11,8 @@ import { BookMeetingDialog } from "@/components/meetings/BookMeetingDialog";
 import { ViewScheduleDialog } from "@/components/meetings/ViewScheduleDialog";
 import { CreateMeetingDialog } from "@/components/meetings/CreateMeetingDialog";
 import { CreateTaskDialog } from "@/components/tasks/CreateTaskDialog";
-
 import { CreateTicketDialog } from "@/components/support/CreateTicketDialog";
+import { ChatbotWidget } from "@/components/chatbot/ChatbotWidget";
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -170,6 +170,9 @@ function MainLayoutContent({ children }: MainLayoutProps) {
           </main>
         </div>
       </div>
+
+      {/* AI Chatbot Widget */}
+      <ChatbotWidget />
 
       {/* Booking Dialogs */}
       <BookMeetingDialog
