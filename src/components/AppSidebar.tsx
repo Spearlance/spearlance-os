@@ -11,9 +11,17 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import {
   Select,
   SelectContent,
@@ -34,6 +42,7 @@ import {
   Shield,
   TrendingUp,
   GitBranch,
+  ChevronDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -43,12 +52,15 @@ const menuItems = [
   { title: "Meetings", url: "/meetings", icon: Calendar },
   { title: "Tasks", url: "/tasks", icon: CheckSquare },
   { title: "Assets", url: "/assets", icon: FolderOpen },
-  { title: "Marketing", url: "/marketing", icon: TrendingUp },
-  { title: "Marketing Flowchart", url: "/marketing-flowchart", icon: GitBranch },
   { title: "Avatar", url: "/avatar", icon: Users },
   { title: "Launch Pad", url: "/launchpad", icon: Rocket },
   { title: "Support", url: "/support", icon: HelpCircle },
   { title: "Settings", url: "/settings", icon: Settings },
+];
+
+const marketingSubItems = [
+  { title: "Services", url: "/marketing", icon: TrendingUp },
+  { title: "Flowchart", url: "/marketing-flowchart", icon: GitBranch },
 ];
 
 export function AppSidebar() {
@@ -58,6 +70,7 @@ export function AppSidebar() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [userRole, setUserRole] = useState<string>("");
+  const [marketingOpen, setMarketingOpen] = useState(true);
 
   useEffect(() => {
     const fetchUserRole = async () => {
@@ -139,7 +152,7 @@ export function AppSidebar() {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {menuItems.map((item) => (
+              {menuItems.slice(0, 4).map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <NavLink to={item.url} end className={getNavClass}>
@@ -149,6 +162,54 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+
+              <Collapsible open={marketingOpen} onOpenChange={setMarketingOpen}>
+                <SidebarMenuItem>
+                  <CollapsibleTrigger asChild>
+                    <SidebarMenuButton>
+                      <TrendingUp className="h-4 w-4" />
+                      {!collapsed && (
+                        <>
+                          <span>Marketing</span>
+                          <ChevronDown 
+                            className={`ml-auto h-4 w-4 transition-transform ${
+                              marketingOpen ? "rotate-180" : ""
+                            }`}
+                          />
+                        </>
+                      )}
+                    </SidebarMenuButton>
+                  </CollapsibleTrigger>
+                  {!collapsed && (
+                    <CollapsibleContent>
+                      <SidebarMenuSub>
+                        {marketingSubItems.map((subItem) => (
+                          <SidebarMenuSubItem key={subItem.title}>
+                            <SidebarMenuSubButton asChild>
+                              <NavLink to={subItem.url} end className={getNavClass}>
+                                <subItem.icon className="h-4 w-4" />
+                                <span>{subItem.title}</span>
+                              </NavLink>
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
+                        ))}
+                      </SidebarMenuSub>
+                    </CollapsibleContent>
+                  )}
+                </SidebarMenuItem>
+              </Collapsible>
+
+              {menuItems.slice(4).map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild>
+                    <NavLink to={item.url} end className={getNavClass}>
+                      <item.icon className="h-4 w-4" />
+                      {!collapsed && <span>{item.title}</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+
               {userRole === "admin" && (
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild>
