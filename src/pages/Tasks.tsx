@@ -6,7 +6,9 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { CalendarIcon, MessageSquare, Paperclip } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TaskDrawer } from "@/components/tasks/TaskDrawer";
+import { TemplateManager } from "@/components/tasks/TemplateManager";
 import { useToast } from "@/hooks/use-toast";
 
 interface Task {
@@ -33,13 +35,33 @@ export default function Tasks() {
     done: [],
   });
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [userRole, setUserRole] = useState<string>("");
   const { toast } = useToast();
+
+  const isAdminOrFMM = userRole === 'admin' || userRole === 'fmm';
+
+  useEffect(() => {
+    loadUserRole();
+  }, []);
 
   useEffect(() => {
     if (selectedClient) {
       loadTasks();
     }
   }, [selectedClient]);
+
+  const loadUserRole = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    
+    const { data } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+    
+    if (data) setUserRole(data.role);
+  };
 
   const loadTasks = async () => {
     if (!selectedClient) return;
@@ -121,7 +143,14 @@ export default function Tasks() {
         <h1 className="text-3xl font-bold">Tasks</h1>
       </div>
 
-      <DragDropContext onDragEnd={onDragEnd}>
+      <Tabs defaultValue="board" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="board">Board</TabsTrigger>
+          {isAdminOrFMM && <TabsTrigger value="templates">Templates</TabsTrigger>}
+        </TabsList>
+
+        <TabsContent value="board" className="space-y-0">
+          <DragDropContext onDragEnd={onDragEnd}>
         <div className="grid grid-cols-3 gap-6">
           {["to_do", "in_progress", "done"].map((columnId) => (
             <div key={columnId} className="space-y-4">
@@ -206,6 +235,14 @@ export default function Tasks() {
           onUpdate={loadTasks}
         />
       )}
+        </TabsContent>
+
+        {isAdminOrFMM && (
+          <TabsContent value="templates" className="space-y-0">
+            <TemplateManager />
+          </TabsContent>
+        )}
+      </Tabs>
     </div>
   );
 }
