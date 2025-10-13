@@ -6,7 +6,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useClient } from "@/contexts/ClientContext";
-import { Upload, FileText, X, Folder, FolderPlus } from "lucide-react";
+import { Upload, FileText, X, Folder, FolderPlus, Home, ChevronRight, FolderOpen } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { CreateFolderDialog } from "@/components/assets/CreateFolderDialog";
 
@@ -63,9 +63,19 @@ export function StageAssets({ submissionId, onContinue, onBack, onSaveExit }: St
 
   useEffect(() => {
     loadBrandColors();
-    loadFolders();
-    loadAssets();
+    loadFolders(null);
+    loadAssets(null);
   }, [submissionId, selectedClient]);
+
+  const navigateToFolder = (folderId: string | null) => {
+    setSelectedFolderId(folderId);
+    loadFolders(folderId);
+    loadAssets(folderId);
+  };
+
+  const navigateToRoot = () => {
+    navigateToFolder(null);
+  };
 
   const loadBrandColors = async () => {
     const { data, error } = await supabase
@@ -91,14 +101,21 @@ export function StageAssets({ submissionId, onContinue, onBack, onSaveExit }: St
     }
   };
 
-  const loadFolders = async () => {
+  const loadFolders = async (parentId: string | null = null) => {
     if (!selectedClient?.id) return;
 
-    const { data, error } = await supabase
+    let query = supabase
       .from("asset_folders")
       .select("id, name, color")
-      .eq("client_id", selectedClient.id)
-      .is("parent_folder_id", null);
+      .eq("client_id", selectedClient.id);
+
+    if (parentId === null) {
+      query = query.is("parent_folder_id", null);
+    } else {
+      query = query.eq("parent_folder_id", parentId);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       console.error("Error loading folders:", error);
@@ -108,14 +125,22 @@ export function StageAssets({ submissionId, onContinue, onBack, onSaveExit }: St
     setFolders(data || []);
   };
 
-  const loadAssets = async () => {
+  const loadAssets = async (folderId: string | null = null) => {
     if (!selectedClient?.id) return;
 
-    const { data, error } = await supabase
+    let query = supabase
       .from("assets")
       .select("id, title, type")
-      .eq("client_id", selectedClient.id)
-      .is("folder_id", null);
+      .eq("client_id", selectedClient.id);
+
+    // Filter by folder_id - null shows root, specific ID shows folder contents
+    if (folderId === null) {
+      query = query.is("folder_id", null);
+    } else {
+      query = query.eq("folder_id", folderId);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       console.error("Error loading assets:", error);
@@ -249,7 +274,7 @@ export function StageAssets({ submissionId, onContinue, onBack, onSaveExit }: St
 
     if (uploaded.length > 0) {
       toast({ title: `${uploaded.length} file(s) uploaded successfully` });
-      loadAssets();
+      loadAssets(selectedFolderId);
     }
   };
 
@@ -435,26 +460,38 @@ export function StageAssets({ submissionId, onContinue, onBack, onSaveExit }: St
               </p>
             </div>
             
-            {selectedFolderId && (
-              <div className="text-sm p-2 bg-muted rounded flex items-center justify-between mb-2">
+            {/* Breadcrumb Navigation */}
+            <div className="flex items-center gap-2 mb-3 text-sm">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={navigateToRoot}
+                disabled={selectedFolderId === null}
+                className="h-7"
+              >
+                <Home className="h-3 w-3 mr-1" />
+                Root
+              </Button>
+              {selectedFolderId && (
+                <>
+                  <ChevronRight className="h-3 w-3 text-muted-foreground" />
+                  <span className="font-medium">
+                    {folders.find(f => f.id === selectedFolderId)?.name || 'Folder'}
+                  </span>
+                </>
+              )}
+            </div>
+
+            {/* Upload Destination Display */}
+            <div className="text-sm p-2 bg-muted rounded mb-2">
+              {selectedFolderId ? (
                 <span>
                   📁 Uploading to: <strong>{folders.find(f => f.id === selectedFolderId)?.name}</strong>
                 </span>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={() => setSelectedFolderId(null)}
-                >
-                  Upload to root instead
-                </Button>
-              </div>
-            )}
-            
-            {!selectedFolderId && (
-              <div className="text-sm text-muted-foreground p-2 bg-muted rounded mb-2">
-                📂 Uploading to: <strong>Root folder</strong>
-              </div>
-            )}
+              ) : (
+                <span>📂 Uploading to: <strong>Root folder</strong></span>
+              )}
+            </div>
             
             <div className="flex gap-2">
               <Button
@@ -485,31 +522,39 @@ export function StageAssets({ submissionId, onContinue, onBack, onSaveExit }: St
             </div>
 
             {/* Display folders and assets */}
-            {(folders.length > 0 || assets.length > 0) && (
+            {(folders.length > 0 || assets.length > 0) ? (
               <div className="space-y-2 mt-4">
                 {folders.map((folder) => (
                   <div 
                     key={folder.id} 
-                    onClick={() => setSelectedFolderId(folder.id === selectedFolderId ? null : folder.id)}
-                    className={`flex items-center gap-2 p-2 rounded cursor-pointer transition-colors ${
-                      folder.id === selectedFolderId 
-                        ? 'bg-primary text-primary-foreground' 
-                        : 'bg-muted hover:bg-muted/80'
-                    }`}
+                    onClick={() => navigateToFolder(folder.id)}
+                    className="flex items-center gap-2 p-2 rounded cursor-pointer transition-colors bg-muted hover:bg-muted/80"
                   >
-                    <Folder className="h-4 w-4" />
+                    <Folder className="h-4 w-4 text-primary" />
                     <span className="text-sm">{folder.name}</span>
-                    {folder.id === selectedFolderId && (
-                      <Badge variant="secondary" className="ml-auto">Selected</Badge>
-                    )}
+                    <ChevronRight className="h-4 w-4 ml-auto text-muted-foreground" />
                   </div>
                 ))}
                 {assets.map((asset) => (
-                  <div key={asset.id} className="flex items-center gap-2 p-2 bg-muted rounded">
-                    <FileText className="h-4 w-4" />
+                  <div key={asset.id} className="flex items-center gap-2 p-2 bg-muted/50 rounded">
+                    <FileText className="h-4 w-4 text-muted-foreground" />
                     <span className="text-sm">{asset.title}</span>
+                    <Badge variant="outline" className="ml-auto text-xs">{asset.type}</Badge>
                   </div>
                 ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                <FolderOpen className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">
+                  {selectedFolderId ? "This folder is empty" : "No folders or files yet"}
+                </p>
+                <p className="text-xs mt-1">
+                  {selectedFolderId 
+                    ? "Upload files or create subfolders to get started" 
+                    : "Create folders and upload files to organize your assets"
+                  }
+                </p>
               </div>
             )}
           </div>
@@ -566,9 +611,9 @@ export function StageAssets({ submissionId, onContinue, onBack, onSaveExit }: St
       <CreateFolderDialog
         open={folderDialogOpen}
         onOpenChange={setFolderDialogOpen}
-        parentFolderId={null}
+        parentFolderId={selectedFolderId}
         onSuccess={() => {
-          loadFolders();
+          loadFolders(selectedFolderId);
           toast({ title: "Folder created successfully" });
         }}
       />
