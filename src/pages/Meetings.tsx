@@ -4,7 +4,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { CreateMeetingDialog } from "@/components/meetings/CreateMeetingDialog";
+import { Plus } from "lucide-react";
 
 interface Meeting {
   id: string;
@@ -19,6 +23,8 @@ interface Meeting {
 export default function Meetings() {
   const { selectedClient } = useClient();
   const [meetings, setMeetings] = useState<Meeting[]>([]);
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -26,16 +32,21 @@ export default function Meetings() {
     if (selectedClient) {
       loadMeetings();
     }
-  }, [selectedClient]);
+  }, [selectedClient, statusFilter]);
 
   const loadMeetings = async () => {
     if (!selectedClient) return;
 
-    const { data, error } = await supabase
+    let query = supabase
       .from("meetings")
       .select("*")
-      .eq("client_id", selectedClient.id)
-      .order("date_time", { ascending: false });
+      .eq("client_id", selectedClient.id);
+
+    if (statusFilter !== "all") {
+      query = query.eq("status", statusFilter);
+    }
+
+    const { data, error } = await query.order("date_time", { ascending: false });
 
     if (error) {
       toast({ title: "Error loading meetings", variant: "destructive" });
@@ -49,6 +60,23 @@ export default function Meetings() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Meetings</h1>
+        <div className="flex gap-2">
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Filter by status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Meetings</SelectItem>
+              <SelectItem value="scheduled">Scheduled</SelectItem>
+              <SelectItem value="completed">Completed</SelectItem>
+              <SelectItem value="cancelled">Cancelled</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button onClick={() => setShowCreateDialog(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Log Meeting
+          </Button>
+        </div>
       </div>
 
       <div className="border rounded-lg">
@@ -93,6 +121,14 @@ export default function Meetings() {
           </TableBody>
         </Table>
       </div>
+
+      <CreateMeetingDialog 
+        open={showCreateDialog} 
+        onOpenChange={(open) => {
+          setShowCreateDialog(open);
+          if (!open) loadMeetings();
+        }} 
+      />
     </div>
   );
 }

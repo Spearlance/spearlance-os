@@ -382,6 +382,58 @@ async function getTickets(supabase: any, params: any, clientId: string) {
   };
 }
 
+async function getMeetings(supabase: any, params: any, clientId: string) {
+  let query = supabase
+    .from('meetings')
+    .select('id, date_time, summary, attendees, status, decisions, next_steps', { count: 'exact' })
+    .eq('client_id', clientId);
+  
+  if (params.date_from) query = query.gte('date_time', params.date_from);
+  if (params.date_to) query = query.lte('date_time', params.date_to);
+  if (params.status) query = query.eq('status', params.status);
+  
+  const limit = Math.min(params.limit || 50, 50);
+  const offset = params.offset || 0;
+  
+  query = query.order('date_time', { ascending: false }).range(offset, offset + limit - 1);
+  
+  const { data, count, error } = await query;
+  
+  if (error) throw error;
+  
+  // Truncate summaries for list view
+  const truncated = (data || []).map(m => ({
+    ...m,
+    summary: m.summary?.substring(0, 200) + (m.summary?.length > 200 ? '...' : ''),
+    decisions_count: m.decisions?.length || 0,
+    next_steps_count: m.next_steps?.length || 0
+  }));
+  
+  return {
+    items: sanitizeDataForPrompt(truncated),
+    result_count: truncated.length,
+    total_count: count || 0,
+    next_offset: truncated.length >= limit ? offset + limit : null
+  };
+}
+
+async function searchMeetingNotes(supabase: any, params: any, clientId: string) {
+  const { data, error } = await supabase
+    .from('meetings')
+    .select('id, date_time, summary, decisions, next_steps')
+    .eq('client_id', clientId)
+    .or(`summary.ilike.%${params.query}%`)
+    .order('date_time', { ascending: false })
+    .limit(Math.min(params.limit || 20, 20));
+  
+  if (error) throw error;
+  
+  return {
+    items: sanitizeDataForPrompt(data || []),
+    result_count: data?.length || 0
+  };
+}
+
 // Tool definitions for Lovable AI
 const tools = [
   {
@@ -390,6 +442,39 @@ const tools = [
       name: "get_client_info",
       description: "Get basic information about the current client including name, status, and activity counts",
       parameters: { type: "object", properties: {}, required: [] }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_meetings",
+      description: "Retrieve meetings for the current client with optional filters",
+      parameters: {
+        type: "object",
+        properties: {
+          date_from: { type: "string", description: "ISO date string for start date filter" },
+          date_to: { type: "string", description: "ISO date string for end date filter" },
+          status: { type: "string", enum: ["scheduled", "completed", "cancelled"], description: "Filter by meeting status" },
+          limit: { type: "number", description: "Max results to return (default 50)" },
+          offset: { type: "number", description: "Offset for pagination" }
+        },
+        required: []
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "search_meeting_notes",
+      description: "Search across meeting summaries, decisions, and next steps for specific content",
+      parameters: {
+        type: "object",
+        properties: {
+          query: { type: "string", description: "Search query string" },
+          limit: { type: "number", description: "Max results (default 20)" }
+        },
+        required: ["query"]
+      }
     }
   },
   {

@@ -250,6 +250,86 @@ export default function Settings() {
               )}
             </CardContent>
           </Card>
+
+          {(userProfile?.role === 'fmm' || userProfile?.role === 'admin') && (
+            <Card>
+              <CardHeader>
+                <CardTitle>iCal Calendar Subscription</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Subscribe to your meetings calendar in any calendar app (Apple Calendar, Google Calendar, Outlook).
+                </p>
+                {userProfile?.ical_feed_token ? (
+                  <div className="space-y-3">
+                    <div>
+                      <Label>Calendar Subscription URL</Label>
+                      <div className="flex gap-2 mt-1">
+                        <Input
+                          readOnly
+                          value={`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/calendar-ical?token=${userProfile.ical_feed_token}`}
+                          className="font-mono text-xs"
+                        />
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            navigator.clipboard.writeText(
+                              `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/calendar-ical?token=${userProfile.ical_feed_token}`
+                            );
+                            toast({ title: "Copied to clipboard" });
+                          }}
+                        >
+                          Copy
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      <p className="font-medium mb-1">How to use:</p>
+                      <ul className="list-disc list-inside space-y-1">
+                        <li>Apple Calendar: File → New Calendar Subscription → Paste URL</li>
+                        <li>Google Calendar: Settings → Add calendar → From URL → Paste URL</li>
+                        <li>Outlook: Add calendar → Subscribe from web → Paste URL</li>
+                      </ul>
+                    </div>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={async () => {
+                        const { data: { user } } = await supabase.auth.getUser();
+                        if (user) {
+                          await supabase
+                            .from("profiles")
+                            .update({ ical_feed_token: null })
+                            .eq("id", user.id);
+                          await fetchUserProfile();
+                          toast({ title: "Calendar subscription revoked" });
+                        }
+                      }}
+                    >
+                      Revoke Access
+                    </Button>
+                  </div>
+                ) : (
+                  <Button
+                    onClick={async () => {
+                      const { data: { user } } = await supabase.auth.getUser();
+                      if (user) {
+                        const token = crypto.randomUUID();
+                        await supabase
+                          .from("profiles")
+                          .update({ ical_feed_token: token })
+                          .eq("id", user.id);
+                        await fetchUserProfile();
+                        toast({ title: "Calendar subscription URL generated" });
+                      }
+                    }}
+                  >
+                    Generate iCal Feed
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         <TabsContent value="team" className="space-y-4">

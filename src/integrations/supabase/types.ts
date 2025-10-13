@@ -867,6 +867,8 @@ export type Database = {
           decisions: string[] | null
           id: string
           join_url: string | null
+          last_edited_at: string | null
+          last_edited_by: string | null
           next_steps: string[] | null
           recording_url: string | null
           source_system: string | null
@@ -889,6 +891,8 @@ export type Database = {
           decisions?: string[] | null
           id?: string
           join_url?: string | null
+          last_edited_at?: string | null
+          last_edited_by?: string | null
           next_steps?: string[] | null
           recording_url?: string | null
           source_system?: string | null
@@ -911,6 +915,8 @@ export type Database = {
           decisions?: string[] | null
           id?: string
           join_url?: string | null
+          last_edited_at?: string | null
+          last_edited_by?: string | null
           next_steps?: string[] | null
           recording_url?: string | null
           source_system?: string | null
@@ -930,6 +936,13 @@ export type Database = {
           {
             foreignKeyName: "meetings_created_by_fkey"
             columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meetings_last_edited_by_fkey"
+            columns: ["last_edited_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -985,6 +998,7 @@ export type Database = {
           cal_username: string | null
           created_at: string | null
           email: string
+          ical_feed_token: string | null
           id: string
           name: string
           role: Database["public"]["Enums"]["app_role"]
@@ -1002,6 +1016,7 @@ export type Database = {
           cal_username?: string | null
           created_at?: string | null
           email: string
+          ical_feed_token?: string | null
           id: string
           name: string
           role: Database["public"]["Enums"]["app_role"]
@@ -1019,6 +1034,7 @@ export type Database = {
           cal_username?: string | null
           created_at?: string | null
           email?: string
+          ical_feed_token?: string | null
           id?: string
           name?: string
           role?: Database["public"]["Enums"]["app_role"]

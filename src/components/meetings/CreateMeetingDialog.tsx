@@ -24,7 +24,15 @@ export function CreateMeetingDialog({ open, onOpenChange }: CreateMeetingDialogP
     attendees: "",
     summary: "",
     tags: "",
+    title: "",
+    meeting_type: "video",
+    join_url: "",
+    status: "scheduled",
+    decisions: [] as string[],
+    next_steps: [] as string[],
   });
+  const [newDecision, setNewDecision] = useState("");
+  const [newNextStep, setNewNextStep] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,11 +66,14 @@ export function CreateMeetingDialog({ open, onOpenChange }: CreateMeetingDialogP
           client_id: selectedClient.id,
           date_time: formData.date_time,
           attendees: formData.attendees,
-          summary: formData.summary,
+          summary: `${formData.title ? `# ${formData.title}\n\n` : ""}${formData.summary}`,
           tags: tagsArray,
           created_by: user.id,
           source_system: "manual",
-          status: "scheduled",
+          status: formData.status,
+          join_url: formData.join_url || null,
+          decisions: formData.decisions,
+          next_steps: formData.next_steps,
         });
 
       if (error) throw error;
@@ -73,7 +84,18 @@ export function CreateMeetingDialog({ open, onOpenChange }: CreateMeetingDialogP
       });
 
       onOpenChange(false);
-      setFormData({ date_time: "", attendees: "", summary: "", tags: "" });
+      setFormData({ 
+        date_time: "", 
+        attendees: "", 
+        summary: "", 
+        tags: "",
+        title: "",
+        meeting_type: "video",
+        join_url: "",
+        status: "scheduled",
+        decisions: [],
+        next_steps: [],
+      });
       navigate("/meetings");
     } catch (error) {
       console.error("Error creating meeting:", error);
@@ -89,21 +111,75 @@ export function CreateMeetingDialog({ open, onOpenChange }: CreateMeetingDialogP
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Create New Meeting</DialogTitle>
+          <DialogTitle>Log Meeting</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="date_time">Date & Time *</Label>
+              <Input
+                id="date_time"
+                type="datetime-local"
+                value={formData.date_time}
+                onChange={(e) => setFormData({ ...formData, date_time: e.target.value })}
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="status">Status *</Label>
+              <select
+                id="status"
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                value={formData.status}
+                onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                required
+              >
+                <option value="scheduled">Scheduled</option>
+                <option value="completed">Completed</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+            </div>
+          </div>
+
           <div>
-            <Label htmlFor="date_time">Date & Time</Label>
+            <Label htmlFor="title">Meeting Title *</Label>
             <Input
-              id="date_time"
-              type="datetime-local"
-              value={formData.date_time}
-              onChange={(e) => setFormData({ ...formData, date_time: e.target.value })}
+              id="title"
+              value={formData.title}
+              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              placeholder="Q1 Strategy Session"
               required
             />
           </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="meeting_type">Meeting Type</Label>
+              <select
+                id="meeting_type"
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                value={formData.meeting_type}
+                onChange={(e) => setFormData({ ...formData, meeting_type: e.target.value })}
+              >
+                <option value="video">Video Call</option>
+                <option value="call">Phone Call</option>
+                <option value="in-person">In-Person</option>
+                <option value="email">Email Summary</option>
+              </select>
+            </div>
+            <div>
+              <Label htmlFor="join_url">Join URL</Label>
+              <Input
+                id="join_url"
+                value={formData.join_url}
+                onChange={(e) => setFormData({ ...formData, join_url: e.target.value })}
+                placeholder="https://meet.google.com/..."
+              />
+            </div>
+          </div>
+
           <div>
             <Label htmlFor="attendees">Attendees</Label>
             <Input
@@ -113,16 +189,113 @@ export function CreateMeetingDialog({ open, onOpenChange }: CreateMeetingDialogP
               placeholder="John Doe, Jane Smith"
             />
           </div>
+
           <div>
-            <Label htmlFor="summary">Summary</Label>
+            <Label htmlFor="summary">Summary *</Label>
             <Textarea
               id="summary"
               value={formData.summary}
               onChange={(e) => setFormData({ ...formData, summary: e.target.value })}
-              placeholder="Meeting summary..."
+              placeholder="Meeting summary and notes..."
+              className="min-h-[100px]"
               required
             />
           </div>
+
+          <div>
+            <Label>Decisions</Label>
+            <div className="space-y-2">
+              <div className="flex gap-2">
+                <Input
+                  value={newDecision}
+                  onChange={(e) => setNewDecision(e.target.value)}
+                  placeholder="Add a decision"
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      if (newDecision.trim()) {
+                        setFormData({ ...formData, decisions: [...formData.decisions, newDecision.trim()] });
+                        setNewDecision("");
+                      }
+                    }
+                  }}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    if (newDecision.trim()) {
+                      setFormData({ ...formData, decisions: [...formData.decisions, newDecision.trim()] });
+                      setNewDecision("");
+                    }
+                  }}
+                >
+                  Add
+                </Button>
+              </div>
+              {formData.decisions.map((decision, i) => (
+                <div key={i} className="flex items-center gap-2 text-sm p-2 bg-muted rounded">
+                  <span className="flex-1">{decision}</span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setFormData({ ...formData, decisions: formData.decisions.filter((_, idx) => idx !== i) })}
+                  >
+                    Remove
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <Label>Next Steps</Label>
+            <div className="space-y-2">
+              <div className="flex gap-2">
+                <Input
+                  value={newNextStep}
+                  onChange={(e) => setNewNextStep(e.target.value)}
+                  placeholder="Add a next step"
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      if (newNextStep.trim()) {
+                        setFormData({ ...formData, next_steps: [...formData.next_steps, newNextStep.trim()] });
+                        setNewNextStep("");
+                      }
+                    }
+                  }}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    if (newNextStep.trim()) {
+                      setFormData({ ...formData, next_steps: [...formData.next_steps, newNextStep.trim()] });
+                      setNewNextStep("");
+                    }
+                  }}
+                >
+                  Add
+                </Button>
+              </div>
+              {formData.next_steps.map((step, i) => (
+                <div key={i} className="flex items-center gap-2 text-sm p-2 bg-muted rounded">
+                  <span className="flex-1">{step}</span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setFormData({ ...formData, next_steps: formData.next_steps.filter((_, idx) => idx !== i) })}
+                  >
+                    Remove
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </div>
+
           <div>
             <Label htmlFor="tags">Tags (comma-separated)</Label>
             <Input
@@ -132,12 +305,13 @@ export function CreateMeetingDialog({ open, onOpenChange }: CreateMeetingDialogP
               placeholder="strategy, review, planning"
             />
           </div>
-          <div className="flex justify-end gap-2">
+
+          <div className="flex justify-end gap-2 pt-4">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
             <Button type="submit" disabled={loading || !selectedClient}>
-              {loading ? "Creating..." : "Create Meeting"}
+              {loading ? "Logging..." : "Log Meeting"}
             </Button>
           </div>
         </form>
