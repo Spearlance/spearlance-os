@@ -12,6 +12,8 @@ import { AvailabilitySettings } from "@calcom/atoms";
 import { useCalReady } from "@/components/CalProvider";
 import { InviteTeamMemberDialog } from "@/components/settings/InviteTeamMemberDialog";
 import { TeamMembersList } from "@/components/settings/TeamMembersList";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Clock } from "lucide-react";
 
 export default function Settings() {
   const { selectedClient, refreshClients } = useClient();
@@ -283,6 +285,13 @@ export default function Settings() {
                         </Button>
                       </div>
                     </div>
+                    <Alert className="bg-amber-50 dark:bg-amber-950/50 border-amber-200 dark:border-amber-800">
+                      <Clock className="h-4 w-4 text-amber-600 dark:text-amber-500" />
+                      <AlertDescription className="text-amber-900 dark:text-amber-100">
+                        <strong>Note:</strong> Calendar apps typically refresh subscriptions every 12-24 hours. 
+                        Newly logged meetings may not appear immediately in your external calendar.
+                      </AlertDescription>
+                    </Alert>
                     <div className="text-xs text-muted-foreground">
                       <p className="font-medium mb-1">How to use:</p>
                       <ul className="list-disc list-inside space-y-1">

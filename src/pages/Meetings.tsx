@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { CreateMeetingDialog } from "@/components/meetings/CreateMeetingDialog";
-import { Plus } from "lucide-react";
+import { Plus, Info } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface Meeting {
   id: string;
@@ -78,6 +79,16 @@ export default function Meetings() {
           </Button>
         </div>
       </div>
+
+      <Alert className="bg-blue-50 dark:bg-blue-950/50 border-blue-200 dark:border-blue-800">
+        <Info className="h-4 w-4 text-blue-600 dark:text-blue-500" />
+        <AlertTitle className="text-blue-900 dark:text-blue-100">Calendar Sync Information</AlertTitle>
+        <AlertDescription className="text-blue-800 dark:text-blue-200">
+          Meetings logged here are available in your iCal subscription feed immediately, 
+          but external calendar apps (Google Calendar, Apple Calendar, etc.) typically 
+          refresh subscriptions every 12-24 hours.
+        </AlertDescription>
+      </Alert>
 
       <div className="border rounded-lg">
         <Table>
