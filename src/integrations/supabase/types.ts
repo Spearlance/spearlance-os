@@ -309,7 +309,7 @@ export type Database = {
           {
             foreignKeyName: "avatars_client_id_fkey"
             columns: ["client_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "clients"
             referencedColumns: ["id"]
           },
