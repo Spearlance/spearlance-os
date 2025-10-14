@@ -11,7 +11,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { Plus, CheckSquare, ExternalLink } from "lucide-react";
+import { Plus, CheckSquare, ExternalLink, ChevronDown } from "lucide-react";
 import { ChannelDrawer } from "@/components/marketing/ChannelDrawer";
 import { AddChannelDialog } from "@/components/marketing/AddChannelDialog";
 import { ApplyTemplateDialog } from "@/components/marketing/ApplyTemplateDialog";
@@ -309,30 +309,41 @@ const MarketingFlowchart = () => {
             className="mb-4"
           />
 
-          <div className="space-y-2">
-            {filteredStages.map((stage) => (
-              <button
-                key={stage.id}
-                onClick={() => setSelectedStage(stage)}
-                className={cn(
-                  "w-full text-left p-3 rounded-lg transition-colors",
-                  "flex items-center justify-between",
-                  selectedStage?.id === stage.id
-                    ? "bg-primary text-primary-foreground"
-                    : "hover:bg-muted"
-                )}
-              >
-                <span className="font-medium">{stage.name}</span>
-                <Badge
-                  variant="secondary"
+          <div className="space-y-0">
+            {filteredStages.map((stage, index) => (
+              <div key={stage.id}>
+                <button
+                  onClick={() => setSelectedStage(stage)}
                   className={cn(
-                    selectedStage?.id === stage.id &&
-                      "bg-primary-foreground/20 text-primary-foreground"
+                    "w-full text-left p-3 rounded-lg transition-colors",
+                    "flex items-center justify-between",
+                    selectedStage?.id === stage.id
+                      ? "bg-primary text-primary-foreground"
+                      : "hover:bg-muted"
                   )}
                 >
-                  {getChannelCount(stage.id)}
-                </Badge>
-              </button>
+                  <span className="font-medium">{stage.name}</span>
+                  <Badge
+                    variant="secondary"
+                    className={cn(
+                      selectedStage?.id === stage.id &&
+                        "bg-primary-foreground/20 text-primary-foreground"
+                    )}
+                  >
+                    {getChannelCount(stage.id)}
+                  </Badge>
+                </button>
+                
+                {/* Flow arrow - don't show after last stage */}
+                {index < filteredStages.length - 1 && (
+                  <div className="flex justify-center py-2">
+                    <ChevronDown 
+                      className="h-5 w-5 text-muted-foreground/50" 
+                      strokeWidth={2}
+                    />
+                  </div>
+                )}
+              </div>
             ))}
           </div>
         </div>
