@@ -40,6 +40,10 @@ interface FrontMessage {
     email?: string;
     name?: string;
   };
+  from?: {
+    handle: string;
+    name?: string;
+  };
   recipients?: Array<{ handle: string; name?: string }>;
   subject?: string;
   body?: string;
@@ -89,7 +93,14 @@ async function fetchConversationMessages(conversationId: string, apiToken: strin
     }
 
     const data = await response.json();
-    return data._results || [];
+    const messages = data._results || [];
+    
+    // Debug: Log first message structure to understand Front API response
+    if (messages.length > 0) {
+      console.log(`Sample message structure for ${conversationId}:`, JSON.stringify(messages[0], null, 2));
+    }
+    
+    return messages;
   } catch (error) {
     console.error(`Error fetching messages for ${conversationId}:`, error);
     return [];
@@ -184,14 +195,19 @@ function extractParticipants(messages: FrontMessage[]): any[] {
 }
 
 function extractMessageThread(messages: FrontMessage[]): any[] {
-  return messages.map(msg => ({
-    id: msg.id,
-    type: msg.type,
-    sender: msg.author?.name || msg.author?.email || 'Unknown Sender',
-    body: msg.text || msg.body || '',
-    timestamp: msg.created_at ? new Date(msg.created_at * 1000).toISOString() : new Date().toISOString(),
-    is_internal: false,
-  }));
+  return messages.map(msg => {
+    // Try multiple fields to find sender name/email
+    const senderName = msg.from?.name || msg.author?.name || msg.from?.handle || msg.author?.email || 'Unknown Sender';
+    
+    return {
+      id: msg.id,
+      type: msg.type,
+      sender: senderName,
+      body: msg.text || msg.body || '',
+      timestamp: msg.created_at ? new Date(msg.created_at * 1000).toISOString() : new Date().toISOString(),
+      is_internal: false,
+    };
+  });
 }
 
 function extractAttachments(messages: FrontMessage[]): any[] {
