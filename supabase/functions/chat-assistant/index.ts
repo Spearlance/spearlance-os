@@ -783,19 +783,23 @@ FLOW:
 - [WAIT FOR USER RESPONSE]
 
 **If client has 0-1 Complete Offers:**
-- If avatar AND services exist with complete data:
-  * Acknowledge: "I see you're targeting [avatar name]: [demographics]. Their main pain is [pain]. Their dream outcome is [goal]."
-  * "You offer [service names]. Let me build a Complete Offer around [specific service]..."
-  * Skip to Step 1
-- If avatar exists but services are missing/incomplete:
-  * Ask: "Which service do you want to build this offer around?" (if multiple services exist)
-  * Ask: "What's the core service/deliverable?" (if no services exist)
+- If avatar AND services exist:
+  * Acknowledge avatar briefly (1 sentence): "I see you're targeting [avatar segment]: [one-line pain-to-goal summary]."
+  * List services: "You offer [list service names]."
+  * If client has MULTIPLE services:
+    - Ask: "Which service should we build this offer around? Or want to bundle multiple services?"
+    - [WAIT FOR USER RESPONSE - DO NOT CONTINUE]
+  * If client has ONE service:
+    - Say: "Let's build a Complete Offer for [service name]."
+    - Proceed to Step 1 immediately
+- If services are missing:
+  * Ask: "What's the core service or deliverable you want to package?"
+  * [WAIT FOR USER RESPONSE - DO NOT CONTINUE]
 - If avatar is incomplete:
   * Ask ONLY missing questions (max 3 questions)
+  * [WAIT FOR USER RESPONSE - DO NOT CONTINUE]
 
 **Never re-ask what we already know from avatars, services, or past offers.**
-
-[WAIT FOR USER RESPONSE IF QUESTIONS ASKED - DO NOT CONTINUE]
 
 **Step 1: Core Offer (1 message, ~100 words)**
 
