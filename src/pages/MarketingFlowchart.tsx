@@ -329,18 +329,26 @@ const MarketingFlowchart = () => {
         <div className="flex-1 p-6 overflow-auto">
           {selectedStage ? (
             <>
-              <div className="flex items-center justify-between mb-6">
-                <h1 className="text-2xl font-bold">{selectedStage.name} Stage</h1>
-                {isAdminOrFMM && (
-                  <div className="flex gap-2">
-                    <Button onClick={() => setAddDialogOpen(true)}>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Channel
-                    </Button>
-                    <Button variant="outline" onClick={() => setTemplateDialogOpen(true)}>
-                      Apply Template
-                    </Button>
-                  </div>
+              <div className="mb-6">
+                <div className="flex items-center justify-between mb-2">
+                  <h1 className="text-2xl font-bold">{selectedStage.name}</h1>
+                  {isAdminOrFMM && (
+                    <div className="flex gap-2">
+                      <Button onClick={() => setAddDialogOpen(true)}>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Channel
+                      </Button>
+                      <Button variant="outline" onClick={() => setTemplateDialogOpen(true)}>
+                        Apply Template
+                      </Button>
+                    </div>
+                  )}
+                </div>
+
+                {selectedStage.description && (
+                  <p className="text-muted-foreground text-sm max-w-3xl">
+                    {selectedStage.description}
+                  </p>
                 )}
               </div>
 
