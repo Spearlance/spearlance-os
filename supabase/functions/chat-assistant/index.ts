@@ -406,6 +406,39 @@ async function searchMeetingNotes(supabase: any, params: any, clientId: string) 
   };
 }
 
+async function getCommunicationLogs(supabase: any, params: any, clientId: string) {
+  let query = supabase
+    .from('communication_logs')
+    .select('id, subject_line, type, participants, last_message_at, tags, source, front_conversation_url', { count: 'exact' })
+    .eq('client_id', clientId);
+  
+  if (params.status) query = query.eq('status', params.status);
+  if (params.tags && params.tags.length > 0) {
+    query = query.contains('tags', params.tags);
+  }
+  if (params.date_from) query = query.gte('last_message_at', params.date_from);
+  if (params.date_to) query = query.lte('last_message_at', params.date_to);
+  if (params.query) {
+    query = query.or(`subject_line.ilike.%${params.query}%,internal_notes.ilike.%${params.query}%`);
+  }
+  
+  const limit = Math.min(params.limit || 20, 50);
+  const offset = params.offset || 0;
+  
+  query = query.order('last_message_at', { ascending: false }).range(offset, offset + limit - 1);
+  
+  const { data, count, error } = await query;
+  
+  if (error) throw error;
+  
+  return {
+    items: sanitizeDataForPrompt(data || []),
+    result_count: data?.length || 0,
+    total_count: count || 0,
+    next_offset: (data?.length || 0) >= limit ? offset + limit : null
+  };
+}
+
 // Tool definitions for Lovable AI
 const tools = [
   {
@@ -541,6 +574,25 @@ const tools = [
         type: "object",
         properties: {
           status: { type: "string", enum: ["open", "in_progress", "resolved", "closed"], description: "Filter by ticket status" },
+          limit: { type: "number", description: "Number of results (max 50)", default: 20 },
+          offset: { type: "number", description: "Offset for pagination", default: 0 }
+        }
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_communication_logs",
+      description: "Search email conversations and communication logs for the current client. Returns conversation subjects, participants, timestamps, and metadata. Use this to find past communications, email threads, or specific conversations.",
+      parameters: {
+        type: "object",
+        properties: {
+          query: { type: "string", description: "Search query for subject line or internal notes" },
+          status: { type: "string", enum: ["active", "archived"], description: "Filter by conversation status" },
+          tags: { type: "array", items: { type: "string" }, description: "Filter by tags" },
+          date_from: { type: "string", format: "date-time", description: "Filter conversations from this date (ISO 8601)" },
+          date_to: { type: "string", format: "date-time", description: "Filter conversations to this date (ISO 8601)" },
           limit: { type: "number", description: "Number of results (max 50)", default: 20 },
           offset: { type: "number", description: "Offset for pagination", default: 0 }
         }
@@ -798,6 +850,9 @@ Safety:
               break;
             case 'get_tickets':
               result = await getTickets(supabaseClient, args, client_id);
+              break;
+            case 'get_communication_logs':
+              result = await getCommunicationLogs(supabaseClient, args, client_id);
               break;
             default:
               result = { error: 'Unknown function' };
