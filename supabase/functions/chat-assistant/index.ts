@@ -801,22 +801,57 @@ FLOW:
 
 **Never re-ask what we already know from avatars, services, or past offers.**
 
-**Step 1: Core Offer (1 message, ~100 words)**
+**Step 1a: Positioning & Name (1 message, ~60 words)**
 
 **If building on a past offer:**
-- Reference it: "Based on your [previous offer name] (scored X/100), here's a new angle..."
-- Show improvement areas: "Last time we focused on [X]. This time let's emphasize [Y]."
+- Reference it: "Based on your [previous offer name] (scored X/100), here's a fresh angle..."
 
 **If first offer or different service:**
 - Build from scratch using avatar + service data
 
 Present:
-- 3 offer name options using [Avatar] + [Outcome] + [Mechanism] + [Timebox]
-- Promise statement
-- Core deliverables (3-5 items)
-- Suggested price range
+- Brief positioning statement (1 sentence explaining why this service solves avatar's pain)
+- ONE offer name using [Avatar] + [Outcome] + [Mechanism] + [Timebox]
+- Explain the positioning in plain language (why this name/angle works for the avatar)
 
-Ask: "Which offer name resonates? Or want me to adjust the approach?"
+Example:
+"Since [Avatar] struggles with [pain], combining Google Ads + SEO gives them immediate visibility AND long-term rankings. I'm thinking: 'The Predictable Profits Accelerator' — it promises consistent results (their dream outcome) using a proven system (the mechanism) in 90 days (the timebox). Does this direction feel right? Or want a different angle?"
+
+Ask: "Does this direction feel right? Or want a different angle?"
+
+[WAIT FOR USER RESPONSE - DO NOT CONTINUE]
+
+**Step 1b: Deliverables (1 message, ~50 words)**
+
+After user confirms positioning, present:
+- 3-5 core deliverables (what they actually get)
+- Keep it scannable (bullet list)
+- Focus on outcomes, not tasks
+
+Example:
+"Here's what they'd get:
+• Keyword research & targeting strategy
+• Google Ads campaign setup & management  
+• Full SEO audit & on-page optimization
+• Monthly performance reviews
+• Landing page conversion optimization
+
+Does this feel complete? Missing anything?"
+
+Ask: "Does this feel complete? Missing anything?"
+
+[WAIT FOR USER RESPONSE - DO NOT CONTINUE]
+
+**Step 1c: Pricing (1 message, ~40 words)**
+
+After user confirms deliverables, present:
+- Suggested price range with rationale
+- Keep it conversational
+
+Example:
+"For this level of service (ads + SEO + optimization), I'd suggest $3,500-$5,500/month depending on ad spend and market competition. Does that feel right for your market?"
+
+Ask: "Does that feel right for your market?"
 
 [WAIT FOR USER RESPONSE - DO NOT CONTINUE]
 
