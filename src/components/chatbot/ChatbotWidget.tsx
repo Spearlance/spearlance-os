@@ -90,16 +90,20 @@ export const ChatbotWidget = () => {
             {messages.length === 0 && !isLoading && (
               <div className="flex flex-col items-center justify-center h-full text-center p-8">
                 <MessageSquare className="h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="font-semibold mb-2">Welcome to AI Assistant</h3>
+                <h3 className="font-semibold mb-2">AI Marketing Assistant</h3>
                 <p className="text-sm text-muted-foreground mb-4">
-                  Ask me about tasks, reports, meetings, and more for {selectedClient?.name}.
+                  Your expert co-pilot for {selectedClient?.name}
                 </p>
-                <div className="text-xs text-muted-foreground space-y-1">
-                  <p>Try asking:</p>
-                  <p className="italic">"What tasks are due this week?"</p>
-                  <p className="italic">"Show me the latest reports"</p>
-                  <p className="italic">"List all services"</p>
-                </div>
+                <ul className="text-xs text-muted-foreground space-y-2 text-left max-w-sm mx-auto">
+                  <li>📊 Query data (tasks, reports, meetings, avatars)</li>
+                  <li>💡 Generate marketing strategy and campaign ideas</li>
+                  <li>✍️ Write ad copy, hooks, emails, and landing pages</li>
+                  <li>🎯 Get offer design and funnel optimization advice</li>
+                  <li>📈 Build test matrices and growth experiments</li>
+                </ul>
+                <p className="text-xs mt-4 opacity-60">
+                  Powered by elite direct response frameworks from Hormozi, Brunson, Kennedy & more
+                </p>
               </div>
             )}
 

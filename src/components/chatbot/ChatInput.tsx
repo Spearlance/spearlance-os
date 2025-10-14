@@ -32,7 +32,7 @@ export const ChatInput = ({ onSend, isLoading, disabled }: ChatInputProps) => {
         value={input}
         onChange={(e) => setInput(e.target.value)}
         onKeyDown={handleKeyDown}
-        placeholder={disabled ? "Select a client to start chatting..." : "Ask about tasks, reports, meetings..."}
+        placeholder={disabled ? "Select a client to start chatting..." : "Ask about data, get marketing ideas, or request copy..."}
         disabled={isLoading || disabled}
         className="min-h-[60px] max-h-[120px] resize-none"
         rows={2}
