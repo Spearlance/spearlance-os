@@ -26,9 +26,14 @@ export function LaunchPadWizard() {
   }, [selectedClient]);
 
   const loadOrCreateSubmission = async () => {
-    if (!selectedClient) return;
+    if (!selectedClient) {
+      console.log('[LaunchPad] No client selected');
+      return;
+    }
 
+    console.log('[LaunchPad] Loading submission for client:', selectedClient.id);
     setLoading(true);
+    
     try {
       const { data, error } = await supabase
         .from("launchpad_submissions")
@@ -39,8 +44,13 @@ export function LaunchPadWizard() {
       if (error && error.code !== "PGRST116") throw error;
 
       if (data) {
-        setSubmission(data as LaunchPadSubmission);
+        console.log('[LaunchPad] Found existing submission:', { id: data.id, stage: data.stage, completed_at: data.completed_at });
+        setSubmission({
+          ...data,
+          completed_at: data.completed_at || {}
+        } as LaunchPadSubmission);
       } else {
+        console.log('[LaunchPad] No submission found, creating new one');
         // Create new submission
         const { data: newSubmission, error: createError } = await supabase
           .from("launchpad_submissions")
@@ -55,10 +65,14 @@ export function LaunchPadWizard() {
 
         if (createError) throw createError;
 
-        setSubmission(newSubmission as LaunchPadSubmission);
+        console.log('[LaunchPad] Created new submission:', newSubmission.id);
+        setSubmission({
+          ...newSubmission,
+          completed_at: newSubmission.completed_at || {}
+        } as LaunchPadSubmission);
       }
     } catch (error) {
-      console.error("Error loading submission:", error);
+      console.error("[LaunchPad] Error loading submission:", error);
       toast({ title: "Error loading Launch Pad", variant: "destructive" });
     } finally {
       setLoading(false);

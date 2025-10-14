@@ -18,13 +18,13 @@ const stages = [
 export function ProgressHeader({ currentStage, completedAt, onStageClick }: ProgressHeaderProps) {
   const getStageStatus = (stageId: LaunchPadStage) => {
     if (currentStage === "complete") return "complete";
-    if (completedAt[stageId]) return "complete";
+    if (completedAt && completedAt[stageId]) return "complete";
     if (stageId === currentStage) return "current";
     return "upcoming";
   };
 
   const canNavigateToStage = (stageId: LaunchPadStage) => {
-    if (completedAt[stageId]) return true;
+    if (completedAt && completedAt[stageId]) return true;
     if (stageId === currentStage) return true;
     return false;
   };

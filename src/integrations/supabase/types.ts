@@ -866,7 +866,7 @@ export type Database = {
           avatar_image_url: string | null
           brand_colors: Json | null
           client_id: string
-          completed_at: Json | null
+          completed_at: Json
           created_at: string | null
           id: string
           ideal_client_story: string | null
@@ -879,7 +879,7 @@ export type Database = {
           avatar_image_url?: string | null
           brand_colors?: Json | null
           client_id: string
-          completed_at?: Json | null
+          completed_at?: Json
           created_at?: string | null
           id?: string
           ideal_client_story?: string | null
@@ -892,7 +892,7 @@ export type Database = {
           avatar_image_url?: string | null
           brand_colors?: Json | null
           client_id?: string
-          completed_at?: Json | null
+          completed_at?: Json
           created_at?: string | null
           id?: string
           ideal_client_story?: string | null
