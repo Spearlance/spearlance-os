@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { ChatMessage } from './types';
+import { ChatMessage, Conversation } from './types';
 import { useClient } from '@/contexts/ClientContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -7,13 +7,223 @@ import { toast } from '@/hooks/use-toast';
 export const useChatbot = () => {
   const { selectedClient } = useClient();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingConversations, setIsLoadingConversations] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
 
+  // Load conversations when chat opens or client changes
+  useEffect(() => {
+    if (isOpen && selectedClient?.id) {
+      loadConversations();
+    }
+  }, [isOpen, selectedClient?.id]);
+
+  // Load active conversation messages when conversation changes
+  useEffect(() => {
+    if (activeConversationId) {
+      loadConversationMessages(activeConversationId);
+    } else {
+      setMessages([]);
+    }
+  }, [activeConversationId]);
+
+  const loadConversations = async () => {
+    if (!selectedClient?.id) return;
+    
+    setIsLoadingConversations(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      const { data, error } = await supabase
+        .from('chat_conversations')
+        .select('*')
+        .eq('client_id', selectedClient.id)
+        .eq('user_id', user.id)
+        .is('archived_at', null)
+        .order('updated_at', { ascending: false });
+
+      if (error) throw error;
+      
+      setConversations(data || []);
+      
+      // Auto-select most recent conversation
+      if (data && data.length > 0 && !activeConversationId) {
+        setActiveConversationId(data[0].id);
+      }
+    } catch (err: any) {
+      console.error('Error loading conversations:', err);
+      toast({
+        title: "Error",
+        description: "Failed to load conversations.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoadingConversations(false);
+    }
+  };
+
+  const loadConversationMessages = async (conversationId: string) => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('chat_messages')
+        .select('*')
+        .eq('conversation_id', conversationId)
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+
+      const loadedMessages: ChatMessage[] = data.map(msg => ({
+        role: msg.role as 'user' | 'assistant' | 'system',
+        content: msg.content,
+        timestamp: new Date(msg.created_at)
+      }));
+
+      setMessages(loadedMessages);
+    } catch (err: any) {
+      console.error('Error loading messages:', err);
+      toast({
+        title: "Error",
+        description: "Failed to load conversation.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const createNewConversation = async () => {
+    if (!selectedClient?.id) return;
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      const { data, error } = await supabase
+        .from('chat_conversations')
+        .insert({
+          client_id: selectedClient.id,
+          user_id: user.id,
+          title: 'New Conversation'
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setActiveConversationId(data.id);
+      setConversations(prev => [data, ...prev]);
+      setMessages([]);
+
+      toast({
+        title: "New Conversation",
+        description: "Started a new conversation.",
+      });
+    } catch (err: any) {
+      console.error('Error creating conversation:', err);
+      toast({
+        title: "Error",
+        description: "Failed to create conversation.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const saveMessage = async (message: ChatMessage) => {
+    if (!activeConversationId) return;
+
+    try {
+      const { error } = await supabase
+        .from('chat_messages')
+        .insert({
+          conversation_id: activeConversationId,
+          role: message.role,
+          content: message.content
+        });
+
+      if (error) throw error;
+
+      // Update conversation updated_at
+      await supabase
+        .from('chat_conversations')
+        .update({ updated_at: new Date().toISOString() })
+        .eq('id', activeConversationId);
+
+      // Auto-generate title from first user message
+      const conversation = conversations.find(c => c.id === activeConversationId);
+      if (conversation && conversation.title === 'New Conversation' && message.role === 'user') {
+        const autoTitle = generateTitle(message.content);
+        await supabase
+          .from('chat_conversations')
+          .update({ title: autoTitle })
+          .eq('id', activeConversationId);
+        
+        setConversations(prev => 
+          prev.map(c => c.id === activeConversationId ? { ...c, title: autoTitle } : c)
+        );
+      }
+    } catch (err: any) {
+      console.error('Error saving message:', err);
+    }
+  };
+
+  const generateTitle = (firstMessage: string): string => {
+    const cleaned = firstMessage.trim().slice(0, 50);
+    return cleaned.length < firstMessage.trim().length ? cleaned + '...' : cleaned;
+  };
+
+  const archiveConversation = async (conversationId: string) => {
+    try {
+      const { error } = await supabase
+        .from('chat_conversations')
+        .update({ archived_at: new Date().toISOString() })
+        .eq('id', conversationId);
+
+      if (error) throw error;
+
+      setConversations(prev => prev.filter(c => c.id !== conversationId));
+      
+      if (activeConversationId === conversationId) {
+        setActiveConversationId(null);
+        setMessages([]);
+      }
+
+      toast({
+        title: "Conversation Archived",
+        description: "This conversation will be auto-deleted in 30 days.",
+      });
+    } catch (err: any) {
+      console.error('Error archiving conversation:', err);
+      toast({
+        title: "Error",
+        description: "Failed to archive conversation.",
+        variant: "destructive"
+      });
+    }
+  };
+
   const sendMessage = async (content: string) => {
     if (!selectedClient?.id || !content.trim()) return;
+
+    // Create new conversation if none exists
+    if (!activeConversationId) {
+      await createNewConversation();
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+
+    if (!activeConversationId) {
+      toast({
+        title: "Error",
+        description: "Failed to create conversation.",
+        variant: "destructive"
+      });
+      return;
+    }
 
     const userMessage: ChatMessage = {
       role: 'user',
@@ -22,10 +232,11 @@ export const useChatbot = () => {
     };
 
     setMessages(prev => [...prev, userMessage]);
+    await saveMessage(userMessage);
+
     setIsLoading(true);
     setError(null);
 
-    // Create abort controller for this request
     abortControllerRef.current = new AbortController();
 
     try {
@@ -48,7 +259,8 @@ export const useChatbot = () => {
               role: m.role, 
               content: m.content 
             })),
-            client_id: selectedClient.id
+            client_id: selectedClient.id,
+            conversation_id: activeConversationId
           }),
           signal: abortControllerRef.current.signal
         }
@@ -78,7 +290,6 @@ export const useChatbot = () => {
         throw new Error(`Server error: ${response.status}`);
       }
 
-      // Handle streaming response
       const reader = response.body?.getReader();
       if (!reader) {
         throw new Error('No response body');
@@ -87,12 +298,13 @@ export const useChatbot = () => {
       const decoder = new TextDecoder();
       let assistantContent = '';
 
-      // Add placeholder for assistant message
-      setMessages(prev => [...prev, {
+      const assistantMessage: ChatMessage = {
         role: 'assistant',
         content: '',
         timestamp: new Date()
-      }]);
+      };
+
+      setMessages(prev => [...prev, assistantMessage]);
 
       let buffer = '';
 
@@ -127,11 +339,14 @@ export const useChatbot = () => {
               });
             }
           } catch (e) {
-            // Ignore parse errors for incomplete chunks
             console.debug('Parse error (expected for incomplete chunks):', e);
           }
         }
       }
+
+      // Save complete assistant message
+      assistantMessage.content = assistantContent;
+      await saveMessage(assistantMessage);
 
     } catch (err: any) {
       if (err.name === 'AbortError') {
@@ -153,8 +368,9 @@ export const useChatbot = () => {
   };
 
   const clearMessages = () => {
-    setMessages([]);
-    setError(null);
+    if (activeConversationId) {
+      archiveConversation(activeConversationId);
+    }
   };
 
   const cancelRequest = () => {
@@ -163,7 +379,6 @@ export const useChatbot = () => {
     }
   };
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (abortControllerRef.current) {
@@ -174,12 +389,18 @@ export const useChatbot = () => {
 
   return {
     messages,
+    conversations,
+    activeConversationId,
     isLoading,
+    isLoadingConversations,
     error,
     isOpen,
     setIsOpen,
+    setActiveConversationId,
     sendMessage,
     clearMessages,
+    createNewConversation,
+    archiveConversation,
     cancelRequest
   };
 };

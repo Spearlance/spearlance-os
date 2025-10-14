@@ -29,3 +29,6 @@ verify_jwt = true
 
 [functions.calendar-ical]
 verify_jwt = false
+
+[functions.chat-cleanup]
+verify_jwt = false

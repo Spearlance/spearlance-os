@@ -1,29 +1,35 @@
 import { useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
-import { MessageSquare, X, Trash2 } from 'lucide-react';
+import { MessageSquare, Archive, ChevronDown } from 'lucide-react';
 import { useClient } from '@/contexts/ClientContext';
 import { useChatbot } from './useChatbot';
 import { ChatMessage } from './ChatMessage';
 import { ChatInput } from './ChatInput';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 export const ChatbotWidget = () => {
   const { selectedClient } = useClient();
   const { 
     messages, 
+    conversations,
+    activeConversationId,
     isLoading, 
+    isLoadingConversations,
     error, 
     isOpen, 
-    setIsOpen, 
+    setIsOpen,
+    setActiveConversationId,
     sendMessage, 
-    clearMessages 
+    clearMessages,
+    createNewConversation,
+    archiveConversation
   } = useChatbot();
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
@@ -36,9 +42,10 @@ export const ChatbotWidget = () => {
     }
   };
 
+  const activeConversation = conversations.find(c => c.id === activeConversationId);
+
   return (
     <>
-      {/* Floating Action Button */}
       <Button
         onClick={handleOpen}
         disabled={!selectedClient}
@@ -49,34 +56,87 @@ export const ChatbotWidget = () => {
         <MessageSquare className="h-6 w-6" />
       </Button>
 
-      {/* Chat Drawer */}
       <Sheet open={isOpen} onOpenChange={setIsOpen}>
         <SheetContent 
           side="right" 
           className="w-full sm:w-[400px] p-0 flex flex-col"
         >
           <SheetHeader className="p-4 border-b">
-            <div className="flex items-center justify-between">
-              <div className="flex-1">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex-1 min-w-0">
                 <SheetTitle>SpearlanceAI</SheetTitle>
-                <SheetDescription>
+                <SheetDescription className="truncate">
                   {selectedClient?.name || 'No client selected'}
                 </SheetDescription>
               </div>
-              {messages.length > 0 && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={clearMessages}
-                  title="Clear conversation"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              )}
+              
+              <div className="flex gap-2 items-center">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="text-xs">
+                      Previous Chats
+                      <ChevronDown className="h-3 w-3 ml-1" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-[300px]">
+                    <DropdownMenuLabel>Your Conversations</DropdownMenuLabel>
+                    <DropdownMenuItem onClick={createNewConversation}>
+                      <MessageSquare className="h-4 w-4 mr-2" />
+                      Start New Conversation
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    
+                    {isLoadingConversations && (
+                      <DropdownMenuItem disabled>
+                        Loading conversations...
+                      </DropdownMenuItem>
+                    )}
+                    
+                    {!isLoadingConversations && conversations.length === 0 && (
+                      <DropdownMenuItem disabled>
+                        No previous conversations
+                      </DropdownMenuItem>
+                    )}
+                    
+                    {!isLoadingConversations && conversations.map((conv) => (
+                      <DropdownMenuItem
+                        key={conv.id}
+                        onClick={() => setActiveConversationId(conv.id)}
+                        className="flex flex-col items-start gap-1"
+                      >
+                        <div className="flex items-center justify-between w-full">
+                          <span className={`truncate flex-1 ${conv.id === activeConversationId ? 'font-semibold' : ''}`}>
+                            {conv.title}
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              archiveConversation(conv.id);
+                            }}
+                          >
+                            <Archive className="h-3 w-3" />
+                          </Button>
+                        </div>
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(conv.updated_at).toLocaleDateString()}
+                        </span>
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </div>
+
+            {activeConversation && (
+              <p className="text-xs text-muted-foreground mt-2">
+                Auto-deletes {new Date(activeConversation.auto_delete_at).toLocaleDateString()}
+              </p>
+            )}
           </SheetHeader>
 
-          {/* Messages Area */}
           <ScrollArea className="flex-1 p-4">
             {messages.length === 0 && !isLoading && (
               <div className="flex flex-col items-center justify-center h-full text-center p-8">
@@ -120,7 +180,6 @@ export const ChatbotWidget = () => {
             <div ref={messagesEndRef} />
           </ScrollArea>
 
-          {/* Input Area */}
           <ChatInput
             onSend={sendMessage}
             isLoading={isLoading}
