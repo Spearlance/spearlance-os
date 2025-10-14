@@ -1001,6 +1001,7 @@ export type Database = {
           status: string | null
           summary: string
           tags: string[] | null
+          timezone: string | null
           transcript_text: string | null
         }
         Insert: {
@@ -1025,6 +1026,7 @@ export type Database = {
           status?: string | null
           summary: string
           tags?: string[] | null
+          timezone?: string | null
           transcript_text?: string | null
         }
         Update: {
@@ -1049,6 +1051,7 @@ export type Database = {
           status?: string | null
           summary?: string
           tags?: string[] | null
+          timezone?: string | null
           transcript_text?: string | null
         }
         Relationships: [

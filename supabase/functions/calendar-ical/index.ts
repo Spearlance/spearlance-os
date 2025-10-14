@@ -54,7 +54,8 @@ serve(async (req) => {
         status,
         decisions,
         next_steps,
-        client_id
+        client_id,
+        timezone
       `);
 
     // Filter based on user role
@@ -85,11 +86,13 @@ serve(async (req) => {
     ];
 
     for (const meeting of meetings || []) {
+      const timezone = meeting.timezone || 'UTC';
       const startDate = new Date(meeting.date_time);
       const endDate = new Date(startDate.getTime() + 60 * 60 * 1000); // 1 hour duration
       
+      // Format as YYYYMMDDTHHMMSS (no Z suffix for timezone-specific times)
       const formatICalDate = (date: Date) => {
-        return date.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+        return date.toISOString().replace(/[-:]/g, "").split(".")[0];
       };
 
       // Extract title from summary (first line if it starts with #)
@@ -113,9 +116,12 @@ serve(async (req) => {
 
       icalLines.push("BEGIN:VEVENT");
       icalLines.push(`UID:meeting-${meeting.id}@spearlance.app`);
-      icalLines.push(`DTSTAMP:${formatICalDate(new Date())}`);
-      icalLines.push(`DTSTART:${formatICalDate(startDate)}`);
-      icalLines.push(`DTEND:${formatICalDate(endDate)}`);
+      icalLines.push(`DTSTAMP:${formatICalDate(new Date())}Z`);
+      
+      // Use DTSTART;TZID format for timezone-aware times
+      icalLines.push(`DTSTART;TZID=${timezone}:${formatICalDate(startDate)}`);
+      icalLines.push(`DTEND;TZID=${timezone}:${formatICalDate(endDate)}`);
+      
       icalLines.push(`SUMMARY:${title}`);
       
       // Escape special characters in description

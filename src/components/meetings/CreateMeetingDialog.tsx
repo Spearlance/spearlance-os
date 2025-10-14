@@ -28,6 +28,7 @@ export function CreateMeetingDialog({ open, onOpenChange }: CreateMeetingDialogP
     meeting_type: "video",
     join_url: "",
     status: "scheduled",
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     decisions: [] as string[],
     next_steps: [] as string[],
   });
@@ -74,6 +75,7 @@ export function CreateMeetingDialog({ open, onOpenChange }: CreateMeetingDialogP
           join_url: formData.join_url || null,
           decisions: formData.decisions,
           next_steps: formData.next_steps,
+          timezone: formData.timezone,
         });
 
       if (error) throw error;
@@ -93,6 +95,7 @@ export function CreateMeetingDialog({ open, onOpenChange }: CreateMeetingDialogP
         meeting_type: "video",
         join_url: "",
         status: "scheduled",
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         decisions: [],
         next_steps: [],
       });
@@ -144,6 +147,29 @@ export function CreateMeetingDialog({ open, onOpenChange }: CreateMeetingDialogP
                 <option value="cancelled">Cancelled</option>
               </select>
             </div>
+          </div>
+
+          <div>
+            <Label htmlFor="timezone">Timezone</Label>
+            <select
+              id="timezone"
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              value={formData.timezone}
+              onChange={(e) => setFormData({ ...formData, timezone: e.target.value })}
+            >
+              <option value="America/New_York">Eastern Time (ET)</option>
+              <option value="America/Chicago">Central Time (CT)</option>
+              <option value="America/Denver">Mountain Time (MT)</option>
+              <option value="America/Los_Angeles">Pacific Time (PT)</option>
+              <option value="America/Phoenix">Arizona (No DST)</option>
+              <option value="America/Anchorage">Alaska Time (AKT)</option>
+              <option value="Pacific/Honolulu">Hawaii Time (HST)</option>
+              <option value="Europe/London">London (GMT/BST)</option>
+              <option value="Europe/Paris">Central European (CET/CEST)</option>
+              <option value="Asia/Tokyo">Tokyo (JST)</option>
+              <option value="Australia/Sydney">Sydney (AEST/AEDT)</option>
+              <option value="UTC">UTC</option>
+            </select>
           </div>
 
           <div>

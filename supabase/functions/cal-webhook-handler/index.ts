@@ -25,6 +25,7 @@ interface WebhookPayload {
     videoCallUrl?: string;
   };
   status?: string;
+  timeZone?: string;
 }
 
 // Verify webhook signature
@@ -125,7 +126,8 @@ Deno.serve(async (req) => {
           attendees: attendeeNames,
           join_url: payload.metadata?.videoCallUrl,
           status: 'scheduled',
-          source_system: 'cal.com'
+          source_system: 'cal.com',
+          timezone: payload.timeZone || 'UTC'
         });
         console.log('Created meeting for booking:', payload.uid);
         break;
