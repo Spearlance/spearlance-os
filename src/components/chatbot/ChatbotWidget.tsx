@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
-import { MessageSquare, Archive, ChevronDown, Sparkles, Target } from 'lucide-react';
+import { MessageSquare, Archive, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useClient } from '@/contexts/ClientContext';
 import { useChatbot } from './useChatbot';
@@ -70,12 +70,12 @@ export const ChatbotWidget = () => {
               {selectedClient?.name || 'No client selected'}
             </SheetDescription>
             
-            <div className="pt-2">
+            <div className="pt-2 flex gap-2">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="text-xs">
-                    Previous Chats
-                    <ChevronDown className="h-3 w-3 ml-1" />
+                  <Button variant="outline" size="sm" className="flex-1 justify-between">
+                    <span>Previous Chats</span>
+                    <ChevronDown className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="w-[300px]">
@@ -139,29 +139,19 @@ export const ChatbotWidget = () => {
                   ))}
                 </DropdownMenuContent>
               </DropdownMenu>
-            </div>
 
-            <Button
-              variant={isOfferMode ? "default" : "outline"}
-              size="sm"
-              onClick={() => setIsOfferMode(!isOfferMode)}
-              className={cn(
-                "w-full mt-3 transition-all duration-300",
-                isOfferMode && "bg-gradient-to-r from-blue-600 to-purple-600 shadow-lg shadow-blue-500/30 animate-pulse"
-              )}
-            >
-              {isOfferMode ? (
-                <>
-                  <Sparkles className="h-4 w-4 mr-2" />
-                  Offer Mode Active
-                </>
-              ) : (
-                <>
-                  <Target className="h-4 w-4 mr-2" />
-                  Activate Offer Mode
-                </>
-              )}
-            </Button>
+              <Button
+                variant={isOfferMode ? "default" : "outline"}
+                size="sm"
+                onClick={() => setIsOfferMode(!isOfferMode)}
+                className={cn(
+                  "transition-all duration-300 whitespace-nowrap",
+                  isOfferMode && "bg-gradient-to-r from-blue-600 to-purple-600 shadow-lg shadow-blue-500/30"
+                )}
+              >
+                Offer Mode
+              </Button>
+            </div>
 
             {activeConversation && (
               <p className="text-xs text-muted-foreground mt-2">
