@@ -97,8 +97,8 @@ export const useChatbot = () => {
     }
   };
 
-  const createNewConversation = async () => {
-    if (!selectedClient?.id) return;
+  const createNewConversation = async (): Promise<string | null> => {
+    if (!selectedClient?.id) return null;
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -124,6 +124,8 @@ export const useChatbot = () => {
         title: "New Conversation",
         description: "Started a new conversation.",
       });
+
+      return data.id;
     } catch (err: any) {
       console.error('Error creating conversation:', err);
       toast({
@@ -131,17 +133,19 @@ export const useChatbot = () => {
         description: "Failed to create conversation.",
         variant: "destructive"
       });
+      return null;
     }
   };
 
-  const saveMessage = async (message: ChatMessage) => {
-    if (!activeConversationId) return;
+  const saveMessage = async (message: ChatMessage, conversationId?: string) => {
+    const convId = conversationId || activeConversationId;
+    if (!convId) return;
 
     try {
       const { error } = await supabase
         .from('chat_messages')
         .insert({
-          conversation_id: activeConversationId,
+          conversation_id: convId,
           role: message.role,
           content: message.content
         });
@@ -152,19 +156,19 @@ export const useChatbot = () => {
       await supabase
         .from('chat_conversations')
         .update({ updated_at: new Date().toISOString() })
-        .eq('id', activeConversationId);
+        .eq('id', convId);
 
       // Auto-generate title from first user message
-      const conversation = conversations.find(c => c.id === activeConversationId);
+      const conversation = conversations.find(c => c.id === convId);
       if (conversation && conversation.title === 'New Conversation' && message.role === 'user') {
         const autoTitle = generateTitle(message.content);
         await supabase
           .from('chat_conversations')
           .update({ title: autoTitle })
-          .eq('id', activeConversationId);
+          .eq('id', convId);
         
         setConversations(prev => 
-          prev.map(c => c.id === activeConversationId ? { ...c, title: autoTitle } : c)
+          prev.map(c => c.id === convId ? { ...c, title: autoTitle } : c)
         );
       }
     } catch (err: any) {
@@ -211,18 +215,15 @@ export const useChatbot = () => {
     if (!selectedClient?.id || !content.trim()) return;
 
     // Create new conversation if none exists
-    if (!activeConversationId) {
-      await createNewConversation();
-      await new Promise(resolve => setTimeout(resolve, 100));
-    }
-
-    if (!activeConversationId) {
-      toast({
-        title: "Error",
-        description: "Failed to create conversation.",
-        variant: "destructive"
-      });
-      return;
+    let conversationId = activeConversationId;
+    
+    if (!conversationId) {
+      conversationId = await createNewConversation();
+      
+      if (!conversationId) {
+        // Error toast already shown by createNewConversation()
+        return;
+      }
     }
 
     const userMessage: ChatMessage = {
@@ -232,7 +233,7 @@ export const useChatbot = () => {
     };
 
     setMessages(prev => [...prev, userMessage]);
-    await saveMessage(userMessage);
+    await saveMessage(userMessage, conversationId);
 
     setIsLoading(true);
     setError(null);
@@ -260,7 +261,7 @@ export const useChatbot = () => {
               content: m.content 
             })),
             client_id: selectedClient.id,
-            conversation_id: activeConversationId
+            conversation_id: conversationId
           }),
           signal: abortControllerRef.current.signal
         }
@@ -346,7 +347,7 @@ export const useChatbot = () => {
 
       // Save complete assistant message
       assistantMessage.content = assistantContent;
-      await saveMessage(assistantMessage);
+      await saveMessage(assistantMessage, conversationId);
 
     } catch (err: any) {
       if (err.name === 'AbortError') {
