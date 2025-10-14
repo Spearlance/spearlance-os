@@ -448,7 +448,7 @@ export function StoryModal({ open, onOpenChange, submissionId, clientId, initial
               disabled={loading}
               className="bg-[#13cf48] text-white hover:bg-[#13cf48]/90"
             >
-              {loading ? "Saving..." : "Save and Close"}
+              {loading ? "Analyzing..." : "Analyze"}
             </Button>
           </div>
         </div>

@@ -82,10 +82,19 @@ Return ONLY the JSON object, no other text.`;
       throw new Error('No content in AI response');
     }
 
+    // Helper to strip markdown code fences
+    const cleanJsonString = (str: string): string => {
+      return str
+        .replace(/^```json\s*/i, '')  // Remove opening ```json
+        .replace(/^```\s*/i, '')       // Remove opening ```
+        .replace(/\s*```$/i, '')       // Remove closing ```
+        .trim();
+    };
+
     // Parse JSON response
     let summary;
     try {
-      summary = JSON.parse(content);
+      summary = JSON.parse(cleanJsonString(content));
     } catch (e) {
       console.error('Failed to parse AI response as JSON:', content);
       throw new Error('AI returned invalid JSON');
