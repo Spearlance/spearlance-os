@@ -95,16 +95,16 @@ export const ChatbotWidget = () => {
                   Your expert co-pilot for {selectedClient?.name}
                 </p>
                 <ul className="text-xs text-muted-foreground space-y-2 text-left max-w-sm mx-auto">
-                  <li>📊 Query data (tasks, reports, meetings, avatars)</li>
-                  <li>💡 Generate marketing ideas and strategies</li>
-                  <li>✍️ Write ad copy, hooks, emails, and social posts</li>
-                  <li>🎯 Build complete Grand Slam Offers with pricing & guarantees</li>
-                  <li>📈 Design lead generation plans across the Core Four</li>
-                  <li>💰 Create performance-based money models & funnels</li>
+                  <li className="font-medium text-foreground mb-3">I can help you:</li>
+                  <li>📊 Pull data from your account (tasks, reports, avatars)</li>
+                  <li>💡 Build complete offers and marketing campaigns</li>
                 </ul>
-                <p className="text-xs mt-4 opacity-60">
-                  Ask me to "build an offer" or "create a campaign" for the full engine
-                </p>
+                <div className="text-xs mt-4 space-y-1">
+                  <p className="font-medium text-foreground">Try asking:</p>
+                  <p className="opacity-70">• "Build an offer for my business"</p>
+                  <p className="opacity-70">• "What tasks are due this week?"</p>
+                  <p className="opacity-70">• "Write ad copy for [service]"</p>
+                </div>
               </div>
             )}
 
