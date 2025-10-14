@@ -18,6 +18,7 @@ import Marketing from "./pages/Marketing";
 import Avatar from "./pages/Avatar";
 import LaunchPad from "./pages/LaunchPad";
 import MarketingFlowchart from "./pages/MarketingFlowchart";
+import MarketingIdeas from "./pages/MarketingIdeas";
 import Reports from "./pages/Reports";
 import Support from "./pages/Support";
 import TicketDetail from "./pages/TicketDetail";
@@ -51,6 +52,7 @@ const App = () => (
             <Route path="/tasks" element={<MainLayout><Tasks /></MainLayout>} />
             <Route path="/assets" element={<MainLayout><Assets /></MainLayout>} />
             <Route path="/marketing/services" element={<MainLayout><Marketing /></MainLayout>} />
+            <Route path="/marketing/ideas" element={<MainLayout><MarketingIdeas /></MainLayout>} />
             <Route path="/avatar" element={<MainLayout><Avatar /></MainLayout>} />
             <Route path="/launchpad" element={<MainLayout><LaunchPad /></MainLayout>} />
             <Route path="/marketing/flowchart" element={<MainLayout><MarketingFlowchart /></MainLayout>} />

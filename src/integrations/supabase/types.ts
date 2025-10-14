@@ -942,6 +942,69 @@ export type Database = {
           },
         ]
       }
+      marketing_ideas: {
+        Row: {
+          client_id: string
+          content: Json
+          created_at: string | null
+          created_by: string | null
+          id: string
+          notes: string | null
+          offer_type: string | null
+          parent_idea_id: string | null
+          status: string | null
+          tags: string[] | null
+          title: string
+          updated_at: string | null
+          version: number | null
+        }
+        Insert: {
+          client_id: string
+          content: Json
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          offer_type?: string | null
+          parent_idea_id?: string | null
+          status?: string | null
+          tags?: string[] | null
+          title: string
+          updated_at?: string | null
+          version?: number | null
+        }
+        Update: {
+          client_id?: string
+          content?: Json
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          offer_type?: string | null
+          parent_idea_id?: string | null
+          status?: string | null
+          tags?: string[] | null
+          title?: string
+          updated_at?: string | null
+          version?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketing_ideas_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketing_ideas_parent_idea_id_fkey"
+            columns: ["parent_idea_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_ideas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       meeting_tasks: {
         Row: {
           created_at: string | null

@@ -45,6 +45,7 @@ import {
   ChevronDown,
   FileText,
   MessageSquare,
+  Lightbulb,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -61,11 +62,12 @@ const menuItems = [
   { title: "Settings", url: "/settings", icon: Settings },
 ];
 
-const marketingSubItems = [
-  { title: "Services", url: "/marketing/services", icon: TrendingUp },
-  { title: "Flowchart", url: "/marketing/flowchart", icon: GitBranch },
-  { title: "Reports", url: "/marketing/reports", icon: FileText },
-];
+  const marketingSubItems = [
+    { title: "Services", url: "/marketing/services", icon: TrendingUp },
+    { title: "Ideas", url: "/marketing/ideas", icon: Lightbulb },
+    { title: "Flowchart", url: "/marketing/flowchart", icon: GitBranch },
+    { title: "Reports", url: "/marketing/reports", icon: FileText },
+  ];
 
 const communicationsSubItems = [
   { title: "Meetings", url: "/meetings", icon: Calendar },

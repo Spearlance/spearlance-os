@@ -1,10 +1,13 @@
 import { ChatMessage as ChatMessageType } from './types';
 import { format } from 'date-fns';
-import { Bot, User, Calendar } from 'lucide-react';
+import { Bot, User, Calendar, Save } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { SaveOfferDialog } from '@/components/marketing/SaveOfferDialog';
+import ReactMarkdown from 'react-markdown';
 
 interface ChatMessageProps {
   message: ChatMessageType;
@@ -14,6 +17,36 @@ export const ChatMessage = ({ message }: ChatMessageProps) => {
   const isUser = message.role === 'user';
   const isSystem = message.role === 'system';
   const navigate = useNavigate();
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
+
+  // Detect GSO content
+  const isGSOContent = !isUser && (
+    message.content.includes('Strategy Snapshot') ||
+    message.content.includes('GSO One-Pager') ||
+    message.content.includes('Lead Pack') ||
+    message.content.includes('Money Model') ||
+    message.content.includes('Core Four') ||
+    (message.content.includes('Hook') && message.content.includes('Retain') && message.content.includes('Reward'))
+  );
+
+  // Extract title from GSO content
+  const extractTitle = () => {
+    const lines = message.content.split('\n');
+    for (const line of lines) {
+      if (line.startsWith('# ') || line.startsWith('**Offer Name')) {
+        return line.replace(/^#+ /, '').replace(/\*\*/g, '').replace('Offer Name:', '').trim();
+      }
+    }
+    return 'Untitled Offer';
+  };
+
+  // Parse GSO content into structured format
+  const parseGSOContent = () => {
+    return {
+      raw_markdown: message.content,
+      parsed_at: new Date().toISOString(),
+    };
+  };
 
   // Check if message contains meeting data
   const hasMeetingData = message.content.includes('"date_time"') && 
@@ -66,9 +99,29 @@ export const ChatMessage = ({ message }: ChatMessageProps) => {
             ? "bg-primary text-primary-foreground" 
             : "bg-card border border-border"
         )}>
-          <div className="text-sm whitespace-pre-wrap break-words">
-            {message.content}
-          </div>
+          {isUser ? (
+            <div className="text-sm whitespace-pre-wrap break-words">
+              {message.content}
+            </div>
+          ) : (
+            <div className="text-sm prose prose-sm max-w-none dark:prose-invert">
+              <ReactMarkdown
+                components={{
+                ul: ({ node, ...props }) => <ul className="list-disc ml-4 space-y-1 my-2" {...props} />,
+                ol: ({ node, ...props }) => <ol className="list-decimal ml-4 space-y-1 my-2" {...props} />,
+                li: ({ node, ...props }) => <li className="text-sm" {...props} />,
+                strong: ({ node, ...props }) => <strong className="font-semibold" {...props} />,
+                h1: ({ node, ...props }) => <h1 className="text-xl font-bold mt-4 mb-2" {...props} />,
+                h2: ({ node, ...props }) => <h2 className="text-lg font-bold mt-3 mb-2" {...props} />,
+                h3: ({ node, ...props }) => <h3 className="text-base font-semibold mt-3 mb-1" {...props} />,
+                h4: ({ node, ...props }) => <h4 className="text-sm font-semibold mt-2 mb-1" {...props} />,
+                p: ({ node, ...props }) => <p className="my-2" {...props} />,
+              }}
+              >
+                {message.content}
+              </ReactMarkdown>
+            </div>
+          )}
           
           {meetingCards && (
             <div className="mt-3 space-y-2">
@@ -124,10 +177,33 @@ export const ChatMessage = ({ message }: ChatMessageProps) => {
               </Button>
             </div>
           )}
+
+          {isGSOContent && (
+            <div className="mt-3 pt-3 border-t border-border">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="w-full"
+                onClick={() => setShowSaveDialog(true)}
+              >
+                <Save className="h-4 w-4 mr-2" />
+                Save Offer
+              </Button>
+            </div>
+          )}
         </div>
         <div className="text-xs text-muted-foreground mt-1 px-1">
           {format(message.timestamp, 'h:mm a')}
         </div>
+
+        {showSaveDialog && (
+          <SaveOfferDialog
+            open={showSaveDialog}
+            onOpenChange={setShowSaveDialog}
+            content={parseGSOContent()}
+            defaultTitle={extractTitle()}
+          />
+        )}
       </div>
 
       {isUser && (
