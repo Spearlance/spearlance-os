@@ -15,6 +15,7 @@ import { Plus, CheckSquare, ExternalLink } from "lucide-react";
 import { ChannelDrawer } from "@/components/marketing/ChannelDrawer";
 import { AddChannelDialog } from "@/components/marketing/AddChannelDialog";
 import { ApplyTemplateDialog } from "@/components/marketing/ApplyTemplateDialog";
+import { TaskDrawer } from "@/components/tasks/TaskDrawer";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import type { Database } from "@/integrations/supabase/types";
@@ -40,6 +41,8 @@ const MarketingFlowchart = () => {
   const [selectedStage, setSelectedStage] = useState<Stage | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [channelTasks, setChannelTasks] = useState<Record<string, Task[]>>({});
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [taskDrawerOpen, setTaskDrawerOpen] = useState(false);
 
   const isAdminOrFMM = userRole === "admin" || userRole === "fmm";
 
@@ -145,6 +148,21 @@ const MarketingFlowchart = () => {
   };
 
   const handleChannelUpdate = () => {
+    loadFlowData();
+  };
+
+  const handleTaskClick = (task: Task) => {
+    setSelectedTask(task);
+    setTaskDrawerOpen(true);
+  };
+
+  const handleTaskUpdate = () => {
+    // Reload tasks to reflect changes
+    if (selectedStage) {
+      const channelIds = getChannelsForStage(selectedStage.id).map(c => c.id);
+      loadTasksForChannels(channelIds);
+    }
+    // Also reload channels to update progress/counts
     loadFlowData();
   };
 
@@ -393,19 +411,23 @@ const MarketingFlowchart = () => {
                               <Badge variant="secondary">{tasks.length}</Badge>
                             </div>
 
-                            {tasks.length > 0 ? (
-                              <div className="space-y-2">
-                                {tasks.slice(0, 3).map((task) => (
-                                  <div
-                                    key={task.id}
-                                    className="flex items-center justify-between p-2 bg-muted/50 rounded text-sm"
-                                  >
-                                    <span className="truncate">{task.title}</span>
-                                    <Badge className={getTaskStatusClass(task.status || "to_do")}>
-                                      {task.status?.replace("_", " ")}
-                                    </Badge>
-                                  </div>
-                                ))}
+                    {tasks.length > 0 ? (
+                      <div className="space-y-2">
+                        {tasks.slice(0, 3).map((task) => (
+                          <button
+                            key={task.id}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleTaskClick(task);
+                            }}
+                            className="w-full flex items-center justify-between p-2 bg-muted/50 rounded text-sm hover:bg-muted hover:shadow-sm transition-all cursor-pointer group"
+                          >
+                            <span className="truncate text-left group-hover:text-primary transition-colors">{task.title}</span>
+                            <Badge className={getTaskStatusClass(task.status || "to_do")}>
+                              {task.status?.replace("_", " ")}
+                            </Badge>
+                          </button>
+                        ))}
                                 {tasks.length > 3 && (
                                   <p className="text-xs text-muted-foreground">
                                     +{tasks.length - 3} more tasks
@@ -470,6 +492,16 @@ const MarketingFlowchart = () => {
             onSuccess={handleChannelUpdate}
           />
         </>
+      )}
+
+      {/* Task Drawer */}
+      {selectedTask && (
+        <TaskDrawer
+          task={selectedTask}
+          open={taskDrawerOpen}
+          onOpenChange={setTaskDrawerOpen}
+          onUpdate={handleTaskUpdate}
+        />
       )}
     </div>
   );
