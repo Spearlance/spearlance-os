@@ -36,7 +36,7 @@ const discoverySchema = z.object({
     }, "Must be a valid URL or domain"),
     hq_city: z.string().optional(),
     service_areas: z.array(z.string()).optional(),
-    industry: z.string().min(1, "Required"),
+    industry: z.string().optional(),
   }),
   contacts: z.object({
     primary_name: z.string().min(1, "Required"),
@@ -50,7 +50,7 @@ const discoverySchema = z.object({
     sales_process: z.string().optional(),
   }),
   goals: z.object({
-    quarter_goals: z.array(z.string()).min(1, "Add at least one goal").max(3, "Maximum 3 goals"),
+    quarter_goals: z.array(z.string()).max(3, "Maximum 3 goals").optional(),
     annual_revenue_goal: z.number().nullable().optional(),
   }),
   state: z.object({
@@ -62,7 +62,7 @@ const discoverySchema = z.object({
     competitors: z.array(z.string()).optional(),
   }),
   voice: z.object({
-    tone: z.string().min(1, "Required"),
+    tone: z.string().optional(),
     words_to_avoid: z.string().optional(),
   }),
   story: z.object({
@@ -163,31 +163,29 @@ export function StageDiscovery({ submissionId, initialData, onContinue, onSaveEx
   };
 
   const handleContinue = async () => {
-    // Trigger validation on all fields
+    // Trigger validation on essential fields only
     const isValid = await form.trigger();
-    const storyCompleted = form.watch("story.completed");
     
-    if (!isValid || !storyCompleted) {
-      // Collect which sections have errors
+    if (!isValid) {
+      // Collect which essential sections have errors
       const errors = form.formState.errors;
       const missingSections = [];
       
-      if (errors.company) missingSections.push("Company Information");
-      if (errors.contacts) missingSections.push("Contacts");
-      if (errors.model) missingSections.push("Business Model");
-      if (errors.goals) {
-        if (errors.goals.quarter_goals) {
-          missingSections.push("Goals (need at least 1 quarterly goal)");
-        } else {
-          missingSections.push("Goals");
-        }
+      if (errors.company?.legal_name || errors.company?.brand_name || errors.company?.website_url) {
+        missingSections.push("Company Information (name and website)");
       }
-      if (errors.voice) missingSections.push("Voice & Tone");
-      if (!storyCompleted) missingSections.push("Tell Your Story");
+      if (errors.contacts?.primary_name || errors.contacts?.primary_email) {
+        missingSections.push("Primary Contact");
+      }
+      if (errors.model?.services) {
+        missingSections.push("Services (need at least 1)");
+      }
       
       toast({
-        title: "Please complete all required fields",
-        description: `Missing: ${missingSections.join(", ")}`,
+        title: "Please complete required fields",
+        description: missingSections.length > 0 
+          ? `Missing: ${missingSections.join(", ")}`
+          : "Please fill in all required fields",
         variant: "destructive",
       });
       
@@ -342,7 +340,7 @@ export function StageDiscovery({ submissionId, initialData, onContinue, onSaveEx
                 <Input id="hq_city" {...form.register("company.hq_city")} />
               </div>
               <div>
-                <Label htmlFor="industry">Industry *</Label>
+                <Label htmlFor="industry">Industry</Label>
                 <Select value={form.watch("company.industry")} onValueChange={(value) => form.setValue("company.industry", value)}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select industry" />
@@ -470,7 +468,7 @@ export function StageDiscovery({ submissionId, initialData, onContinue, onSaveEx
           <div className="space-y-4">
             <h3 className="font-semibold">Goals</h3>
             <div>
-              <Label>Top 3 Goals (Next 90 Days) *</Label>
+              <Label>Top 3 Goals (Next 90 Days)</Label>
               <div className="flex gap-2 mt-2">
                 <Input
                   placeholder="Add a goal..."
@@ -549,7 +547,7 @@ export function StageDiscovery({ submissionId, initialData, onContinue, onSaveEx
           <div className="space-y-4">
             <h3 className="font-semibold">Voice & Tone</h3>
             <div>
-              <Label htmlFor="tone">Preferred Tone *</Label>
+              <Label htmlFor="tone">Preferred Tone</Label>
               <Select value={form.watch("voice.tone")} onValueChange={(value) => form.setValue("voice.tone", value)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select tone" />
@@ -578,7 +576,7 @@ export function StageDiscovery({ submissionId, initialData, onContinue, onSaveEx
           <div className="bg-card p-6 rounded-lg border space-y-4">
             <div className="flex items-start justify-between">
               <div>
-                <h3 className="text-xl font-semibold mb-2">Tell Your Story (Required)</h3>
+                <h3 className="text-xl font-semibold mb-2">Tell Your Story</h3>
                 <p className="text-sm text-muted-foreground">
                   We use your story to capture your authentic voice and build your brand messaging. 
                   Take 5–10 minutes to record your answers.
