@@ -25,6 +25,7 @@ export const SaveOfferDialog = ({ open, onOpenChange, content, defaultTitle }: S
   const [tags, setTags] = useState('');
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
+  const offerType = 'complete_offer'; // Default to complete_offer type
 
   const handleSave = async () => {
     if (!selectedClient) {
@@ -51,6 +52,7 @@ export const SaveOfferDialog = ({ open, onOpenChange, content, defaultTitle }: S
           content,
           tags: tags.split(',').map(t => t.trim()).filter(Boolean),
           notes: notes.trim() || null,
+          offer_type: offerType,
         })
         .select()
         .single();
@@ -81,7 +83,7 @@ export const SaveOfferDialog = ({ open, onOpenChange, content, defaultTitle }: S
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Save Marketing Offer</DialogTitle>
+          <DialogTitle>Save Complete Offer</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 py-4">
           <div className="space-y-2">

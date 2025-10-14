@@ -19,15 +19,20 @@ export const ChatMessage = ({ message }: ChatMessageProps) => {
   const navigate = useNavigate();
   const [showSaveDialog, setShowSaveDialog] = useState(false);
 
-  // Detect GSO content
-  const isGSOContent = !isUser && (
+  // Detect Complete Offer content
+  const isCompleteOfferContent = !isUser && (
     message.content.includes('Strategy Snapshot') ||
-    message.content.includes('GSO One-Pager') ||
+    message.content.includes('Complete Offer One-Pager') ||
     message.content.includes('Lead Pack') ||
     message.content.includes('Money Model') ||
     message.content.includes('Core Four') ||
     (message.content.includes('Hook') && message.content.includes('Retain') && message.content.includes('Reward'))
   );
+  
+  // Only show Save Offer button if complete offer is finished (has all key sections)
+  const isCompleteOfferFinished = isCompleteOfferContent && 
+                                   message.content.includes('## Strategy Snapshot') &&
+                                   message.content.includes('## Scores & Next Steps');
 
   // Extract title from GSO content
   const extractTitle = () => {
@@ -40,7 +45,7 @@ export const ChatMessage = ({ message }: ChatMessageProps) => {
     return 'Untitled Offer';
   };
 
-  // Parse GSO content into structured format
+  // Parse Complete Offer content into structured format
   const parseGSOContent = () => {
     return {
       raw_markdown: message.content,
@@ -178,7 +183,7 @@ export const ChatMessage = ({ message }: ChatMessageProps) => {
             </div>
           )}
 
-          {isGSOContent && (
+          {isCompleteOfferFinished && (
             <div className="mt-3 pt-3 border-t border-border">
               <Button 
                 variant="outline" 
