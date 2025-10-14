@@ -66,9 +66,11 @@ const Auth = () => {
       }
 
       toast({
-        title: "Account created!",
-        description: "Welcome to your 90-day free trial! You can now log in.",
+        title: "Welcome to Spearlance!",
+        description: "Your 90-day free trial has started. Redirecting...",
       });
+      
+      navigate("/");
     } catch (error: any) {
       toast({
         title: "Error",
