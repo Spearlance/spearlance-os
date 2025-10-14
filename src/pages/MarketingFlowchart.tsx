@@ -23,7 +23,9 @@ import type { Database } from "@/integrations/supabase/types";
 type Channel = Database["public"]["Tables"]["marketing_flow_channels"]["Row"] & {
   taskCount?: number;
 };
-type Stage = Database["public"]["Tables"]["marketing_flow_stages"]["Row"];
+type Stage = Database["public"]["Tables"]["marketing_flow_stages"]["Row"] & {
+  description?: string;
+};
 type Task = Database["public"]["Tables"]["tasks"]["Row"];
 
 const MarketingFlowchart = () => {
@@ -89,12 +91,22 @@ const MarketingFlowchart = () => {
       // Load stages
       const { data: stagesData, error: stagesError } = await supabase
         .from("marketing_flow_stages")
-        .select("*")
+        .select(`
+          *,
+          standard_marketing_stages!inner(description)
+        `)
         .eq("flow_id", flowIdData)
         .order("order_index");
 
       if (stagesError) throw stagesError;
-      setStages(stagesData || []);
+
+      // Flatten the standard_marketing_stages data into the stage object
+      const flattenedStages = (stagesData || []).map(stage => ({
+        ...stage,
+        description: (stage.standard_marketing_stages as any)?.description
+      }));
+
+      setStages(flattenedStages);
       
       // Auto-select first stage
       if (stagesData && stagesData.length > 0 && !selectedStage) {
