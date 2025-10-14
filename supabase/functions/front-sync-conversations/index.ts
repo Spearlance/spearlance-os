@@ -194,10 +194,14 @@ function extractParticipants(messages: FrontMessage[]): any[] {
   return Array.from(participantsMap.values());
 }
 
-function extractMessageThread(messages: FrontMessage[]): any[] {
+function extractMessageThread(messages: FrontMessage[], participants: any[]): any[] {
   return messages.map(msg => {
-    // Try multiple fields to find sender name/email
-    const senderName = msg.from?.name || msg.author?.name || msg.from?.handle || msg.author?.email || 'Unknown Sender';
+    // Try to find sender email/handle from various fields
+    const senderEmail = msg.from?.handle || msg.author?.email || '';
+    
+    // Look up the sender's name from participants
+    const participant = participants.find(p => p.email === senderEmail);
+    const senderName = participant?.name || msg.from?.name || msg.author?.name || 'Unknown Sender';
     
     return {
       id: msg.id,
@@ -306,7 +310,7 @@ Deno.serve(async (req) => {
           }
 
           const participants = extractParticipants(messages);
-          const messageThread = extractMessageThread(messages);
+          const messageThread = extractMessageThread(messages, participants);
           const attachments = extractAttachments(messages);
           const tags = conversation.tags?.map(t => t.name) || [];
 
