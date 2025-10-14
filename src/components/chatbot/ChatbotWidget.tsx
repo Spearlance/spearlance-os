@@ -61,73 +61,69 @@ export const ChatbotWidget = () => {
           side="right" 
           className="w-full sm:w-[400px] p-0 flex flex-col"
         >
-          <SheetHeader className="p-4 border-b">
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex-1 min-w-0">
-                <SheetTitle>SpearlanceAI</SheetTitle>
-                <SheetDescription className="truncate">
-                  {selectedClient?.name || 'No client selected'}
-                </SheetDescription>
-              </div>
-              
-              <div className="flex gap-2 items-center">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="text-xs">
-                      Previous Chats
-                      <ChevronDown className="h-3 w-3 ml-1" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-[300px]">
-                    <DropdownMenuLabel>Your Conversations</DropdownMenuLabel>
-                    <DropdownMenuItem onClick={createNewConversation}>
-                      <MessageSquare className="h-4 w-4 mr-2" />
-                      Start New Conversation
+          <SheetHeader className="p-4 border-b pr-12">
+            <SheetTitle>SpearlanceAI</SheetTitle>
+            <SheetDescription className="truncate">
+              {selectedClient?.name || 'No client selected'}
+            </SheetDescription>
+            
+            <div className="pt-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="text-xs">
+                    Previous Chats
+                    <ChevronDown className="h-3 w-3 ml-1" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-[300px]">
+                  <DropdownMenuLabel>Your Conversations</DropdownMenuLabel>
+                  <DropdownMenuItem onClick={createNewConversation}>
+                    <MessageSquare className="h-4 w-4 mr-2" />
+                    Start New Conversation
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  
+                  {isLoadingConversations && (
+                    <DropdownMenuItem disabled>
+                      Loading conversations...
                     </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    
-                    {isLoadingConversations && (
-                      <DropdownMenuItem disabled>
-                        Loading conversations...
-                      </DropdownMenuItem>
-                    )}
-                    
-                    {!isLoadingConversations && conversations.length === 0 && (
-                      <DropdownMenuItem disabled>
-                        No previous conversations
-                      </DropdownMenuItem>
-                    )}
-                    
-                    {!isLoadingConversations && conversations.map((conv) => (
-                      <DropdownMenuItem
-                        key={conv.id}
-                        onClick={() => setActiveConversationId(conv.id)}
-                        className="flex flex-col items-start gap-1"
-                      >
-                        <div className="flex items-center justify-between w-full">
-                          <span className={`truncate flex-1 ${conv.id === activeConversationId ? 'font-semibold' : ''}`}>
-                            {conv.title}
-                          </span>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-6 w-6"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              archiveConversation(conv.id);
-                            }}
-                          >
-                            <Archive className="h-3 w-3" />
-                          </Button>
-                        </div>
-                        <span className="text-xs text-muted-foreground">
-                          {new Date(conv.updated_at).toLocaleDateString()}
+                  )}
+                  
+                  {!isLoadingConversations && conversations.length === 0 && (
+                    <DropdownMenuItem disabled>
+                      No previous conversations
+                    </DropdownMenuItem>
+                  )}
+                  
+                  {!isLoadingConversations && conversations.map((conv) => (
+                    <DropdownMenuItem
+                      key={conv.id}
+                      onClick={() => setActiveConversationId(conv.id)}
+                      className="flex flex-col items-start gap-1"
+                    >
+                      <div className="flex items-center justify-between w-full">
+                        <span className={`truncate flex-1 ${conv.id === activeConversationId ? 'font-semibold' : ''}`}>
+                          {conv.title}
                         </span>
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            archiveConversation(conv.id);
+                          }}
+                        >
+                          <Archive className="h-3 w-3" />
+                        </Button>
+                      </div>
+                      <span className="text-xs text-muted-foreground">
+                        {new Date(conv.updated_at).toLocaleDateString()}
+                      </span>
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
 
             {activeConversation && (
