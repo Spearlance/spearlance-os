@@ -1,13 +1,13 @@
 import { useState, ChangeEvent } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
+import { Textarea } from "@/components/ui/textarea";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { ExternalLink, CheckCircle2, Upload } from "lucide-react";
+import { CheckCircle2, Upload } from "lucide-react";
 
 interface StoryModalProps {
   open: boolean;
@@ -120,7 +120,7 @@ export function StoryModal({ open, onOpenChange, submissionId, clientId, initial
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [recordingUrl, setRecordingUrl] = useState(initialData?.recording_url || "");
+  const [pastedTranscript, setPastedTranscript] = useState("");
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [transcribing, setTranscribing] = useState(false);
@@ -197,21 +197,11 @@ export function StoryModal({ open, onOpenChange, submissionId, clientId, initial
   };
 
   const handleSave = async () => {
-    // Check if we have either a file or URL
-    if (!selectedFile && !recordingUrl.trim()) {
+    // Validation: need either file or transcript
+    if (!selectedFile && !pastedTranscript.trim()) {
       toast({
-        title: "Recording required",
-        description: "Please upload a file or provide a recording link",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Validate URL format if provided
-    if (recordingUrl.trim() && !recordingUrl.startsWith('https://')) {
-      toast({
-        title: "Invalid URL",
-        description: "Recording URL must start with https://",
+        title: "Recording Required",
+        description: "Please upload a file or paste a transcript",
         variant: "destructive",
       });
       return;
@@ -221,10 +211,11 @@ export function StoryModal({ open, onOpenChange, submissionId, clientId, initial
     setUploadProgress(0);
 
     try {
-      let assetId = initialData?.recording_asset_id;
-      let fileUrl = recordingUrl;
+      let transcript = pastedTranscript.trim();
+      let assetId = undefined;
+      let fileUrl = undefined;
 
-      // Handle file upload if provided
+      // Path A: File upload - need to upload and transcribe
       if (selectedFile) {
         setProcessingStatus("Uploading your recording...");
         setUploadProgress(20);
@@ -232,25 +223,29 @@ export function StoryModal({ open, onOpenChange, submissionId, clientId, initial
         assetId = result.assetId;
         fileUrl = result.publicUrl;
         setUploadProgress(40);
+
+        // Transcribe using Whisper
+        setTranscribing(true);
+        setProcessingStatus("Transcribing your recording...");
+        setUploadProgress(50);
+
+        const { data: transcribeData, error: transcribeError } = await supabase.functions.invoke('transcribe-story', {
+          body: { audioUrl: fileUrl }
+        });
+
+        if (transcribeError || !transcribeData?.success) {
+          throw new Error(transcribeData?.error || 'Transcription failed');
+        }
+
+        transcript = transcribeData.transcript;
+        console.log('Transcription complete, length:', transcript?.length);
+        setTranscribing(false);
+        setUploadProgress(70);
+      } else {
+        // Path B: Pasted transcript - skip straight to analysis
+        setProcessingStatus("Processing your transcript...");
+        setUploadProgress(50);
       }
-
-      // Transcribe the recording
-      setTranscribing(true);
-      setProcessingStatus("Transcribing your story...");
-      setUploadProgress(50);
-
-      const { data: transcribeData, error: transcribeError } = await supabase.functions.invoke('transcribe-story', {
-        body: { audioUrl: fileUrl }
-      });
-
-      if (transcribeError || !transcribeData?.success) {
-        throw new Error(transcribeData?.error || 'Transcription failed');
-      }
-
-      const transcript = transcribeData.transcript;
-      console.log('Transcription complete, length:', transcript?.length);
-      setTranscribing(false);
-      setUploadProgress(70);
 
       // Summarize the transcript
       setSummarizing(true);
@@ -285,8 +280,8 @@ export function StoryModal({ open, onOpenChange, submissionId, clientId, initial
         discovery: {
           ...currentDiscovery,
           story: {
-            recording_url: fileUrl,
-            recording_asset_id: assetId,
+            recording_url: fileUrl || undefined,
+            recording_asset_id: assetId || undefined,
             completed: true,
             transcript,
             summary,
@@ -313,8 +308,10 @@ export function StoryModal({ open, onOpenChange, submissionId, clientId, initial
       setProcessingStatus("");
 
       toast({
-        title: "Story saved successfully!",
-        description: "Your story has been transcribed and analyzed",
+        title: "Success!",
+        description: selectedFile 
+          ? "Your recording has been transcribed and analyzed successfully."
+          : "Your transcript has been analyzed and optimized successfully.",
       });
 
       // Wait a moment to show success message
@@ -343,31 +340,9 @@ export function StoryModal({ open, onOpenChange, submissionId, clientId, initial
         <DialogHeader>
           <DialogTitle className="text-2xl">Tell Your Story</DialogTitle>
           <DialogDescription>
-            Click <strong>Open Vocaroo</strong> or <strong>Open Loom</strong> to record your answers to the questions below.
-            When finished, upload your file or paste your recording link before closing.
+            Upload your recording file or paste your transcript below. We'll automatically optimize it for AI analysis.
           </DialogDescription>
         </DialogHeader>
-
-        <div className="flex gap-2 mb-4">
-          <Button
-            type="button"
-            variant="outline"
-            className="flex-1 border-[#13cf48] text-[#13cf48] hover:bg-[#13cf48]/10 hover:text-[#13cf48]"
-            onClick={() => window.open('https://vocaroo.com', '_blank')}
-          >
-            <ExternalLink className="h-4 w-4 mr-2" />
-            Open Vocaroo
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            className="flex-1 border-[#13cf48] text-[#13cf48] hover:bg-[#13cf48]/10 hover:text-[#13cf48]"
-            onClick={() => window.open('https://loom.com', '_blank')}
-          >
-            <ExternalLink className="h-4 w-4 mr-2" />
-            Open Loom
-          </Button>
-        </div>
 
         <div className="flex-1 overflow-y-auto pr-2 space-y-4">
           <Accordion type="multiple" className="w-full">
@@ -396,7 +371,7 @@ export function StoryModal({ open, onOpenChange, submissionId, clientId, initial
 
         <div className="border-t pt-4 mt-4 space-y-4">
           <div>
-            <Label className="font-semibold mb-2 block">Upload Your Recording (Required)</Label>
+            <Label className="font-semibold mb-2 block">Upload Your Recording</Label>
             <div className="border-2 border-dashed hover:border-[#13cf48] rounded-lg p-6 text-center transition-colors">
               <input
                 type="file"
@@ -425,18 +400,20 @@ export function StoryModal({ open, onOpenChange, submissionId, clientId, initial
             </div>
           </div>
 
-          <div>
-            <Label htmlFor="recording-url" className="text-sm">
-              Or paste your Vocaroo/Loom link here:
+          <div className="border-t pt-4">
+            <Label htmlFor="transcript-paste" className="font-semibold mb-2 block">
+              Or Paste Your Transcript
             </Label>
-            <Input
-              id="recording-url"
-              type="url"
-              value={recordingUrl}
-              onChange={(e) => setRecordingUrl(e.target.value)}
-              placeholder="https://vocaroo.com/..."
-              className="mt-1 bg-background placeholder:text-muted-foreground"
+            <Textarea
+              id="transcript-paste"
+              value={pastedTranscript}
+              onChange={(e) => setPastedTranscript(e.target.value)}
+              placeholder="Paste your transcript here from Loom, Otter.ai, or any transcription tool..."
+              className="min-h-[200px] bg-background"
             />
+            <p className="text-xs text-muted-foreground mt-1">
+              Already have a transcript? Paste it here and we'll optimize it for marketing insights.
+            </p>
           </div>
 
           {uploadProgress > 0 && uploadProgress < 100 && (
