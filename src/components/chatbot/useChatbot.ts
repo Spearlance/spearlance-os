@@ -39,26 +39,36 @@ export const useChatbot = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
+      // Step 1: Fetch conversations with creator names
       const { data, error } = await supabase
         .from('chat_conversations')
         .select(`
           *,
-          profiles!chat_conversations_user_id_fkey (
-            name,
-            user_roles (role)
-          )
+          creator:profiles!chat_conversations_user_id_fkey (name)
         `)
         .eq('client_id', selectedClient.id)
         .is('archived_at', null)
         .order('updated_at', { ascending: false });
 
       if (error) throw error;
-      
-      // Transform data to include creator info
+
+      // Step 2: Get unique user IDs to fetch roles
+      const userIds = [...new Set((data || []).map(conv => conv.user_id))];
+
+      // Step 3: Fetch roles for these users
+      const { data: rolesData } = await supabase
+        .from('user_roles')
+        .select('user_id, role')
+        .in('user_id', userIds);
+
+      // Step 4: Create a map of user_id to role for quick lookup
+      const roleMap = new Map(rolesData?.map(r => [r.user_id, r.role]));
+
+      // Step 5: Transform data to include creator info
       const conversationsWithCreator = (data || []).map((conv: any) => ({
         ...conv,
-        creator_name: conv.profiles?.name || 'Unknown',
-        creator_role: conv.profiles?.user_roles?.[0]?.role || 'client'
+        creator_name: conv.creator?.name || 'Unknown',
+        creator_role: roleMap.get(conv.user_id) || 'client'
       }));
       
       setConversations(conversationsWithCreator);
