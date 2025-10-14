@@ -51,10 +51,10 @@ import { useToast } from "@/hooks/use-toast";
 
 const menuItems = [
   { title: "Home", url: "/", icon: Home },
+  { title: "Launch Pad", url: "/launchpad", icon: Rocket },
   { title: "Tasks", url: "/tasks", icon: CheckSquare },
   { title: "Assets", url: "/assets", icon: FolderOpen },
   { title: "Avatar", url: "/avatar", icon: Users },
-  { title: "Launch Pad", url: "/launchpad", icon: Rocket },
   { title: "Support", url: "/support", icon: HelpCircle },
   { title: "Settings", url: "/settings", icon: Settings },
 ];
@@ -210,7 +210,7 @@ export function AppSidebar() {
                 </Collapsible>
               )}
 
-              {menuItems.slice(1, 4).map((item) => (
+              {menuItems.slice(1, 5).map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <NavLink to={item.url} end className={getNavClass}>
@@ -257,7 +257,7 @@ export function AppSidebar() {
                 </SidebarMenuItem>
               </Collapsible>
 
-              {menuItems.slice(4).map((item) => (
+              {menuItems.slice(5).map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <NavLink to={item.url} end className={getNavClass}>
