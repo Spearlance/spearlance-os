@@ -7,6 +7,8 @@ export interface Conversation {
   updated_at: string;
   archived_at: string | null;
   auto_delete_at: string;
+  creator_name?: string;
+  creator_role?: string;
 }
 
 export interface ChatMessage {

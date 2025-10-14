@@ -117,8 +117,20 @@ export const ChatbotWidget = () => {
                           <Archive className="h-3 w-3" />
                         </Button>
                       </div>
+                      <div className="flex items-center gap-2 text-xs">
+                        <span className="text-muted-foreground">
+                          {conv.creator_name}
+                        </span>
+                        <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
+                          conv.creator_role === 'admin' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300' :
+                          conv.creator_role === 'fmm' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' :
+                          'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
+                        }`}>
+                          {conv.creator_role?.toUpperCase()}
+                        </span>
+                      </div>
                       <span className="text-xs text-muted-foreground">
-                        {new Date(conv.updated_at).toLocaleDateString()}
+                        Updated {new Date(conv.updated_at).toLocaleDateString()}
                       </span>
                     </DropdownMenuItem>
                   ))}

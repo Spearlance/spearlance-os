@@ -41,19 +41,31 @@ export const useChatbot = () => {
 
       const { data, error } = await supabase
         .from('chat_conversations')
-        .select('*')
+        .select(`
+          *,
+          profiles!chat_conversations_user_id_fkey (
+            name,
+            user_roles (role)
+          )
+        `)
         .eq('client_id', selectedClient.id)
-        .eq('user_id', user.id)
         .is('archived_at', null)
         .order('updated_at', { ascending: false });
 
       if (error) throw error;
       
-      setConversations(data || []);
+      // Transform data to include creator info
+      const conversationsWithCreator = (data || []).map((conv: any) => ({
+        ...conv,
+        creator_name: conv.profiles?.name || 'Unknown',
+        creator_role: conv.profiles?.user_roles?.[0]?.role || 'client'
+      }));
+      
+      setConversations(conversationsWithCreator);
       
       // Auto-select most recent conversation
-      if (data && data.length > 0 && !activeConversationId) {
-        setActiveConversationId(data[0].id);
+      if (conversationsWithCreator.length > 0 && !activeConversationId) {
+        setActiveConversationId(conversationsWithCreator[0].id);
       }
     } catch (err: any) {
       console.error('Error loading conversations:', err);
