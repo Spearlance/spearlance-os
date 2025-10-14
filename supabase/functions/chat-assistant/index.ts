@@ -303,6 +303,44 @@ async function getMarketingChannels(supabase: any, params: any, clientId: string
   };
 }
 
+async function getMarketingIdeas(supabase: any, clientId: string) {
+  const { data, error } = await supabase
+    .from('marketing_ideas')
+    .select('id, title, status, tags, offer_type, created_at, content')
+    .eq('client_id', clientId)
+    .order('created_at', { ascending: false })
+    .limit(10); // Get last 10 ideas
+  
+  if (error) throw error;
+  
+  // Extract key info from each idea (title, offer type, score if available)
+  const simplified = (data || []).map((idea: any) => {
+    const content = idea.content;
+    let offerScore = null;
+    
+    // Try to extract offer score from content
+    if (typeof content === 'object' && content.markdown) {
+      const scoreMatch = content.markdown.match(/Complete Offer Score[:\s]*(\d+)\/100/i);
+      if (scoreMatch) offerScore = parseInt(scoreMatch[1]);
+    }
+    
+    return {
+      id: idea.id,
+      title: idea.title,
+      status: idea.status,
+      tags: idea.tags,
+      offer_type: idea.offer_type,
+      created_at: idea.created_at,
+      offer_score: offerScore
+    };
+  });
+  
+  return {
+    items: sanitizeDataForPrompt(simplified),
+    result_count: data?.length || 0
+  };
+}
+
 async function searchAssets(supabase: any, params: any, clientId: string) {
   let query = supabase
     .from('assets')
@@ -442,12 +480,13 @@ async function getCommunicationLogs(supabase: any, params: any, clientId: string
 
 // Helper function to gather all Complete Offer inputs
 async function gatherGSOInputs(supabase: any, clientId: string) {
-  const [avatars, services, channels, reports, client] = await Promise.all([
+  const [avatars, services, channels, reports, client, marketingIdeas] = await Promise.all([
     getAvatars(supabase, clientId),
     getServices(supabase, clientId),
     getMarketingChannels(supabase, {}, clientId),
     getReports(supabase, {}, clientId),
-    getClientInfo(supabase, clientId)
+    getClientInfo(supabase, clientId),
+    getMarketingIdeas(supabase, clientId)
   ]);
   
   return {
@@ -455,7 +494,8 @@ async function gatherGSOInputs(supabase: any, clientId: string) {
     services: services.items,
     assets: channels.items,
     proof: reports.items.filter((r: any) => r.summary), // Reports with summaries can serve as proof
-    client_info: client
+    client_info: client,
+    marketing_ideas: marketingIdeas.items
   };
 }
 
@@ -623,7 +663,7 @@ const tools = [
     type: "function",
     function: {
       name: "gather_gso_inputs",
-      description: "Pull all client data needed to build a Complete Offer (avatars, services, proof, assets, economics). Call this when user requests to build an offer, campaign, or pricing strategy.",
+      description: "Pull all client data needed to build a Complete Offer (avatars, services, proof, assets, economics, existing marketing ideas). Call this when user requests to build an offer, campaign, or pricing strategy. Returns avatars, services, channels, reports, client info, and past marketing ideas including Complete Offers.",
       parameters: { type: "object", properties: {}, required: [] }
     }
   }
@@ -730,20 +770,42 @@ Task: Build, name, and price a Complete Offer; design lead generation across the
 
 FLOW:
 
-**Step 0: Discovery (avatar-aware)**
-- Call get_client_info and get_avatars tools FIRST
-- Review existing avatar data (demographics, pains, goals, objections)
-- If avatar has key data (pain points, dream outcome, objections), acknowledge it and skip to Step 1
-- If avatar is incomplete, ask ONLY missing questions:
-  * "What's the dream outcome your ideal client wants?"
-  * "What's their biggest pain/frustration?"
-  * "What's stopping them from solving this now?" (objections)
-- MAX 3 questions total. Never re-ask what we already know.
-- If avatar exists, say: "I see you're targeting [avatar name]: [demographics]. Their main pain is [pain]. Their dream outcome is [goal]. Let me build a Complete Offer around that..."
+**Step 0: Discovery (avatar + service + past offers aware)**
+- Call gather_gso_inputs tool FIRST (pulls avatars, services, channels, reports, existing marketing ideas, client info)
+- Review existing data:
+  * Marketing Ideas: Check if client has 2+ Complete Offers already
+  * Avatars: demographics, pains, goals, objections
+  * Services: name, description, key_benefits, differentiators
+
+**If client has 2+ Complete Offers:**
+- Acknowledge: "I see you've already built offers for [list services from past offers]. Scores: [list scores if available]."
+- Ask: "Want to refine one of these, create a variant, or build something new for a different service?"
+- [WAIT FOR USER RESPONSE]
+
+**If client has 0-1 Complete Offers:**
+- If avatar AND services exist with complete data:
+  * Acknowledge: "I see you're targeting [avatar name]: [demographics]. Their main pain is [pain]. Their dream outcome is [goal]."
+  * "You offer [service names]. Let me build a Complete Offer around [specific service]..."
+  * Skip to Step 1
+- If avatar exists but services are missing/incomplete:
+  * Ask: "Which service do you want to build this offer around?" (if multiple services exist)
+  * Ask: "What's the core service/deliverable?" (if no services exist)
+- If avatar is incomplete:
+  * Ask ONLY missing questions (max 3 questions)
+
+**Never re-ask what we already know from avatars, services, or past offers.**
 
 [WAIT FOR USER RESPONSE IF QUESTIONS ASKED - DO NOT CONTINUE]
 
 **Step 1: Core Offer (1 message, ~100 words)**
+
+**If building on a past offer:**
+- Reference it: "Based on your [previous offer name] (scored X/100), here's a new angle..."
+- Show improvement areas: "Last time we focused on [X]. This time let's emphasize [Y]."
+
+**If first offer or different service:**
+- Build from scratch using avatar + service data
+
 Present:
 - 3 offer name options using [Avatar] + [Outcome] + [Mechanism] + [Timebox]
 - Promise statement
