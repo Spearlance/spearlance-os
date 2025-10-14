@@ -163,8 +163,17 @@ export function StageDiscovery({ submissionId, initialData, onContinue, onSaveEx
   };
 
   const handleContinue = async () => {
-    // Trigger validation on essential fields only
-    const isValid = await form.trigger();
+    // Only validate the required fields
+    const validations = await Promise.all([
+      form.trigger("company.legal_name"),
+      form.trigger("company.brand_name"),
+      form.trigger("company.website_url"),
+      form.trigger("contacts.primary_name"),
+      form.trigger("contacts.primary_email"),
+      form.trigger("model.services"),
+    ]);
+
+    const isValid = validations.every(v => v === true);
     
     if (!isValid) {
       // Collect which essential sections have errors
