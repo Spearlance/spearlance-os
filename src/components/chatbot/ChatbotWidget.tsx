@@ -63,25 +63,16 @@ export const ChatbotWidget = () => {
                   {selectedClient?.name || 'No client selected'}
                 </SheetDescription>
               </div>
-              <div className="flex gap-2">
-                {messages.length > 0 && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={clearMessages}
-                    title="Clear conversation"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                )}
+              {messages.length > 0 && (
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => setIsOpen(false)}
+                  onClick={clearMessages}
+                  title="Clear conversation"
                 >
-                  <X className="h-4 w-4" />
+                  <Trash2 className="h-4 w-4" />
                 </Button>
-              </div>
+              )}
             </div>
           </SheetHeader>
 
