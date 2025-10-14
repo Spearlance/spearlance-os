@@ -1,3 +1,4 @@
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
@@ -18,9 +19,9 @@ serve(async (req) => {
       throw new Error('audioUrl is required');
     }
 
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY not configured');
+    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
+    if (!OPENAI_API_KEY) {
+      throw new Error('OPENAI_API_KEY not configured');
     }
 
     // Download the audio file
@@ -43,12 +44,12 @@ serve(async (req) => {
     formData.append('file', audioBlob, 'audio.file');
     formData.append('model', 'whisper-1');
 
-    // Call Whisper via Lovable AI Gateway
-    console.log('Calling Whisper API via Lovable AI Gateway...');
-    const whisperResponse = await fetch('https://ai.gateway.lovable.dev/v1/audio/transcriptions', {
+    // Call OpenAI Whisper API directly
+    console.log('Calling OpenAI Whisper API...');
+    const whisperResponse = await fetch('https://api.openai.com/v1/audio/transcriptions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+        'Authorization': `Bearer ${OPENAI_API_KEY}`,
       },
       body: formData,
     });

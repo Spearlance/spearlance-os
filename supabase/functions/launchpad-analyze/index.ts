@@ -83,28 +83,36 @@ serve(async (req) => {
 
     // Extract story data if available
     const storyData = submission.responses_json?.discovery?.story;
-    const storyContext = storyData?.summary ? `
+    let storyContext = '';
+    
+    if (storyData?.summary) {
+      const summary = storyData.summary;
+      const voiceSamples = summary.client_voice_samples || [];
+      const voiceSamplesText = voiceSamples.map((q: any) => `- "${q}"`).join('\n');
+      
+      storyContext = `
 
 CLIENT'S STORY (In Their Own Words):
-Executive Summary: ${storyData.summary.executive_summary}
+Executive Summary: ${summary.executive_summary || 'N/A'}
 
-Key Themes: ${storyData.summary.key_themes?.join(', ')}
+Key Themes: ${summary.key_themes?.join(', ') || 'N/A'}
 
-Pain Points They Solve: ${storyData.summary.pain_points?.join(', ')}
+Pain Points They Solve: ${summary.pain_points?.join(', ') || 'N/A'}
 
-Value Propositions: ${storyData.summary.value_propositions?.join(', ')}
+Value Propositions: ${summary.value_propositions?.join(', ') || 'N/A'}
 
 Authentic Voice Samples:
-${storyData.summary.client_voice_samples?.map((quote: string) => `- "${quote}"`).join('\n')}
+${voiceSamplesText}
 
-Target Audience Insights: ${storyData.summary.target_audience_insights}
+Target Audience Insights: ${summary.target_audience_insights || 'N/A'}
 
-Marketing Angles: ${storyData.summary.marketing_angles?.join(', ')}
+Marketing Angles: ${summary.marketing_angles?.join(', ') || 'N/A'}
 
-Tone Indicators: ${storyData.summary.tone_indicators}
+Tone Indicators: ${summary.tone_indicators || 'N/A'}
 
-Full Transcript (for reference): ${storyData.transcript?.substring(0, 2000)}...
-` : '';
+Full Transcript (for reference): ${storyData.transcript?.substring(0, 2000) || 'N/A'}...
+`;
+    }
 
     // Build analysis prompt
     const prompt = `You are a marketing strategist analyzing a new client's business. Based on the following information, generate comprehensive insights:

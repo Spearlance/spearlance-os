@@ -277,10 +277,13 @@ export function StoryModal({ open, onOpenChange, submissionId, clientId, initial
         .eq('id', submissionId)
         .single();
 
+      const currentResponses = submissionData?.responses_json as any || {};
+      const currentDiscovery = currentResponses.discovery || {};
+      
       const updatedResponses = {
-        ...(submissionData?.responses_json || {}),
+        ...currentResponses,
         discovery: {
-          ...(submissionData?.responses_json?.discovery || {}),
+          ...currentDiscovery,
           story: {
             recording_url: fileUrl,
             recording_asset_id: assetId,
