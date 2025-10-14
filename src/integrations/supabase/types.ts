@@ -863,6 +863,7 @@ export type Database = {
           id: string
           name: string
           order_index: number
+          standard_stage_id: string
         }
         Insert: {
           created_at?: string | null
@@ -871,6 +872,7 @@ export type Database = {
           id?: string
           name: string
           order_index: number
+          standard_stage_id: string
         }
         Update: {
           created_at?: string | null
@@ -879,6 +881,7 @@ export type Database = {
           id?: string
           name?: string
           order_index?: number
+          standard_stage_id?: string
         }
         Relationships: [
           {
@@ -886,6 +889,13 @@ export type Database = {
             columns: ["flow_id"]
             isOneToOne: false
             referencedRelation: "marketing_flows"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketing_flow_stages_standard_stage_id_fkey"
+            columns: ["standard_stage_id"]
+            isOneToOne: false
+            referencedRelation: "standard_marketing_stages"
             referencedColumns: ["id"]
           },
         ]
@@ -944,7 +954,7 @@ export type Database = {
           description: string | null
           id: string
           priority: Database["public"]["Enums"]["task_priority"] | null
-          stage_name: string
+          standard_stage_id: string
           title: string
         }
         Insert: {
@@ -954,7 +964,7 @@ export type Database = {
           description?: string | null
           id?: string
           priority?: Database["public"]["Enums"]["task_priority"] | null
-          stage_name: string
+          standard_stage_id: string
           title: string
         }
         Update: {
@@ -964,7 +974,7 @@ export type Database = {
           description?: string | null
           id?: string
           priority?: Database["public"]["Enums"]["task_priority"] | null
-          stage_name?: string
+          standard_stage_id?: string
           title?: string
         }
         Relationships: [
@@ -973,6 +983,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketing_flow_task_templates_standard_stage_id_fkey"
+            columns: ["standard_stage_id"]
+            isOneToOne: false
+            referencedRelation: "standard_marketing_stages"
             referencedColumns: ["id"]
           },
         ]
@@ -1429,6 +1446,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      standard_marketing_stages: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          name: string
+          order_index: number
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          order_index: number
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          order_index?: number
+        }
+        Relationships: []
       }
       task_comments: {
         Row: {

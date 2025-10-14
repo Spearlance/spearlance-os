@@ -11,11 +11,17 @@ import { useToast } from "@/hooks/use-toast";
 interface TaskTemplate {
   id: string;
   channel_name: string;
-  stage_name: string;
+  standard_stage_id: string;
   title: string;
   description: string | null;
   priority: string;
   created_at: string;
+}
+
+interface StandardStage {
+  id: string;
+  name: string;
+  order_index: number;
 }
 
 interface TemplateFormDialogProps {
@@ -23,17 +29,20 @@ interface TemplateFormDialogProps {
   onOpenChange: (open: boolean) => void;
   template?: TaskTemplate | null;
   onSuccess: () => void;
+  selectedStageId?: string;
 }
 
 export function TemplateFormDialog({ 
   open, 
   onOpenChange, 
   template, 
-  onSuccess 
+  onSuccess,
+  selectedStageId 
 }: TemplateFormDialogProps) {
   const { toast } = useToast();
+  const [stages, setStages] = useState<StandardStage[]>([]);
   const [formData, setFormData] = useState({
-    stage_name: template?.stage_name || 'Attract',
+    standard_stage_id: template?.standard_stage_id || selectedStageId || '',
     channel_name: template?.channel_name || '',
     title: template?.title || '',
     description: template?.description || '',
@@ -42,9 +51,13 @@ export function TemplateFormDialog({
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    loadStages();
+  }, []);
+
+  useEffect(() => {
     if (template) {
       setFormData({
-        stage_name: template.stage_name,
+        standard_stage_id: template.standard_stage_id,
         channel_name: template.channel_name,
         title: template.title,
         description: template.description || '',
@@ -52,14 +65,28 @@ export function TemplateFormDialog({
       });
     } else {
       setFormData({
-        stage_name: 'Attract',
+        standard_stage_id: selectedStageId || '',
         channel_name: '',
         title: '',
         description: '',
         priority: 'normal',
       });
     }
-  }, [template, open]);
+  }, [template, open, selectedStageId]);
+
+  const loadStages = async () => {
+    const { data, error } = await supabase
+      .from('standard_marketing_stages')
+      .select('*')
+      .order('order_index');
+    
+    if (data) {
+      setStages(data);
+      if (!formData.standard_stage_id && data.length > 0) {
+        setFormData(prev => ({ ...prev, standard_stage_id: data[0].id }));
+      }
+    }
+  };
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -86,7 +113,7 @@ export function TemplateFormDialog({
       const { error } = await supabase
         .from('marketing_flow_task_templates')
         .update({
-          stage_name: formData.stage_name,
+          standard_stage_id: formData.standard_stage_id,
           channel_name: formData.channel_name,
           title: formData.title,
           description: formData.description || null,
@@ -106,7 +133,7 @@ export function TemplateFormDialog({
       const { error } = await supabase
         .from('marketing_flow_task_templates')
         .insert({
-          stage_name: formData.stage_name,
+          standard_stage_id: formData.standard_stage_id,
           channel_name: formData.channel_name,
           title: formData.title,
           description: formData.description || null,
@@ -140,18 +167,18 @@ export function TemplateFormDialog({
             <div>
               <Label htmlFor="stage">Stage *</Label>
               <Select 
-                value={formData.stage_name} 
-                onValueChange={(value) => setFormData({ ...formData, stage_name: value })}
+                value={formData.standard_stage_id} 
+                onValueChange={(value) => setFormData({ ...formData, standard_stage_id: value })}
               >
                 <SelectTrigger id="stage">
-                  <SelectValue />
+                  <SelectValue placeholder="Select stage" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Attract">Attract</SelectItem>
-                  <SelectItem value="Engage">Engage</SelectItem>
-                  <SelectItem value="Convert">Convert</SelectItem>
-                  <SelectItem value="Close">Close</SelectItem>
-                  <SelectItem value="Retain and Reactivate">Retain and Reactivate</SelectItem>
+                  {stages.map(stage => (
+                    <SelectItem key={stage.id} value={stage.id}>
+                      {stage.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

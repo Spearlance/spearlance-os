@@ -41,9 +41,10 @@ export function ApplyTemplateDialog({ open, onOpenChange, stages, clientId, onSu
   const loadTemplates = async () => {
     const { data, error } = await supabase
       .from("marketing_flow_task_templates")
-      .select("*")
-      .order("stage_name")
-      .order("channel_name");
+      .select(`
+        *,
+        standard_stage:standard_marketing_stages(name, order_index)
+      `);
 
     if (error) {
       console.error("Error loading templates:", error);
@@ -52,14 +53,15 @@ export function ApplyTemplateDialog({ open, onOpenChange, stages, clientId, onSu
 
     // Group templates by stage and channel
     const grouped: GroupedTemplates = {};
-    data?.forEach((template) => {
-      if (!grouped[template.stage_name]) {
-        grouped[template.stage_name] = {};
+    data?.forEach((template: any) => {
+      const stageName = template.standard_stage?.name || 'Unknown';
+      if (!grouped[stageName]) {
+        grouped[stageName] = {};
       }
-      if (!grouped[template.stage_name][template.channel_name]) {
-        grouped[template.stage_name][template.channel_name] = [];
+      if (!grouped[stageName][template.channel_name]) {
+        grouped[stageName][template.channel_name] = [];
       }
-      grouped[template.stage_name][template.channel_name].push(template);
+      grouped[stageName][template.channel_name].push(template);
     });
 
     setTemplates(grouped);
@@ -92,13 +94,16 @@ export function ApplyTemplateDialog({ open, onOpenChange, stages, clientId, onSu
 
       // For each selected channel
       for (const channelName of Array.from(selectedChannels)) {
-        // Find stage for this channel
+        // Find stage for this channel by matching standard_stage_id
         let stageId: string | undefined;
         let channelTemplates: Template[] = [];
 
         for (const [stageName, channels] of Object.entries(templates)) {
           if (channels[channelName]) {
-            const stage = stages.find((s) => s.name === stageName);
+            // Get the standard_stage_id from the first template in this channel
+            const firstTemplate: any = channels[channelName][0];
+            // Find the client's stage that matches this standard stage
+            const stage = stages.find((s: any) => s.standard_stage_id === firstTemplate.standard_stage_id);
             stageId = stage?.id;
             channelTemplates = channels[channelName];
             break;

@@ -8,7 +8,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { CalendarIcon, MessageSquare, Paperclip } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TaskDrawer } from "@/components/tasks/TaskDrawer";
-import { TemplateManager } from "@/components/tasks/TemplateManager";
+import { TemplateStageManager } from "@/components/tasks/TemplateStageManager";
 import { useToast } from "@/hooks/use-toast";
 
 interface Task {
@@ -239,7 +239,7 @@ export default function Tasks() {
 
         {isAdminOrFMM && (
           <TabsContent value="templates" className="space-y-0">
-            <TemplateManager />
+            <TemplateStageManager />
           </TabsContent>
         )}
       </Tabs>
