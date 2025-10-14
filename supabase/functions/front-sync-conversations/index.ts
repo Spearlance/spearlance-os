@@ -36,6 +36,7 @@ interface FrontConversation {
 interface FrontMessage {
   id: string;
   type: string;
+  is_inbound: boolean;
   author?: {
     email?: string;
     name?: string;
@@ -195,13 +196,25 @@ function extractParticipants(messages: FrontMessage[]): any[] {
 }
 
 function extractMessageThread(messages: FrontMessage[], participants: any[]): any[] {
+  // Identify company domain(s) from participants
+  const companyDomains = ['spearlance.com'];
+  
   return messages.map(msg => {
-    // Try to find sender email/handle from various fields
-    const senderEmail = msg.from?.handle || msg.author?.email || '';
+    let senderName = 'Unknown Sender';
     
-    // Look up the sender's name from participants
-    const participant = participants.find(p => p.email === senderEmail);
-    const senderName = participant?.name || msg.from?.name || msg.author?.name || 'Unknown Sender';
+    if (msg.is_inbound) {
+      // Inbound message - sent by external contact
+      const externalContact = participants.find(p => 
+        p.email && !companyDomains.some(domain => p.email.includes(domain))
+      );
+      senderName = externalContact?.name || 'External Contact';
+    } else {
+      // Outbound message - sent by team member
+      const teamMember = participants.find(p => 
+        p.email && companyDomains.some(domain => p.email.includes(domain))
+      );
+      senderName = teamMember?.name || 'Team Member';
+    }
     
     return {
       id: msg.id,
