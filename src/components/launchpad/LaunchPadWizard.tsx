@@ -11,6 +11,7 @@ import { StageAssets } from "./StageAssets";
 import { StageAvatar } from "./StageAvatar";
 import { SuccessScreen } from "./SuccessScreen";
 import { useNavigate } from "react-router-dom";
+import { Info } from "lucide-react";
 
 export function LaunchPadWizard() {
   const { selectedClient } = useClient();
@@ -155,11 +156,24 @@ export function LaunchPadWizard() {
   return (
     <div className="min-h-screen">
       {submission.stage !== "complete" && (
-        <ProgressHeader
-          currentStage={submission.stage}
-          completedAt={submission.completed_at as Record<string, string>}
-          onStageClick={handleStageChange}
-        />
+        <>
+          <ProgressHeader
+            currentStage={submission.stage}
+            completedAt={submission.completed_at as Record<string, string>}
+            onStageClick={handleStageChange}
+          />
+          
+          <div className="container mx-auto px-4 mt-6">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+              <div className="flex items-start gap-3">
+                <Info className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-blue-900">
+                  Fill out this information to the best of your ability. This is what our AI will use to help you with your marketing campaigns.
+                </p>
+              </div>
+            </div>
+          </div>
+        </>
       )}
 
       <div className="container mx-auto px-4 py-8">
