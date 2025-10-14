@@ -16,6 +16,7 @@ const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const [companyName, setCompanyName] = useState("");
 
   useEffect(() => {
     // Check if user is already logged in
@@ -45,27 +46,28 @@ const Auth = () => {
 
       if (error) throw error;
 
-      // Auto-create managed Cal.com user for FMM/Admin roles
+      // Call edge function to create self-service client
       if (data.user) {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("role")
-          .eq("id", data.user.id)
-          .single();
+        const { error: clientError } = await supabase.functions.invoke(
+          'create-self-service-client',
+          {
+            body: {
+              userId: data.user.id,
+              companyName: companyName,
+              userEmail: email,
+              userName: name
+            }
+          }
+        );
 
-        if (profile && (profile.role === "fmm" || profile.role === "admin")) {
-          // Call edge function to create managed user (fire and forget)
-          supabase.functions
-            .invoke("cal-create-managed-user", {
-              body: { user_id: data.user.id },
-            })
-            .catch((err) => console.error("Failed to create Cal.com managed user:", err));
+        if (clientError) {
+          console.error('Error creating client company:', clientError);
         }
       }
 
       toast({
         title: "Account created!",
-        description: "You can now log in with your credentials.",
+        description: "Welcome to your 90-day free trial! You can now log in.",
       });
     } catch (error: any) {
       toast({
@@ -168,6 +170,17 @@ const Auth = () => {
                     placeholder="John Doe"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="signup-company">Company Name</Label>
+                  <Input
+                    id="signup-company"
+                    type="text"
+                    placeholder="Acme Inc"
+                    value={companyName}
+                    onChange={(e) => setCompanyName(e.target.value)}
                     required
                   />
                 </div>

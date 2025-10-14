@@ -51,6 +51,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useLaunchPadStatus } from "@/hooks/useLaunchPadStatus";
+import { useAccountType } from "@/hooks/useAccountType";
 
 const menuItems = [
   { title: "Home", url: "/", icon: Home },
@@ -84,6 +85,7 @@ export function AppSidebar() {
   const [marketingOpen, setMarketingOpen] = useState(true);
   const [communicationsOpen, setCommunicationsOpen] = useState(false);
   const { isComplete } = useLaunchPadStatus();
+  const { isSelfService } = useAccountType();
 
   useEffect(() => {
     const fetchUserRole = async () => {
@@ -177,7 +179,7 @@ export function AppSidebar() {
                 </SidebarMenuItem>
               ))}
 
-              {(userRole === 'admin' || userRole === 'fmm') && (
+              {!isSelfService && (userRole === 'admin' || userRole === 'fmm') && (
                 <Collapsible open={communicationsOpen} onOpenChange={setCommunicationsOpen}>
                   <SidebarMenuItem>
                     <CollapsibleTrigger asChild>

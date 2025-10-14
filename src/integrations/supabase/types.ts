@@ -517,12 +517,139 @@ export type Database = {
         }
         Relationships: []
       }
+      client_activity_metrics: {
+        Row: {
+          assets_uploaded: number | null
+          avatar_evidence_added: number | null
+          avatars_created: number | null
+          client_id: string
+          created_at: string | null
+          engagement_score: number | null
+          flowchart_views: number | null
+          folders_created: number | null
+          id: string
+          launchpad_completion_percentage: number | null
+          launchpad_stages_completed: number | null
+          marketing_channels_created: number | null
+          marketing_ideas_created: number | null
+          meetings_logged: number | null
+          metric_date: string
+          tasks_completed: number | null
+          tasks_created: number | null
+          team_members_count: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          assets_uploaded?: number | null
+          avatar_evidence_added?: number | null
+          avatars_created?: number | null
+          client_id: string
+          created_at?: string | null
+          engagement_score?: number | null
+          flowchart_views?: number | null
+          folders_created?: number | null
+          id?: string
+          launchpad_completion_percentage?: number | null
+          launchpad_stages_completed?: number | null
+          marketing_channels_created?: number | null
+          marketing_ideas_created?: number | null
+          meetings_logged?: number | null
+          metric_date: string
+          tasks_completed?: number | null
+          tasks_created?: number | null
+          team_members_count?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          assets_uploaded?: number | null
+          avatar_evidence_added?: number | null
+          avatars_created?: number | null
+          client_id?: string
+          created_at?: string | null
+          engagement_score?: number | null
+          flowchart_views?: number | null
+          folders_created?: number | null
+          id?: string
+          launchpad_completion_percentage?: number | null
+          launchpad_stages_completed?: number | null
+          marketing_channels_created?: number | null
+          marketing_ideas_created?: number | null
+          meetings_logged?: number | null
+          metric_date?: string
+          tasks_completed?: number | null
+          tasks_created?: number | null
+          team_members_count?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_activity_metrics_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_team_invitations: {
+        Row: {
+          client_id: string
+          created_at: string | null
+          email: string
+          expires_at: string
+          id: string
+          invited_by: string
+          role: Database["public"]["Enums"]["app_role"] | null
+          status: string | null
+          token: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string | null
+          email: string
+          expires_at: string
+          id?: string
+          invited_by: string
+          role?: Database["public"]["Enums"]["app_role"] | null
+          status?: string | null
+          token: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string | null
+          email?: string
+          expires_at?: string
+          id?: string
+          invited_by?: string
+          role?: Database["public"]["Enums"]["app_role"] | null
+          status?: string | null
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_team_invitations_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_team_invitations_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
+          account_type: string | null
           billing_plan_id: string | null
           billing_status: Database["public"]["Enums"]["billing_status"] | null
           booking_permissions: string | null
           canva_folder_url: string | null
+          company_name: string | null
           created_at: string | null
           domain: string | null
           drive_folder_url: string | null
@@ -533,14 +660,21 @@ export type Database = {
           oviond_url: string | null
           primary_contact_user_id: string | null
           status: Database["public"]["Enums"]["client_status"] | null
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          subscription_status: string | null
+          trial_end_date: string | null
+          trial_start_date: string | null
           updated_at: string | null
           website_url: string | null
         }
         Insert: {
+          account_type?: string | null
           billing_plan_id?: string | null
           billing_status?: Database["public"]["Enums"]["billing_status"] | null
           booking_permissions?: string | null
           canva_folder_url?: string | null
+          company_name?: string | null
           created_at?: string | null
           domain?: string | null
           drive_folder_url?: string | null
@@ -551,14 +685,21 @@ export type Database = {
           oviond_url?: string | null
           primary_contact_user_id?: string | null
           status?: Database["public"]["Enums"]["client_status"] | null
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          subscription_status?: string | null
+          trial_end_date?: string | null
+          trial_start_date?: string | null
           updated_at?: string | null
           website_url?: string | null
         }
         Update: {
+          account_type?: string | null
           billing_plan_id?: string | null
           billing_status?: Database["public"]["Enums"]["billing_status"] | null
           booking_permissions?: string | null
           canva_folder_url?: string | null
+          company_name?: string | null
           created_at?: string | null
           domain?: string | null
           drive_folder_url?: string | null
@@ -569,6 +710,11 @@ export type Database = {
           oviond_url?: string | null
           primary_contact_user_id?: string | null
           status?: Database["public"]["Enums"]["client_status"] | null
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          subscription_status?: string | null
+          trial_end_date?: string | null
+          trial_start_date?: string | null
           updated_at?: string | null
           website_url?: string | null
         }
@@ -1470,6 +1616,47 @@ export type Database = {
           order_index?: number
         }
         Relationships: []
+      }
+      subscription_pricing: {
+        Row: {
+          billing_plan_id: string | null
+          created_at: string | null
+          currency: string | null
+          id: string
+          interval: string
+          is_active: boolean | null
+          price_amount: number
+          stripe_price_id: string
+        }
+        Insert: {
+          billing_plan_id?: string | null
+          created_at?: string | null
+          currency?: string | null
+          id?: string
+          interval: string
+          is_active?: boolean | null
+          price_amount: number
+          stripe_price_id: string
+        }
+        Update: {
+          billing_plan_id?: string | null
+          created_at?: string | null
+          currency?: string | null
+          id?: string
+          interval?: string
+          is_active?: boolean | null
+          price_amount?: number
+          stripe_price_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_pricing_billing_plan_id_fkey"
+            columns: ["billing_plan_id"]
+            isOneToOne: false
+            referencedRelation: "billing_plans"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       task_comments: {
         Row: {

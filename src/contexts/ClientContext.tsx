@@ -10,6 +10,13 @@ interface Client {
   drive_folder_url?: string;
   canva_folder_url?: string;
   logo_url?: string;
+  account_type?: string;
+  trial_start_date?: string;
+  trial_end_date?: string;
+  subscription_status?: string;
+  company_name?: string;
+  stripe_customer_id?: string;
+  stripe_subscription_id?: string;
 }
 
 interface ClientContextType {

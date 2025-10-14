@@ -13,6 +13,8 @@ import { CreateMeetingDialog } from "@/components/meetings/CreateMeetingDialog";
 import { CreateTaskDialog } from "@/components/tasks/CreateTaskDialog";
 import { CreateTicketDialog } from "@/components/support/CreateTicketDialog";
 import { ChatbotWidget } from "@/components/chatbot/ChatbotWidget";
+import { TrialStatusBanner } from "@/components/TrialStatusBanner";
+import { PricingModal } from "@/components/billing/PricingModal";
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -29,8 +31,8 @@ function MainLayoutContent({ children }: MainLayoutProps) {
   const [viewScheduleDialogOpen, setViewScheduleDialogOpen] = useState(false);
   const [createMeetingDialogOpen, setCreateMeetingDialogOpen] = useState(false);
   const [createTaskDialogOpen, setCreateTaskDialogOpen] = useState(false);
-  
   const [createTicketDialogOpen, setCreateTicketDialogOpen] = useState(false);
+  const [pricingModalOpen, setPricingModalOpen] = useState(false);
 
   useEffect(() => {
     // Set up auth state listener
@@ -166,6 +168,7 @@ function MainLayoutContent({ children }: MainLayoutProps) {
             </div>
           </header>
           <main className="flex-1 p-6 overflow-auto">
+            <TrialStatusBanner onUpgradeClick={() => setPricingModalOpen(true)} />
             {children}
           </main>
         </div>
@@ -200,6 +203,10 @@ function MainLayoutContent({ children }: MainLayoutProps) {
       <CreateTicketDialog
         open={createTicketDialogOpen}
         onOpenChange={setCreateTicketDialogOpen}
+      />
+      <PricingModal
+        open={pricingModalOpen}
+        onOpenChange={setPricingModalOpen}
       />
     </SidebarProvider>
   );
