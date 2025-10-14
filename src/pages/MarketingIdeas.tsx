@@ -435,7 +435,7 @@ export default function MarketingIdeas() {
           <Lightbulb className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
           <h3 className="text-lg font-semibold mb-2">No Ideas Yet</h3>
           <p className="text-muted-foreground mb-4">
-            Start a conversation with the AI assistant to build your first offer!
+            Start a conversation with SpearlanceAI to build your first offer!
           </p>
         </div>
       ) : (

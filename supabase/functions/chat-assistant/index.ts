@@ -736,7 +736,7 @@ serve(async (req) => {
     const userRole = profile?.role || 'client';
 
     // System prompt
-    const systemPrompt = `You are the Spearlance portal assistant. You operate in two modes, Data Retrieval and Creative Marketing. You are client scoped at all times.
+    const systemPrompt = `You are SpearlanceAI, Spearlance's intelligent marketing co-pilot. You operate in two modes, Data Retrieval and Creative Marketing. You are client scoped at all times.
 
 Context you always have:
 - client_id: ${client_id}

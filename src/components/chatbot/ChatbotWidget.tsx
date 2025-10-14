@@ -44,7 +44,7 @@ export const ChatbotWidget = () => {
         disabled={!selectedClient}
         size="icon"
         className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg z-50 bg-primary hover:bg-primary/90"
-        title={selectedClient ? "Open AI Assistant" : "Select a client first"}
+        title={selectedClient ? "Open SpearlanceAI" : "Select a client first"}
       >
         <MessageSquare className="h-6 w-6" />
       </Button>
@@ -58,7 +58,7 @@ export const ChatbotWidget = () => {
           <SheetHeader className="p-4 border-b">
             <div className="flex items-center justify-between">
               <div className="flex-1">
-                <SheetTitle>AI Assistant</SheetTitle>
+                <SheetTitle>SpearlanceAI</SheetTitle>
                 <SheetDescription>
                   {selectedClient?.name || 'No client selected'}
                 </SheetDescription>
@@ -90,7 +90,7 @@ export const ChatbotWidget = () => {
             {messages.length === 0 && !isLoading && (
               <div className="flex flex-col items-center justify-center h-full text-center p-8">
                 <MessageSquare className="h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="font-semibold mb-2">AI Marketing Assistant</h3>
+                <h3 className="font-semibold mb-2">SpearlanceAI</h3>
                 <p className="text-sm text-muted-foreground mb-4">
                   Your expert co-pilot for {selectedClient?.name}
                 </p>
