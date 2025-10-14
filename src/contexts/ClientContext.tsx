@@ -9,6 +9,7 @@ interface Client {
   oviond_url?: string;
   drive_folder_url?: string;
   canva_folder_url?: string;
+  logo_url?: string;
 }
 
 interface ClientContextType {

@@ -1,6 +1,6 @@
 import { ChatMessage as ChatMessageType } from './types';
 import { format } from 'date-fns';
-import { Bot, User, Calendar, Save } from 'lucide-react';
+import { Calendar, Save } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -8,6 +8,9 @@ import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { SaveOfferDialog } from '@/components/marketing/SaveOfferDialog';
 import ReactMarkdown from 'react-markdown';
+import spearlanceLogo from '@/assets/spearlance-logo.png';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { useClient } from '@/contexts/ClientContext';
 
 interface ChatMessageProps {
   message: ChatMessageType;
@@ -18,6 +21,7 @@ export const ChatMessage = ({ message }: ChatMessageProps) => {
   const isSystem = message.role === 'system';
   const navigate = useNavigate();
   const [showSaveDialog, setShowSaveDialog] = useState(false);
+  const { selectedClient } = useClient();
 
   // Detect Complete Offer content
   const isCompleteOfferContent = !isUser && (
@@ -89,8 +93,12 @@ export const ChatMessage = ({ message }: ChatMessageProps) => {
       isUser ? "justify-end" : "justify-start"
     )}>
       {!isUser && (
-        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-          <Bot className="w-5 h-5 text-primary" />
+        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
+          <img 
+            src={spearlanceLogo} 
+            alt="SpearlanceAI" 
+            className="w-5 h-5 object-contain"
+          />
         </div>
       )}
       
@@ -212,9 +220,19 @@ export const ChatMessage = ({ message }: ChatMessageProps) => {
       </div>
 
       {isUser && (
-        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-secondary flex items-center justify-center">
-          <User className="w-5 h-5 text-secondary-foreground" />
-        </div>
+        <Avatar className="w-8 h-8 flex-shrink-0">
+          {selectedClient?.logo_url ? (
+            <AvatarImage 
+              src={selectedClient.logo_url} 
+              alt={selectedClient.name}
+              className="object-cover"
+            />
+          ) : (
+            <AvatarFallback className="bg-secondary text-xs">
+              {selectedClient?.name?.slice(0, 2).toUpperCase() || 'U'}
+            </AvatarFallback>
+          )}
+        </Avatar>
       )}
     </div>
   );
