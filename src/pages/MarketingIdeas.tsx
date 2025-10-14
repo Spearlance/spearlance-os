@@ -11,7 +11,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Lightbulb, Calendar, Tag, Plus, Search, Eye, Pencil, Copy, Trash2, X } from 'lucide-react';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Lightbulb, Calendar, Tag, Plus, Search, Eye, Pencil, Copy, Trash2, X, Download } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
@@ -140,6 +142,64 @@ export default function MarketingIdeas() {
     }
   };
 
+  // Parse GSO content into sections
+  const parseGSOSections = (markdown: string) => {
+    const sections = {
+      summary: '',
+      gso_one_pager: '',
+      lead_pack: '',
+      money_model: '',
+      scores: ''
+    };
+    
+    const parts = markdown.split(/(?=^## )/m);
+    
+    parts.forEach(part => {
+      if (part.includes('Strategy Snapshot') || part.includes('Quick Stats')) {
+        sections.summary = part;
+      } else if (part.includes('GSO') || part.includes('Offer')) {
+        sections.gso_one_pager = part;
+      } else if (part.includes('Lead') || part.includes('Core Four')) {
+        sections.lead_pack = part;
+      } else if (part.includes('Money Model') || part.includes('Funnel')) {
+        sections.money_model = part;
+      } else if (part.includes('Score')) {
+        sections.scores = part;
+      }
+    });
+    
+    return sections;
+  };
+
+  // Extract key metrics for summary card
+  const extractKeyMetrics = (content: any) => {
+    const markdown = content.raw_markdown || '';
+    
+    return {
+      offer_score: markdown.match(/Offer Score[:\s]+(\d+)/)?.[1] || 'N/A',
+      price: markdown.match(/Price[:\s]+\$?([\d,]+)/)?.[1] || 'TBD',
+      guarantee: markdown.match(/Guarantee[:\s]+([^\n]+)/)?.[1]?.substring(0, 50) || 'None',
+      channels: (markdown.match(/Step \d+:/g) || []).length || (markdown.match(/\*\*\d+\./g) || []).length,
+      bonus_count: (markdown.match(/\*\*Bonus \d+/g) || []).length,
+    };
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success('Copied to clipboard!');
+  };
+
+  const exportAsMarkdown = (idea: any) => {
+    const blob = new Blob([idea.content.raw_markdown], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${idea.title.replace(/[^a-z0-9]/gi, '_')}.md`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success('Exported as Markdown!');
+  };
+
   if (!selectedClient) {
     return (
       <div className="container mx-auto p-6">
@@ -153,14 +213,33 @@ export default function MarketingIdeas() {
   }
 
   if (selectedIdea) {
+    const sections = parseGSOSections(selectedIdea.content.raw_markdown || '');
+    const metrics = extractKeyMetrics(selectedIdea.content);
+
     return (
-      <div className="container mx-auto p-6">
-        <div className="mb-6 flex items-center justify-between">
+      <div className="container mx-auto p-6 space-y-6">
+        <div className="flex items-center justify-between">
           <Button variant="ghost" onClick={() => setSelectedIdea(null)}>
             <X className="h-4 w-4 mr-2" />
             Back to Ideas
           </Button>
           <div className="flex gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline">
+                  <Download className="h-4 w-4 mr-2" />
+                  Export
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem onClick={() => exportAsMarkdown(selectedIdea)}>
+                  Export as Markdown
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => copyToClipboard(selectedIdea.content.raw_markdown)}>
+                  Copy All Text
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Button variant="outline" onClick={() => openEditDialog(selectedIdea)}>
               <Pencil className="h-4 w-4 mr-2" />
               Edit
@@ -206,25 +285,232 @@ export default function MarketingIdeas() {
               </div>
             )}
           </CardHeader>
+        </Card>
+
+        {/* Summary Card - Always Visible */}
+        <Card>
+          <CardHeader>
+            <CardTitle>📊 At-a-Glance</CardTitle>
+          </CardHeader>
           <CardContent>
-            <div className="prose prose-sm max-w-none dark:prose-invert">
-              <ReactMarkdown
-                components={{
-                  ul: ({ node, ...props }) => <ul className="list-disc ml-4 space-y-1" {...props} />,
-                  ol: ({ node, ...props }) => <ol className="list-decimal ml-4 space-y-1" {...props} />,
-                  li: ({ node, ...props }) => <li className="text-sm" {...props} />,
-                  strong: ({ node, ...props }) => <strong className="font-semibold" {...props} />,
-                  h1: ({ node, ...props }) => <h1 className="text-2xl font-bold mt-6 mb-4" {...props} />,
-                  h2: ({ node, ...props }) => <h2 className="text-xl font-bold mt-5 mb-3" {...props} />,
-                  h3: ({ node, ...props }) => <h3 className="text-lg font-semibold mt-4 mb-2" {...props} />,
-                  h4: ({ node, ...props }) => <h4 className="text-base font-semibold mt-3 mb-2" {...props} />,
-                }}
-              >
-                {selectedIdea.content.raw_markdown || JSON.stringify(selectedIdea.content, null, 2)}
-              </ReactMarkdown>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div>
+                <p className="text-sm text-muted-foreground">Offer Score</p>
+                <p className="text-2xl font-bold">{metrics.offer_score}/100</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Price</p>
+                <p className="text-2xl font-bold">${metrics.price}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Channels</p>
+                <p className="text-2xl font-bold">{metrics.channels}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Bonuses</p>
+                <p className="text-2xl font-bold">{metrics.bonus_count}</p>
+              </div>
             </div>
           </CardContent>
         </Card>
+
+        {/* Collapsible Sections */}
+        <Accordion type="multiple" defaultValue={["summary"]} className="space-y-4">
+          {sections.summary && (
+            <AccordionItem value="summary" className="border rounded-lg px-4">
+              <AccordionTrigger className="text-lg font-semibold hover:no-underline">
+                <div className="flex items-center justify-between w-full pr-4">
+                  <span>Strategy Snapshot</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      copyToClipboard(sections.summary);
+                    }}
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent>
+                <div className="prose prose-sm max-w-none dark:prose-invert pt-4">
+                  <ReactMarkdown
+                    components={{
+                      ul: ({ node, ...props }) => <ul className="list-disc ml-4 space-y-1" {...props} />,
+                      ol: ({ node, ...props }) => <ol className="list-decimal ml-4 space-y-1" {...props} />,
+                      li: ({ node, ...props }) => <li className="text-sm" {...props} />,
+                      strong: ({ node, ...props }) => <strong className="font-semibold" {...props} />,
+                      h1: ({ node, ...props }) => <h1 className="text-2xl font-bold mt-6 mb-4" {...props} />,
+                      h2: ({ node, ...props }) => <h2 className="text-xl font-bold mt-5 mb-3" {...props} />,
+                      h3: ({ node, ...props }) => <h3 className="text-lg font-semibold mt-4 mb-2" {...props} />,
+                      h4: ({ node, ...props }) => <h4 className="text-base font-semibold mt-3 mb-2" {...props} />,
+                      p: ({ node, ...props }) => <p className="mb-3" {...props} />,
+                    }}
+                  >
+                    {sections.summary}
+                  </ReactMarkdown>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          )}
+
+          {sections.gso_one_pager && (
+            <AccordionItem value="offer" className="border rounded-lg px-4">
+              <AccordionTrigger className="text-lg font-semibold hover:no-underline">
+                <div className="flex items-center justify-between w-full pr-4">
+                  <span>GSO One-Pager</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      copyToClipboard(sections.gso_one_pager);
+                    }}
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent>
+                <div className="prose prose-sm max-w-none dark:prose-invert pt-4">
+                  <ReactMarkdown
+                    components={{
+                      ul: ({ node, ...props }) => <ul className="list-disc ml-4 space-y-1" {...props} />,
+                      ol: ({ node, ...props }) => <ol className="list-decimal ml-4 space-y-1" {...props} />,
+                      li: ({ node, ...props }) => <li className="text-sm" {...props} />,
+                      strong: ({ node, ...props }) => <strong className="font-semibold" {...props} />,
+                      h1: ({ node, ...props }) => <h1 className="text-2xl font-bold mt-6 mb-4" {...props} />,
+                      h2: ({ node, ...props }) => <h2 className="text-xl font-bold mt-5 mb-3" {...props} />,
+                      h3: ({ node, ...props }) => <h3 className="text-lg font-semibold mt-4 mb-2" {...props} />,
+                      h4: ({ node, ...props }) => <h4 className="text-base font-semibold mt-3 mb-2" {...props} />,
+                      p: ({ node, ...props }) => <p className="mb-3" {...props} />,
+                    }}
+                  >
+                    {sections.gso_one_pager}
+                  </ReactMarkdown>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          )}
+
+          {sections.lead_pack && (
+            <AccordionItem value="leads" className="border rounded-lg px-4">
+              <AccordionTrigger className="text-lg font-semibold hover:no-underline">
+                <div className="flex items-center justify-between w-full pr-4">
+                  <span>Lead Generation Pack</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      copyToClipboard(sections.lead_pack);
+                    }}
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent>
+                <div className="prose prose-sm max-w-none dark:prose-invert pt-4">
+                  <ReactMarkdown
+                    components={{
+                      ul: ({ node, ...props }) => <ul className="list-disc ml-4 space-y-1" {...props} />,
+                      ol: ({ node, ...props }) => <ol className="list-decimal ml-4 space-y-1" {...props} />,
+                      li: ({ node, ...props }) => <li className="text-sm" {...props} />,
+                      strong: ({ node, ...props }) => <strong className="font-semibold" {...props} />,
+                      h1: ({ node, ...props }) => <h1 className="text-2xl font-bold mt-6 mb-4" {...props} />,
+                      h2: ({ node, ...props }) => <h2 className="text-xl font-bold mt-5 mb-3" {...props} />,
+                      h3: ({ node, ...props }) => <h3 className="text-lg font-semibold mt-4 mb-2" {...props} />,
+                      h4: ({ node, ...props }) => <h4 className="text-base font-semibold mt-3 mb-2" {...props} />,
+                      p: ({ node, ...props }) => <p className="mb-3" {...props} />,
+                    }}
+                  >
+                    {sections.lead_pack}
+                  </ReactMarkdown>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          )}
+
+          {sections.money_model && (
+            <AccordionItem value="money" className="border rounded-lg px-4">
+              <AccordionTrigger className="text-lg font-semibold hover:no-underline">
+                <div className="flex items-center justify-between w-full pr-4">
+                  <span>Money Model</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      copyToClipboard(sections.money_model);
+                    }}
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent>
+                <div className="prose prose-sm max-w-none dark:prose-invert pt-4">
+                  <ReactMarkdown
+                    components={{
+                      ul: ({ node, ...props }) => <ul className="list-disc ml-4 space-y-1" {...props} />,
+                      ol: ({ node, ...props }) => <ol className="list-decimal ml-4 space-y-1" {...props} />,
+                      li: ({ node, ...props }) => <li className="text-sm" {...props} />,
+                      strong: ({ node, ...props }) => <strong className="font-semibold" {...props} />,
+                      h1: ({ node, ...props }) => <h1 className="text-2xl font-bold mt-6 mb-4" {...props} />,
+                      h2: ({ node, ...props }) => <h2 className="text-xl font-bold mt-5 mb-3" {...props} />,
+                      h3: ({ node, ...props }) => <h3 className="text-lg font-semibold mt-4 mb-2" {...props} />,
+                      h4: ({ node, ...props }) => <h4 className="text-base font-semibold mt-3 mb-2" {...props} />,
+                      p: ({ node, ...props }) => <p className="mb-3" {...props} />,
+                    }}
+                  >
+                    {sections.money_model}
+                  </ReactMarkdown>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          )}
+
+          {sections.scores && (
+            <AccordionItem value="scores" className="border rounded-lg px-4">
+              <AccordionTrigger className="text-lg font-semibold hover:no-underline">
+                <div className="flex items-center justify-between w-full pr-4">
+                  <span>Scores & Next Steps</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      copyToClipboard(sections.scores);
+                    }}
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent>
+                <div className="prose prose-sm max-w-none dark:prose-invert pt-4">
+                  <ReactMarkdown
+                    components={{
+                      ul: ({ node, ...props }) => <ul className="list-disc ml-4 space-y-1" {...props} />,
+                      ol: ({ node, ...props }) => <ol className="list-decimal ml-4 space-y-1" {...props} />,
+                      li: ({ node, ...props }) => <li className="text-sm" {...props} />,
+                      strong: ({ node, ...props }) => <strong className="font-semibold" {...props} />,
+                      h1: ({ node, ...props }) => <h1 className="text-2xl font-bold mt-6 mb-4" {...props} />,
+                      h2: ({ node, ...props }) => <h2 className="text-xl font-bold mt-5 mb-3" {...props} />,
+                      h3: ({ node, ...props }) => <h3 className="text-lg font-semibold mt-4 mb-2" {...props} />,
+                      h4: ({ node, ...props }) => <h4 className="text-base font-semibold mt-3 mb-2" {...props} />,
+                      p: ({ node, ...props }) => <p className="mb-3" {...props} />,
+                    }}
+                  >
+                    {sections.scores}
+                  </ReactMarkdown>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          )}
+        </Accordion>
 
         <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
           <DialogContent>
