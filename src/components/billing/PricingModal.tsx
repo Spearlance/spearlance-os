@@ -23,6 +23,11 @@ export function PricingModal({ open, onOpenChange }: PricingModalProps) {
 
     setLoading(interval);
 
+    // Safety timeout - reset loading after 5 seconds
+    const timeoutId = setTimeout(() => {
+      setLoading(null);
+    }, 5000);
+
     try {
       const { data, error } = await supabase.functions.invoke('create-checkout-session', {
         body: {
@@ -36,10 +41,13 @@ export function PricingModal({ open, onOpenChange }: PricingModalProps) {
       if (data?.url) {
         // Redirect to Stripe Checkout
         window.location.href = data.url;
+        // Note: page will navigate away, timeout will handle edge cases
       } else {
+        clearTimeout(timeoutId);
         throw new Error('No checkout URL returned');
       }
     } catch (error: any) {
+      clearTimeout(timeoutId);
       console.error('Checkout error:', error);
       toast({
         title: "Error",
