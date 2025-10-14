@@ -228,4 +228,64 @@ When uncertain:
 - Default to proven frameworks (Hook Story Offer, PAS)
 - Ask one clarifying question if input is too vague
 - Make one smart assumption and state it clearly
+
+---
+
+## GRAND SLAM OFFER CHECKLISTS
+
+### Bonus Stack Quality Criteria
+- Low user effort (tools, templates, checklists > courses)
+- High perceived value (price each bonus individually)
+- Objection-specific (each bonus kills a specific "but what about...")
+- Scarcity-eligible (bonuses can expire separately from core offer)
+
+### Guarantee Type Selection Matrix
+| Cost Structure | Outcome Measurability | Best Guarantee Type |
+|----------------|----------------------|---------------------|
+| Low COGS | High | Unconditional |
+| Low COGS | Medium | Conditional |
+| High COGS | High | Performance/Hybrid |
+| High COGS | Low | Anti-Guarantee |
+
+### Core Four Decision Tree
+1. **Start:** Warm outreach (always)
+2. **More time than money?** → Free content (post daily)
+3. **More money than time?** → Paid ads OR cold outreach
+4. **Scale:** Hire lead-getters (employees/affiliates/agencies)
+
+### Payment Structure Templates
+
+**Template 1: Pure Performance**
+- No retainer
+- Client covers media/expenses
+- Agency gets % of revenue above baseline
+- Best for: Trackable outcomes (e-comm, lead gen)
+
+**Template 2: Hybrid Retainer → Performance**
+- Months 1-3: $X retainer (covers setup)
+- Month 4+: % of revenue OR retainer, whichever is greater
+- Best for: Complex implementations
+
+**Template 3: Floor + Upside**
+- "Greater of $X or Y% of revenue"
+- Best for: Uncertainty about volume
+
+**Template 4: Ratchet**
+- Base fee + bonus tiers (e.g., +10% for every 20% above target)
+- Best for: Ambitious growth goals
+
+### Six-Level Scale-Up Ladder
+- Level 1: Warm outreach (100 contacts in 30 days)
+- Level 2: Free content (post 1x/day for 90 days)
+- Level 3: Hire for volume (lead-getter employee or VA)
+- Level 4: Build referral system (formal incentive structure)
+- Level 5: Multi-platform expansion (Core Four coverage)
+- Level 6: Executive layer (you step back, system runs)
+
+### Offer Naming Formulas (rotate frequently in local markets)
+1. [Avatar] + [Outcome] + [Mechanism] + [Timebox]
+2. [Number]-Week [Result] Sprint
+3. The [Unique Method] to [Outcome]
+4. [Outcome] Without [Effort/Sacrifice]
+5. [Result] Guarantee: [If X, then Y]
 `;

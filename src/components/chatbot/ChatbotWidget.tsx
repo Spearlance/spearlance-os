@@ -96,13 +96,14 @@ export const ChatbotWidget = () => {
                 </p>
                 <ul className="text-xs text-muted-foreground space-y-2 text-left max-w-sm mx-auto">
                   <li>📊 Query data (tasks, reports, meetings, avatars)</li>
-                  <li>💡 Generate marketing strategy and campaign ideas</li>
-                  <li>✍️ Write ad copy, hooks, emails, and landing pages</li>
-                  <li>🎯 Get offer design and funnel optimization advice</li>
-                  <li>📈 Build test matrices and growth experiments</li>
+                  <li>💡 Generate marketing ideas and strategies</li>
+                  <li>✍️ Write ad copy, hooks, emails, and social posts</li>
+                  <li>🎯 Build complete Grand Slam Offers with pricing & guarantees</li>
+                  <li>📈 Design lead generation plans across the Core Four</li>
+                  <li>💰 Create performance-based money models & funnels</li>
                 </ul>
                 <p className="text-xs mt-4 opacity-60">
-                  Powered by elite direct response frameworks from Hormozi, Brunson, Kennedy & more
+                  Ask me to "build an offer" or "create a campaign" for the full engine
                 </p>
               </div>
             )}
