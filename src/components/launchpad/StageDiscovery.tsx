@@ -175,7 +175,13 @@ export function StageDiscovery({ submissionId, initialData, onContinue, onSaveEx
       if (errors.company) missingSections.push("Company Information");
       if (errors.contacts) missingSections.push("Contacts");
       if (errors.model) missingSections.push("Business Model");
-      if (errors.goals) missingSections.push("Goals");
+      if (errors.goals) {
+        if (errors.goals.quarter_goals) {
+          missingSections.push("Goals (need at least 1 quarterly goal)");
+        } else {
+          missingSections.push("Goals");
+        }
+      }
       if (errors.voice) missingSections.push("Voice & Tone");
       if (!storyCompleted) missingSections.push("Tell Your Story");
       
@@ -248,14 +254,18 @@ export function StageDiscovery({ submissionId, initialData, onContinue, onSaveEx
   const addGoal = () => {
     const currentGoals = form.getValues("goals.quarter_goals") || [];
     if (goalInput.trim() && currentGoals.length < 3) {
-      form.setValue("goals.quarter_goals", [...currentGoals, goalInput.trim()]);
+      form.setValue("goals.quarter_goals", [...currentGoals, goalInput.trim()], {
+        shouldValidate: true
+      });
       setGoalInput("");
     }
   };
 
   const removeGoal = (index: number) => {
     const currentGoals = form.getValues("goals.quarter_goals") || [];
-    form.setValue("goals.quarter_goals", currentGoals.filter((_, i) => i !== index));
+    form.setValue("goals.quarter_goals", currentGoals.filter((_, i) => i !== index), {
+      shouldValidate: true
+    });
   };
 
   const addCompetitor = () => {
