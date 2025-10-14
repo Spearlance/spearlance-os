@@ -81,6 +81,31 @@ serve(async (req) => {
       }
     }
 
+    // Extract story data if available
+    const storyData = submission.responses_json?.discovery?.story;
+    const storyContext = storyData?.summary ? `
+
+CLIENT'S STORY (In Their Own Words):
+Executive Summary: ${storyData.summary.executive_summary}
+
+Key Themes: ${storyData.summary.key_themes?.join(', ')}
+
+Pain Points They Solve: ${storyData.summary.pain_points?.join(', ')}
+
+Value Propositions: ${storyData.summary.value_propositions?.join(', ')}
+
+Authentic Voice Samples:
+${storyData.summary.client_voice_samples?.map((quote: string) => `- "${quote}"`).join('\n')}
+
+Target Audience Insights: ${storyData.summary.target_audience_insights}
+
+Marketing Angles: ${storyData.summary.marketing_angles?.join(', ')}
+
+Tone Indicators: ${storyData.summary.tone_indicators}
+
+Full Transcript (for reference): ${storyData.transcript?.substring(0, 2000)}...
+` : '';
+
     // Build analysis prompt
     const prompt = `You are a marketing strategist analyzing a new client's business. Based on the following information, generate comprehensive insights:
 
@@ -92,6 +117,7 @@ Discovery Responses: ${JSON.stringify(submission.responses_json || {})}
 
 Website Content Preview:
 ${websiteContent}
+${storyContext}
 
 Please analyze and provide:
 1. A detailed insights summary (3-4 paragraphs) covering the business model, target market, unique value proposition, and marketing opportunities

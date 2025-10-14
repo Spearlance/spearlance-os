@@ -123,6 +123,9 @@ export function StoryModal({ open, onOpenChange, submissionId, clientId, initial
   const [recordingUrl, setRecordingUrl] = useState(initialData?.recording_url || "");
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadSuccess, setUploadSuccess] = useState(false);
+  const [transcribing, setTranscribing] = useState(false);
+  const [summarizing, setSummarizing] = useState(false);
+  const [processingStatus, setProcessingStatus] = useState("");
 
   const handleFileSelect = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -223,12 +226,78 @@ export function StoryModal({ open, onOpenChange, submissionId, clientId, initial
 
       // Handle file upload if provided
       if (selectedFile) {
-        setUploadProgress(30);
+        setProcessingStatus("Uploading your recording...");
+        setUploadProgress(20);
         const result = await uploadFile(selectedFile);
         assetId = result.assetId;
         fileUrl = result.publicUrl;
-        setUploadProgress(70);
+        setUploadProgress(40);
       }
+
+      // Transcribe the recording
+      setTranscribing(true);
+      setProcessingStatus("Transcribing your story...");
+      setUploadProgress(50);
+
+      const { data: transcribeData, error: transcribeError } = await supabase.functions.invoke('transcribe-story', {
+        body: { audioUrl: fileUrl }
+      });
+
+      if (transcribeError || !transcribeData?.success) {
+        throw new Error(transcribeData?.error || 'Transcription failed');
+      }
+
+      const transcript = transcribeData.transcript;
+      console.log('Transcription complete, length:', transcript?.length);
+      setTranscribing(false);
+      setUploadProgress(70);
+
+      // Summarize the transcript
+      setSummarizing(true);
+      setProcessingStatus("Analyzing your story...");
+
+      const { data: summarizeData, error: summarizeError } = await supabase.functions.invoke('summarize-story', {
+        body: { transcript }
+      });
+
+      if (summarizeError || !summarizeData?.success) {
+        throw new Error(summarizeData?.error || 'Story analysis failed');
+      }
+
+      const summary = summarizeData.summary;
+      console.log('Summary complete');
+      setSummarizing(false);
+      setUploadProgress(90);
+
+      // Update the launchpad submission with transcript and summary
+      setProcessingStatus("Saving your story...");
+      const { data: submissionData } = await supabase
+        .from('launchpad_submissions')
+        .select('responses_json')
+        .eq('id', submissionId)
+        .single();
+
+      const updatedResponses = {
+        ...(submissionData?.responses_json || {}),
+        discovery: {
+          ...(submissionData?.responses_json?.discovery || {}),
+          story: {
+            recording_url: fileUrl,
+            recording_asset_id: assetId,
+            completed: true,
+            transcript,
+            summary,
+          }
+        }
+      };
+
+      await supabase
+        .from('launchpad_submissions')
+        .update({ 
+          responses_json: updatedResponses,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', submissionId);
 
       const storyData = {
         recording_url: fileUrl || undefined,
@@ -238,24 +307,28 @@ export function StoryModal({ open, onOpenChange, submissionId, clientId, initial
 
       setUploadProgress(100);
       setUploadSuccess(true);
+      setProcessingStatus("");
 
       toast({
-        title: "Story uploaded successfully!",
-        description: "Your story has been saved",
+        title: "Story saved successfully!",
+        description: "Your story has been transcribed and analyzed",
       });
 
       // Wait a moment to show success message
       setTimeout(() => {
         onSuccess(storyData);
         onOpenChange(false);
-      }, 1000);
+      }, 1500);
     } catch (error) {
       console.error("Error saving story:", error);
       toast({
         title: "Error",
-        description: "Failed to save your story. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to process your story. Please try again.",
         variant: "destructive",
       });
+      setTranscribing(false);
+      setSummarizing(false);
+      setProcessingStatus("");
     } finally {
       setLoading(false);
     }
@@ -365,15 +438,19 @@ export function StoryModal({ open, onOpenChange, submissionId, clientId, initial
 
           {uploadProgress > 0 && uploadProgress < 100 && (
             <div>
-              <Label className="text-sm">Uploading...</Label>
+              <Label className="text-sm">{processingStatus || "Processing..."}</Label>
               <Progress value={uploadProgress} className="mt-2" />
+              <div className="mt-2 space-y-1 text-xs text-muted-foreground">
+                {transcribing && <p>⏳ Transcribing your recording...</p>}
+                {summarizing && <p>🔍 Analyzing your story for marketing insights...</p>}
+              </div>
             </div>
           )}
 
           {uploadSuccess && (
             <div className="flex items-center gap-2 p-3 bg-[#13cf48]/10 border border-[#13cf48] rounded-lg">
               <CheckCircle2 className="h-5 w-5 text-[#13cf48]" />
-              <span className="text-sm text-[#13cf48] font-medium">Story uploaded successfully!</span>
+              <span className="text-sm text-[#13cf48] font-medium">Story transcribed and analyzed! ✓</span>
             </div>
           )}
 

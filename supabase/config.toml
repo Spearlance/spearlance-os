@@ -3,6 +3,12 @@ project_id = "hrmhqybdsdngsvhjqwma"
 [functions.create-self-service-client]
 verify_jwt = true
 
+[functions.transcribe-story]
+verify_jwt = true
+
+[functions.summarize-story]
+verify_jwt = true
+
 [functions.create-checkout-session]
 verify_jwt = true
 
