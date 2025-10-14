@@ -52,18 +52,30 @@ serve(async (req) => {
       throw new Error('Access denied to this client');
     }
 
-    // Get client data with primary contact info
+    // Get client data first
     const { data: client, error: clientError } = await supabaseAdmin
       .from('clients')
-      .select(`
-        *,
-        primary_contact:profiles!clients_primary_contact_user_id_fkey(email, name)
-      `)
+      .select('*')
       .eq('id', clientId)
       .single();
 
     if (clientError || !client) {
+      console.error('Client fetch error:', clientError);
       throw new Error('Client not found');
+    }
+
+    // Get primary contact info if it exists
+    let primaryContactEmail = user.email; // fallback to current user
+    if (client.primary_contact_user_id) {
+      const { data: primaryContact } = await supabaseAdmin
+        .from('profiles')
+        .select('email, name')
+        .eq('id', client.primary_contact_user_id)
+        .maybeSingle();
+      
+      if (primaryContact?.email) {
+        primaryContactEmail = primaryContact.email;
+      }
     }
 
     console.log('Creating checkout session for client:', client.id);
@@ -73,7 +85,7 @@ serve(async (req) => {
     
     if (!customerId) {
       const customer = await stripe.customers.create({
-        email: client.primary_contact?.email || user.email,
+        email: primaryContactEmail,
         name: client.company_name || client.name,
         metadata: { 
           client_id: clientId,
