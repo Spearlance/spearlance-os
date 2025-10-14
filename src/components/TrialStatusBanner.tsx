@@ -44,7 +44,9 @@ export function TrialStatusBanner({ onUpgradeClick }: { onUpgradeClick: () => vo
     localStorage.setItem('trial-banner-dismissed', new Date().toDateString());
   };
 
+  // Only show for Stripe billing clients
   if (!selectedClient || 
+      (selectedClient as any).billing_method !== 'stripe' ||
       selectedClient.account_type !== 'self_service' || 
       selectedClient.subscription_status !== 'trialing' ||
       daysRemaining === null || 

@@ -11,6 +11,7 @@ interface Client {
   canva_folder_url?: string;
   logo_url?: string;
   account_type?: string;
+  billing_method?: 'stripe' | 'direct' | 'free';
   trial_start_date?: string;
   trial_end_date?: string;
   subscription_status?: string;
@@ -60,11 +61,11 @@ export const ClientProvider = ({ children }: { children: ReactNode }) => {
       const { data, error } = await query;
       if (error) throw error;
 
-      setClients(data || []);
+      setClients(data as Client[] || []);
       
       // Auto-select first client if none selected
       if (!selectedClient && data && data.length > 0) {
-        setSelectedClient(data[0]);
+        setSelectedClient(data[0] as Client);
       }
     } catch (error) {
       console.error('Error loading clients:', error);
@@ -95,13 +96,13 @@ export const ClientProvider = ({ children }: { children: ReactNode }) => {
       const { data, error } = await query;
       if (error) throw error;
 
-      setClients(data || []);
+      setClients(data as Client[] || []);
       
       // If we had a selected client, re-select the refreshed version
       if (currentSelectedId && data) {
         const refreshedClient = data.find(c => c.id === currentSelectedId);
         if (refreshedClient) {
-          setSelectedClient(refreshedClient);
+          setSelectedClient(refreshedClient as Client);
         }
       }
     } catch (error) {

@@ -39,7 +39,8 @@ serve(async (req) => {
             status: subscription.status === 'active' ? 'active' : 
                     subscription.status === 'trialing' ? 'active' : 'inactive'
           })
-          .eq('stripe_customer_id', subscription.customer as string);
+          .eq('stripe_customer_id', subscription.customer as string)
+          .eq('billing_method', 'stripe');
 
         console.log('Updated subscription:', subscription.id, subscription.status);
         break;
@@ -54,7 +55,8 @@ serve(async (req) => {
             subscription_status: 'canceled',
             status: 'inactive'
           })
-          .eq('stripe_subscription_id', subscription.id);
+          .eq('stripe_subscription_id', subscription.id)
+          .eq('billing_method', 'stripe');
 
         console.log('Subscription canceled:', subscription.id);
         break;
@@ -70,7 +72,8 @@ serve(async (req) => {
               subscription_status: 'active',
               status: 'active'
             })
-            .eq('stripe_subscription_id', invoice.subscription as string);
+            .eq('stripe_subscription_id', invoice.subscription as string)
+            .eq('billing_method', 'stripe');
 
           console.log('Payment succeeded for subscription:', invoice.subscription);
         }
@@ -86,7 +89,8 @@ serve(async (req) => {
             .update({
               subscription_status: 'past_due'
             })
-            .eq('stripe_subscription_id', invoice.subscription as string);
+            .eq('stripe_subscription_id', invoice.subscription as string)
+            .eq('billing_method', 'stripe');
 
           console.log('Payment failed for subscription:', invoice.subscription);
         }

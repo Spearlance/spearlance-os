@@ -40,6 +40,8 @@ import { format } from "date-fns";
 const clientEditSchema = z.object({
   name: z.string().trim().min(1, "Client name is required").max(255),
   status: z.enum(['active', 'archived', 'paused']),
+  billing_method: z.enum(['stripe', 'direct', 'free']),
+  subscription_status: z.string().optional(),
   booking_permissions: z.string().optional(),
   website_url: z.string().url("Invalid URL").optional().or(z.literal('')),
   oviond_url: z.string().url("Invalid URL").optional().or(z.literal('')),
@@ -72,6 +74,8 @@ interface EditClientDialogProps {
     id: string;
     name: string;
     status: 'active' | 'archived' | 'paused';
+    billing_method?: 'stripe' | 'direct' | 'free';
+    subscription_status?: string;
     booking_permissions?: string;
     website_url?: string;
     oviond_url?: string;
@@ -79,6 +83,8 @@ interface EditClientDialogProps {
     canva_folder_url?: string;
     domain?: string;
     logo_url?: string;
+    stripe_customer_id?: string;
+    trial_end_date?: string;
     created_at?: string;
     updated_at?: string;
   };
@@ -96,6 +102,8 @@ export function EditClientDialog({ client, assignedUsers, onClientUpdated }: Edi
     defaultValues: {
       name: client.name || "",
       status: client.status || "active",
+      billing_method: client.billing_method || "stripe",
+      subscription_status: client.subscription_status || "",
       booking_permissions: client.booking_permissions || "self_book",
       website_url: client.website_url || "",
       oviond_url: client.oviond_url || "",
@@ -130,9 +138,10 @@ export function EditClientDialog({ client, assignedUsers, onClientUpdated }: Edi
   const onSubmit = async (data: ClientEditForm) => {
     setIsLoading(true);
     try {
-      const updateData = {
+      const updateData: any = {
         name: data.name,
         status: data.status,
+        billing_method: data.billing_method,
         booking_permissions: data.booking_permissions || null,
         website_url: data.website_url || null,
         oviond_url: data.oviond_url || null,
@@ -141,6 +150,13 @@ export function EditClientDialog({ client, assignedUsers, onClientUpdated }: Edi
         domain: data.domain || null,
         logo_url: data.logo_url || null,
       };
+
+      // For direct/free billing, set subscription_status to active
+      if (data.billing_method === 'direct' || data.billing_method === 'free') {
+        updateData.subscription_status = 'active';
+      } else if (data.subscription_status) {
+        updateData.subscription_status = data.subscription_status;
+      }
 
       const { error } = await supabase
         .from("clients")
@@ -311,6 +327,63 @@ export function EditClientDialog({ client, assignedUsers, onClientUpdated }: Edi
                 </FormItem>
               )}
             />
+
+            <FormField
+              control={form.control}
+              name="billing_method"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Billing Method *</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select billing method" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="stripe">🔵 Stripe Subscription</SelectItem>
+                      <SelectItem value="direct">💰 Direct Payment</SelectItem>
+                      <SelectItem value="free">🎁 Free Access</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormDescription>
+                    How this client pays for services
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Show Stripe info only for Stripe billing */}
+            {form.watch("billing_method") === "stripe" && (
+              <div className="space-y-2 p-3 border rounded-md bg-muted/50">
+                <div className="text-sm font-medium">Stripe Billing Information</div>
+                <div className="space-y-1 text-sm">
+                  {client.stripe_customer_id && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-muted-foreground">Customer ID:</span>
+                      <Badge variant="secondary" className="font-mono text-xs">
+                        {client.stripe_customer_id}
+                      </Badge>
+                    </div>
+                  )}
+                  {client.subscription_status && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-muted-foreground">Status:</span>
+                      <Badge variant={client.subscription_status === 'active' ? 'default' : 'secondary'}>
+                        {client.subscription_status}
+                      </Badge>
+                    </div>
+                  )}
+                  {client.trial_end_date && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-muted-foreground">Trial Ends:</span>
+                      <span>{format(new Date(client.trial_end_date), 'PPP')}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             <FormField
               control={form.control}

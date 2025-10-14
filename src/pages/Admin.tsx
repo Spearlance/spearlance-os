@@ -367,6 +367,7 @@ export default function Admin() {
                   <TableRow>
                     <TableHead>Client</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead>Billing Method</TableHead>
                     <TableHead>Booking Permissions</TableHead>
                     <TableHead>Assigned Users</TableHead>
                     <TableHead>Actions</TableHead>
@@ -413,6 +414,21 @@ export default function Admin() {
                           >
                             {client.status}
                           </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {client.billing_method === 'stripe' && (
+                            <div className="flex items-center gap-2">
+                              <span>🔵 Stripe</span>
+                              {client.subscription_status && (
+                                <Badge variant="outline" className="text-xs">
+                                  {client.subscription_status}
+                                </Badge>
+                              )}
+                            </div>
+                          )}
+                          {client.billing_method === 'direct' && <span>💰 Direct</span>}
+                          {client.billing_method === 'free' && <span>🎁 Free</span>}
+                          {!client.billing_method && <span className="text-muted-foreground">Not set</span>}
                         </TableCell>
                         <TableCell>{client.booking_permissions || "self_book"}</TableCell>
                         <TableCell>

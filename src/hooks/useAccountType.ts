@@ -13,6 +13,10 @@ export const useAccountType = () => {
     ? Math.ceil((new Date(selectedClient.trial_end_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
     : 0;
 
+  // Check billing method for access control
+  const billingMethod = selectedClient?.billing_method;
+  const hasPaidAccess = billingMethod === 'direct' || billingMethod === 'free';
+  
   return {
     isSelfService,
     isManaged,
@@ -20,6 +24,7 @@ export const useAccountType = () => {
     isActive,
     isPaused,
     trialDaysRemaining,
-    hasAccess: isActive || isInTrial,
+    billingMethod,
+    hasAccess: isActive || isInTrial || hasPaidAccess,
   };
 };

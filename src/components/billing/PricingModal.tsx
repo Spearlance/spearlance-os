@@ -21,6 +21,16 @@ export function PricingModal({ open, onOpenChange }: PricingModalProps) {
   const handleCheckout = async (priceId: string, interval: string) => {
     if (!selectedClient) return;
 
+    // Only allow Stripe checkout for Stripe billing clients
+    if ((selectedClient as any).billing_method !== 'stripe') {
+      toast({
+        title: "Not Available",
+        description: "This client is not on a Stripe billing plan. Please contact support.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(interval);
 
     // Safety timeout - reset loading after 5 seconds

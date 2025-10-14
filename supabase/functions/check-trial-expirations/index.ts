@@ -13,7 +13,7 @@ serve(async (req) => {
 
     const now = new Date();
     
-    // Find trials expiring in 7 days
+    // Find trials expiring in 7 days (only for Stripe billing)
     const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
     const { data: expiringSoon } = await supabaseAdmin
       .from('clients')
@@ -22,6 +22,7 @@ serve(async (req) => {
         primary_contact:profiles!clients_primary_contact_user_id_fkey(email, name)
       `)
       .eq('account_type', 'self_service')
+      .eq('billing_method', 'stripe')
       .eq('subscription_status', 'trialing')
       .gte('trial_end_date', now.toISOString())
       .lte('trial_end_date', sevenDaysFromNow.toISOString());
@@ -65,7 +66,7 @@ serve(async (req) => {
       }
     }
 
-    // Find expired trials without active subscription
+    // Find expired trials without active subscription (only for Stripe billing)
     const { data: expired } = await supabaseAdmin
       .from('clients')
       .select(`
@@ -73,6 +74,7 @@ serve(async (req) => {
         primary_contact:profiles!clients_primary_contact_user_id_fkey(email, name)
       `)
       .eq('account_type', 'self_service')
+      .eq('billing_method', 'stripe')
       .eq('subscription_status', 'trialing')
       .lt('trial_end_date', now.toISOString());
 

@@ -64,6 +64,11 @@ serve(async (req) => {
       throw new Error('Client not found');
     }
 
+    // Validate that client is on Stripe billing
+    if (client.billing_method !== 'stripe') {
+      throw new Error('This client is not on a Stripe billing plan');
+    }
+
     // Get primary contact info if it exists
     let primaryContactEmail = user.email; // fallback to current user
     if (client.primary_contact_user_id) {

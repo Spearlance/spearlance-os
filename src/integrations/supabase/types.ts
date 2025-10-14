@@ -645,6 +645,7 @@ export type Database = {
       clients: {
         Row: {
           account_type: string | null
+          billing_method: string | null
           billing_plan_id: string | null
           billing_status: Database["public"]["Enums"]["billing_status"] | null
           booking_permissions: string | null
@@ -670,6 +671,7 @@ export type Database = {
         }
         Insert: {
           account_type?: string | null
+          billing_method?: string | null
           billing_plan_id?: string | null
           billing_status?: Database["public"]["Enums"]["billing_status"] | null
           booking_permissions?: string | null
@@ -695,6 +697,7 @@ export type Database = {
         }
         Update: {
           account_type?: string | null
+          billing_method?: string | null
           billing_plan_id?: string | null
           billing_status?: Database["public"]["Enums"]["billing_status"] | null
           booking_permissions?: string | null
