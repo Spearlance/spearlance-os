@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -33,6 +33,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, Building2, Globe, BarChart3, FolderOpen, Palette, Calendar, Clock, LinkIcon, Copy } from "lucide-react";
 import { ClientLogoUpload } from "./ClientLogoUpload";
 import { format } from "date-fns";
@@ -96,6 +97,10 @@ export function EditClientDialog({ client, assignedUsers, onClientUpdated }: Edi
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>(
+    assignedUsers.map(u => u.id)
+  );
+  const [allUsers, setAllUsers] = useState<Array<{ id: string; name: string; role: string }>>([]);
 
   const form = useForm<ClientEditForm>({
     resolver: zodResolver(clientEditSchema),
@@ -113,6 +118,23 @@ export function EditClientDialog({ client, assignedUsers, onClientUpdated }: Edi
       logo_url: client.logo_url || "",
     },
   });
+
+  useEffect(() => {
+    if (open) {
+      loadAvailableUsers();
+    }
+  }, [open]);
+
+  const loadAvailableUsers = async () => {
+    const { data } = await supabase
+      .from("profiles")
+      .select("id, name, role")
+      .in("role", ["admin", "fmm"])
+      .order("name");
+    
+    setAllUsers(data || []);
+    setSelectedUserIds(assignedUsers.map(u => u.id));
+  };
 
   const handleAutoFillDomain = () => {
     const websiteUrl = form.getValues("website_url");
@@ -164,6 +186,51 @@ export function EditClientDialog({ client, assignedUsers, onClientUpdated }: Edi
         .eq("id", client.id);
 
       if (error) throw error;
+
+      // Handle user assignments
+      const currentUserIds = assignedUsers.map(u => u.id).sort();
+      const newUserIds = [...selectedUserIds].sort();
+      
+      if (JSON.stringify(currentUserIds) !== JSON.stringify(newUserIds)) {
+        const usersToAdd = selectedUserIds.filter(id => !assignedUsers.find(u => u.id === id));
+        const usersToRemove = assignedUsers.filter(u => !selectedUserIds.includes(u.id)).map(u => u.id);
+        
+        // Add client to users' associated_client_ids
+        for (const userId of usersToAdd) {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("associated_client_ids")
+            .eq("id", userId)
+            .single();
+          
+          const currentClientIds = profile?.associated_client_ids || [];
+          if (!currentClientIds.includes(client.id)) {
+            await supabase
+              .from("profiles")
+              .update({ 
+                associated_client_ids: [...currentClientIds, client.id] 
+              })
+              .eq("id", userId);
+          }
+        }
+        
+        // Remove client from users' associated_client_ids
+        for (const userId of usersToRemove) {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("associated_client_ids")
+            .eq("id", userId)
+            .single();
+          
+          const currentClientIds = profile?.associated_client_ids || [];
+          await supabase
+            .from("profiles")
+            .update({ 
+              associated_client_ids: currentClientIds.filter(id => id !== client.id)
+            })
+            .eq("id", userId);
+        }
+      }
 
       toast({
         title: "Client updated successfully",
@@ -499,19 +566,48 @@ export function EditClientDialog({ client, assignedUsers, onClientUpdated }: Edi
             />
 
             <div className="space-y-2">
-              <FormLabel>Assigned Users</FormLabel>
-              <div className="flex flex-wrap gap-2 p-3 border rounded-md bg-muted/50">
-                {assignedUsers.length > 0 ? (
-                  assignedUsers.map((user) => (
-                    <Badge key={user.id} variant="outline">
-                      {user.name}
-                    </Badge>
-                  ))
-                ) : (
-                  <span className="text-sm text-muted-foreground">
-                    No users assigned
-                  </span>
-                )}
+              <FormLabel>Assigned Users (Admins & FMMs)</FormLabel>
+              <FormDescription className="text-xs">
+                Select which admins and FMMs have access to this client
+              </FormDescription>
+              
+              <div className="space-y-3">
+                <div className="max-h-48 overflow-y-auto border rounded-md p-3 space-y-2">
+                  {allUsers.length > 0 ? (
+                    allUsers.map((user) => (
+                      <div key={user.id} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`user-${user.id}`}
+                          checked={selectedUserIds.includes(user.id)}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setSelectedUserIds([...selectedUserIds, user.id]);
+                            } else {
+                              setSelectedUserIds(selectedUserIds.filter(id => id !== user.id));
+                            }
+                          }}
+                        />
+                        <label 
+                          htmlFor={`user-${user.id}`} 
+                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex items-center gap-2 cursor-pointer"
+                        >
+                          {user.name}
+                          <Badge variant="secondary" className="text-xs">
+                            {user.role.toUpperCase()}
+                          </Badge>
+                        </label>
+                      </div>
+                    ))
+                  ) : (
+                    <span className="text-sm text-muted-foreground">
+                      No admins or FMMs available
+                    </span>
+                  )}
+                </div>
+                
+                <div className="text-xs text-muted-foreground">
+                  {selectedUserIds.length} user{selectedUserIds.length !== 1 ? 's' : ''} assigned
+                </div>
               </div>
             </div>
 
