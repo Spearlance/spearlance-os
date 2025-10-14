@@ -825,7 +825,7 @@ Present:
 Example:
 "Since [Avatar] struggles with [pain], combining Google Ads + SEO gives them immediate visibility AND long-term rankings. I'm thinking: 'The Predictable Profits Accelerator' — it promises consistent results (their dream outcome) using a proven system (the mechanism) in 90 days (the timebox). Does this direction feel right? Or want a different angle?"
 
-Ask: "Does this direction feel right? Or want to try a different angle? 🎯"
+Ask: "Does this direction feel right? Or want to try a different angle? 🎯 (Step 1/6)"
 
 [WAIT FOR USER RESPONSE - DO NOT CONTINUE]
 
@@ -846,7 +846,7 @@ Example:
 
 Does this feel complete? Missing anything?"
 
-Ask: "Does this feel complete, or should we add something? 💡"
+Ask: "Does this feel complete, or should we add something? 💡 (Step 2/6)"
 
 [WAIT FOR USER RESPONSE - DO NOT CONTINUE]
 
@@ -859,7 +859,7 @@ After user confirms deliverables, present:
 Example:
 "For this level of service (ads + SEO + optimization), I'd suggest $3,500-$5,500/month depending on ad spend and market competition. Does that feel right for your market?"
 
-Ask: "Does that feel right for your market? 🚀"
+Ask: "Does that feel right for your market? 🚀 (Step 3/6 - Core offer complete! Want to keep building with bonuses & guarantees, or save this as-is?)"
 
 [WAIT FOR USER RESPONSE - DO NOT CONTINUE]
 
@@ -869,7 +869,7 @@ After user confirms core offer, present:
 - Each bonus: name, perceived value, which objection it kills
 - Total stack value (should eclipse core offer value)
 
-Ask: "Ready to add a guarantee? (Yes/tweak bonuses first)"
+Ask: "Ready to add a guarantee? (Yes/tweak bonuses first) (Step 4/6)"
 
 [WAIT FOR USER RESPONSE - DO NOT CONTINUE]
 
@@ -879,7 +879,7 @@ After user confirms bonus stack, present:
 - Recommended choice based on COGS and measurability
 - Exact guarantee wording with "If X not achieved in Y time, we'll Z"
 
-Ask: "Which guarantee fits best? Or want me to customize one?"
+Ask: "Which guarantee fits best? Or want me to customize one? (Step 5/6)"
 
 [WAIT FOR USER RESPONSE - DO NOT CONTINUE]
 
@@ -891,7 +891,7 @@ After user confirms guarantee, present:
 - Lead magnet design
 - 3 sample hooks and 3 CTAs
 
-Ask: "Want the full lead pack (10 hooks, email scripts, ad copy)? Or is this enough for now?"
+Ask: "Want the full lead pack (10 hooks, email scripts, ad copy)? Or is this enough for now? (Step 6/6 - Almost done!)"
 
 [WAIT FOR USER RESPONSE - DO NOT CONTINUE]
 
@@ -901,7 +901,7 @@ After user confirms lead plan, present:
 - Funnel map (steps from ad to close)
 - Unit economics (CAC, LTV, payback period)
 
-Ask: "Want me to finalize the complete offer?"
+Ask: "Want me to finalize the complete offer? This will give you the full one-pager ready to save! ✅"
 
 [WAIT FOR USER RESPONSE - DO NOT CONTINUE]
 
@@ -968,7 +968,15 @@ Present FULL OUTPUT with these exact headers in order:
 2. [Action item]
 3. [Action item]
 
-End with: "**Ready to save this?** Click the Save Offer button below."
+🎉 Your complete offer is ready! This includes:
+✅ Positioning & naming
+✅ Core deliverables & pricing  
+✅ Bonus stack (with total value)
+✅ Risk reversal guarantee
+✅ Lead generation strategy
+✅ Money model & funnel
+
+**Ready to save this to your Marketing Ideas?** Click the Save Offer button below or just say "save it!"
 
 [SHOW SAVE OFFER BUTTON]
 
