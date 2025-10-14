@@ -35,6 +35,7 @@ import {
   CheckSquare,
   FolderOpen,
   Users,
+  User,
   Rocket,
   HelpCircle,
   Settings,
@@ -64,6 +65,7 @@ const menuItems = [
 ];
 
   const marketingSubItems = [
+    { title: "Profile", url: "/marketing/profile", icon: User },
     { title: "Services", url: "/marketing/services", icon: TrendingUp },
     { title: "Ideas", url: "/marketing/ideas", icon: Lightbulb },
     { title: "Flowchart", url: "/marketing/flowchart", icon: GitBranch },

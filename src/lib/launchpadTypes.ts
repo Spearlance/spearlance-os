@@ -42,6 +42,8 @@ export interface DiscoveryData {
     recording_url?: string;
     recording_asset_id?: string;
     completed: boolean;
+    transcript?: string;
+    summary?: any;
   };
 }
 
