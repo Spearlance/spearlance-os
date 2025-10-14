@@ -163,8 +163,30 @@ export function StageDiscovery({ submissionId, initialData, onContinue, onSaveEx
   };
 
   const handleContinue = async () => {
+    // Trigger validation on all fields
     const isValid = await form.trigger();
-    if (!isValid) return;
+    const storyCompleted = form.watch("story.completed");
+    
+    if (!isValid || !storyCompleted) {
+      // Collect which sections have errors
+      const errors = form.formState.errors;
+      const missingSections = [];
+      
+      if (errors.company) missingSections.push("Company Information");
+      if (errors.contacts) missingSections.push("Contacts");
+      if (errors.model) missingSections.push("Business Model");
+      if (errors.goals) missingSections.push("Goals");
+      if (errors.voice) missingSections.push("Voice & Tone");
+      if (!storyCompleted) missingSections.push("Tell Your Story");
+      
+      toast({
+        title: "Please complete all required fields",
+        description: `Missing: ${missingSections.join(", ")}`,
+        variant: "destructive",
+      });
+      
+      return;
+    }
 
     setIsSaving(true);
     try {
@@ -259,8 +281,6 @@ export function StageDiscovery({ submissionId, initialData, onContinue, onSaveEx
     });
     return () => subscription.unsubscribe();
   }, [form.watch]);
-
-  const isFormValid = form.formState.isValid && form.watch("story.completed");
 
   return (
     <div className="space-y-6">
@@ -578,7 +598,7 @@ export function StageDiscovery({ submissionId, initialData, onContinue, onSaveEx
         </Button>
         <Button
           onClick={handleContinue}
-          disabled={!isFormValid || isSaving}
+          disabled={isSaving}
           className="bg-[#13cf48] hover:bg-[#10b93d] text-white"
         >
           {isSaving ? "Saving..." : "Continue"}
