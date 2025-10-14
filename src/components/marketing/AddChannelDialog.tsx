@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,18 +15,26 @@ interface AddChannelDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   stages: Stage[];
+  selectedStageId?: string;
   onSuccess: () => void;
 }
 
-export function AddChannelDialog({ open, onOpenChange, stages, onSuccess }: AddChannelDialogProps) {
+export function AddChannelDialog({ open, onOpenChange, stages, selectedStageId, onSuccess }: AddChannelDialogProps) {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    stageId: "",
+    stageId: selectedStageId || "",
     name: "",
     ownership: "spearlance" as "spearlance" | "client" | "both",
     status: "not_used" as "active" | "in_progress" | "paused" | "not_used",
   });
+
+  // Update stageId when selectedStageId changes
+  useEffect(() => {
+    if (selectedStageId && open) {
+      setFormData((prev) => ({ ...prev, stageId: selectedStageId }));
+    }
+  }, [selectedStageId, open]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

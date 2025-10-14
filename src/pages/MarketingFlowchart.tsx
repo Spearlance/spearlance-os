@@ -2,13 +2,15 @@ import { useEffect, useState } from "react";
 import { useClient } from "@/contexts/ClientContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Plus } from "lucide-react";
 import { ChannelCard } from "@/components/marketing/ChannelCard";
 import { ChannelDrawer } from "@/components/marketing/ChannelDrawer";
 import { AddChannelDialog } from "@/components/marketing/AddChannelDialog";
 import { ApplyTemplateDialog } from "@/components/marketing/ApplyTemplateDialog";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 import type { Database } from "@/integrations/supabase/types";
 
 type Channel = Database["public"]["Tables"]["marketing_flow_channels"]["Row"] & {
@@ -28,6 +30,8 @@ const MarketingFlowchart = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
+  const [selectedStage, setSelectedStage] = useState<Stage | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const isAdminOrFMM = userRole === "admin" || userRole === "fmm";
 
@@ -80,6 +84,11 @@ const MarketingFlowchart = () => {
 
       if (stagesError) throw stagesError;
       setStages(stagesData || []);
+      
+      // Auto-select first stage
+      if (stagesData && stagesData.length > 0 && !selectedStage) {
+        setSelectedStage(stagesData[0]);
+      }
 
       // Load channels with task counts
       const { data: channelsData, error: channelsError } = await supabase
@@ -118,6 +127,10 @@ const MarketingFlowchart = () => {
     return channels.filter((c) => c.stage_id === stageId);
   };
 
+  const getChannelCount = (stageId: string) => {
+    return channels.filter((c) => c.stage_id === stageId).length;
+  };
+
   const handleChannelClick = (channel: Channel) => {
     setSelectedChannel(channel);
     setDrawerOpen(true);
@@ -126,6 +139,10 @@ const MarketingFlowchart = () => {
   const handleChannelUpdate = () => {
     loadFlowData();
   };
+
+  const filteredStages = stages.filter((s) =>
+    s.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   if (loading) {
     return (
@@ -146,69 +163,106 @@ const MarketingFlowchart = () => {
   return (
     <div className="h-full flex flex-col bg-background">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold text-gray-900">Marketing Flowchart</h1>
-            <p className="text-sm text-gray-600 mt-1">
-              A visual roadmap of your marketing system and progress
-            </p>
-          </div>
-          {isAdminOrFMM && (
-            <div className="flex gap-2">
-              <Button onClick={() => setAddDialogOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Channel
-              </Button>
-              <Button variant="outline" onClick={() => setTemplateDialogOpen(true)}>
-                Apply Template
-              </Button>
-            </div>
-          )}
+      <div className="bg-card border-b px-6 py-4">
+        <div>
+          <h1 className="text-2xl font-semibold">Marketing Flowchart</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            A visual roadmap of your marketing system and progress
+          </p>
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="flex-1 overflow-auto p-6">
-        <Accordion type="multiple" className="space-y-2" defaultValue={stages.map((s) => s.id)}>
-          {stages.map((stage) => {
-            const stageChannels = getChannelsForStage(stage.id);
-            return (
-              <AccordionItem
+      {/* Main Content - Two Column Layout */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Left Rail */}
+        <div className="w-80 border-r bg-muted/10 p-4 overflow-auto">
+          <h2 className="text-lg font-semibold mb-4">Marketing Stages</h2>
+
+          <Input
+            placeholder="Search stages..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="mb-4"
+          />
+
+          <div className="space-y-2">
+            {filteredStages.map((stage) => (
+              <button
                 key={stage.id}
-                value={stage.id}
-                className="border border-gray-200 rounded-lg bg-white"
+                onClick={() => setSelectedStage(stage)}
+                className={cn(
+                  "w-full text-left p-3 rounded-lg transition-colors",
+                  "flex items-center justify-between",
+                  selectedStage?.id === stage.id
+                    ? "bg-primary text-primary-foreground"
+                    : "hover:bg-muted"
+                )}
               >
-                <AccordionTrigger className="px-4 hover:bg-gray-50 rounded-t-lg">
-                  <div className="flex items-center justify-between w-full pr-4">
-                    <h2 className="text-lg font-semibold text-gray-900">{stage.name}</h2>
-                    <span className="text-sm text-gray-500">
-                      {stageChannels.length} {stageChannels.length === 1 ? "channel" : "channels"}
-                    </span>
-                  </div>
-                </AccordionTrigger>
-                <AccordionContent className="px-4 pb-4">
-                  {stageChannels.length > 0 ? (
-                    <div className="flex gap-4 overflow-x-auto pb-2">
-                      {stageChannels.map((channel) => (
-                        <ChannelCard
-                          key={channel.id}
-                          channel={channel}
-                          onClick={() => handleChannelClick(channel)}
-                          clientName={selectedClient.name}
-                        />
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-8 text-gray-500">
-                      No channels yet. {isAdminOrFMM && "Click 'Add Channel' to get started."}
-                    </div>
+                <span className="font-medium">{stage.name}</span>
+                <Badge
+                  variant="secondary"
+                  className={cn(
+                    selectedStage?.id === stage.id &&
+                      "bg-primary-foreground/20 text-primary-foreground"
                   )}
-                </AccordionContent>
-              </AccordionItem>
-            );
-          })}
-        </Accordion>
+                >
+                  {getChannelCount(stage.id)}
+                </Badge>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Right Workspace */}
+        <div className="flex-1 p-6 overflow-auto">
+          {selectedStage ? (
+            <>
+              <div className="flex items-center justify-between mb-6">
+                <h1 className="text-2xl font-bold">{selectedStage.name} Stage</h1>
+                {isAdminOrFMM && (
+                  <div className="flex gap-2">
+                    <Button onClick={() => setAddDialogOpen(true)}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Channel
+                    </Button>
+                    <Button variant="outline" onClick={() => setTemplateDialogOpen(true)}>
+                      Apply Template
+                    </Button>
+                  </div>
+                )}
+              </div>
+
+              {getChannelsForStage(selectedStage.id).length === 0 ? (
+                <div className="text-center py-12 border rounded-lg bg-muted/5">
+                  <p className="text-muted-foreground mb-4">
+                    No channels in {selectedStage.name} stage yet
+                  </p>
+                  {isAdminOrFMM && (
+                    <Button onClick={() => setAddDialogOpen(true)}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add First Channel
+                    </Button>
+                  )}
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {getChannelsForStage(selectedStage.id).map((channel) => (
+                    <ChannelCard
+                      key={channel.id}
+                      channel={channel}
+                      onClick={() => handleChannelClick(channel)}
+                      clientName={selectedClient.name}
+                    />
+                  ))}
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground">Select a stage to view channels</p>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Dialogs */}
@@ -229,12 +283,14 @@ const MarketingFlowchart = () => {
             open={addDialogOpen}
             onOpenChange={setAddDialogOpen}
             stages={stages}
+            selectedStageId={selectedStage?.id}
             onSuccess={handleChannelUpdate}
           />
           <ApplyTemplateDialog
             open={templateDialogOpen}
             onOpenChange={setTemplateDialogOpen}
             stages={stages}
+            selectedStageId={selectedStage?.id}
             clientId={selectedClient.id}
             onSuccess={handleChannelUpdate}
           />

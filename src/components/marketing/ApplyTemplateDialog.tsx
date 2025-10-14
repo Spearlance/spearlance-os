@@ -15,6 +15,7 @@ interface ApplyTemplateDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   stages: Stage[];
+  selectedStageId?: string;
   clientId: string;
   onSuccess: () => void;
 }
@@ -25,7 +26,7 @@ interface GroupedTemplates {
   };
 }
 
-export function ApplyTemplateDialog({ open, onOpenChange, stages, clientId, onSuccess }: ApplyTemplateDialogProps) {
+export function ApplyTemplateDialog({ open, onOpenChange, stages, selectedStageId, clientId, onSuccess }: ApplyTemplateDialogProps) {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [templates, setTemplates] = useState<GroupedTemplates>({});
