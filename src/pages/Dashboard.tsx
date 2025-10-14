@@ -1,10 +1,13 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useClient } from "@/contexts/ClientContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Calendar, CheckSquare, FolderOpen, Users, ExternalLink, Plus } from "lucide-react";
+import { Calendar, CheckSquare, FolderOpen, Users, ExternalLink, Plus, Rocket } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { useLaunchPadStatus } from "@/hooks/useLaunchPadStatus";
 
 interface DashboardStats {
   nextMeeting?: any;
@@ -19,7 +22,9 @@ interface DashboardStats {
 }
 
 const Dashboard = () => {
+  const navigate = useNavigate();
   const { selectedClient } = useClient();
+  const { isComplete, loading: launchPadLoading } = useLaunchPadStatus();
   const [stats, setStats] = useState<DashboardStats>({
     taskCounts: { to_do: 0, in_progress: 0, done: 0 },
     recentMeetings: [],
@@ -125,6 +130,22 @@ const Dashboard = () => {
           <p className="text-muted-foreground">Welcome to {selectedClient.name}</p>
         </div>
       </div>
+
+      {!launchPadLoading && !isComplete && (
+        <Alert 
+          className="bg-destructive/10 border-destructive cursor-pointer hover:bg-destructive/15 transition-colors"
+          onClick={() => navigate("/launchpad")}
+        >
+          <Rocket className="h-5 w-5 text-destructive" />
+          <AlertTitle className="text-destructive font-semibold">
+            Launch Pad Setup Incomplete
+          </AlertTitle>
+          <AlertDescription className="text-destructive/90">
+            Complete your Launch Pad setup to unlock the full potential of your marketing operations. 
+            Click here to continue where you left off.
+          </AlertDescription>
+        </Alert>
+      )}
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         <Card className="shadow-elegant hover:shadow-glow transition-all">

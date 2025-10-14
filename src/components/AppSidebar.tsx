@@ -47,7 +47,9 @@ import {
   MessageSquare,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { useLaunchPadStatus } from "@/hooks/useLaunchPadStatus";
 
 const menuItems = [
   { title: "Home", url: "/", icon: Home },
@@ -79,6 +81,7 @@ export function AppSidebar() {
   const [userRole, setUserRole] = useState<string>("");
   const [marketingOpen, setMarketingOpen] = useState(true);
   const [communicationsOpen, setCommunicationsOpen] = useState(false);
+  const { isComplete } = useLaunchPadStatus();
 
   useEffect(() => {
     const fetchUserRole = async () => {
@@ -215,7 +218,20 @@ export function AppSidebar() {
                   <SidebarMenuButton asChild>
                     <NavLink to={item.url} end className={getNavClass}>
                       <item.icon className="h-4 w-4" />
-                      {!collapsed && <span>{item.title}</span>}
+                      {!collapsed && (
+                        <span className="flex items-center gap-2">
+                          {item.title}
+                          {item.title === "Launch Pad" && !isComplete && (
+                            <Badge 
+                              variant="destructive" 
+                              className="h-2 w-2 p-0 rounded-full"
+                              aria-label="Incomplete"
+                            >
+                              <span className="sr-only">Incomplete</span>
+                            </Badge>
+                          )}
+                        </span>
+                      )}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
