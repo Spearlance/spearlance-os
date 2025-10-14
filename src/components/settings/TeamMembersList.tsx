@@ -94,7 +94,7 @@ export function TeamMembersList({ clientId, canManageTeam, refreshTrigger }: Tea
   const handlePasswordReset = async (email: string, memberName: string) => {
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth`,
+        redirectTo: `${window.location.origin}/reset-password`,
       });
 
       if (error) throw error;

@@ -25,6 +25,7 @@ import TicketDetail from "./pages/TicketDetail";
 import Settings from "./pages/Settings";
 import Admin from "./pages/Admin";
 import CalendarCallback from "./pages/CalendarCallback";
+import ResetPassword from "./pages/ResetPassword";
 
 const queryClient = new QueryClient();
 
@@ -37,6 +38,7 @@ const App = () => (
         <CalProvider>
           <Routes>
             <Route path="/auth" element={<Auth />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route
               path="/"
               element={
