@@ -7,9 +7,10 @@ interface ChatInputProps {
   onSend: (message: string) => void;
   isLoading: boolean;
   disabled?: boolean;
+  isOfferMode?: boolean;
 }
 
-export const ChatInput = ({ onSend, isLoading, disabled }: ChatInputProps) => {
+export const ChatInput = ({ onSend, isLoading, disabled, isOfferMode = false }: ChatInputProps) => {
   const [input, setInput] = useState('');
 
   const handleSend = () => {
@@ -32,7 +33,13 @@ export const ChatInput = ({ onSend, isLoading, disabled }: ChatInputProps) => {
         value={input}
         onChange={(e) => setInput(e.target.value)}
         onKeyDown={handleKeyDown}
-        placeholder={disabled ? "Select a client to start chatting..." : "Ask about data, request copy, or say 'build an offer'..."}
+        placeholder={
+          disabled 
+            ? "Select a client to start chatting..." 
+            : isOfferMode 
+              ? "Answer the questions to build your complete offer..." 
+              : "Ask about data, get marketing advice..."
+        }
         disabled={isLoading || disabled}
         className="min-h-[60px] max-h-[120px] resize-none"
         rows={2}

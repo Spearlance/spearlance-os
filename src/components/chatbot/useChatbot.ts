@@ -13,6 +13,7 @@ export const useChatbot = () => {
   const [isLoadingConversations, setIsLoadingConversations] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
+  const [isOfferMode, setIsOfferMode] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
 
   // Load conversations when chat opens or client changes
@@ -283,7 +284,8 @@ export const useChatbot = () => {
               content: m.content 
             })),
             client_id: selectedClient.id,
-            conversation_id: conversationId
+            conversation_id: conversationId,
+            offer_mode: isOfferMode
           }),
           signal: abortControllerRef.current.signal
         }
@@ -418,7 +420,9 @@ export const useChatbot = () => {
     isLoadingConversations,
     error,
     isOpen,
+    isOfferMode,
     setIsOpen,
+    setIsOfferMode,
     setActiveConversationId,
     sendMessage,
     clearMessages,

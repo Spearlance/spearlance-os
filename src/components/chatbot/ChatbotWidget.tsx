@@ -1,7 +1,8 @@
 import { useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
-import { MessageSquare, Archive, ChevronDown } from 'lucide-react';
+import { MessageSquare, Archive, ChevronDown, Sparkles, Target } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { useClient } from '@/contexts/ClientContext';
 import { useChatbot } from './useChatbot';
 import { ChatMessage } from './ChatMessage';
@@ -19,8 +20,10 @@ export const ChatbotWidget = () => {
     isLoading, 
     isLoadingConversations,
     error, 
-    isOpen, 
+    isOpen,
+    isOfferMode,
     setIsOpen,
+    setIsOfferMode,
     setActiveConversationId,
     sendMessage, 
     clearMessages,
@@ -138,6 +141,28 @@ export const ChatbotWidget = () => {
               </DropdownMenu>
             </div>
 
+            <Button
+              variant={isOfferMode ? "default" : "outline"}
+              size="sm"
+              onClick={() => setIsOfferMode(!isOfferMode)}
+              className={cn(
+                "w-full mt-3 transition-all duration-300",
+                isOfferMode && "bg-gradient-to-r from-blue-600 to-purple-600 shadow-lg shadow-blue-500/30 animate-pulse"
+              )}
+            >
+              {isOfferMode ? (
+                <>
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  Offer Mode Active
+                </>
+              ) : (
+                <>
+                  <Target className="h-4 w-4 mr-2" />
+                  Activate Offer Mode
+                </>
+              )}
+            </Button>
+
             {activeConversation && (
               <p className="text-xs text-muted-foreground mt-2">
                 Auto-deletes {new Date(activeConversation.auto_delete_at).toLocaleDateString()}
@@ -155,8 +180,8 @@ export const ChatbotWidget = () => {
                 </p>
                 <ul className="text-xs text-muted-foreground space-y-2 text-left max-w-sm mx-auto">
                   <li className="font-medium text-foreground mb-3">I can help you:</li>
-                  <li>📊 Pull data from your account (tasks, reports, avatars)</li>
-                  <li>💡 Build complete offers and marketing campaigns</li>
+                  <li>📊 <span className="font-medium">Default Mode:</span> Pull data, get insights, and marketing advice</li>
+                  <li>🎯 <span className="font-medium">Offer Mode:</span> Guided 6-step complete offer creation workflow</li>
                 </ul>
                 <div className="text-xs mt-4 space-y-1">
                   <p className="font-medium text-foreground">Try asking:</p>
@@ -192,6 +217,7 @@ export const ChatbotWidget = () => {
             onSend={sendMessage}
             isLoading={isLoading}
             disabled={!selectedClient}
+            isOfferMode={isOfferMode}
           />
         </SheetContent>
       </Sheet>
