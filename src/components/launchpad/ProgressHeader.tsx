@@ -7,13 +7,15 @@ interface ProgressHeaderProps {
   onStageClick?: (stage: LaunchPadStage) => void;
 }
 
-const stages = [
+const allStages = [
   { id: "discovery" as LaunchPadStage, label: "Discovery", description: "Business details" },
   { id: "marketing" as LaunchPadStage, label: "Marketing", description: "Service details" },
-  { id: "access" as LaunchPadStage, label: "Access", description: "Connect accounts" },
+  { id: "access" as LaunchPadStage, label: "Access", description: "Connect accounts", hidden: true }, // Hidden - will be synced with Connected Accounts in Settings
   { id: "assets" as LaunchPadStage, label: "Assets", description: "Brand materials" },
   { id: "avatar" as LaunchPadStage, label: "Avatar", description: "AI insights" },
 ];
+
+const stages = allStages.filter(s => !('hidden' in s) || !s.hidden);
 
 export function ProgressHeader({ currentStage, completedAt, onStageClick }: ProgressHeaderProps) {
   const getStageStatus = (stageId: LaunchPadStage) => {

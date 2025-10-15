@@ -189,13 +189,14 @@ export function LaunchPadWizard() {
         {submission.stage === "marketing" && (
           <StageMarketing
             submissionId={submission.id}
-            onContinue={() => handleStageChange("access")}
+            onContinue={() => handleStageChange("assets")}
             onBack={() => handleStageChange("discovery")}
             onSaveExit={handleSaveExit}
           />
         )}
 
-        {submission.stage === "access" && (
+        {/* Access stage - Hidden for now, will be synced with Connected Accounts in Settings */}
+        {/* {submission.stage === "access" && (
           <StageAccess
             submissionId={submission.id}
             initialData={submission.responses_json?.access}
@@ -203,13 +204,13 @@ export function LaunchPadWizard() {
             onBack={() => handleStageChange("marketing")}
             onSaveExit={handleSaveExit}
           />
-        )}
+        )} */}
 
         {submission.stage === "assets" && (
           <StageAssets
             submissionId={submission.id}
             onContinue={() => handleStageChange("avatar")}
-            onBack={() => handleStageChange("access")}
+            onBack={() => handleStageChange("marketing")}
             onSaveExit={handleSaveExit}
           />
         )}
