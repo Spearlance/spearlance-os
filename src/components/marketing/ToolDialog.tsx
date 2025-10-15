@@ -40,6 +40,7 @@ export function ToolDialog({ open, onOpenChange, tool, clientId, onSave, loading
     description: "",
     credentials_notes: "",
     cost_per_month: "",
+    affiliate_url: "",
   });
   const [fetchingFavicon, setFetchingFavicon] = useState(false);
 
@@ -53,6 +54,7 @@ export function ToolDialog({ open, onOpenChange, tool, clientId, onSave, loading
         description: tool.description || "",
         credentials_notes: tool.credentials_notes || "",
         cost_per_month: tool.cost_per_month?.toString() || "",
+        affiliate_url: tool.affiliate_url || "",
       });
     } else {
       setFormData({
@@ -63,6 +65,7 @@ export function ToolDialog({ open, onOpenChange, tool, clientId, onSave, loading
         description: "",
         credentials_notes: "",
         cost_per_month: "",
+        affiliate_url: "",
       });
     }
   }, [tool, open]);
@@ -88,6 +91,7 @@ export function ToolDialog({ open, onOpenChange, tool, clientId, onSave, loading
       description: formData.description || null,
       credentials_notes: formData.credentials_notes || null,
       cost_per_month: formData.cost_per_month ? parseFloat(formData.cost_per_month) : null,
+      affiliate_url: formData.affiliate_url || null,
     };
 
     if (tool) {
@@ -187,6 +191,20 @@ export function ToolDialog({ open, onOpenChange, tool, clientId, onSave, loading
               onChange={(e) => setFormData(prev => ({ ...prev, cost_per_month: e.target.value }))}
               placeholder="0.00"
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="affiliate_url">Affiliate/Sign Up Link (Optional)</Label>
+            <Input
+              id="affiliate_url"
+              type="url"
+              value={formData.affiliate_url}
+              onChange={(e) => setFormData(prev => ({ ...prev, affiliate_url: e.target.value }))}
+              placeholder="https://tool.com/signup?ref=yourcode"
+            />
+            <p className="text-xs text-muted-foreground">
+              If provided, a "Sign Up" button will appear on the tool card
+            </p>
           </div>
 
           <div className="flex gap-2 justify-end pt-4">

@@ -1,7 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink, Edit, Trash2, Plus } from "lucide-react";
+import { ExternalLink, Edit, Trash2, Plus, Gift } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface ToolCardProps {
@@ -76,41 +76,41 @@ export function ToolCard({ tool, type, isAdmin, onEdit, onDelete, onAddToClient 
               </p>
             )}
 
-            <div className="flex items-center gap-2 mt-3">
-              <Button
-                variant="outline"
-                size="sm"
-                asChild
-                className="flex-1"
-              >
-                <a href={tool.url} target="_blank" rel="noopener noreferrer">
-                  <ExternalLink className="h-3 w-3 mr-2" />
-                  Open
-                </a>
-              </Button>
+            <div className="flex items-center justify-between gap-2 mt-3">
+              <div className="flex gap-2">
+                <Button
+                  variant="default"
+                  size="sm"
+                  asChild
+                >
+                  <a href={tool.url} target="_blank" rel="noopener noreferrer">
+                    <ExternalLink className="h-3 w-3 mr-2" />
+                    {type === 'recommended' ? 'Learn More' : 'Open Tool'}
+                  </a>
+                </Button>
 
-              {type === 'client' && onEdit && onDelete && (
-                <>
+                {/* Show Sign Up button for tools with affiliate links */}
+                {(type === 'recommended' || tool.affiliate_url) && (
                   <Button
-                    variant="ghost"
+                    variant="outline"
                     size="sm"
-                    onClick={onEdit}
+                    asChild
                   >
-                    <Edit className="h-4 w-4" />
+                    <a
+                      href={type === 'recommended' ? tool.url : tool.affiliate_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <Gift className="h-3 w-3 mr-2" />
+                      Sign Up
+                    </a>
                   </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={onDelete}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </>
-              )}
+                )}
+              </div>
 
-              {type === 'recommended' && (
-                <>
-                  {isAdmin && onEdit && (
+              <div className="flex items-center gap-2">
+                {type === 'client' && onEdit && onDelete && (
+                  <>
                     <Button
                       variant="ghost"
                       size="sm"
@@ -118,8 +118,6 @@ export function ToolCard({ tool, type, isAdmin, onEdit, onDelete, onAddToClient 
                     >
                       <Edit className="h-4 w-4" />
                     </Button>
-                  )}
-                  {isAdmin && onDelete && (
                     <Button
                       variant="ghost"
                       size="sm"
@@ -127,19 +125,42 @@ export function ToolCard({ tool, type, isAdmin, onEdit, onDelete, onAddToClient 
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
-                  )}
-                  {onAddToClient && (
-                    <Button
-                      variant="default"
-                      size="sm"
-                      onClick={onAddToClient}
-                    >
-                      <Plus className="h-3 w-3 mr-2" />
-                      Add
-                    </Button>
-                  )}
-                </>
-              )}
+                  </>
+                )}
+
+                {type === 'recommended' && (
+                  <>
+                    {isAdmin && onEdit && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={onEdit}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                    )}
+                    {isAdmin && onDelete && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={onDelete}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                    {onAddToClient && (
+                      <Button
+                        variant="default"
+                        size="sm"
+                        onClick={onAddToClient}
+                      >
+                        <Plus className="h-3 w-3 mr-2" />
+                        Add
+                      </Button>
+                    )}
+                  </>
+                )}
+              </div>
             </div>
           </div>
         </div>

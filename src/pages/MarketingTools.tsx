@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { ToolCard } from "@/components/marketing/ToolCard";
 import { ToolDialog } from "@/components/marketing/ToolDialog";
 import { RecommendedToolDialog } from "@/components/marketing/RecommendedToolDialog";
+import { AddRecommendedToolDialog } from "@/components/marketing/AddRecommendedToolDialog";
 import { Plus, Search, Wrench, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAccountType } from "@/hooks/useAccountType";
@@ -40,6 +41,8 @@ export default function MarketingTools() {
   const [recommendedDialogOpen, setRecommendedDialogOpen] = useState(false);
   const [editingTool, setEditingTool] = useState<any | null>(null);
   const [editingRecommended, setEditingRecommended] = useState<any | null>(null);
+  const [addToolDialogOpen, setAddToolDialogOpen] = useState(false);
+  const [selectedRecommendedTool, setSelectedRecommendedTool] = useState<any | null>(null);
   const [saving, setSaving] = useState(false);
   const [userRole, setUserRole] = useState<string>('');
 
@@ -187,26 +190,34 @@ export default function MarketingTools() {
     }
   };
 
-  const handleAddRecommendedToClient = async (recommendedTool: any) => {
+  const handleAddRecommendedToClient = (recommendedTool: any) => {
+    setSelectedRecommendedTool(recommendedTool);
+    setAddToolDialogOpen(true);
+  };
+
+  const handleSaveAddedTool = async (toolData: any) => {
     if (!selectedClient) return;
 
+    setSaving(true);
     try {
       const { error } = await supabase
         .from('marketing_tools')
         .insert({
           client_id: selectedClient.id,
-          name: recommendedTool.name,
-          category: recommendedTool.category,
-          url: recommendedTool.url,
-          logo_url: recommendedTool.logo_url,
-          description: recommendedTool.description,
+          name: toolData.name,
+          category: toolData.category,
+          url: toolData.url,
+          logo_url: toolData.logo_url,
+          description: toolData.description,
+          cost_per_month: toolData.cost_per_month,
+          affiliate_url: toolData.affiliate_url,
         });
 
       if (error) {
         if (error.code === '23505') {
           toast({ 
             title: "Tool already added", 
-            description: `${recommendedTool.name} is already in your tools`,
+            description: `${toolData.name} is already in your tools`,
             variant: "destructive" 
           });
           return;
@@ -214,14 +225,18 @@ export default function MarketingTools() {
         throw error;
       }
 
-      toast({ title: `${recommendedTool.name} added to your tools` });
+      toast({ title: `${toolData.name} added to your tools` });
       await loadClientTools();
+      setAddToolDialogOpen(false);
+      setSelectedRecommendedTool(null);
     } catch (error: any) {
       toast({ 
         title: "Error adding tool", 
         description: error.message,
         variant: "destructive" 
       });
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -423,6 +438,15 @@ export default function MarketingTools() {
           loading={saving}
         />
       )}
+
+      <AddRecommendedToolDialog
+        open={addToolDialogOpen}
+        onOpenChange={setAddToolDialogOpen}
+        recommendedTool={selectedRecommendedTool}
+        clientId={selectedClient?.id!}
+        onSave={handleSaveAddedTool}
+        loading={saving}
+      />
     </div>
   );
 }

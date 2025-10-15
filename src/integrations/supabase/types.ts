@@ -1329,6 +1329,7 @@ export type Database = {
       }
       marketing_tools: {
         Row: {
+          affiliate_url: string | null
           category: string
           client_id: string
           cost_per_month: number | null
@@ -1343,6 +1344,7 @@ export type Database = {
           url: string
         }
         Insert: {
+          affiliate_url?: string | null
           category: string
           client_id: string
           cost_per_month?: number | null
@@ -1357,6 +1359,7 @@ export type Database = {
           url: string
         }
         Update: {
+          affiliate_url?: string | null
           category?: string
           client_id?: string
           cost_per_month?: number | null
