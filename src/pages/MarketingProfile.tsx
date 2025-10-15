@@ -37,6 +37,15 @@ export default function MarketingProfile() {
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [editingGoal, setEditingGoal] = useState<any>(null);
   const [savingGoalId, setSavingGoalId] = useState<string | null>(null);
+  
+  // Current State editing states
+  const [editingCurrentState, setEditingCurrentState] = useState(false);
+  const [savingCurrentState, setSavingCurrentState] = useState(false);
+  const [currentStateForm, setCurrentStateForm] = useState({
+    working: "",
+    not_working: "",
+    constraints: ""
+  });
 
   useEffect(() => {
     if (selectedClient) {
@@ -44,6 +53,16 @@ export default function MarketingProfile() {
       loadQuarterlyGoals();
     }
   }, [selectedClient]);
+
+  useEffect(() => {
+    if (discoveryData?.state) {
+      setCurrentStateForm({
+        working: discoveryData.state.working || "",
+        not_working: discoveryData.state.not_working || "",
+        constraints: discoveryData.state.constraints || ""
+      });
+    }
+  }, [discoveryData]);
 
   const loadQuarterlyGoals = async () => {
     if (!selectedClient) return;
@@ -174,6 +193,58 @@ export default function MarketingProfile() {
         variant: "destructive",
       });
     }
+  };
+
+  const handleSaveCurrentState = async () => {
+    if (!submissionId) return;
+
+    setSavingCurrentState(true);
+    
+    try {
+      const { error } = await supabase
+        .from("launchpad_submissions")
+        .update({
+          responses_json: {
+            ...discoveryData,
+            state: {
+              working: currentStateForm.working.trim() || null,
+              not_working: currentStateForm.not_working.trim() || null,
+              constraints: currentStateForm.constraints.trim() || null,
+            }
+          }
+        })
+        .eq('id', submissionId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Current state updated successfully",
+      });
+      
+      loadProfileData();
+      setEditingCurrentState(false);
+    } catch (error: any) {
+      console.error("Error updating current state:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update current state",
+        variant: "destructive",
+      });
+    } finally {
+      setSavingCurrentState(false);
+    }
+  };
+
+  const handleCancelCurrentStateEdit = () => {
+    if (discoveryData?.state) {
+      setCurrentStateForm({
+        working: discoveryData.state.working || "",
+        not_working: discoveryData.state.not_working || "",
+        constraints: discoveryData.state.constraints || ""
+      });
+    }
+    setEditingCurrentState(false);
   };
 
   const loadProfileData = async () => {
@@ -647,26 +718,113 @@ export default function MarketingProfile() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Current State</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle>Current State</CardTitle>
+                {!editingCurrentState && (
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setEditingCurrentState(true)}
+                  >
+                    <Edit className="h-4 w-4 mr-2" />
+                    Edit
+                  </Button>
+                )}
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              {discoveryData.state.working && (
-                <div>
-                  <p className="text-sm font-medium text-green-600 dark:text-green-400 mb-2">What's Working</p>
-                  <p className="text-sm whitespace-pre-wrap">{discoveryData.state.working}</p>
-                </div>
-              )}
-              {discoveryData.state.not_working && (
-                <div>
-                  <p className="text-sm font-medium text-orange-600 dark:text-orange-400 mb-2">Not Working</p>
-                  <p className="text-sm whitespace-pre-wrap">{discoveryData.state.not_working}</p>
-                </div>
-              )}
-              {discoveryData.state.constraints && (
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground mb-2">Constraints</p>
-                  <p className="text-sm whitespace-pre-wrap">{discoveryData.state.constraints}</p>
-                </div>
+              {editingCurrentState ? (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="working" className="text-green-600 dark:text-green-400">
+                      What's Working
+                    </Label>
+                    <Textarea
+                      id="working"
+                      value={currentStateForm.working}
+                      onChange={(e) => setCurrentStateForm(prev => ({ ...prev, working: e.target.value }))}
+                      placeholder="Describe what's currently working well..."
+                      rows={3}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="not_working" className="text-orange-600 dark:text-orange-400">
+                      Not Working
+                    </Label>
+                    <Textarea
+                      id="not_working"
+                      value={currentStateForm.not_working}
+                      onChange={(e) => setCurrentStateForm(prev => ({ ...prev, not_working: e.target.value }))}
+                      placeholder="Describe what's not working or challenges faced..."
+                      rows={3}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="constraints" className="text-muted-foreground">
+                      Constraints
+                    </Label>
+                    <Textarea
+                      id="constraints"
+                      value={currentStateForm.constraints}
+                      onChange={(e) => setCurrentStateForm(prev => ({ ...prev, constraints: e.target.value }))}
+                      placeholder="List any constraints or limitations..."
+                      rows={3}
+                    />
+                  </div>
+
+                  <div className="flex gap-2 justify-end pt-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={handleCancelCurrentStateEdit}
+                      disabled={savingCurrentState}
+                    >
+                      Cancel
+                    </Button>
+                    <Button 
+                      size="sm"
+                      onClick={handleSaveCurrentState}
+                      disabled={savingCurrentState}
+                    >
+                      {savingCurrentState ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        'Save Changes'
+                      )}
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  {currentStateForm.working && (
+                    <div>
+                      <p className="text-sm font-medium text-green-600 dark:text-green-400 mb-2">What's Working</p>
+                      <p className="text-sm whitespace-pre-wrap">{currentStateForm.working}</p>
+                    </div>
+                  )}
+                  {currentStateForm.not_working && (
+                    <div>
+                      <p className="text-sm font-medium text-orange-600 dark:text-orange-400 mb-2">Not Working</p>
+                      <p className="text-sm whitespace-pre-wrap">{currentStateForm.not_working}</p>
+                    </div>
+                  )}
+                  {currentStateForm.constraints && (
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground mb-2">Constraints</p>
+                      <p className="text-sm whitespace-pre-wrap">{currentStateForm.constraints}</p>
+                    </div>
+                  )}
+                  {!currentStateForm.working && !currentStateForm.not_working && !currentStateForm.constraints && (
+                    <p className="text-sm text-muted-foreground text-center py-4">
+                      No current state information. Click "Edit" to add details.
+                    </p>
+                  )}
+                </>
               )}
             </CardContent>
           </Card>
