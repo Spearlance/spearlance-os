@@ -261,6 +261,21 @@ async function getAvatars(supabase: any, clientId: string) {
   };
 }
 
+async function getMarketingTools(supabase: any, clientId: string) {
+  const { data, error } = await supabase
+    .from('marketing_tools')
+    .select('id, name, category, url, description, cost_per_month')
+    .eq('client_id', clientId)
+    .order('category, name');
+  
+  if (error) throw error;
+  
+  return {
+    items: sanitizeDataForPrompt(data || []),
+    result_count: data?.length || 0
+  };
+}
+
 async function getMarketingChannels(supabase: any, params: any, clientId: string) {
   // First get the flow for this client
   const { data: flow } = await supabase
@@ -592,6 +607,14 @@ const tools = [
     function: {
       name: "get_avatars",
       description: "Get customer avatars (buyer personas) for the current client",
+      parameters: { type: "object", properties: {}, required: [] }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_marketing_tools",
+      description: "Get marketing tools being used by the current client",
       parameters: { type: "object", properties: {}, required: [] }
     }
   },
@@ -1349,6 +1372,16 @@ Safety
 
 ---
 
+MARKETING TOOLS
+The client uses these marketing tools. Reference them when discussing campaigns, workflows, or tool setup:
+${(() => {
+  // This will be populated at runtime via get_marketing_tools function
+  // The AI can call the function to get current tools
+  return "Use get_marketing_tools() function to fetch the client's current marketing technology stack.";
+})()}
+
+---
+
 MARKETING KNOWLEDGE BASE
 ${marketingKnowledgeBase}
 
@@ -1492,6 +1525,9 @@ When providing advice, you can reference these frameworks to support your recomm
               break;
             case 'get_avatars':
               result = await getAvatars(supabaseClient, client_id);
+              break;
+            case 'get_marketing_tools':
+              result = await getMarketingTools(supabaseClient, client_id);
               break;
             case 'get_meetings':
               result = await getMeetings(supabaseClient, args, client_id);

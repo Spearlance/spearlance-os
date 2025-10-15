@@ -1327,6 +1327,66 @@ export type Database = {
           },
         ]
       }
+      marketing_tools: {
+        Row: {
+          category: string
+          client_id: string
+          cost_per_month: number | null
+          created_at: string | null
+          created_by: string | null
+          credentials_notes: string | null
+          description: string | null
+          id: string
+          logo_url: string | null
+          name: string
+          updated_at: string | null
+          url: string
+        }
+        Insert: {
+          category: string
+          client_id: string
+          cost_per_month?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          credentials_notes?: string | null
+          description?: string | null
+          id?: string
+          logo_url?: string | null
+          name: string
+          updated_at?: string | null
+          url: string
+        }
+        Update: {
+          category?: string
+          client_id?: string
+          cost_per_month?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          credentials_notes?: string | null
+          description?: string | null
+          id?: string
+          logo_url?: string | null
+          name?: string
+          updated_at?: string | null
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketing_tools_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketing_tools_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       meeting_tasks: {
         Row: {
           created_at: string | null
@@ -1605,6 +1665,62 @@ export type Database = {
           },
           {
             foreignKeyName: "quarterly_goals_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recommended_tools: {
+        Row: {
+          category: string
+          created_at: string | null
+          created_by: string | null
+          description: string
+          id: string
+          is_active: boolean | null
+          logo_url: string | null
+          name: string
+          pricing_model: string | null
+          sort_order: number | null
+          updated_at: string | null
+          url: string
+          why_we_recommend: string | null
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          created_by?: string | null
+          description: string
+          id?: string
+          is_active?: boolean | null
+          logo_url?: string | null
+          name: string
+          pricing_model?: string | null
+          sort_order?: number | null
+          updated_at?: string | null
+          url: string
+          why_we_recommend?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string
+          id?: string
+          is_active?: boolean | null
+          logo_url?: string | null
+          name?: string
+          pricing_model?: string | null
+          sort_order?: number | null
+          updated_at?: string | null
+          url?: string
+          why_we_recommend?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recommended_tools_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"

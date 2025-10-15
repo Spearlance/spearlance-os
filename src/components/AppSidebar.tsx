@@ -47,6 +47,7 @@ import {
   FileText,
   MessageSquare,
   Lightbulb,
+  Wrench,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -68,6 +69,7 @@ const menuItems = [
     { title: "Profile", url: "/marketing/profile", icon: User },
     { title: "Services", url: "/marketing/services", icon: TrendingUp },
     { title: "Ideas", url: "/marketing/ideas", icon: Lightbulb },
+    { title: "Tools", url: "/marketing/tools", icon: Wrench },
     { title: "Flowchart", url: "/marketing/flowchart", icon: GitBranch },
     { title: "Reports", url: "/marketing/reports", icon: FileText },
   ];
