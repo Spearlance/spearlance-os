@@ -26,14 +26,16 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Fetch brand context
-    const [brandGuide, businessModel, avatar, brandVoice] = await Promise.all([
+    // Fetch comprehensive context
+    const [clientInfo, brandGuide, businessModel, avatar, brandVoice] = await Promise.all([
+      supabaseClient.from('clients').select('*').eq('id', client_id).single(),
       supabaseClient.from('brand_guides').select('*').eq('client_id', client_id).maybeSingle(),
       supabaseClient.from('client_business_model').select('*').eq('client_id', client_id).maybeSingle(),
       supabaseClient.from('avatars').select('*').eq('client_id', client_id).maybeSingle(),
       supabaseClient.from('client_brand_voice').select('*').eq('client_id', client_id).maybeSingle(),
     ]);
 
+    const client = clientInfo.data;
     const brand = brandGuide.data;
     const business = businessModel.data;
     const targetAudience = avatar.data;
@@ -42,35 +44,65 @@ Deno.serve(async (req) => {
     // Build AI prompt
     const systemPrompt = `You are the Simplified Social Media Assistant for SpearlanceOS.
 
-Your goal: Help complete beginners create social media posts that perfectly fit their brand.
+CONTEXT:
+Client: ${client?.company_name || client?.name}
+Industry: ${client?.industry || 'Not specified'}
 
-Guidelines:
-- Speak at a 5th-grade reading level
-- Use friendly, encouraging language
-- Avoid marketing jargon
-- Give specific, actionable suggestions
-- Each idea should be doable with a smartphone
+${voice?.story_summary ? `
+Their Story:
+- Executive Summary: ${voice.story_summary.executive_summary || 'Not specified'}
+- Key Value Props: ${voice.story_summary.value_propositions?.slice(0, 3).join(', ') || 'Not specified'}
+- Pain Points They Solve: ${voice.story_summary.pain_points?.slice(0, 3).join(', ') || 'Not specified'}
+` : ''}
 
-Available Brand Context:
-- Aesthetic: ${brand?.aesthetic || 'modern'}
-- Brand Personality: ${brand?.brand_personality ? JSON.stringify(brand.brand_personality) : 'professional'}
-- Tone: ${voice?.tone || 'friendly'}
-- Target Audience: ${targetAudience?.demographics || 'general audience'}
+Business Insights:
+- What's Working: ${business?.current_state_working || 'Not specified'}
+- What's NOT Working: ${business?.current_state_not_working || 'Not specified'}
 
-Generate 3-5 specific post ideas for the topic: "${topic_category}".
+Target Audience:
+- Demographics: ${targetAudience?.demographics || 'general audience'}
+- Their Pains: ${targetAudience?.pains || 'Not specified'}
+- Their Goals: ${targetAudience?.goals || 'Not specified'}
 
-${additional_context ? `Additional context: ${additional_context}` : ''}
+POST TOPIC CATEGORY: "${topic_category}"
+${additional_context ? `Additional Context: ${additional_context}` : ''}
 
-Return a JSON array with this structure:
+YOUR TASK:
+Generate EXACTLY 3 practical social media post ideas that:
+
+STRICT REQUIREMENTS:
+1. Must take under 5 minutes to create
+2. Must be doable with a smartphone (take photo → our AI does the rest)
+3. Our AI must provide the caption, hashtags, and optionally generate/enhance the image
+4. NO videos, NO external apps (Canva, etc.), NO complex editing
+5. Must be relevant to their actual business and story
+6. Should address their audience's pain points or goals
+7. Should connect to what's working in their business
+
+GOOD EXAMPLES:
+✅ "Share a Recent Win" → Take photo of the result, AI writes inspiring caption
+✅ "Behind-the-Scenes Moment" → Phone photo of workspace, AI tells the story
+✅ "Quick Tip" → Simple image, AI writes the tip as caption
+✅ "Customer Success Story" → Photo of happy result, AI crafts testimonial-style post
+
+BAD EXAMPLES:
+❌ "Create a video tutorial"
+❌ "Design 3 tips in Canva"
+❌ "Record yourself explaining something"
+❌ "Edit photos with filters"
+
+Return JSON with this EXACT structure:
 {
   "ideas": [
     {
-      "title": "Short catchy title",
-      "description": "Brief description of the post idea",
-      "suggested_approach": "Simple step explaining how to create this post"
+      "title": "Clear, action-oriented title (4-6 words)",
+      "description": "One sentence explaining what this post is about",
+      "suggested_approach": "Simple 1-2 sentence instruction. Must mention 'Take a photo with your phone, then our AI will [write the caption/generate the image/add text]'"
     }
   ]
-}`;
+}
+
+Generate exactly 3 ideas. Make them specific to ${client?.industry || 'this'} business.`;
 
     // Call Lovable AI
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
@@ -83,7 +115,7 @@ Return a JSON array with this structure:
         model: 'google/gemini-2.5-flash',
         messages: [
           { role: 'system', content: systemPrompt },
-          { role: 'user', content: `Generate post ideas for topic: ${topic_category}` }
+          { role: 'user', content: `Generate exactly 3 practical post ideas for "${topic_category}" that our AI can directly help create. Focus on ideas where the user takes a simple photo and our AI handles caption writing, hashtags, and image enhancement.` }
         ],
         response_format: { type: 'json_object' }
       }),
@@ -98,6 +130,14 @@ Return a JSON array with this structure:
     const aiData = await aiResponse.json();
     const content = aiData.choices[0].message.content;
     const ideas = JSON.parse(content);
+
+    // Validate and ensure exactly 3 ideas
+    if (!ideas.ideas || ideas.ideas.length !== 3) {
+      console.warn('AI returned wrong number of ideas, adjusting to 3');
+      if (ideas.ideas) {
+        ideas.ideas = ideas.ideas.slice(0, 3);
+      }
+    }
 
     return new Response(
       JSON.stringify(ideas),
