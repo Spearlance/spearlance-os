@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PostCreator } from "@/components/social/PostCreator";
 import { PostScheduler } from "@/components/social/PostScheduler";
@@ -7,6 +8,7 @@ import { AlertCircle } from "lucide-react";
 
 const SocialMedia = () => {
   const { selectedClient } = useClient();
+  const [activeTab, setActiveTab] = useState("creator");
 
   if (!selectedClient) {
     return (
@@ -30,7 +32,7 @@ const SocialMedia = () => {
         </p>
       </div>
 
-      <Tabs defaultValue="creator" className="space-y-6">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="grid w-full max-w-md grid-cols-2">
           <TabsTrigger value="creator">Post Creator</TabsTrigger>
           <TabsTrigger value="planner">Planner</TabsTrigger>
@@ -41,7 +43,7 @@ const SocialMedia = () => {
         </TabsContent>
 
         <TabsContent value="planner" className="space-y-6">
-          <PostScheduler />
+          <PostScheduler onCreateWithAI={() => setActiveTab("creator")} />
         </TabsContent>
       </Tabs>
     </div>

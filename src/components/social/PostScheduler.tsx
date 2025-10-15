@@ -7,10 +7,17 @@ import { useQuery } from "@tanstack/react-query";
 import { useClient } from "@/contexts/ClientContext";
 import { supabase } from "@/integrations/supabase/client";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths } from "date-fns";
+import { SchedulePostDialog } from "./SchedulePostDialog";
 
-export const PostScheduler = () => {
+interface PostSchedulerProps {
+  onCreateWithAI?: () => void;
+}
+
+export const PostScheduler = ({ onCreateWithAI }: PostSchedulerProps) => {
   const { selectedClient } = useClient();
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
+  const [selectedScheduleDate, setSelectedScheduleDate] = useState<Date | null>(null);
 
   const { data: posts = [], isLoading } = useQuery({
     queryKey: ['social-posts', selectedClient?.id],
@@ -101,7 +108,13 @@ export const PostScheduler = () => {
               </CardHeader>
               <CardContent className="p-2 space-y-1">
                 {dayPosts.length === 0 ? (
-                  <div className="flex items-center justify-center h-16 border-2 border-dashed rounded-md opacity-50 hover:opacity-100 transition-opacity cursor-pointer">
+                  <div
+                    className="flex items-center justify-center h-16 border-2 border-dashed rounded-md opacity-50 hover:opacity-100 transition-opacity cursor-pointer"
+                    onClick={() => {
+                      setSelectedScheduleDate(day);
+                      setScheduleDialogOpen(true);
+                    }}
+                  >
                     <Plus className="h-4 w-4 text-muted-foreground" />
                   </div>
                 ) : (
@@ -126,12 +139,23 @@ export const PostScheduler = () => {
                   ))
                 )}
               </CardContent>
-            </Card>
-          );
-        })}
-      </div>
+        </Card>
+      );
+    })}
+  </div>
 
-      {/* Legend */}
+  {/* Schedule Dialog */}
+  <SchedulePostDialog
+    open={scheduleDialogOpen}
+    onOpenChange={setScheduleDialogOpen}
+    selectedDate={selectedScheduleDate}
+    onCreateWithAI={() => {
+      setScheduleDialogOpen(false);
+      onCreateWithAI?.();
+    }}
+  />
+
+  {/* Legend */}
       <div className="flex items-center gap-6 justify-center">
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 rounded bg-muted" />
