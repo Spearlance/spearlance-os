@@ -50,7 +50,7 @@ interface FilterState {
 }
 
 const Reports = () => {
-  const { selectedClient } = useClient();
+  const { selectedClient, loading: clientLoading } = useClient();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [reports, setReports] = useState<Report[]>([]);
@@ -69,13 +69,16 @@ const Reports = () => {
   });
 
   useEffect(() => {
-    if (!selectedClient) {
+    // Don't redirect while client context is still initializing
+    if (!selectedClient && !clientLoading) {
       navigate("/");
       return;
     }
-    loadUserRole();
-    loadReports();
-  }, [selectedClient, navigate]);
+    if (selectedClient) {
+      loadUserRole();
+      loadReports();
+    }
+  }, [selectedClient, clientLoading, navigate]);
 
   useEffect(() => {
     loadReports();
@@ -221,7 +224,26 @@ const Reports = () => {
     }
   };
 
-  if (!selectedClient) return null;
+  // Show loading spinner while client context is initializing
+  if (clientLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  // Show message if no client selected after loading completes
+  if (!selectedClient) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <h2 className="text-2xl font-semibold mb-2">No Client Selected</h2>
+          <p className="text-muted-foreground">Please select a client to view reports</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
