@@ -219,11 +219,11 @@ export default function BrandGuide() {
                 primaryColor={brandGuide.primary_color}
                 secondaryColor={brandGuide.secondary_color}
                 accentColor={brandGuide.accent_color}
-                onPrimaryChange={(color) => setBrandGuide({ ...brandGuide, primary_color: color })}
-                onSecondaryChange={(color) => setBrandGuide({ ...brandGuide, secondary_color: color })}
-                onAccentChange={(color) => setBrandGuide({ ...brandGuide, accent_color: color })}
+                onPrimaryChange={(color) => setBrandGuide(prev => ({ ...prev, primary_color: color }))}
+                onSecondaryChange={(color) => setBrandGuide(prev => ({ ...prev, secondary_color: color }))}
+                onAccentChange={(color) => setBrandGuide(prev => ({ ...prev, accent_color: color }))}
                 notes={brandGuide.color_usage_notes}
-                onNotesChange={(notes) => setBrandGuide({ ...brandGuide, color_usage_notes: notes })}
+                onNotesChange={(notes) => setBrandGuide(prev => ({ ...prev, color_usage_notes: notes }))}
               />
             </TabsContent>
 
@@ -232,29 +232,29 @@ export default function BrandGuide() {
                 primaryFont={brandGuide.primary_font}
                 secondaryFont={brandGuide.secondary_font}
                 pairingStyle={brandGuide.font_pairing_style}
-                onPrimaryFontChange={(font) => setBrandGuide({ ...brandGuide, primary_font: font })}
-                onSecondaryFontChange={(font) => setBrandGuide({ ...brandGuide, secondary_font: font })}
-                onPairingStyleChange={(style) => setBrandGuide({ ...brandGuide, font_pairing_style: style })}
+                onPrimaryFontChange={(font) => setBrandGuide(prev => ({ ...prev, primary_font: font }))}
+                onSecondaryFontChange={(font) => setBrandGuide(prev => ({ ...prev, secondary_font: font }))}
+                onPairingStyleChange={(style) => setBrandGuide(prev => ({ ...prev, font_pairing_style: style }))}
                 notes={brandGuide.typography_notes}
-                onNotesChange={(notes) => setBrandGuide({ ...brandGuide, typography_notes: notes })}
+                onNotesChange={(notes) => setBrandGuide(prev => ({ ...prev, typography_notes: notes }))}
               />
             </TabsContent>
 
             <TabsContent value="aesthetic" className="mt-6">
               <AestheticSelector
                 selectedAesthetic={brandGuide.aesthetic}
-                onAestheticChange={(aesthetic) => setBrandGuide({ ...brandGuide, aesthetic })}
+                onAestheticChange={(aesthetic) => setBrandGuide(prev => ({ ...prev, aesthetic }))}
                 imageryStyle={brandGuide.imagery_style}
-                onImageryStyleChange={(style) => setBrandGuide({ ...brandGuide, imagery_style: style })}
+                onImageryStyleChange={(style) => setBrandGuide(prev => ({ ...prev, imagery_style: style }))}
               />
             </TabsContent>
 
             <TabsContent value="personality" className="mt-6">
               <BrandPersonalitySelector
                 selectedTraits={brandGuide.brand_personality}
-                onTraitsChange={(traits) => setBrandGuide({ ...brandGuide, brand_personality: traits })}
+                onTraitsChange={(traits) => setBrandGuide(prev => ({ ...prev, brand_personality: traits }))}
                 dosAndDonts={brandGuide.dos_and_donts}
-                onDosAndDontsChange={(dd) => setBrandGuide({ ...brandGuide, dos_and_donts: dd })}
+                onDosAndDontsChange={(dd) => setBrandGuide(prev => ({ ...prev, dos_and_donts: dd }))}
               />
             </TabsContent>
           </Tabs>
