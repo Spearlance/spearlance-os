@@ -84,19 +84,21 @@ export function ToolCard({ tool, type, isAdmin, onEdit, onDelete, onAddToClient 
                     variant="default"
                     size="sm"
                     asChild
+                    className="flex-shrink-0"
                   >
                     <a href={tool.url} target="_blank" rel="noopener noreferrer">
-                      <Gift className="h-3 w-3 mr-2" />
+                      <Gift className="h-3 w-3 mr-1.5" />
                       Sign Up
                     </a>
                   </Button>
 
                   {/* Right: Edit (admin), Add, Delete (admin) */}
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1 flex-shrink-0">
                     {isAdmin && onEdit && (
                       <Button
                         variant="ghost"
-                        size="sm"
+                        size="icon"
+                        className="h-8 w-8"
                         onClick={onEdit}
                       >
                         <Edit className="h-4 w-4" />
@@ -107,15 +109,17 @@ export function ToolCard({ tool, type, isAdmin, onEdit, onDelete, onAddToClient 
                         variant="default"
                         size="sm"
                         onClick={onAddToClient}
+                        className="flex-shrink-0"
                       >
-                        <Plus className="h-3 w-3 mr-2" />
+                        <Plus className="h-3 w-3 mr-1.5" />
                         Add
                       </Button>
                     )}
                     {isAdmin && onDelete && (
                       <Button
                         variant="ghost"
-                        size="sm"
+                        size="icon"
+                        className="h-8 w-8"
                         onClick={onDelete}
                       >
                         <Trash2 className="h-4 w-4" />
