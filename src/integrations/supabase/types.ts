@@ -591,6 +591,106 @@ export type Database = {
           },
         ]
       }
+      client_brand_voice: {
+        Row: {
+          client_id: string
+          created_at: string | null
+          id: string
+          story_completed: boolean | null
+          story_recording_asset_id: string | null
+          story_recording_url: string | null
+          story_summary: Json | null
+          story_transcript: string | null
+          tone: string | null
+          updated_at: string | null
+          words_to_avoid: string | null
+        }
+        Insert: {
+          client_id: string
+          created_at?: string | null
+          id?: string
+          story_completed?: boolean | null
+          story_recording_asset_id?: string | null
+          story_recording_url?: string | null
+          story_summary?: Json | null
+          story_transcript?: string | null
+          tone?: string | null
+          updated_at?: string | null
+          words_to_avoid?: string | null
+        }
+        Update: {
+          client_id?: string
+          created_at?: string | null
+          id?: string
+          story_completed?: boolean | null
+          story_recording_asset_id?: string | null
+          story_recording_url?: string | null
+          story_summary?: Json | null
+          story_transcript?: string | null
+          tone?: string | null
+          updated_at?: string | null
+          words_to_avoid?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_brand_voice_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: true
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_business_model: {
+        Row: {
+          annual_revenue_goal: number | null
+          aov: number | null
+          client_id: string
+          created_at: string | null
+          current_state_constraints: string | null
+          current_state_not_working: string | null
+          current_state_working: string | null
+          id: string
+          ltv: number | null
+          sales_process: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          annual_revenue_goal?: number | null
+          aov?: number | null
+          client_id: string
+          created_at?: string | null
+          current_state_constraints?: string | null
+          current_state_not_working?: string | null
+          current_state_working?: string | null
+          id?: string
+          ltv?: number | null
+          sales_process?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          annual_revenue_goal?: number | null
+          aov?: number | null
+          client_id?: string
+          created_at?: string | null
+          current_state_constraints?: string | null
+          current_state_not_working?: string | null
+          current_state_working?: string | null
+          id?: string
+          ltv?: number | null
+          sales_process?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_business_model_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: true
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_team_invitations: {
         Row: {
           client_id: string
@@ -649,17 +749,25 @@ export type Database = {
           billing_plan_id: string | null
           billing_status: Database["public"]["Enums"]["billing_status"] | null
           booking_permissions: string | null
+          brand_name: string | null
           canva_folder_url: string | null
           company_name: string | null
           created_at: string | null
+          decision_makers: string[] | null
           domain: string | null
           drive_folder_url: string | null
           front_tag: string
+          hq_city: string | null
           id: string
+          industry: string | null
+          legal_name: string | null
           logo_url: string | null
           name: string
           oviond_url: string | null
+          primary_contact_email: string | null
+          primary_contact_name: string | null
           primary_contact_user_id: string | null
+          service_areas: string[] | null
           status: Database["public"]["Enums"]["client_status"] | null
           stripe_customer_id: string | null
           stripe_subscription_id: string | null
@@ -675,17 +783,25 @@ export type Database = {
           billing_plan_id?: string | null
           billing_status?: Database["public"]["Enums"]["billing_status"] | null
           booking_permissions?: string | null
+          brand_name?: string | null
           canva_folder_url?: string | null
           company_name?: string | null
           created_at?: string | null
+          decision_makers?: string[] | null
           domain?: string | null
           drive_folder_url?: string | null
           front_tag: string
+          hq_city?: string | null
           id?: string
+          industry?: string | null
+          legal_name?: string | null
           logo_url?: string | null
           name: string
           oviond_url?: string | null
+          primary_contact_email?: string | null
+          primary_contact_name?: string | null
           primary_contact_user_id?: string | null
+          service_areas?: string[] | null
           status?: Database["public"]["Enums"]["client_status"] | null
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
@@ -701,17 +817,25 @@ export type Database = {
           billing_plan_id?: string | null
           billing_status?: Database["public"]["Enums"]["billing_status"] | null
           booking_permissions?: string | null
+          brand_name?: string | null
           canva_folder_url?: string | null
           company_name?: string | null
           created_at?: string | null
+          decision_makers?: string[] | null
           domain?: string | null
           drive_folder_url?: string | null
           front_tag?: string
+          hq_city?: string | null
           id?: string
+          industry?: string | null
+          legal_name?: string | null
           logo_url?: string | null
           name?: string
           oviond_url?: string | null
+          primary_contact_email?: string | null
+          primary_contact_name?: string | null
           primary_contact_user_id?: string | null
+          service_areas?: string[] | null
           status?: Database["public"]["Enums"]["client_status"] | null
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null

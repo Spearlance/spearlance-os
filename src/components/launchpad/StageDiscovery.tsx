@@ -120,26 +120,64 @@ export function StageDiscovery({ submissionId, initialData, onContinue, onSaveEx
 
   const saveData = async (data: DiscoveryData, showToast = false) => {
     setSaveStatus("saving");
+    if (!selectedClient) return;
+    
     try {
-      // Mirror website_url to clients table if empty
-      if (selectedClient && data.company.website_url) {
-        const normalizedUrl = normalizeUrl(data.company.website_url);
-        
-        const { data: clientData } = await supabase
-          .from("clients")
-          .select("website_url")
-          .eq("id", selectedClient.id)
-          .single();
+      // 1. Update clients table with company and contact info
+      const { error: clientError } = await supabase
+        .from("clients")
+        .update({
+          legal_name: data.company.legal_name,
+          brand_name: data.company.brand_name,
+          website_url: normalizeUrl(data.company.website_url),
+          hq_city: data.company.hq_city,
+          service_areas: data.company.service_areas,
+          industry: data.company.industry,
+          primary_contact_name: data.contacts.primary_name,
+          primary_contact_email: data.contacts.primary_email,
+          decision_makers: data.contacts.decision_makers,
+        })
+        .eq("id", selectedClient.id);
 
-        if (clientData && !clientData.website_url) {
-          await supabase
-            .from("clients")
-            .update({ website_url: normalizedUrl })
-            .eq("id", selectedClient.id);
-        }
-      }
+      if (clientError) throw clientError;
 
-      // Get existing responses_json to preserve other stage data
+      // 2. Upsert business model data
+      const { error: businessModelError } = await supabase
+        .from("client_business_model")
+        .upsert({
+          client_id: selectedClient.id,
+          aov: data.model.aov,
+          ltv: data.model.ltv,
+          sales_process: data.model.sales_process,
+          annual_revenue_goal: data.goals.annual_revenue_goal,
+          current_state_working: data.state.working,
+          current_state_not_working: data.state.not_working,
+          current_state_constraints: data.state.constraints,
+        }, {
+          onConflict: 'client_id'
+        });
+
+      if (businessModelError) throw businessModelError;
+
+      // 3. Upsert brand voice data
+      const { error: brandVoiceError } = await supabase
+        .from("client_brand_voice")
+        .upsert({
+          client_id: selectedClient.id,
+          tone: data.voice.tone,
+          words_to_avoid: data.voice.words_to_avoid,
+          story_recording_url: data.story?.recording_url,
+          story_recording_asset_id: data.story?.recording_asset_id,
+          story_transcript: data.story?.transcript,
+          story_summary: data.story?.summary,
+          story_completed: data.story?.completed || false,
+        }, {
+          onConflict: 'client_id'
+        });
+
+      if (brandVoiceError) throw brandVoiceError;
+
+      // 4. Also update launchpad_submissions for backward compatibility
       const { data: submissionData } = await supabase
         .from("launchpad_submissions")
         .select("responses_json")
@@ -148,7 +186,6 @@ export function StageDiscovery({ submissionId, initialData, onContinue, onSaveEx
 
       if (!submissionData) throw new Error("Submission not found");
 
-      // Merge with existing data instead of overwriting
       const updatedResponses = {
         ...((submissionData.responses_json as Record<string, any>) || {}),
         discovery: data,

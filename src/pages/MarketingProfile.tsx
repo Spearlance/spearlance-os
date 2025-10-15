@@ -256,24 +256,21 @@ export default function MarketingProfile() {
   };
 
   const handleSaveCurrentState = async () => {
-    if (!submissionId) return;
+    if (!selectedClient) return;
 
     setSavingCurrentState(true);
     
     try {
       const { error } = await supabase
-        .from("launchpad_submissions")
-        .update({
-          responses_json: {
-            ...discoveryData,
-            state: {
-              working: currentStateForm.working.trim() || null,
-              not_working: currentStateForm.not_working.trim() || null,
-              constraints: currentStateForm.constraints.trim() || null,
-            }
-          }
-        })
-        .eq('id', submissionId);
+        .from("client_business_model")
+        .upsert({
+          client_id: selectedClient.id,
+          current_state_working: currentStateForm.working.trim() || null,
+          current_state_not_working: currentStateForm.not_working.trim() || null,
+          current_state_constraints: currentStateForm.constraints.trim() || null,
+        }, {
+          onConflict: 'client_id'
+        });
 
       if (error) throw error;
 
@@ -282,7 +279,7 @@ export default function MarketingProfile() {
         description: "Current state updated successfully",
       });
       
-      loadProfileData();
+      await loadProfileData();
       setEditingCurrentState(false);
     } catch (error: any) {
       console.error("Error updating current state:", error);
@@ -311,36 +308,107 @@ export default function MarketingProfile() {
     if (!selectedClient) return;
 
     setLoading(true);
-    const { data, error } = await supabase
-      .from("launchpad_submissions")
-      .select("*")
-      .eq("client_id", selectedClient.id)
-      .maybeSingle();
+    try {
+      // Fetch all profile data from permanent tables in parallel
+      const [
+        { data: clientData, error: clientError },
+        { data: businessModel, error: businessModelError },
+        { data: brandVoice, error: brandVoiceError },
+        { data: services, error: servicesError },
+        { data: submission, error: submissionError }
+      ] = await Promise.all([
+        supabase
+          .from("clients")
+          .select("*")
+          .eq("id", selectedClient.id)
+          .single(),
+        supabase
+          .from("client_business_model")
+          .select("*")
+          .eq("client_id", selectedClient.id)
+          .maybeSingle(),
+        supabase
+          .from("client_brand_voice")
+          .select("*")
+          .eq("client_id", selectedClient.id)
+          .maybeSingle(),
+        supabase
+          .from("services")
+          .select("name")
+          .eq("client_id", selectedClient.id),
+        supabase
+          .from("launchpad_submissions")
+          .select("id")
+          .eq("client_id", selectedClient.id)
+          .maybeSingle()
+      ]);
 
-    if (error) {
+      if (clientError) throw clientError;
+
+      if (submission) {
+        setSubmissionId(submission.id);
+      }
+
+      // Reconstruct DiscoveryData format from permanent tables
+      const profileData: DiscoveryData = {
+        company: {
+          legal_name: clientData.legal_name || "",
+          brand_name: clientData.brand_name || "",
+          website_url: clientData.website_url || "",
+          hq_city: clientData.hq_city || "",
+          service_areas: clientData.service_areas || [],
+          industry: clientData.industry || "",
+        },
+        contacts: {
+          primary_name: clientData.primary_contact_name || "",
+          primary_email: clientData.primary_contact_email || "",
+          decision_makers: clientData.decision_makers || [],
+        },
+        model: {
+          services: services?.map(s => s.name) || [],
+          aov: businessModel?.aov || null,
+          ltv: businessModel?.ltv || null,
+          sales_process: businessModel?.sales_process || "",
+        },
+        goals: {
+          quarter_goals: [],
+          annual_revenue_goal: businessModel?.annual_revenue_goal || null,
+        },
+        state: {
+          working: businessModel?.current_state_working || "",
+          not_working: businessModel?.current_state_not_working || "",
+          constraints: businessModel?.current_state_constraints || "",
+        },
+        competition: {
+          competitors: [],
+        },
+        voice: {
+          tone: brandVoice?.tone || "",
+          words_to_avoid: brandVoice?.words_to_avoid || "",
+        },
+        story: {
+          recording_url: brandVoice?.story_recording_url,
+          recording_asset_id: brandVoice?.story_recording_asset_id,
+          completed: brandVoice?.story_completed || false,
+          transcript: brandVoice?.story_transcript,
+          summary: brandVoice?.story_summary,
+        },
+      };
+
+      setDiscoveryData(profileData);
+      setTranscript(brandVoice?.story_transcript || "");
+      setSummary(brandVoice?.story_summary || null);
+
+    } catch (error: any) {
       console.error("Error loading profile:", error);
       toast({
         title: "Error",
-        description: "Failed to load profile data",
+        description: "Failed to load marketing profile",
         variant: "destructive",
       });
+    } finally {
       setLoading(false);
-      return;
     }
-
-    if (data) {
-      setSubmissionId(data.id);
-      const responsesJson = data.responses_json as any;
-      const discovery = responsesJson?.discovery as DiscoveryData;
-      setDiscoveryData(discovery || null);
-      
-      // Load story data if completed
-      if (discovery?.story?.completed) {
-        setTranscript(discovery.story.transcript || "");
-        setSummary(discovery.story.summary || null);
-      }
-    }
-    setLoading(false);
   };
 
   const handleStoryUpdate = () => {
@@ -371,7 +439,7 @@ export default function MarketingProfile() {
     );
   }
 
-  if (!discoveryData) {
+  if (!discoveryData || (!discoveryData.company.legal_name && !discoveryData.company.brand_name)) {
     return (
       <div className="flex items-center justify-center h-full">
         <Card className="p-6 text-center max-w-md">
