@@ -35,6 +35,16 @@ export const ClientProvider = ({ children }: { children: ReactNode }) => {
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Custom setter that persists to localStorage
+  const setSelectedClientWithPersistence = (client: Client | null) => {
+    setSelectedClient(client);
+    if (client) {
+      localStorage.setItem('selectedClientId', client.id);
+    } else {
+      localStorage.removeItem('selectedClientId');
+    }
+  };
+
   useEffect(() => {
     loadClients();
   }, []);
@@ -63,9 +73,13 @@ export const ClientProvider = ({ children }: { children: ReactNode }) => {
 
       setClients(data as Client[] || []);
       
-      // Auto-select first client if none selected
+      // Auto-select client from localStorage or first client if none selected
+      const savedClientId = localStorage.getItem('selectedClientId');
       if (!selectedClient && data && data.length > 0) {
-        setSelectedClient(data[0] as Client);
+        const clientToSelect = savedClientId 
+          ? data.find(c => c.id === savedClientId) || data[0]
+          : data[0];
+        setSelectedClient(clientToSelect as Client);
       }
     } catch (error) {
       console.error('Error loading clients:', error);
@@ -114,7 +128,7 @@ export const ClientProvider = ({ children }: { children: ReactNode }) => {
     <ClientContext.Provider
       value={{
         selectedClient,
-        setSelectedClient,
+        setSelectedClient: setSelectedClientWithPersistence,
         clients,
         loading,
         refreshClients,

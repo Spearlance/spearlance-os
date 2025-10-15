@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { useClient } from "@/contexts/ClientContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,6 +24,7 @@ import { CompetitorCard } from "@/components/competitors/CompetitorCard";
 export default function MarketingProfile() {
   const { selectedClient } = useClient();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [discoveryData, setDiscoveryData] = useState<DiscoveryData | null>(null);
   const [submissionId, setSubmissionId] = useState<string>("");
@@ -447,7 +449,7 @@ export default function MarketingProfile() {
           <CardDescription className="mb-4">
             Complete the Discovery stage in Launch Pad to populate your marketing profile
           </CardDescription>
-          <Button onClick={() => window.location.href = "/launchpad"}>
+          <Button onClick={() => navigate("/launchpad")}>
             Go to Launch Pad
           </Button>
         </Card>
@@ -558,7 +560,7 @@ export default function MarketingProfile() {
                   <CardTitle>Core Services</CardTitle>
                   <CardDescription>Your main service offerings</CardDescription>
                 </div>
-                <Button variant="outline" size="sm" onClick={() => window.location.href = "/marketing/services"}>
+                <Button variant="outline" size="sm" onClick={() => navigate("/marketing/services")}>
                   Manage Services
                   <ExternalLink className="h-4 w-4 ml-2" />
                 </Button>
