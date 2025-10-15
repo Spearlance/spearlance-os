@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -10,8 +11,6 @@ interface AddGoalDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   clientId: string;
-  quarter: number;
-  year: number;
   onSuccess: () => void;
 }
 
@@ -19,13 +18,22 @@ export function AddGoalDialog({
   open, 
   onOpenChange, 
   clientId, 
-  quarter, 
-  year, 
   onSuccess 
 }: AddGoalDialogProps) {
+  const currentDate = new Date();
+  const currentQuarter = Math.ceil((currentDate.getMonth() + 1) / 3);
+  const currentYear = currentDate.getFullYear();
+
   const [goalText, setGoalText] = useState("");
   const [notes, setNotes] = useState("");
+  const [quarter, setQuarter] = useState<number>(currentQuarter);
+  const [year, setYear] = useState<number>(currentYear);
   const [loading, setLoading] = useState(false);
+
+  // Generate year options (current year + 2 future years)
+  const yearOptions = useMemo(() => {
+    return [currentYear, currentYear + 1, currentYear + 2];
+  }, [currentYear]);
 
   const handleSubmit = async () => {
     if (!goalText.trim()) {
@@ -56,6 +64,8 @@ export function AddGoalDialog({
       onOpenChange(false);
       setGoalText("");
       setNotes("");
+      setQuarter(currentQuarter);
+      setYear(currentYear);
     } catch (error: any) {
       console.error("Error adding goal:", error);
       toast.error(error.message || "Failed to add goal");
@@ -70,10 +80,41 @@ export function AddGoalDialog({
         <DialogHeader>
           <DialogTitle>Add Quarterly Goal</DialogTitle>
           <DialogDescription>
-            Add a new goal for Q{quarter} {year}
+            Set a goal for a specific quarter
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label htmlFor="quarter">Quarter *</Label>
+              <Select value={quarter.toString()} onValueChange={(val) => setQuarter(parseInt(val))}>
+                <SelectTrigger id="quarter">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">Q1 (Jan-Mar)</SelectItem>
+                  <SelectItem value="2">Q2 (Apr-Jun)</SelectItem>
+                  <SelectItem value="3">Q3 (Jul-Sep)</SelectItem>
+                  <SelectItem value="4">Q4 (Oct-Dec)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="year">Year *</Label>
+              <Select value={year.toString()} onValueChange={(val) => setYear(parseInt(val))}>
+                <SelectTrigger id="year">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {yearOptions.map(yr => (
+                    <SelectItem key={yr} value={yr.toString()}>{yr}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="goal">Goal *</Label>
             <Textarea
@@ -84,13 +125,14 @@ export function AddGoalDialog({
               rows={3}
             />
           </div>
+
           <div className="space-y-2">
             <Label htmlFor="notes">Notes (Optional)</Label>
             <Textarea
               id="notes"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Add context or details..."
+              placeholder="Add context or strategy..."
               rows={2}
             />
           </div>
