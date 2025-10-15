@@ -6,11 +6,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { ExternalLink, Edit } from "lucide-react";
+import { ExternalLink, Edit, Plus, Loader2 } from "lucide-react";
 import { DiscoveryData } from "@/lib/launchpadTypes";
 import { StoryModal } from "@/components/launchpad/StoryModal";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronDown } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { AddGoalDialog } from "@/components/goals/AddGoalDialog";
 
 export default function MarketingProfile() {
   const { selectedClient } = useClient();
@@ -21,12 +25,122 @@ export default function MarketingProfile() {
   const [storyModalOpen, setStoryModalOpen] = useState(false);
   const [transcript, setTranscript] = useState("");
   const [summary, setSummary] = useState<any>(null);
+  const [addGoalDialogOpen, setAddGoalDialogOpen] = useState(false);
+  const [quarterlyGoals, setQuarterlyGoals] = useState<any[]>([]);
+  const [goalsLoading, setGoalsLoading] = useState(false);
+
+  // Get current quarter and year
+  const now = new Date();
+  const currentQuarter = Math.floor(now.getMonth() / 3) + 1;
+  const currentYear = now.getFullYear();
+  
+  // Calculate previous quarter
+  const prevQuarter = currentQuarter === 1 ? 4 : currentQuarter - 1;
+  const prevYear = currentQuarter === 1 ? currentYear - 1 : currentYear;
 
   useEffect(() => {
     if (selectedClient) {
       loadProfileData();
+      loadQuarterlyGoals();
     }
   }, [selectedClient]);
+
+  const loadQuarterlyGoals = async () => {
+    if (!selectedClient) return;
+    
+    setGoalsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("quarterly_goals")
+        .select("*")
+        .eq("client_id", selectedClient.id)
+        .order("year", { ascending: false })
+        .order("quarter", { ascending: false });
+
+      if (error) throw error;
+      setQuarterlyGoals(data || []);
+    } catch (error: any) {
+      console.error("Error loading quarterly goals:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load quarterly goals",
+        variant: "destructive",
+      });
+    } finally {
+      setGoalsLoading(false);
+    }
+  };
+
+  const updateGoalStatus = async (goalId: string, status: string) => {
+    try {
+      const updates: any = { status };
+      if (status === "achieved" || status === "failed") {
+        updates.completed_at = new Date().toISOString();
+      }
+
+      const { error } = await supabase
+        .from("quarterly_goals")
+        .update(updates)
+        .eq("id", goalId);
+
+      if (error) throw error;
+      
+      toast({
+        title: "Success",
+        description: "Goal status updated",
+      });
+      loadQuarterlyGoals();
+    } catch (error: any) {
+      console.error("Error updating goal status:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update goal status",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Filter goals by quarter
+  const currentQuarterGoals = quarterlyGoals.filter(
+    g => g.quarter === currentQuarter && g.year === currentYear
+  );
+  
+  const previousQuarterGoals = quarterlyGoals.filter(
+    g => g.quarter === prevQuarter && g.year === prevYear
+  );
+
+  // Group historical goals by quarter/year (excluding current and previous)
+  const historicalGoals = quarterlyGoals
+    .filter(g => 
+      !(g.quarter === currentQuarter && g.year === currentYear) &&
+      !(g.quarter === prevQuarter && g.year === prevYear)
+    )
+    .reduce((acc: any[], goal) => {
+      const key = `${goal.year}-Q${goal.quarter}`;
+      let group = acc.find(g => g.key === key);
+      
+      if (!group) {
+        group = {
+          key,
+          year: goal.year,
+          quarter: goal.quarter,
+          goals: [],
+          achieved: 0,
+          total: 0
+        };
+        acc.push(group);
+      }
+      
+      group.goals.push(goal);
+      group.total++;
+      if (goal.status === "achieved") group.achieved++;
+      
+      return acc;
+    }, [])
+    .sort((a, b) => {
+      if (a.year !== b.year) return b.year - a.year;
+      return b.quarter - a.quarter;
+    });
 
   const loadProfileData = async () => {
     if (!selectedClient) return;
@@ -259,20 +373,269 @@ export default function MarketingProfile() {
         <TabsContent value="goals" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>This Quarter</CardTitle>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Quarterly Goals</CardTitle>
+                  <CardDescription>Track goals across quarters</CardDescription>
+                </div>
+                <Button onClick={() => setAddGoalDialogOpen(true)} size="sm">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Goal
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
-              {discoveryData.goals.quarter_goals && discoveryData.goals.quarter_goals.length > 0 ? (
-                <ul className="space-y-2">
-                  {discoveryData.goals.quarter_goals.map((goal, i) => (
-                    <li key={i} className="flex items-start gap-2">
-                      <span className="text-primary font-bold mt-0.5">•</span>
-                      <span>{goal}</span>
-                    </li>
-                  ))}
-                </ul>
+              {goalsLoading ? (
+                <div className="flex justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                </div>
               ) : (
-                <p className="text-muted-foreground text-sm">No quarterly goals set</p>
+                <Tabs defaultValue="current" className="w-full">
+                  <TabsList className="grid w-full grid-cols-4">
+                    <TabsTrigger value="current">
+                      Current (Q{currentQuarter} {currentYear})
+                    </TabsTrigger>
+                    <TabsTrigger value="previous">
+                      Previous (Q{prevQuarter} {prevYear})
+                    </TabsTrigger>
+                    <TabsTrigger value="history">History</TabsTrigger>
+                    <TabsTrigger value="all">All Time</TabsTrigger>
+                  </TabsList>
+
+                  {/* Current Quarter Tab */}
+                  <TabsContent value="current" className="mt-4">
+                    {currentQuarterGoals.length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        No goals set for this quarter. Click "Add Goal" to get started.
+                      </div>
+                    ) : (
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Goal</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead>Notes</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {currentQuarterGoals.map((goal) => (
+                            <TableRow key={goal.id}>
+                              <TableCell className="font-medium">{goal.goal_text}</TableCell>
+                              <TableCell>
+                                <Select 
+                                  value={goal.status} 
+                                  onValueChange={(status) => updateGoalStatus(goal.id, status)}
+                                >
+                                  <SelectTrigger className="w-[140px]">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="in_progress">
+                                      <Badge variant="secondary">In Progress</Badge>
+                                    </SelectItem>
+                                    <SelectItem value="achieved">
+                                      <Badge className="bg-green-500 hover:bg-green-600">Achieved</Badge>
+                                    </SelectItem>
+                                    <SelectItem value="failed">
+                                      <Badge variant="destructive">Failed</Badge>
+                                    </SelectItem>
+                                    <SelectItem value="carried_over">
+                                      <Badge variant="outline">Carried Over</Badge>
+                                    </SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </TableCell>
+                              <TableCell className="text-sm text-muted-foreground max-w-[300px]">
+                                {goal.notes || "-"}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    )}
+                  </TabsContent>
+
+                  {/* Previous Quarter Tab */}
+                  <TabsContent value="previous" className="mt-4">
+                    {previousQuarterGoals.length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        No goals recorded for Q{prevQuarter} {prevYear}.
+                      </div>
+                    ) : (
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Goal</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead>Notes</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {previousQuarterGoals.map((goal) => (
+                            <TableRow key={goal.id}>
+                              <TableCell className="font-medium">{goal.goal_text}</TableCell>
+                              <TableCell>
+                                <Badge variant={
+                                  goal.status === 'achieved' ? 'default' : 
+                                  goal.status === 'failed' ? 'destructive' : 
+                                  goal.status === 'carried_over' ? 'outline' :
+                                  'secondary'
+                                }>
+                                  {goal.status.replace('_', ' ')}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-sm text-muted-foreground max-w-[300px]">
+                                {goal.notes || "-"}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    )}
+                  </TabsContent>
+
+                  {/* History Tab */}
+                  <TabsContent value="history" className="mt-4">
+                    {historicalGoals.length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        No historical goals to display.
+                      </div>
+                    ) : (
+                      <Accordion type="single" collapsible className="w-full">
+                        {historicalGoals.map((quarterGroup) => (
+                          <AccordionItem key={quarterGroup.key} value={quarterGroup.key}>
+                            <AccordionTrigger>
+                              <div className="flex items-center gap-2">
+                                <span>Q{quarterGroup.quarter} {quarterGroup.year}</span>
+                                <Badge variant="secondary">
+                                  {quarterGroup.achieved}/{quarterGroup.total} Achieved
+                                </Badge>
+                              </div>
+                            </AccordionTrigger>
+                            <AccordionContent>
+                              <Table>
+                                <TableHeader>
+                                  <TableRow>
+                                    <TableHead>Goal</TableHead>
+                                    <TableHead>Status</TableHead>
+                                    <TableHead>Notes</TableHead>
+                                  </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                  {quarterGroup.goals.map((goal: any) => (
+                                    <TableRow key={goal.id}>
+                                      <TableCell className="font-medium">{goal.goal_text}</TableCell>
+                                      <TableCell>
+                                        <Badge variant={
+                                          goal.status === 'achieved' ? 'default' : 
+                                          goal.status === 'failed' ? 'destructive' : 
+                                          goal.status === 'carried_over' ? 'outline' :
+                                          'secondary'
+                                        }>
+                                          {goal.status.replace('_', ' ')}
+                                        </Badge>
+                                      </TableCell>
+                                      <TableCell className="text-sm text-muted-foreground max-w-[300px]">
+                                        {goal.notes || "-"}
+                                      </TableCell>
+                                    </TableRow>
+                                  ))}
+                                </TableBody>
+                              </Table>
+                            </AccordionContent>
+                          </AccordionItem>
+                        ))}
+                      </Accordion>
+                    )}
+                  </TabsContent>
+
+                  {/* All Time Tab */}
+                  <TabsContent value="all" className="mt-4">
+                    {quarterlyGoals.length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        No goals recorded yet.
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-4 gap-4">
+                          <Card>
+                            <CardHeader className="pb-3">
+                              <CardTitle className="text-sm font-medium">Total Goals</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                              <div className="text-2xl font-bold">{quarterlyGoals.length}</div>
+                            </CardContent>
+                          </Card>
+                          <Card>
+                            <CardHeader className="pb-3">
+                              <CardTitle className="text-sm font-medium">Achieved</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                              <div className="text-2xl font-bold text-green-600">
+                                {quarterlyGoals.filter(g => g.status === 'achieved').length}
+                              </div>
+                            </CardContent>
+                          </Card>
+                          <Card>
+                            <CardHeader className="pb-3">
+                              <CardTitle className="text-sm font-medium">Failed</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                              <div className="text-2xl font-bold text-red-600">
+                                {quarterlyGoals.filter(g => g.status === 'failed').length}
+                              </div>
+                            </CardContent>
+                          </Card>
+                          <Card>
+                            <CardHeader className="pb-3">
+                              <CardTitle className="text-sm font-medium">Success Rate</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                              <div className="text-2xl font-bold">
+                                {quarterlyGoals.length > 0 
+                                  ? Math.round((quarterlyGoals.filter(g => g.status === 'achieved').length / quarterlyGoals.length) * 100)
+                                  : 0}%
+                              </div>
+                            </CardContent>
+                          </Card>
+                        </div>
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Period</TableHead>
+                              <TableHead>Goal</TableHead>
+                              <TableHead>Status</TableHead>
+                              <TableHead>Notes</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {quarterlyGoals.map((goal) => (
+                              <TableRow key={goal.id}>
+                                <TableCell className="font-medium">
+                                  Q{goal.quarter} {goal.year}
+                                </TableCell>
+                                <TableCell>{goal.goal_text}</TableCell>
+                                <TableCell>
+                                  <Badge variant={
+                                    goal.status === 'achieved' ? 'default' : 
+                                    goal.status === 'failed' ? 'destructive' : 
+                                    goal.status === 'carried_over' ? 'outline' :
+                                    'secondary'
+                                  }>
+                                    {goal.status.replace('_', ' ')}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell className="text-sm text-muted-foreground max-w-[300px]">
+                                  {goal.notes || "-"}
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    )}
+                  </TabsContent>
+                </Tabs>
               )}
             </CardContent>
           </Card>
@@ -483,6 +846,17 @@ export default function MarketingProfile() {
         initialData={discoveryData.story}
         onSuccess={handleStoryUpdate}
       />
+
+      {selectedClient && (
+        <AddGoalDialog
+          open={addGoalDialogOpen}
+          onOpenChange={setAddGoalDialogOpen}
+          clientId={selectedClient.id}
+          quarter={currentQuarter}
+          year={currentYear}
+          onSuccess={loadQuarterlyGoals}
+        />
+      )}
     </div>
   );
 }

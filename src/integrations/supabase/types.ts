@@ -1489,6 +1489,63 @@ export type Database = {
         }
         Relationships: []
       }
+      quarterly_goals: {
+        Row: {
+          client_id: string
+          completed_at: string | null
+          created_at: string | null
+          created_by: string | null
+          goal_text: string
+          id: string
+          notes: string | null
+          quarter: number
+          status: string
+          updated_at: string | null
+          year: number
+        }
+        Insert: {
+          client_id: string
+          completed_at?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          goal_text: string
+          id?: string
+          notes?: string | null
+          quarter: number
+          status?: string
+          updated_at?: string | null
+          year: number
+        }
+        Update: {
+          client_id?: string
+          completed_at?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          goal_text?: string
+          id?: string
+          notes?: string | null
+          quarter?: number
+          status?: string
+          updated_at?: string | null
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quarterly_goals_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quarterly_goals_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reports: {
         Row: {
           client_id: string
