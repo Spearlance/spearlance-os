@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 interface ToolCardProps {
   tool: any;
   type: 'client' | 'recommended';
+  isAdmin?: boolean;
   onEdit?: () => void;
   onDelete?: () => void;
   onAddToClient?: () => void;
@@ -26,7 +27,7 @@ const categoryColors: Record<string, string> = {
   other: "bg-gray-500/10 text-gray-700 dark:text-gray-400",
 };
 
-export function ToolCard({ tool, type, onEdit, onDelete, onAddToClient }: ToolCardProps) {
+export function ToolCard({ tool, type, isAdmin, onEdit, onDelete, onAddToClient }: ToolCardProps) {
   const categoryColor = categoryColors[tool.category] || categoryColors.other;
 
   return (
@@ -107,15 +108,37 @@ export function ToolCard({ tool, type, onEdit, onDelete, onAddToClient }: ToolCa
                 </>
               )}
 
-              {type === 'recommended' && onAddToClient && (
-                <Button
-                  variant="default"
-                  size="sm"
-                  onClick={onAddToClient}
-                >
-                  <Plus className="h-3 w-3 mr-2" />
-                  Add
-                </Button>
+              {type === 'recommended' && (
+                <>
+                  {isAdmin && onEdit && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={onEdit}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                  )}
+                  {isAdmin && onDelete && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={onDelete}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                  {onAddToClient && (
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={onAddToClient}
+                    >
+                      <Plus className="h-3 w-3 mr-2" />
+                      Add
+                    </Button>
+                  )}
+                </>
               )}
             </div>
           </div>

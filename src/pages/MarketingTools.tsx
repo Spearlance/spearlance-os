@@ -52,13 +52,14 @@ export default function MarketingTools() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    const { data: profile } = await supabase
-      .from('profiles')
+    const { data: roleData } = await supabase
+      .from('user_roles')
       .select('role')
-      .eq('id', user.id)
-      .single();
+      .eq('user_id', user.id)
+      .eq('role', 'admin')
+      .maybeSingle();
 
-    setUserRole(profile?.role || '');
+    setUserRole(roleData ? 'admin' : '');
   };
 
   const loadData = async () => {
@@ -224,6 +225,28 @@ export default function MarketingTools() {
     }
   };
 
+  const handleDeleteRecommendedTool = async (toolId: string) => {
+    if (!confirm("Delete this recommended tool? This will remove it for all clients.")) return;
+
+    try {
+      const { error } = await supabase
+        .from('recommended_tools')
+        .delete()
+        .eq('id', toolId);
+
+      if (error) throw error;
+      
+      toast({ title: "Recommended tool deleted" });
+      await loadRecommendedTools();
+    } catch (error: any) {
+      toast({ 
+        title: "Error deleting tool", 
+        description: error.message,
+        variant: "destructive" 
+      });
+    }
+  };
+
   const filterTools = (tools: any[]) => {
     let filtered = tools;
     
@@ -358,6 +381,12 @@ export default function MarketingTools() {
                           key={tool.id}
                           tool={tool}
                           type="recommended"
+                          isAdmin={isAdmin}
+                          onEdit={isAdmin ? () => {
+                            setEditingRecommended(tool);
+                            setRecommendedDialogOpen(true);
+                          } : undefined}
+                          onDelete={isAdmin ? () => handleDeleteRecommendedTool(tool.id) : undefined}
                           onAddToClient={() => handleAddRecommendedToClient(tool)}
                         />
                       ))}
