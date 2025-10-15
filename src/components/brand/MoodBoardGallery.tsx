@@ -1,7 +1,8 @@
+import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar, Sparkles, Trash2 } from "lucide-react";
+import { Calendar, Sparkles, Trash2, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -16,6 +17,11 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface MoodBoardGalleryProps {
   moodBoards: any[];
@@ -24,6 +30,9 @@ interface MoodBoardGalleryProps {
 
 export default function MoodBoardGallery({ moodBoards, onRefresh }: MoodBoardGalleryProps) {
   const { toast } = useToast();
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [selectedBoard, setSelectedBoard] = useState<any | null>(null);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   const handleDelete = async (id: string) => {
     try {
@@ -50,6 +59,47 @@ export default function MoodBoardGallery({ moodBoards, onRefresh }: MoodBoardGal
     }
   };
 
+  const handleImageClick = (board: any, imageIndex: number) => {
+    setSelectedBoard(board);
+    setSelectedImage(board.generated_images[imageIndex]);
+    setCurrentImageIndex(imageIndex);
+  };
+
+  const handleNextImage = () => {
+    if (!selectedBoard) return;
+    const nextIndex = (currentImageIndex + 1) % selectedBoard.generated_images.length;
+    setCurrentImageIndex(nextIndex);
+    setSelectedImage(selectedBoard.generated_images[nextIndex]);
+  };
+
+  const handlePrevImage = () => {
+    if (!selectedBoard) return;
+    const prevIndex = (currentImageIndex - 1 + selectedBoard.generated_images.length) % selectedBoard.generated_images.length;
+    setCurrentImageIndex(prevIndex);
+    setSelectedImage(selectedBoard.generated_images[prevIndex]);
+  };
+
+  const handleCloseDialog = () => {
+    setSelectedImage(null);
+    setSelectedBoard(null);
+    setCurrentImageIndex(0);
+  };
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!selectedImage) return;
+      
+      if (e.key === "ArrowLeft") {
+        handlePrevImage();
+      } else if (e.key === "ArrowRight") {
+        handleNextImage();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedImage, currentImageIndex, selectedBoard]);
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {moodBoards.map((board) => (
@@ -61,8 +111,9 @@ export default function MoodBoardGallery({ moodBoards, onRefresh }: MoodBoardGal
                   {board.generated_images.slice(0, 4).map((img: string, idx: number) => (
                     <div
                       key={idx}
-                      className="bg-cover bg-center"
+                      className="bg-cover bg-center cursor-pointer hover:opacity-90 transition-opacity"
                       style={{ backgroundImage: `url(${img})` }}
+                      onClick={() => handleImageClick(board, idx)}
                     />
                   ))}
                 </div>
@@ -130,6 +181,57 @@ export default function MoodBoardGallery({ moodBoards, onRefresh }: MoodBoardGal
           </CardContent>
         </Card>
       ))}
+
+      <Dialog open={selectedImage !== null} onOpenChange={(open) => !open && handleCloseDialog()}>
+        <DialogContent className="max-w-4xl p-0">
+          <DialogTitle className="sr-only">Mood Board Image Gallery</DialogTitle>
+          <div className="relative">
+            {selectedImage && (
+              <img 
+                src={selectedImage} 
+                alt={`Mood board image ${currentImageIndex + 1}`}
+                className="w-full h-auto max-h-[80vh] object-contain"
+              />
+            )}
+            
+            {selectedBoard && selectedBoard.generated_images.length > 1 && (
+              <>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute left-2 top-1/2 -translate-y-1/2 bg-background/80 hover:bg-background"
+                  onClick={handlePrevImage}
+                >
+                  <ChevronLeft className="h-6 w-6" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-background/80 hover:bg-background"
+                  onClick={handleNextImage}
+                >
+                  <ChevronRight className="h-6 w-6" />
+                </Button>
+              </>
+            )}
+            
+            {selectedBoard && (
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/50 text-white px-3 py-1 rounded-full text-sm">
+                {currentImageIndex + 1} of {selectedBoard.generated_images.length}
+              </div>
+            )}
+            
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute top-2 right-2 bg-background/80 hover:bg-background"
+              onClick={handleCloseDialog}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
