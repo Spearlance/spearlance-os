@@ -16,6 +16,8 @@ import Tasks from "./pages/Tasks";
 import Assets from "./pages/Assets";
 import Marketing from "./pages/Marketing";
 import MarketingProfile from "./pages/MarketingProfile";
+import BrandGuide from "./pages/BrandGuide";
+import MoodBoard from "./pages/MoodBoard";
 import MarketingTools from "./pages/MarketingTools";
 import Avatar from "./pages/Avatar";
 import LaunchPad from "./pages/LaunchPad";
@@ -55,6 +57,9 @@ const App = () => (
           <Route path="/communications/logs" element={<MainLayout><CommunicationLogs /></MainLayout>} />
           <Route path="/communications/logs/:id" element={<MainLayout><CommunicationDetail /></MainLayout>} />
             <Route path="/tasks" element={<MainLayout><Tasks /></MainLayout>} />
+            <Route path="/brand/guide" element={<MainLayout><BrandGuide /></MainLayout>} />
+            <Route path="/brand/moodboard" element={<MainLayout><MoodBoard /></MainLayout>} />
+            <Route path="/brand/assets" element={<MainLayout><Assets /></MainLayout>} />
             <Route path="/assets" element={<MainLayout><Assets /></MainLayout>} />
             <Route path="/marketing/services" element={<MainLayout><Marketing /></MainLayout>} />
             <Route path="/marketing/profile" element={<MainLayout><MarketingProfile /></MainLayout>} />

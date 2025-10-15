@@ -435,6 +435,74 @@ export type Database = {
         }
         Relationships: []
       }
+      brand_guides: {
+        Row: {
+          accent_color: string | null
+          aesthetic: string | null
+          brand_personality: Json | null
+          client_id: string
+          color_usage_notes: string | null
+          created_at: string | null
+          dos_and_donts: Json | null
+          font_pairing_style: string | null
+          id: string
+          imagery_style: string | null
+          logo_usage_guidelines: string | null
+          primary_color: string | null
+          primary_font: string | null
+          secondary_color: string | null
+          secondary_font: string | null
+          typography_notes: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          accent_color?: string | null
+          aesthetic?: string | null
+          brand_personality?: Json | null
+          client_id: string
+          color_usage_notes?: string | null
+          created_at?: string | null
+          dos_and_donts?: Json | null
+          font_pairing_style?: string | null
+          id?: string
+          imagery_style?: string | null
+          logo_usage_guidelines?: string | null
+          primary_color?: string | null
+          primary_font?: string | null
+          secondary_color?: string | null
+          secondary_font?: string | null
+          typography_notes?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          accent_color?: string | null
+          aesthetic?: string | null
+          brand_personality?: Json | null
+          client_id?: string
+          color_usage_notes?: string | null
+          created_at?: string | null
+          dos_and_donts?: Json | null
+          font_pairing_style?: string | null
+          id?: string
+          imagery_style?: string | null
+          logo_usage_guidelines?: string | null
+          primary_color?: string | null
+          primary_font?: string | null
+          secondary_color?: string | null
+          secondary_font?: string | null
+          typography_notes?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brand_guides_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cal_webhook_logs: {
         Row: {
           created_at: string | null
@@ -1739,6 +1807,66 @@ export type Database = {
             columns: ["last_edited_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mood_boards: {
+        Row: {
+          brand_guide_id: string | null
+          client_id: string
+          color_palette_preview: Json | null
+          created_at: string | null
+          description: string | null
+          generated_images: Json | null
+          id: string
+          inspiration_keywords: string[] | null
+          is_ai_generated: boolean | null
+          style_direction: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          brand_guide_id?: string | null
+          client_id: string
+          color_palette_preview?: Json | null
+          created_at?: string | null
+          description?: string | null
+          generated_images?: Json | null
+          id?: string
+          inspiration_keywords?: string[] | null
+          is_ai_generated?: boolean | null
+          style_direction?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          brand_guide_id?: string | null
+          client_id?: string
+          color_palette_preview?: Json | null
+          created_at?: string | null
+          description?: string | null
+          generated_images?: Json | null
+          id?: string
+          inspiration_keywords?: string[] | null
+          is_ai_generated?: boolean | null
+          style_direction?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mood_boards_brand_guide_id_fkey"
+            columns: ["brand_guide_id"]
+            isOneToOne: false
+            referencedRelation: "brand_guides"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mood_boards_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
             referencedColumns: ["id"]
           },
         ]

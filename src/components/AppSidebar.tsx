@@ -48,6 +48,9 @@ import {
   MessageSquare,
   Lightbulb,
   Wrench,
+  Sparkles,
+  BookOpen,
+  Palette,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -59,20 +62,25 @@ const menuItems = [
   { title: "Home", url: "/", icon: Home },
   { title: "Launch Pad", url: "/launchpad", icon: Rocket },
   { title: "Tasks", url: "/tasks", icon: CheckSquare },
-  { title: "Assets", url: "/assets", icon: FolderOpen },
   { title: "Avatar", url: "/avatar", icon: Users },
   { title: "Support", url: "/support", icon: HelpCircle },
   { title: "Settings", url: "/settings", icon: Settings },
 ];
 
-  const marketingSubItems = [
-    { title: "Profile", url: "/marketing/profile", icon: User },
-    { title: "Services", url: "/marketing/services", icon: TrendingUp },
-    { title: "Ideas", url: "/marketing/ideas", icon: Lightbulb },
-    { title: "Tools", url: "/marketing/tools", icon: Wrench },
-    { title: "Flowchart", url: "/marketing/flowchart", icon: GitBranch },
-    { title: "Reports", url: "/marketing/reports", icon: FileText },
-  ];
+const brandSubItems = [
+  { title: "Guide", url: "/brand/guide", icon: BookOpen },
+  { title: "Mood Board", url: "/brand/moodboard", icon: Palette },
+  { title: "Assets", url: "/brand/assets", icon: FolderOpen },
+];
+
+const marketingSubItems = [
+  { title: "Profile", url: "/marketing/profile", icon: User },
+  { title: "Services", url: "/marketing/services", icon: TrendingUp },
+  { title: "Ideas", url: "/marketing/ideas", icon: Lightbulb },
+  { title: "Tools", url: "/marketing/tools", icon: Wrench },
+  { title: "Flowchart", url: "/marketing/flowchart", icon: GitBranch },
+  { title: "Reports", url: "/marketing/reports", icon: FileText },
+];
 
 const communicationsSubItems = [
   { title: "Meetings", url: "/meetings", icon: Calendar },
@@ -86,6 +94,7 @@ export function AppSidebar() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [userRole, setUserRole] = useState<string>("");
+  const [brandOpen, setBrandOpen] = useState(false);
   const [marketingOpen, setMarketingOpen] = useState(true);
   const [communicationsOpen, setCommunicationsOpen] = useState(false);
   const { isComplete } = useLaunchPadStatus();
@@ -221,7 +230,7 @@ export function AppSidebar() {
                 </Collapsible>
               )}
 
-              {menuItems.slice(1, 5).map((item) => (
+              {menuItems.slice(1, 3).map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <NavLink to={item.url} end className={getNavClass}>
@@ -240,6 +249,53 @@ export function AppSidebar() {
                           )}
                         </span>
                       )}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+
+              <Collapsible open={brandOpen} onOpenChange={setBrandOpen}>
+                <SidebarMenuItem>
+                  <CollapsibleTrigger asChild>
+                    <SidebarMenuButton>
+                      <Sparkles className="h-4 w-4" />
+                      {!collapsed && (
+                        <>
+                          <span>Brand</span>
+                          <ChevronDown 
+                            className={`ml-auto h-4 w-4 transition-transform ${
+                              brandOpen ? "rotate-180" : ""
+                            }`}
+                          />
+                        </>
+                      )}
+                    </SidebarMenuButton>
+                  </CollapsibleTrigger>
+                  {!collapsed && (
+                    <CollapsibleContent>
+                      <SidebarMenuSub>
+                        {brandSubItems.map((subItem) => (
+                          <SidebarMenuSubItem key={subItem.title}>
+                            <SidebarMenuSubButton asChild>
+                              <NavLink to={subItem.url} end className={getNavClass}>
+                                <subItem.icon className="h-4 w-4" />
+                                <span>{subItem.title}</span>
+                              </NavLink>
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
+                        ))}
+                      </SidebarMenuSub>
+                    </CollapsibleContent>
+                  )}
+                </SidebarMenuItem>
+              </Collapsible>
+
+              {menuItems.slice(3, 4).map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild>
+                    <NavLink to={item.url} end className={getNavClass}>
+                      <item.icon className="h-4 w-4" />
+                      {!collapsed && <span>{item.title}</span>}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -281,7 +337,7 @@ export function AppSidebar() {
                 </SidebarMenuItem>
               </Collapsible>
 
-              {menuItems.slice(5).map((item) => (
+              {menuItems.slice(4).map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <NavLink to={item.url} end className={getNavClass}>
