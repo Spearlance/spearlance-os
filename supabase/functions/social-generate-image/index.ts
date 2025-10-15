@@ -58,6 +58,13 @@ Design Requirements:
 - Professional quality suitable for Instagram/Facebook
 - 1080x1080px square format
 
+CRITICAL - DO NOT INCLUDE:
+- NO logos, watermarks, or branding symbols
+- NO date stamps, seasonal tags, or "Winter 2025" style labels
+- NO fake company names or fabricated branding
+- NO complex graphics that compete with the message
+- Keep text overlays minimal and relevant to caption only
+
 ${brand?.imagery_style ? `Imagery Style: ${brand.imagery_style}` : ''}
 
 Generate a clean, eye-catching image that represents this message visually.`;
