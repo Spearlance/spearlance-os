@@ -72,6 +72,24 @@ export default function MarketingProfile() {
     primary_contact_email: ""
   });
 
+  // Economics editing states
+  const [editingEconomics, setEditingEconomics] = useState(false);
+  const [savingEconomics, setSavingEconomics] = useState(false);
+  const [economicsForm, setEconomicsForm] = useState({
+    aov: null as number | null,
+    ltv: null as number | null,
+    annual_revenue_goal: null as number | null,
+    sales_process: ""
+  });
+
+  // Brand voice editing states
+  const [editingBrandVoice, setEditingBrandVoice] = useState(false);
+  const [savingBrandVoice, setSavingBrandVoice] = useState(false);
+  const [brandVoiceForm, setBrandVoiceForm] = useState({
+    tone: "",
+    words_to_avoid: ""
+  });
+
   // Competitor states
   const [competitors, setCompetitors] = useState<any[]>([]);
   const [loadingCompetitors, setLoadingCompetitors] = useState(true);
@@ -116,6 +134,28 @@ export default function MarketingProfile() {
       setPrimaryContactForm({
         primary_contact_name: discoveryData.contacts.primary_name || "",
         primary_contact_email: discoveryData.contacts.primary_email || ""
+      });
+    }
+  }, [discoveryData]);
+
+  // Initialize economics form
+  useEffect(() => {
+    if (discoveryData) {
+      setEconomicsForm({
+        aov: discoveryData.model.aov || null,
+        ltv: discoveryData.model.ltv || null,
+        annual_revenue_goal: discoveryData.goals.annual_revenue_goal || null,
+        sales_process: discoveryData.model.sales_process || ""
+      });
+    }
+  }, [discoveryData]);
+
+  // Initialize brand voice form
+  useEffect(() => {
+    if (discoveryData?.voice) {
+      setBrandVoiceForm({
+        tone: discoveryData.voice.tone || "",
+        words_to_avoid: discoveryData.voice.words_to_avoid || ""
       });
     }
   }, [discoveryData]);
@@ -422,6 +462,82 @@ export default function MarketingProfile() {
       });
     } finally {
       setSavingPrimaryContact(false);
+    }
+  };
+
+  const handleSaveEconomics = async () => {
+    if (!selectedClient) return;
+
+    setSavingEconomics(true);
+    
+    try {
+      const { error } = await supabase
+        .from("client_business_model")
+        .upsert({
+          client_id: selectedClient.id,
+          aov: economicsForm.aov,
+          ltv: economicsForm.ltv,
+          annual_revenue_goal: economicsForm.annual_revenue_goal,
+          sales_process: economicsForm.sales_process.trim() || null,
+        }, {
+          onConflict: 'client_id'
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Business economics updated successfully",
+      });
+      
+      setEditingEconomics(false);
+      await loadProfileData();
+    } catch (error: any) {
+      console.error("Error updating economics:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update business economics",
+        variant: "destructive",
+      });
+    } finally {
+      setSavingEconomics(false);
+    }
+  };
+
+  const handleSaveBrandVoice = async () => {
+    if (!selectedClient) return;
+
+    setSavingBrandVoice(true);
+    
+    try {
+      const { error } = await supabase
+        .from("client_brand_voice")
+        .upsert({
+          client_id: selectedClient.id,
+          tone: brandVoiceForm.tone.trim() || null,
+          words_to_avoid: brandVoiceForm.words_to_avoid.trim() || null,
+        }, {
+          onConflict: 'client_id'
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Brand voice updated successfully",
+      });
+      
+      setEditingBrandVoice(false);
+      await loadProfileData();
+    } catch (error: any) {
+      console.error("Error updating brand voice:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update brand voice",
+        variant: "destructive",
+      });
+    } finally {
+      setSavingBrandVoice(false);
     }
   };
 
@@ -899,28 +1015,145 @@ export default function MarketingProfile() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Economics</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                {discoveryData.model.aov && (
-                  <div>
-                    <p className="text-sm text-muted-foreground mb-1">Average Order Value</p>
-                    <p className="text-2xl font-bold">${discoveryData.model.aov.toLocaleString()}</p>
+              <div className="flex items-center justify-between">
+                <CardTitle>Economics</CardTitle>
+                {editingEconomics ? (
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setEditingEconomics(false);
+                        setEconomicsForm({
+                          aov: discoveryData.model.aov || null,
+                          ltv: discoveryData.model.ltv || null,
+                          annual_revenue_goal: discoveryData.goals.annual_revenue_goal || null,
+                          sales_process: discoveryData.model.sales_process || ""
+                        });
+                      }}
+                      disabled={savingEconomics}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={handleSaveEconomics}
+                      disabled={savingEconomics}
+                    >
+                      {savingEconomics ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        "Save Changes"
+                      )}
+                    </Button>
                   </div>
-                )}
-                {discoveryData.model.ltv && (
-                  <div>
-                    <p className="text-sm text-muted-foreground mb-1">Lifetime Value</p>
-                    <p className="text-2xl font-bold">${discoveryData.model.ltv.toLocaleString()}</p>
-                  </div>
+                ) : (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setEditingEconomics(true)}
+                  >
+                    <Edit className="h-4 w-4 mr-2" />
+                    Edit
+                  </Button>
                 )}
               </div>
-              {discoveryData.model.sales_process && (
-                <div>
-                  <p className="text-sm text-muted-foreground mb-2">Sales Process</p>
-                  <p className="text-sm whitespace-pre-wrap">{discoveryData.model.sales_process}</p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {editingEconomics ? (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <Label htmlFor="aov">Average Order Value ($)</Label>
+                      <Input
+                        id="aov"
+                        type="number"
+                        value={economicsForm.aov || ""}
+                        onChange={(e) => setEconomicsForm({
+                          ...economicsForm,
+                          aov: e.target.value ? parseFloat(e.target.value) : null
+                        })}
+                        placeholder="0"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="ltv">Lifetime Value ($)</Label>
+                      <Input
+                        id="ltv"
+                        type="number"
+                        value={economicsForm.ltv || ""}
+                        onChange={(e) => setEconomicsForm({
+                          ...economicsForm,
+                          ltv: e.target.value ? parseFloat(e.target.value) : null
+                        })}
+                        placeholder="0"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="annual_revenue_goal">Annual Revenue Goal ($)</Label>
+                      <Input
+                        id="annual_revenue_goal"
+                        type="number"
+                        value={economicsForm.annual_revenue_goal || ""}
+                        onChange={(e) => setEconomicsForm({
+                          ...economicsForm,
+                          annual_revenue_goal: e.target.value ? parseFloat(e.target.value) : null
+                        })}
+                        placeholder="0"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Label htmlFor="sales_process">Sales Process</Label>
+                    <Textarea
+                      id="sales_process"
+                      value={economicsForm.sales_process}
+                      onChange={(e) => setEconomicsForm({
+                        ...economicsForm,
+                        sales_process: e.target.value
+                      })}
+                      placeholder="Describe your sales process..."
+                      rows={4}
+                    />
+                  </div>
                 </div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-2 gap-4">
+                    {discoveryData.model.aov && (
+                      <div>
+                        <p className="text-sm text-muted-foreground mb-1">Average Order Value</p>
+                        <p className="text-2xl font-bold">${discoveryData.model.aov.toLocaleString()}</p>
+                      </div>
+                    )}
+                    {discoveryData.model.ltv && (
+                      <div>
+                        <p className="text-sm text-muted-foreground mb-1">Lifetime Value</p>
+                        <p className="text-2xl font-bold">${discoveryData.model.ltv.toLocaleString()}</p>
+                      </div>
+                    )}
+                    {discoveryData.goals.annual_revenue_goal && (
+                      <div>
+                        <p className="text-sm text-muted-foreground mb-1">Annual Revenue Goal</p>
+                        <p className="text-2xl font-bold">${discoveryData.goals.annual_revenue_goal.toLocaleString()}</p>
+                      </div>
+                    )}
+                  </div>
+                  {discoveryData.model.sales_process && (
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-2">Sales Process</p>
+                      <p className="text-sm whitespace-pre-wrap">{discoveryData.model.sales_process}</p>
+                    </div>
+                  )}
+                  {!discoveryData.model.aov && !discoveryData.model.ltv && !discoveryData.goals.annual_revenue_goal && !discoveryData.model.sales_process && (
+                    <p className="text-sm text-muted-foreground text-center py-4">
+                      No economics data. Click "Edit" to add details.
+                    </p>
+                  )}
+                </>
               )}
             </CardContent>
           </Card>
@@ -1353,25 +1586,106 @@ export default function MarketingProfile() {
 
         {/* BRAND VOICE TAB */}
         <TabsContent value="voice" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Voice & Tone</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {discoveryData.voice.tone && (
-                <div>
-                  <p className="text-sm text-muted-foreground mb-2">Brand Personality</p>
-                  <p className="whitespace-pre-wrap">{discoveryData.voice.tone}</p>
-                </div>
-              )}
-              {discoveryData.voice.words_to_avoid && (
-                <div>
-                  <p className="text-sm text-muted-foreground mb-2">Words to Avoid</p>
-                  <p className="text-sm whitespace-pre-wrap">{discoveryData.voice.words_to_avoid}</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle>Voice & Tone</CardTitle>
+                    {editingBrandVoice ? (
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setEditingBrandVoice(false);
+                            setBrandVoiceForm({
+                              tone: discoveryData.voice.tone || "",
+                              words_to_avoid: discoveryData.voice.words_to_avoid || ""
+                            });
+                          }}
+                          disabled={savingBrandVoice}
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={handleSaveBrandVoice}
+                          disabled={savingBrandVoice}
+                        >
+                          {savingBrandVoice ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              Saving...
+                            </>
+                          ) : (
+                            "Save Changes"
+                          )}
+                        </Button>
+                      </div>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setEditingBrandVoice(true)}
+                      >
+                        <Edit className="h-4 w-4 mr-2" />
+                        Edit
+                      </Button>
+                    )}
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {editingBrandVoice ? (
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="tone">Brand Personality/Tone</Label>
+                        <Textarea
+                          id="tone"
+                          value={brandVoiceForm.tone}
+                          onChange={(e) => setBrandVoiceForm({
+                            ...brandVoiceForm,
+                            tone: e.target.value
+                          })}
+                          placeholder="Describe your brand's voice and personality..."
+                          rows={4}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="words_to_avoid">Words to Avoid</Label>
+                        <Textarea
+                          id="words_to_avoid"
+                          value={brandVoiceForm.words_to_avoid}
+                          onChange={(e) => setBrandVoiceForm({
+                            ...brandVoiceForm,
+                            words_to_avoid: e.target.value
+                          })}
+                          placeholder="List words or phrases to avoid..."
+                          rows={3}
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      {discoveryData.voice.tone && (
+                        <div>
+                          <p className="text-sm text-muted-foreground mb-2">Brand Personality</p>
+                          <p className="whitespace-pre-wrap">{discoveryData.voice.tone}</p>
+                        </div>
+                      )}
+                      {discoveryData.voice.words_to_avoid && (
+                        <div>
+                          <p className="text-sm text-muted-foreground mb-2">Words to Avoid</p>
+                          <p className="text-sm whitespace-pre-wrap">{discoveryData.voice.words_to_avoid}</p>
+                        </div>
+                      )}
+                      {!discoveryData.voice.tone && !discoveryData.voice.words_to_avoid && (
+                        <p className="text-sm text-muted-foreground text-center py-4">
+                          No brand voice information. Click "Edit" to add details.
+                        </p>
+                      )}
+                    </>
+                  )}
+                </CardContent>
+              </Card>
 
           <Card>
             <CardHeader>
