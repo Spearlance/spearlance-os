@@ -139,10 +139,25 @@ export function StageDiscovery({ submissionId, initialData, onContinue, onSaveEx
         }
       }
 
+      // Get existing responses_json to preserve other stage data
+      const { data: submissionData } = await supabase
+        .from("launchpad_submissions")
+        .select("responses_json")
+        .eq("id", submissionId)
+        .single();
+
+      if (!submissionData) throw new Error("Submission not found");
+
+      // Merge with existing data instead of overwriting
+      const updatedResponses = {
+        ...((submissionData.responses_json as Record<string, any>) || {}),
+        discovery: data,
+      };
+
       const { error } = await supabase
         .from("launchpad_submissions")
         .update({
-          responses_json: { discovery: data } as any,
+          responses_json: updatedResponses as any,
           updated_at: new Date().toISOString(),
         })
         .eq("id", submissionId);

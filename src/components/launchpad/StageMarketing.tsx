@@ -86,13 +86,33 @@ export function StageMarketing({ submissionId, onContinue, onBack, onSaveExit }:
   };
 
   const handleContinue = async () => {
+    // Get existing responses_json to preserve other stage data
+    const { data: submissionData } = await supabase
+      .from("launchpad_submissions")
+      .select("responses_json")
+      .eq("id", submissionId)
+      .single();
+
+    if (!submissionData) {
+      toast({
+        title: "Error",
+        description: "Failed to load submission data",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Merge with existing data instead of overwriting
+    const updatedResponses = {
+      ...((submissionData.responses_json as Record<string, any>) || {}),
+      marketing: { services_completed: true },
+    };
+
     const { error } = await supabase
       .from("launchpad_submissions")
       .update({ 
         stage: "access",
-        responses_json: {
-          marketing: { services_completed: true }
-        }
+        responses_json: updatedResponses as any,
       })
       .eq("id", submissionId);
 
