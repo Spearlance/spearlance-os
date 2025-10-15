@@ -2,6 +2,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { ChevronDown } from "lucide-react";
 
 const FONT_PAIRINGS = [
   {
@@ -82,40 +84,11 @@ export default function FontPairingSelector({
   };
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Font Pairing Presets</CardTitle>
-          <CardDescription>Choose from expertly curated font combinations</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {FONT_PAIRINGS.map((pairing) => (
-              <div
-                key={pairing.name}
-                className="border rounded-lg p-4 cursor-pointer hover:border-primary transition-colors"
-                onClick={() => applyPairing(pairing)}
-              >
-                <p className="font-medium mb-3 text-sm">{pairing.name}</p>
-                <div className="space-y-2">
-                  <p className="text-2xl" style={{ fontFamily: pairing.primary }}>
-                    {pairing.primary}
-                  </p>
-                  <p className="text-sm" style={{ fontFamily: pairing.secondary }}>
-                    {pairing.secondary}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Custom Font Selection</CardTitle>
-          <CardDescription>Choose individual fonts for your brand</CardDescription>
-        </CardHeader>
+    <Card>
+      <CardHeader>
+        <CardTitle>Typography</CardTitle>
+        <CardDescription>Choose fonts for your brand</CardDescription>
+      </CardHeader>
         <CardContent className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -178,8 +151,35 @@ export default function FontPairingSelector({
               rows={4}
             />
           </div>
+
+          <Collapsible className="mt-6">
+            <CollapsibleTrigger className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+              <ChevronDown className="h-4 w-4" />
+              Need inspiration? Browse font pairing presets
+            </CollapsibleTrigger>
+            <CollapsibleContent className="mt-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                {FONT_PAIRINGS.map((pairing) => (
+                  <div
+                    key={pairing.name}
+                    className="border rounded-lg p-3 cursor-pointer hover:border-primary transition-colors"
+                    onClick={() => applyPairing(pairing)}
+                  >
+                    <p className="font-medium text-sm mb-2">{pairing.name}</p>
+                    <div className="space-y-1">
+                      <p className="text-lg font-bold" style={{ fontFamily: pairing.primary }}>
+                        {pairing.primary}
+                      </p>
+                      <p className="text-xs" style={{ fontFamily: pairing.secondary }}>
+                        {pairing.secondary}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
         </CardContent>
       </Card>
-    </div>
   );
 }
