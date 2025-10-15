@@ -82,7 +82,7 @@ Generate a clean, eye-catching image that represents this message visually.`;
     }
 
     // Call Lovable AI image generation
-    const aiResponse = await fetch('https://api.lovable.app/v1/images/generations', {
+    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${Deno.env.get('LOVABLE_API_KEY')}`,
@@ -90,9 +90,8 @@ Generate a clean, eye-catching image that represents this message visually.`;
       },
       body: JSON.stringify({
         model: 'google/gemini-2.5-flash-image-preview',
-        prompt: basePrompt,
-        n: 2,
-        size: '1024x1024'
+        messages: messages,
+        modalities: ['image', 'text']
       }),
     });
 
@@ -104,8 +103,10 @@ Generate a clean, eye-catching image that represents this message visually.`;
 
     const aiData = await aiResponse.json();
     
-    const images = aiData.data.map((img: any, index: number) => ({
-      image_url: img.url,
+    // Extract images from chat completion response
+    const generatedImages = aiData.choices?.[0]?.message?.images || [];
+    const images = generatedImages.map((img: any, index: number) => ({
+      image_url: img.image_url?.url,
       prompt_used: basePrompt,
       variation_number: index + 1
     }));

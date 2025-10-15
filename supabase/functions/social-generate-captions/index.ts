@@ -85,7 +85,7 @@ Return JSON in this format:
 }`;
 
     // Call Lovable AI
-    const aiResponse = await fetch('https://api.lovable.app/v1/chat/completions', {
+    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${Deno.env.get('LOVABLE_API_KEY')}`,
