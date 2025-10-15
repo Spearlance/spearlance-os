@@ -1,11 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useClient } from "@/contexts/ClientContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Save } from "lucide-react";
+import { Loader2, Save, Check } from "lucide-react";
 import ColorPalettePicker from "@/components/brand/ColorPalettePicker";
 import FontPairingSelector from "@/components/brand/FontPairingSelector";
 import AestheticSelector from "@/components/brand/AestheticSelector";
@@ -18,6 +18,9 @@ export default function BrandGuide() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [brandGuideId, setBrandGuideId] = useState<string | null>(null);
+  const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const lastSavedStateRef = useRef<string>('');
   
   const [brandGuide, setBrandGuide] = useState({
     primary_color: "#3B82F6",
@@ -40,6 +43,59 @@ export default function BrandGuide() {
       loadBrandGuide();
     }
   }, [selectedClient]);
+
+  const autoSave = useCallback(async () => {
+    if (!selectedClient) return;
+    
+    const currentState = JSON.stringify(brandGuide);
+    if (currentState === lastSavedStateRef.current) return;
+    
+    setAutoSaveStatus('saving');
+    
+    try {
+      if (brandGuideId) {
+        const { error } = await supabase
+          .from("brand_guides")
+          .update(brandGuide)
+          .eq("id", brandGuideId);
+        if (error) throw error;
+      } else {
+        const { data, error } = await supabase
+          .from("brand_guides")
+          .insert([{ ...brandGuide, client_id: selectedClient.id }])
+          .select()
+          .single();
+        if (error) throw error;
+        setBrandGuideId(data.id);
+      }
+      
+      lastSavedStateRef.current = currentState;
+      setAutoSaveStatus('saved');
+      
+      setTimeout(() => setAutoSaveStatus('idle'), 2000);
+    } catch (error) {
+      console.error("Auto-save error:", error);
+      setAutoSaveStatus('idle');
+    }
+  }, [brandGuide, brandGuideId, selectedClient]);
+
+  useEffect(() => {
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current);
+    }
+    
+    if (loading) return;
+    
+    autoSaveTimerRef.current = setTimeout(() => {
+      autoSave();
+    }, 2000);
+    
+    return () => {
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
+      }
+    };
+  }, [brandGuide, autoSave, loading]);
 
   const loadBrandGuide = async () => {
     if (!selectedClient) return;
@@ -198,10 +254,24 @@ export default function BrandGuide() {
           <h1 className="text-3xl font-bold">Brand Guide</h1>
           <p className="text-muted-foreground mt-1">Define your brand identity and visual guidelines</p>
         </div>
-        <Button onClick={handleSave} disabled={saving}>
-          {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
-          Save Brand Guide
-        </Button>
+        <div className="flex items-center gap-4">
+          {autoSaveStatus === 'saving' && (
+            <span className="text-sm text-muted-foreground flex items-center gap-2">
+              <Loader2 className="h-3 w-3 animate-spin" />
+              Saving...
+            </span>
+          )}
+          {autoSaveStatus === 'saved' && (
+            <span className="text-sm text-green-600 flex items-center gap-2">
+              <Check className="h-3 w-3" />
+              All changes saved
+            </span>
+          )}
+          <Button onClick={handleSave} disabled={saving}>
+            {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
+            Save Brand Guide
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
