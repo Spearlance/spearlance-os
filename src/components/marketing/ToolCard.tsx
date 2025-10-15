@@ -77,59 +77,22 @@ export function ToolCard({ tool, type, isAdmin, onEdit, onDelete, onAddToClient 
             )}
 
             <div className="flex items-center justify-between gap-2 mt-3">
-              <div className="flex gap-2">
-                <Button
-                  variant="default"
-                  size="sm"
-                  asChild
-                >
-                  <a href={tool.url} target="_blank" rel="noopener noreferrer">
-                    <ExternalLink className="h-3 w-3 mr-2" />
-                    {type === 'recommended' ? 'Learn More' : 'Open Tool'}
-                  </a>
-                </Button>
-
-                {/* Show Sign Up button for tools with affiliate links */}
-                {(type === 'recommended' || tool.affiliate_url) && (
+              {type === 'recommended' ? (
+                <>
+                  {/* Left: Sign Up Button */}
                   <Button
-                    variant="outline"
+                    variant="default"
                     size="sm"
                     asChild
                   >
-                    <a
-                      href={type === 'recommended' ? tool.url : tool.affiliate_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
+                    <a href={tool.url} target="_blank" rel="noopener noreferrer">
                       <Gift className="h-3 w-3 mr-2" />
                       Sign Up
                     </a>
                   </Button>
-                )}
-              </div>
 
-              <div className="flex items-center gap-2">
-                {type === 'client' && onEdit && onDelete && (
-                  <>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={onEdit}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={onDelete}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </>
-                )}
-
-                {type === 'recommended' && (
-                  <>
+                  {/* Right: Edit (admin), Add, Delete (admin) */}
+                  <div className="flex items-center gap-2">
                     {isAdmin && onEdit && (
                       <Button
                         variant="ghost"
@@ -137,15 +100,6 @@ export function ToolCard({ tool, type, isAdmin, onEdit, onDelete, onAddToClient 
                         onClick={onEdit}
                       >
                         <Edit className="h-4 w-4" />
-                      </Button>
-                    )}
-                    {isAdmin && onDelete && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={onDelete}
-                      >
-                        <Trash2 className="h-4 w-4" />
                       </Button>
                     )}
                     {onAddToClient && (
@@ -158,9 +112,72 @@ export function ToolCard({ tool, type, isAdmin, onEdit, onDelete, onAddToClient 
                         Add
                       </Button>
                     )}
-                  </>
-                )}
-              </div>
+                    {isAdmin && onDelete && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={onDelete}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <>
+                  {/* Client Tools Layout */}
+                  <div className="flex gap-2">
+                    <Button
+                      variant="default"
+                      size="sm"
+                      asChild
+                    >
+                      <a href={tool.url} target="_blank" rel="noopener noreferrer">
+                        <ExternalLink className="h-3 w-3 mr-2" />
+                        Open Tool
+                      </a>
+                    </Button>
+
+                    {tool.affiliate_url && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        asChild
+                      >
+                        <a
+                          href={tool.affiliate_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <Gift className="h-3 w-3 mr-2" />
+                          Sign Up
+                        </a>
+                      </Button>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    {onEdit && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={onEdit}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                    )}
+                    {onDelete && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={onDelete}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>
