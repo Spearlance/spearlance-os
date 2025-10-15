@@ -4,7 +4,7 @@ import { useClient } from "@/contexts/ClientContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Calendar, CheckSquare, FolderOpen, Users, ExternalLink, Plus, Rocket } from "lucide-react";
+import { Calendar, CheckSquare, FolderOpen, Users, ExternalLink, Plus, Rocket, Wrench } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useLaunchPadStatus } from "@/hooks/useLaunchPadStatus";
@@ -19,6 +19,7 @@ interface DashboardStats {
   recentMeetings: any[];
   recentAssets: any[];
   avatar?: any;
+  marketingTools: any[];
 }
 
 const Dashboard = () => {
@@ -29,6 +30,7 @@ const Dashboard = () => {
     taskCounts: { to_do: 0, in_progress: 0, done: 0 },
     recentMeetings: [],
     recentAssets: [],
+    marketingTools: [],
   });
   const [loading, setLoading] = useState(true);
 
@@ -89,12 +91,21 @@ const Dashboard = () => {
         .eq('client_id', selectedClient.id)
         .single();
 
+      // Load marketing tools
+      const { data: tools } = await supabase
+        .from('marketing_tools')
+        .select('id, name, url, logo_url, category')
+        .eq('client_id', selectedClient.id)
+        .order('name')
+        .limit(8);
+
       setStats({
         nextMeeting: nextMeeting || undefined,
         taskCounts,
         recentMeetings: meetings || [],
         recentAssets: assets || [],
         avatar: avatar || undefined,
+        marketingTools: tools || [],
       });
     } catch (error) {
       console.error('Error loading dashboard data:', error);
@@ -283,45 +294,50 @@ const Dashboard = () => {
         </Card>
       )}
 
-      {selectedClient.website_url && (
+      {stats.marketingTools.length > 0 && (
         <Card className="shadow-elegant">
           <CardHeader>
-            <CardTitle>Quick Links</CardTitle>
-            <CardDescription>Access important resources</CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Your Marketing Tools</CardTitle>
+                <CardDescription>Quick access to your platforms</CardDescription>
+              </div>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => navigate("/marketing/tools")}
+              >
+                View All
+              </Button>
+            </div>
           </CardHeader>
-          <CardContent className="flex flex-wrap gap-2">
-            {selectedClient.website_url && (
-              <Button variant="outline" size="sm" asChild>
-                <a href={selectedClient.website_url} target="_blank" rel="noopener noreferrer">
-                  <ExternalLink className="h-4 w-4 mr-2" />
-                  Website
-                </a>
-              </Button>
-            )}
-            {selectedClient.oviond_url && (
-              <Button variant="outline" size="sm" asChild>
-                <a href={selectedClient.oviond_url} target="_blank" rel="noopener noreferrer">
-                  <ExternalLink className="h-4 w-4 mr-2" />
-                  Oviond
-                </a>
-              </Button>
-            )}
-            {selectedClient.drive_folder_url && (
-              <Button variant="outline" size="sm" asChild>
-                <a href={selectedClient.drive_folder_url} target="_blank" rel="noopener noreferrer">
-                  <ExternalLink className="h-4 w-4 mr-2" />
-                  Drive
-                </a>
-              </Button>
-            )}
-            {selectedClient.canva_folder_url && (
-              <Button variant="outline" size="sm" asChild>
-                <a href={selectedClient.canva_folder_url} target="_blank" rel="noopener noreferrer">
-                  <ExternalLink className="h-4 w-4 mr-2" />
-                  Canva
-                </a>
-              </Button>
-            )}
+          <CardContent>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+              {stats.marketingTools.map((tool) => (
+                <Button
+                  key={tool.id}
+                  variant="outline"
+                  size="sm"
+                  asChild
+                  className="h-auto flex-col gap-2 p-4"
+                >
+                  <a href={tool.url} target="_blank" rel="noopener noreferrer">
+                    {tool.logo_url ? (
+                      <img 
+                        src={tool.logo_url} 
+                        alt={tool.name}
+                        className="h-8 w-8 object-contain"
+                      />
+                    ) : (
+                      <Wrench className="h-6 w-6" />
+                    )}
+                    <span className="text-xs font-medium text-center line-clamp-2">
+                      {tool.name}
+                    </span>
+                  </a>
+                </Button>
+              ))}
+            </div>
           </CardContent>
         </Card>
       )}

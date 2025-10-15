@@ -48,40 +48,31 @@ export default function Settings() {
   }, []);
 
   const handleSave = async () => {
-    if (!client) return;
+    if (!userProfile) return;
 
     setLoading(true);
-    const { error } = await supabase
-      .from("clients")
-      .update({
-        website_url: client.website_url,
-        oviond_url: client.oviond_url,
-        drive_folder_url: client.drive_folder_url,
-        canva_folder_url: client.canva_folder_url,
-        booking_permissions: client.booking_permissions,
-      })
-      .eq("id", client.id);
-
-    // Also update profile calendar settings if they exist
-    if (userProfile && (userProfile.cal_booking_enabled !== undefined || userProfile.cal_availability_view_only !== undefined)) {
+    
+    // Update profile calendar settings
+    if (userProfile.cal_booking_enabled !== undefined || userProfile.cal_availability_view_only !== undefined) {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        await supabase
+        const { error } = await supabase
           .from("profiles")
           .update({
             cal_booking_enabled: userProfile.cal_booking_enabled,
             cal_availability_view_only: userProfile.cal_availability_view_only,
           })
           .eq("id", user.id);
+        
+        if (error) {
+          toast({ title: "Error saving settings", variant: "destructive" });
+        } else {
+          toast({ title: "Settings saved successfully" });
+          await refreshClients();
+        }
       }
     }
-
-    if (error) {
-      toast({ title: "Error saving settings", variant: "destructive" });
-    } else {
-      toast({ title: "Settings saved successfully" });
-      await refreshClients();
-    }
+    
     setLoading(false);
   };
 
@@ -107,7 +98,6 @@ export default function Settings() {
         <Tabs defaultValue="general" className="w-full">
           <TabsList>
             <TabsTrigger value="general">General</TabsTrigger>
-            <TabsTrigger value="bookmarks">Bookmarks</TabsTrigger>
             {showCalendarTab && <TabsTrigger value="calendar">Calendar</TabsTrigger>}
             <TabsTrigger value="team">Team</TabsTrigger>
           </TabsList>
@@ -126,59 +116,6 @@ export default function Settings() {
                 <Label>Status</Label>
                 <Input value={client.status} disabled />
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="bookmarks" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Quick Links</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label>Website URL</Label>
-                <Input
-                  value={client.website_url || ""}
-                  onChange={(e) =>
-                    setClient({ ...client, website_url: e.target.value })
-                  }
-                  placeholder="https://"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Oviond URL</Label>
-                <Input
-                  value={client.oviond_url || ""}
-                  onChange={(e) =>
-                    setClient({ ...client, oviond_url: e.target.value })
-                  }
-                  placeholder="https://"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Drive Folder URL</Label>
-                <Input
-                  value={client.drive_folder_url || ""}
-                  onChange={(e) =>
-                    setClient({ ...client, drive_folder_url: e.target.value })
-                  }
-                  placeholder="https://"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Canva Folder URL</Label>
-                <Input
-                  value={client.canva_folder_url || ""}
-                  onChange={(e) =>
-                    setClient({ ...client, canva_folder_url: e.target.value })
-                  }
-                  placeholder="https://"
-                />
-              </div>
-              <Button onClick={handleSave} disabled={loading}>
-                Save Bookmarks
-              </Button>
             </CardContent>
           </Card>
         </TabsContent>
