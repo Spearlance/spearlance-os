@@ -94,6 +94,9 @@ export default function Admin() {
 
   const handleRoleChange = async (userId: string, newRole: "admin" | "fmm" | "client") => {
     try {
+      const user = users.find(u => u.id === userId);
+      const oldRole = user?.role;
+
       // Update profiles table
       await supabase
         .from("profiles")
@@ -105,6 +108,18 @@ export default function Admin() {
         .from("user_roles")
         .update({ role: newRole })
         .eq("user_id", userId);
+
+      // Log admin action
+      try {
+        await supabase.from("admin_audit_logs").insert({
+          action: "update_role",
+          target_user_id: userId,
+          old_value: { role: oldRole },
+          new_value: { role: newRole }
+        });
+      } catch (logError) {
+        console.error("Failed to log admin action:", logError);
+      }
 
       toast({ title: "Role updated successfully" });
       loadData();
@@ -118,10 +133,25 @@ export default function Admin() {
 
   const handleClientAssignment = async (userId: string, clientIds: string[]) => {
     try {
+      const user = users.find(u => u.id === userId);
+      const oldClientIds = user?.associated_client_ids || [];
+
       await supabase
         .from("profiles")
         .update({ associated_client_ids: clientIds })
         .eq("id", userId);
+
+      // Log admin action
+      try {
+        await supabase.from("admin_audit_logs").insert({
+          action: "assign_clients",
+          target_user_id: userId,
+          old_value: { client_ids: oldClientIds },
+          new_value: { client_ids: clientIds }
+        });
+      } catch (logError) {
+        console.error("Failed to log admin action:", logError);
+      }
 
       toast({ title: "Client assignment updated" });
       loadData();
@@ -150,6 +180,17 @@ export default function Admin() {
         .single();
 
       if (error) throw error;
+
+      // Log admin action
+      try {
+        await supabase.from("admin_audit_logs").insert({
+          action: "create_client",
+          target_client_id: data?.id,
+          new_value: { name: newClientName, status: "active" }
+        });
+      } catch (logError) {
+        console.error("Failed to log admin action:", logError);
+      }
 
       toast({ 
         title: "Client created successfully",
