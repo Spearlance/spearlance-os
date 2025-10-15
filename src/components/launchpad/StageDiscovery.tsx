@@ -233,6 +233,52 @@ export function StageDiscovery({ submissionId, initialData, onContinue, onSaveEx
         }
       }
 
+      // Sync goals to quarterly_goals table
+      if (selectedClient && data.goals?.quarter_goals && data.goals.quarter_goals.length > 0) {
+        const { data: userData } = await supabase.auth.getUser();
+        const currentDate = new Date();
+        const currentQuarter = Math.ceil((currentDate.getMonth() + 1) / 3);
+        const currentYear = currentDate.getFullYear();
+
+        // Check if goals already exist for this client/quarter/year to avoid duplicates
+        const { data: existingGoals } = await supabase
+          .from("quarterly_goals")
+          .select("goal_text")
+          .eq("client_id", selectedClient.id)
+          .eq("quarter", currentQuarter)
+          .eq("year", currentYear);
+
+        const existingGoalTexts = new Set(existingGoals?.map(g => g.goal_text) || []);
+
+        // Only insert goals that don't already exist
+        const newGoals = data.goals.quarter_goals
+          .filter(goalText => !existingGoalTexts.has(goalText))
+          .map(goalText => ({
+            client_id: selectedClient.id,
+            quarter: currentQuarter,
+            year: currentYear,
+            goal_text: goalText,
+            status: 'in_progress',
+            created_by: userData.user?.id,
+          }));
+
+        if (newGoals.length > 0) {
+          const { error: goalsError } = await supabase
+            .from("quarterly_goals")
+            .insert(newGoals);
+
+          if (goalsError) {
+            console.error("Error syncing goals to quarterly_goals:", goalsError);
+            // Don't block progression if goals fail - just log it
+            toast({
+              title: "Warning",
+              description: "Goals saved in LaunchPad but couldn't sync to Goals tracker",
+              variant: "default",
+            });
+          }
+        }
+      }
+
       // Advance stage to marketing
       const { error } = await supabase
         .from("launchpad_submissions")
@@ -477,7 +523,7 @@ export function StageDiscovery({ submissionId, initialData, onContinue, onSaveEx
           <div className="space-y-4">
             <h3 className="font-semibold">Goals</h3>
             <div>
-              <Label>Top 3 Goals (Next 90 Days)</Label>
+              <Label>Top 3 Goals (This Quarter)</Label>
               <div className="flex gap-2 mt-2">
                 <Input
                   placeholder="Add a goal..."
