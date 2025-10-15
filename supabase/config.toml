@@ -9,6 +9,9 @@ verify_jwt = true
 [functions.admin-create-client]
 verify_jwt = true
 
+[functions.admin-delete-user]
+verify_jwt = true
+
 [functions.create-self-service-client]
 verify_jwt = true
 

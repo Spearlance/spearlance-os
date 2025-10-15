@@ -16,6 +16,7 @@ import { AddUserDialog } from "@/components/admin/AddUserDialog";
 import { UserInfoDialog } from "@/components/admin/UserInfoDialog";
 import { EditClientDialog } from "@/components/admin/EditClientDialog";
 import { Admin2FABanner } from "@/components/admin/Admin2FABanner";
+import { DeleteUserDialog } from "@/components/admin/DeleteUserDialog";
 
 export default function Admin() {
   const navigate = useNavigate();
@@ -188,6 +189,28 @@ export default function Admin() {
     }
   };
 
+  const handleDeleteUser = async (userId: string, userName: string, userEmail: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('admin-delete-user', {
+        body: { userId }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "User deleted",
+        description: `${userName} (${userEmail}) has been permanently deleted`,
+      });
+      loadData();
+    } catch (error: any) {
+      toast({
+        title: "Error deleting user",
+        description: error.message || "Failed to delete user",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (loading || !userRole) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -334,6 +357,13 @@ export default function Admin() {
                             </Button>
                           )}
                           <UserInfoDialog user={user} clients={clients} />
+                          {user.role !== 'admin' && (
+                            <DeleteUserDialog
+                              user={user}
+                              clients={clients}
+                              onConfirm={() => handleDeleteUser(user.id, user.name, user.email)}
+                            />
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>
