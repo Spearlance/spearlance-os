@@ -8,6 +8,7 @@ import { useClient } from "@/contexts/ClientContext";
 import { supabase } from "@/integrations/supabase/client";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths } from "date-fns";
 import { SchedulePostDialog } from "./SchedulePostDialog";
+import { EditPostDialog } from "./EditPostDialog";
 
 interface PostSchedulerProps {
   onCreateWithAI?: () => void;
@@ -18,6 +19,7 @@ export const PostScheduler = ({ onCreateWithAI }: PostSchedulerProps) => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
   const [selectedScheduleDate, setSelectedScheduleDate] = useState<Date | null>(null);
+  const [editingPost, setEditingPost] = useState<any | null>(null);
 
   const { data: posts = [], isLoading } = useQuery({
     queryKey: ['social-posts', selectedClient?.id],
@@ -122,6 +124,7 @@ export const PostScheduler = ({ onCreateWithAI }: PostSchedulerProps) => {
                     <div
                       key={post.id}
                       className="group relative rounded overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
+                      onClick={() => setEditingPost(post)}
                     >
                       {post.image_url && (
                         <img
@@ -154,6 +157,15 @@ export const PostScheduler = ({ onCreateWithAI }: PostSchedulerProps) => {
       onCreateWithAI?.();
     }}
   />
+
+  {/* Edit Post Dialog */}
+  {editingPost && (
+    <EditPostDialog
+      post={editingPost}
+      open={!!editingPost}
+      onOpenChange={(open) => !open && setEditingPost(null)}
+    />
+  )}
 
   {/* Legend */}
       <div className="flex items-center gap-6 justify-center">

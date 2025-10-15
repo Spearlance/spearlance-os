@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PostCreator } from "@/components/social/PostCreator";
 import { PostScheduler } from "@/components/social/PostScheduler";
+import { PostsList } from "@/components/social/PostsList";
 import { useClient } from "@/contexts/ClientContext";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
@@ -33,13 +34,18 @@ const SocialMedia = () => {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full max-w-md grid-cols-2">
+        <TabsList className="grid w-full max-w-2xl grid-cols-3">
           <TabsTrigger value="creator">Post Creator</TabsTrigger>
+          <TabsTrigger value="posts">Posts</TabsTrigger>
           <TabsTrigger value="planner">Planner</TabsTrigger>
         </TabsList>
 
         <TabsContent value="creator" className="space-y-6">
           <PostCreator />
+        </TabsContent>
+
+        <TabsContent value="posts" className="space-y-6">
+          <PostsList />
         </TabsContent>
 
         <TabsContent value="planner" className="space-y-6">
