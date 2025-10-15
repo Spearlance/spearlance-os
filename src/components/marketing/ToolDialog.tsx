@@ -15,6 +15,7 @@ interface ToolDialogProps {
   clientId: string;
   onSave: (data: any) => void;
   loading?: boolean;
+  isAdmin?: boolean;
 }
 
 const categories = [
@@ -31,7 +32,7 @@ const categories = [
   { value: "other", label: "Other" },
 ];
 
-export function ToolDialog({ open, onOpenChange, tool, clientId, onSave, loading }: ToolDialogProps) {
+export function ToolDialog({ open, onOpenChange, tool, clientId, onSave, loading, isAdmin = false }: ToolDialogProps) {
   const [formData, setFormData] = useState({
     name: "",
     category: "other",
@@ -91,8 +92,12 @@ export function ToolDialog({ open, onOpenChange, tool, clientId, onSave, loading
       description: formData.description || null,
       credentials_notes: formData.credentials_notes || null,
       cost_per_month: formData.cost_per_month ? parseFloat(formData.cost_per_month) : null,
-      affiliate_url: formData.affiliate_url || null,
     };
+
+    // Only admins can set affiliate URLs
+    if (isAdmin) {
+      saveData.affiliate_url = formData.affiliate_url || null;
+    }
 
     if (tool) {
       saveData.id = tool.id;
@@ -193,19 +198,21 @@ export function ToolDialog({ open, onOpenChange, tool, clientId, onSave, loading
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="affiliate_url">Affiliate/Sign Up Link (Optional)</Label>
-            <Input
-              id="affiliate_url"
-              type="url"
-              value={formData.affiliate_url}
-              onChange={(e) => setFormData(prev => ({ ...prev, affiliate_url: e.target.value }))}
-              placeholder="https://tool.com/signup?ref=yourcode"
-            />
-            <p className="text-xs text-muted-foreground">
-              If provided, a "Sign Up" button will appear on the tool card
-            </p>
-          </div>
+          {isAdmin && (
+            <div className="space-y-2">
+              <Label htmlFor="affiliate_url">Affiliate/Sign Up Link (Optional)</Label>
+              <Input
+                id="affiliate_url"
+                type="url"
+                value={formData.affiliate_url}
+                onChange={(e) => setFormData(prev => ({ ...prev, affiliate_url: e.target.value }))}
+                placeholder="https://tool.com/signup?ref=yourcode"
+              />
+              <p className="text-xs text-muted-foreground">
+                If provided, a "Sign Up" button will appear on the tool card
+              </p>
+            </div>
+          )}
 
           <div className="flex gap-2 justify-end pt-4">
             <Button variant="outline" onClick={() => onOpenChange(false)}>

@@ -427,6 +427,7 @@ export default function MarketingTools() {
         clientId={selectedClient?.id || ''}
         onSave={handleSaveClientTool}
         loading={saving}
+        isAdmin={isAdmin}
       />
 
       {isAdmin && (
