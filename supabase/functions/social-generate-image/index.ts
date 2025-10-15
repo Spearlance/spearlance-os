@@ -65,6 +65,24 @@ CRITICAL - DO NOT INCLUDE:
 - NO complex graphics that compete with the message
 - Keep text overlays minimal and relevant to caption only
 
+HUMAN SUBJECTS GUIDELINES (when people are included):
+- NO hand-holding between adults (unless clearly parent-child)
+- NO romantic gestures, hugging, or physical affection between adults
+- NO poses that could imply romantic relationships or intimacy
+- People should be: walking separately, working independently, smiling at camera, or in clearly professional/family contexts
+- Safe interactions: parent with child, professional colleagues with personal space, individuals looking at camera
+- Focus on: friendly expressions, professional body language, appropriate personal space
+- Diversity is good, but keep all interactions clearly platonic and professional
+
+PRODUCT SAFETY GUIDELINES:
+- NO recognizable products, brand names, or trademarked items
+- NO specific product packaging or labels visible
+- NO technology devices showing brand logos (phones, laptops, etc.)
+- NO vehicles with visible makes/models or branding
+- NO storefronts, retail displays, or branded merchandise
+- Keep focus on people, activities, or generic abstract scenes
+- If objects are needed, use generic, unbranded versions only
+
 ${brand?.imagery_style ? `Imagery Style: ${brand.imagery_style}` : ''}
 
 Generate a clean, eye-catching image that represents this message visually.`;
