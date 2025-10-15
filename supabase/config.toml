@@ -1,5 +1,14 @@
 project_id = "hrmhqybdsdngsvhjqwma"
 
+[functions.admin-update-user-role]
+verify_jwt = true
+
+[functions.admin-assign-clients]
+verify_jwt = true
+
+[functions.admin-create-client]
+verify_jwt = true
+
 [functions.create-self-service-client]
 verify_jwt = true
 

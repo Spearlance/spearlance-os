@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_2fa_status: {
+        Row: {
+          created_at: string | null
+          enrollment_required_by: string | null
+          id: string
+          is_enrolled: boolean
+          last_verified_at: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          enrollment_required_by?: string | null
+          id?: string
+          is_enrolled?: boolean
+          last_verified_at?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          enrollment_required_by?: string | null
+          id?: string
+          is_enrolled?: boolean
+          last_verified_at?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       admin_audit_logs: {
         Row: {
           action: string
@@ -44,6 +74,36 @@ export type Database = {
           old_value?: Json | null
           target_client_id?: string | null
           target_user_id?: string | null
+        }
+        Relationships: []
+      }
+      admin_rate_limits: {
+        Row: {
+          admin_user_id: string
+          created_at: string | null
+          id: string
+          operation: string
+          request_count: number
+          updated_at: string | null
+          window_start: string
+        }
+        Insert: {
+          admin_user_id: string
+          created_at?: string | null
+          id?: string
+          operation: string
+          request_count?: number
+          updated_at?: string | null
+          window_start?: string
+        }
+        Update: {
+          admin_user_id?: string
+          created_at?: string | null
+          id?: string
+          operation?: string
+          request_count?: number
+          updated_at?: string | null
+          window_start?: string
         }
         Relationships: []
       }

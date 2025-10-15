@@ -15,6 +15,7 @@ import { Users, Building2, BarChart3, Loader2, Globe, KeyRound } from "lucide-re
 import { AddUserDialog } from "@/components/admin/AddUserDialog";
 import { UserInfoDialog } from "@/components/admin/UserInfoDialog";
 import { EditClientDialog } from "@/components/admin/EditClientDialog";
+import { Admin2FABanner } from "@/components/admin/Admin2FABanner";
 
 export default function Admin() {
   const navigate = useNavigate();
@@ -94,38 +95,18 @@ export default function Admin() {
 
   const handleRoleChange = async (userId: string, newRole: "admin" | "fmm" | "client") => {
     try {
-      const user = users.find(u => u.id === userId);
-      const oldRole = user?.role;
+      const { data, error } = await supabase.functions.invoke('admin-update-user-role', {
+        body: { userId, newRole }
+      });
 
-      // Update profiles table
-      await supabase
-        .from("profiles")
-        .update({ role: newRole })
-        .eq("id", userId);
+      if (error) throw error;
 
-      // Update user_roles table
-      await supabase
-        .from("user_roles")
-        .update({ role: newRole })
-        .eq("user_id", userId);
-
-      // Log admin action
-      try {
-        await supabase.from("admin_audit_logs").insert({
-          action: "update_role",
-          target_user_id: userId,
-          old_value: { role: oldRole },
-          new_value: { role: newRole }
-        });
-      } catch (logError) {
-        console.error("Failed to log admin action:", logError);
-      }
-
-      toast({ title: "Role updated successfully" });
+      toast({ title: data?.message || "Role updated successfully" });
       loadData();
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Error updating role",
+        description: error.message || "Failed to update user role",
         variant: "destructive",
       });
     }
@@ -133,31 +114,23 @@ export default function Admin() {
 
   const handleClientAssignment = async (userId: string, clientIds: string[]) => {
     try {
-      const user = users.find(u => u.id === userId);
-      const oldClientIds = user?.associated_client_ids || [];
+      const { data, error } = await supabase.functions.invoke('admin-assign-clients', {
+        body: { userId, clientIds }
+      });
 
-      await supabase
-        .from("profiles")
-        .update({ associated_client_ids: clientIds })
-        .eq("id", userId);
+      if (error) throw error;
 
-      // Log admin action
-      try {
-        await supabase.from("admin_audit_logs").insert({
-          action: "assign_clients",
-          target_user_id: userId,
-          old_value: { client_ids: oldClientIds },
-          new_value: { client_ids: clientIds }
-        });
-      } catch (logError) {
-        console.error("Failed to log admin action:", logError);
-      }
-
-      toast({ title: "Client assignment updated" });
+      toast({ 
+        title: data?.message || "Client assignment updated",
+        description: data?.assignedClients?.length > 0 
+          ? `Assigned to: ${data.assignedClients.join(', ')}`
+          : undefined
+      });
       loadData();
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Error updating client assignment",
+        description: error.message || "Failed to assign clients",
         variant: "destructive",
       });
     }
@@ -173,34 +146,22 @@ export default function Admin() {
     }
 
     try {
-      const { data, error } = await supabase
-        .from("clients")
-        .insert([{ name: newClientName, status: "active" } as any])
-        .select()
-        .single();
+      const { data, error } = await supabase.functions.invoke('admin-create-client', {
+        body: { name: newClientName }
+      });
 
       if (error) throw error;
 
-      // Log admin action
-      try {
-        await supabase.from("admin_audit_logs").insert({
-          action: "create_client",
-          target_client_id: data?.id,
-          new_value: { name: newClientName, status: "active" }
-        });
-      } catch (logError) {
-        console.error("Failed to log admin action:", logError);
-      }
-
       toast({ 
-        title: "Client created successfully",
-        description: data?.front_tag ? `Front tag: ${data.front_tag}` : undefined
+        title: data?.message || "Client created successfully",
+        description: data?.client?.front_tag ? `Front tag: ${data.client.front_tag}` : undefined
       });
       setNewClientName("");
       loadData();
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Error creating client",
+        description: error.message || "Failed to create client",
         variant: "destructive",
       });
     }
@@ -241,6 +202,8 @@ export default function Admin() {
         <h1 className="text-3xl font-bold">Admin Dashboard</h1>
         <p className="text-muted-foreground">Manage users, clients, and system settings</p>
       </div>
+
+      <Admin2FABanner />
 
       <Tabs defaultValue="overview" className="w-full">
         <TabsList>

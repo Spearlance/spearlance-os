@@ -26,6 +26,7 @@ import Support from "./pages/Support";
 import TicketDetail from "./pages/TicketDetail";
 import Settings from "./pages/Settings";
 import Admin from "./pages/Admin";
+import Admin2FASetup from "./pages/Admin2FASetup";
 import CalendarCallback from "./pages/CalendarCallback";
 import ResetPassword from "./pages/ResetPassword";
 
@@ -67,6 +68,7 @@ const App = () => (
             <Route path="/support/:id" element={<MainLayout><TicketDetail /></MainLayout>} />
             <Route path="/settings" element={<MainLayout><Settings /></MainLayout>} />
             <Route path="/admin" element={<MainLayout><Admin /></MainLayout>} />
+            <Route path="/admin/2fa-setup" element={<MainLayout><Admin2FASetup /></MainLayout>} />
             <Route path="/calendar/callback" element={<CalendarCallback />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
