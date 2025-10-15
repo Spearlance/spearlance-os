@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { ExternalLink, Edit, Plus, Loader2 } from "lucide-react";
+import { ExternalLink, Edit, Plus, Loader2, Target } from "lucide-react";
 import { DiscoveryData } from "@/lib/launchpadTypes";
 import { StoryModal } from "@/components/launchpad/StoryModal";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -17,6 +17,8 @@ import { AddGoalDialog } from "@/components/goals/AddGoalDialog";
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { CompetitorDialog } from "@/components/competitors/CompetitorDialog";
+import { CompetitorCard } from "@/components/competitors/CompetitorCard";
 
 export default function MarketingProfile() {
   const { selectedClient } = useClient();
@@ -47,10 +49,17 @@ export default function MarketingProfile() {
     constraints: ""
   });
 
+  // Competitor states
+  const [competitors, setCompetitors] = useState<any[]>([]);
+  const [loadingCompetitors, setLoadingCompetitors] = useState(true);
+  const [competitorDialogOpen, setCompetitorDialogOpen] = useState(false);
+  const [editingCompetitor, setEditingCompetitor] = useState<any>(null);
+
   useEffect(() => {
     if (selectedClient) {
       loadProfileData();
       loadQuarterlyGoals();
+      loadCompetitors();
     }
   }, [selectedClient]);
 
@@ -87,6 +96,57 @@ export default function MarketingProfile() {
       });
     } finally {
       setGoalsLoading(false);
+    }
+  };
+
+  const loadCompetitors = async () => {
+    if (!selectedClient) return;
+    
+    setLoadingCompetitors(true);
+    try {
+      const { data, error } = await supabase
+        .from("competitors")
+        .select("*")
+        .eq("client_id", selectedClient.id)
+        .order("name");
+
+      if (error) throw error;
+      setCompetitors(data || []);
+    } catch (error: any) {
+      console.error("Error loading competitors:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load competitors",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingCompetitors(false);
+    }
+  };
+
+  const handleDeleteCompetitor = async (competitorId: string, competitorName: string) => {
+    if (!confirm(`Delete ${competitorName}?`)) return;
+
+    try {
+      const { error } = await supabase
+        .from("competitors")
+        .delete()
+        .eq("id", competitorId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Competitor deleted successfully",
+      });
+      loadCompetitors();
+    } catch (error: any) {
+      console.error("Error deleting competitor:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete competitor",
+        variant: "destructive",
+      });
     }
   };
 
@@ -832,24 +892,71 @@ export default function MarketingProfile() {
 
         {/* COMPETITION TAB */}
         <TabsContent value="competition" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Known Competitors</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {discoveryData.competition.competitors && discoveryData.competition.competitors.length > 0 ? (
-                <div className="flex flex-wrap gap-2">
-                  {discoveryData.competition.competitors.map((competitor, i) => (
-                    <Badge key={i} variant="outline" className="text-base py-2 px-4">
-                      {competitor}
-                    </Badge>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-muted-foreground text-sm">No competitors added</p>
-              )}
-            </CardContent>
-          </Card>
+          <div className="flex justify-between items-center mb-4">
+            <div>
+              <h3 className="text-lg font-semibold">Competitive Intelligence</h3>
+              <p className="text-sm text-muted-foreground">
+                Track competitors and their strategies to refine your positioning
+              </p>
+            </div>
+            <Button onClick={() => {
+              setEditingCompetitor(null);
+              setCompetitorDialogOpen(true);
+            }}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Competitor
+            </Button>
+          </div>
+
+          {loadingCompetitors ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : competitors.length > 0 ? (
+            <div className="grid gap-4 md:grid-cols-2">
+              {competitors.map((competitor) => (
+                <CompetitorCard
+                  key={competitor.id}
+                  competitor={competitor}
+                  onEdit={() => {
+                    setEditingCompetitor(competitor);
+                    setCompetitorDialogOpen(true);
+                  }}
+                  onDelete={() => handleDeleteCompetitor(competitor.id, competitor.name)}
+                />
+              ))}
+            </div>
+          ) : (
+            <Card className="border-dashed">
+              <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+                <Target className="h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="font-semibold mb-2">No Competitors Added Yet</h3>
+                <p className="text-sm text-muted-foreground mb-4 max-w-md">
+                  Build your competitive intelligence database. Track their strengths, 
+                  weaknesses, and how you differentiate to help the AI craft better positioning.
+                </p>
+                <Button onClick={() => {
+                  setEditingCompetitor(null);
+                  setCompetitorDialogOpen(true);
+                }}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Your First Competitor
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
+          <CompetitorDialog
+            open={competitorDialogOpen}
+            onOpenChange={setCompetitorDialogOpen}
+            competitor={editingCompetitor}
+            clientId={selectedClient?.id!}
+            onSuccess={() => {
+              loadCompetitors();
+              setCompetitorDialogOpen(false);
+              setEditingCompetitor(null);
+            }}
+          />
         </TabsContent>
 
         {/* BRAND VOICE TAB */}

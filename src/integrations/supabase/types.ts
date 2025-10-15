@@ -816,6 +816,72 @@ export type Database = {
           },
         ]
       }
+      competitors: {
+        Row: {
+          client_id: string
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string
+          name: string
+          notes: string | null
+          pricing_strategy: string | null
+          strengths: string | null
+          target_market: string | null
+          updated_at: string | null
+          weaknesses: string | null
+          website_url: string | null
+          why_we_are_better: string | null
+        }
+        Insert: {
+          client_id: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          pricing_strategy?: string | null
+          strengths?: string | null
+          target_market?: string | null
+          updated_at?: string | null
+          weaknesses?: string | null
+          website_url?: string | null
+          why_we_are_better?: string | null
+        }
+        Update: {
+          client_id?: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          pricing_strategy?: string | null
+          strengths?: string | null
+          target_market?: string | null
+          updated_at?: string | null
+          weaknesses?: string | null
+          website_url?: string | null
+          why_we_are_better?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "competitors_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "competitors_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       front_webhook_logs: {
         Row: {
           client_id: string | null
