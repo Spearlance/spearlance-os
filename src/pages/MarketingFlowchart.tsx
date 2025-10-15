@@ -355,17 +355,17 @@ const MarketingFlowchart = () => {
               <div className="mb-6">
                 <div className="flex items-center justify-between mb-2">
                   <h1 className="text-2xl font-bold">{selectedStage.name}</h1>
-                  {isAdminOrFMM && (
-                    <div className="flex gap-2">
-                      <Button onClick={() => setAddDialogOpen(true)}>
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add Channel
-                      </Button>
+                  <div className="flex gap-2">
+                    <Button onClick={() => setAddDialogOpen(true)}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Channel
+                    </Button>
+                    {isAdminOrFMM && (
                       <Button variant="outline" onClick={() => setTemplateDialogOpen(true)}>
                         Apply Template
                       </Button>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
 
                 {selectedStage.description && (
@@ -380,12 +380,10 @@ const MarketingFlowchart = () => {
                   <p className="text-muted-foreground mb-4">
                     No channels in {selectedStage.name} stage yet
                   </p>
-                  {isAdminOrFMM && (
-                    <Button onClick={() => setAddDialogOpen(true)}>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add First Channel
-                    </Button>
-                  )}
+                  <Button onClick={() => setAddDialogOpen(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add First Channel
+                  </Button>
                 </div>
               ) : (
                 <Accordion type="multiple" className="space-y-2">
