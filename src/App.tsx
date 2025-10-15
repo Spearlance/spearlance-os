@@ -24,6 +24,7 @@ import LaunchPad from "./pages/LaunchPad";
 import MarketingFlowchart from "./pages/MarketingFlowchart";
 import MarketingIdeas from "./pages/MarketingIdeas";
 import Reports from "./pages/Reports";
+import SocialMedia from "./pages/SocialMedia";
 import Support from "./pages/Support";
 import TicketDetail from "./pages/TicketDetail";
 import Settings from "./pages/Settings";
@@ -69,6 +70,7 @@ const App = () => (
             <Route path="/launchpad" element={<MainLayout><LaunchPad /></MainLayout>} />
             <Route path="/marketing/flowchart" element={<MainLayout><MarketingFlowchart /></MainLayout>} />
             <Route path="/marketing/reports" element={<MainLayout><Reports /></MainLayout>} />
+            <Route path="/social-media" element={<MainLayout><SocialMedia /></MainLayout>} />
             <Route path="/support" element={<MainLayout><Support /></MainLayout>} />
             <Route path="/support/:id" element={<MainLayout><TicketDetail /></MainLayout>} />
             <Route path="/settings" element={<MainLayout><Settings /></MainLayout>} />

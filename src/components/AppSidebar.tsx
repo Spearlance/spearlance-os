@@ -51,6 +51,7 @@ import {
   Sparkles,
   BookOpen,
   Palette,
+  Share2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -74,12 +75,13 @@ const brandSubItems = [
 ];
 
 const marketingSubItems = [
-  { title: "Profile", url: "/marketing/profile", icon: User },
-  { title: "Services", url: "/marketing/services", icon: TrendingUp },
-  { title: "Ideas", url: "/marketing/ideas", icon: Lightbulb },
-  { title: "Tools", url: "/marketing/tools", icon: Wrench },
-  { title: "Flowchart", url: "/marketing/flowchart", icon: GitBranch },
-  { title: "Reports", url: "/marketing/reports", icon: FileText },
+      { title: "Profile", url: "/marketing/profile", icon: User },
+      { title: "Services", url: "/marketing/services", icon: TrendingUp },
+      { title: "Ideas", url: "/marketing/ideas", icon: Lightbulb },
+      { title: "Social Media", url: "/social-media", icon: Share2 },
+      { title: "Tools", url: "/marketing/tools", icon: Wrench },
+      { title: "Flowchart", url: "/marketing/flowchart", icon: GitBranch },
+      { title: "Reports", url: "/marketing/reports", icon: FileText },
 ];
 
 const communicationsSubItems = [

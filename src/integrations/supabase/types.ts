@@ -2183,6 +2183,113 @@ export type Database = {
           },
         ]
       }
+      social_media_posts: {
+        Row: {
+          ai_caption_options: Json | null
+          ai_post_ideas: Json | null
+          brand_asset_id: string | null
+          brand_colors_used: Json | null
+          caption_text: string
+          caption_tone: string | null
+          client_id: string
+          created_at: string | null
+          created_by: string | null
+          fonts_used: Json | null
+          hashtags: string[] | null
+          id: string
+          image_source: string | null
+          image_url: string | null
+          logo_used: boolean | null
+          mood_board_reference: string | null
+          nano_banana_prompt: string | null
+          platform: string[] | null
+          posted_at: string | null
+          scheduled_date: string | null
+          status: string
+          topic_category: string
+          updated_at: string | null
+        }
+        Insert: {
+          ai_caption_options?: Json | null
+          ai_post_ideas?: Json | null
+          brand_asset_id?: string | null
+          brand_colors_used?: Json | null
+          caption_text: string
+          caption_tone?: string | null
+          client_id: string
+          created_at?: string | null
+          created_by?: string | null
+          fonts_used?: Json | null
+          hashtags?: string[] | null
+          id?: string
+          image_source?: string | null
+          image_url?: string | null
+          logo_used?: boolean | null
+          mood_board_reference?: string | null
+          nano_banana_prompt?: string | null
+          platform?: string[] | null
+          posted_at?: string | null
+          scheduled_date?: string | null
+          status?: string
+          topic_category: string
+          updated_at?: string | null
+        }
+        Update: {
+          ai_caption_options?: Json | null
+          ai_post_ideas?: Json | null
+          brand_asset_id?: string | null
+          brand_colors_used?: Json | null
+          caption_text?: string
+          caption_tone?: string | null
+          client_id?: string
+          created_at?: string | null
+          created_by?: string | null
+          fonts_used?: Json | null
+          hashtags?: string[] | null
+          id?: string
+          image_source?: string | null
+          image_url?: string | null
+          logo_used?: boolean | null
+          mood_board_reference?: string | null
+          nano_banana_prompt?: string | null
+          platform?: string[] | null
+          posted_at?: string | null
+          scheduled_date?: string | null
+          status?: string
+          topic_category?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "social_media_posts_brand_asset_id_fkey"
+            columns: ["brand_asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "social_media_posts_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "social_media_posts_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "social_media_posts_mood_board_reference_fkey"
+            columns: ["mood_board_reference"]
+            isOneToOne: false
+            referencedRelation: "mood_boards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       standard_marketing_stages: {
         Row: {
           created_at: string | null
