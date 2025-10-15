@@ -62,3 +62,6 @@ verify_jwt = false
 
 [functions.chat-cleanup]
 verify_jwt = false
+
+[functions.generate-mood-board]
+verify_jwt = true

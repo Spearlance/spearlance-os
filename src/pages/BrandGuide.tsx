@@ -64,13 +64,22 @@ export default function BrandGuide() {
           secondary_font: existing.secondary_font || "Poppins",
           font_pairing_style: existing.font_pairing_style || "modern",
           aesthetic: existing.aesthetic || "professional",
-          brand_personality: Array.isArray(existing.brand_personality) ? existing.brand_personality : [],
+          brand_personality: Array.isArray(existing.brand_personality) 
+            ? existing.brand_personality.filter((item): item is string => typeof item === 'string')
+            : [],
           color_usage_notes: existing.color_usage_notes || "",
           typography_notes: existing.typography_notes || "",
           imagery_style: existing.imagery_style || "",
           logo_usage_guidelines: existing.logo_usage_guidelines || "",
-          dos_and_donts: typeof existing.dos_and_donts === 'object' && existing.dos_and_donts !== null 
-            ? existing.dos_and_donts as { dos: string[], donts: string[] }
+          dos_and_donts: typeof existing.dos_and_donts === 'object' && existing.dos_and_donts !== null && !Array.isArray(existing.dos_and_donts)
+            ? { 
+                dos: Array.isArray((existing.dos_and_donts as any).dos) 
+                  ? (existing.dos_and_donts as any).dos.filter((item: any): item is string => typeof item === 'string')
+                  : [],
+                donts: Array.isArray((existing.dos_and_donts as any).donts)
+                  ? (existing.dos_and_donts as any).donts.filter((item: any): item is string => typeof item === 'string')
+                  : []
+              }
             : { dos: [], donts: [] }
         });
       } else {
