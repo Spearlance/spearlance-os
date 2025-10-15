@@ -26,62 +26,81 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Fetch brand context
-    const [brandVoice, avatar, brand] = await Promise.all([
+    // Fetch comprehensive brand context
+    const [brandVoice, avatar, brand, client, businessModel] = await Promise.all([
       supabaseClient.from('client_brand_voice').select('*').eq('client_id', client_id).maybeSingle(),
       supabaseClient.from('avatars').select('*').eq('client_id', client_id).maybeSingle(),
       supabaseClient.from('brand_guides').select('*').eq('client_id', client_id).maybeSingle(),
+      supabaseClient.from('clients').select('*').eq('id', client_id).maybeSingle(),
+      supabaseClient.from('client_business_model').select('*').eq('client_id', client_id).maybeSingle(),
     ]);
 
     const voice = brandVoice.data;
     const targetAudience = avatar.data;
     const brandGuide = brand.data;
+    const clientInfo = client.data;
+    const businessModelData = businessModel.data;
 
-    // Build AI prompt
-    const systemPrompt = `You are the Simplified Social Media Assistant for SpearlanceOS.
+    // Build deep context prompt
+    const systemPrompt = `You are an expert social media strategist creating content for ${clientInfo?.company_name || clientInfo?.name || 'this business'}, a ${clientInfo?.industry || 'professional services'} business.
 
-Guidelines:
-- Speak at a 5th-grade reading level
-- Use friendly, encouraging language
-- Sound natural, not salesy
-- Each caption should be 40-100 words
-- Match the brand's personality
+CONTEXT YOU MUST USE:
 
-Brand Context:
-- Voice Tone: ${voice?.tone || 'friendly'}
-- Brand Personality: ${brandGuide?.brand_personality ? JSON.stringify(brandGuide.brand_personality) : 'professional'}
-- Target Audience: ${targetAudience?.demographics || 'general audience'}
-- Words to Avoid: ${voice?.words_to_avoid || 'none'}
+1. CLIENT'S STORY & VOICE
+${voice?.story_summary ? `
+Executive Summary: ${voice.story_summary.executive_summary || 'Not available'}
 
-Post Idea: ${post_idea.title}
+${voice.story_summary.value_propositions?.length ? `Key Value Propositions:
+${voice.story_summary.value_propositions.slice(0, 4).map((vp: string) => `- ${vp}`).join('\n')}` : ''}
+
+${voice.story_summary.pain_points?.length ? `Pain Points They Address:
+${voice.story_summary.pain_points.slice(0, 5).map((pp: string) => `- ${pp}`).join('\n')}` : ''}
+
+${voice.story_summary.client_voice_samples?.length ? `Their Actual Words (use these phrases when natural):
+${voice.story_summary.client_voice_samples.slice(0, 3).map((quote: string) => `"${quote}"`).join('\n')}` : ''}
+` : 'Story context not yet available - focus on industry best practices.'}
+
+2. TARGET AUDIENCE
+${targetAudience ? `- Demographics: ${targetAudience.demographics || 'General audience'}
+- Their Pains: ${targetAudience.pains || 'Common industry pain points'}
+- Their Goals: ${targetAudience.goals || 'Standard business goals'}
+- Their Motivators: ${targetAudience.motivators || 'Quality and results'}` : '- General professional audience'}
+
+3. BUSINESS STRATEGY
+${businessModelData ? `- What's Working: ${businessModelData.current_state_working || 'Building on strengths'}
+- What's NOT Working: ${businessModelData.current_state_not_working || 'Addressing challenges'}
+- Sales Process: ${businessModelData.sales_process || 'Standard sales approach'}` : '- Focus on value delivery and client relationships'}
+
+4. BRAND VOICE
+- Established Tone: ${voice?.tone || 'Professional and approachable'}
+- Words to AVOID: ${voice?.words_to_avoid || 'Overly technical jargon, hype'}
+${brandGuide?.brand_personality ? `- Brand Personality: ${JSON.stringify(brandGuide.brand_personality)}` : ''}
+
+POST TOPIC CATEGORY: ${topic_category || 'General'}
+POST IDEA: ${post_idea.title}
 Description: ${post_idea.description}
 
-Generate 3 caption variations in different tones:
-1. Friendly - Conversational, warm, personal
-2. Professional - Clear, informative, polished  
-3. Fun - Playful, energetic, engaging
+YOUR TASK:
+Write ONE highly targeted social media caption (50-120 words) that:
+1. Uses actual phrases from the client's voice samples when it feels natural
+2. Directly addresses a specific pain point from their audience
+3. Connects to one of their key value propositions
+4. Matches their established brand tone (${voice?.tone || 'professional'})
+5. Feels authentic and conversational, not salesy
+6. Includes a subtle call-to-action that aligns with their business
+7. Reads at a 5th-grade level - simple, clear, engaging
 
-For each caption, also suggest 3-5 relevant hashtags.
+Also provide:
+- 3-5 relevant hashtags (industry-specific + local if service areas known)
+- Brief 1-2 sentence explanation of why this caption works for their specific business
 
-Return JSON in this format:
+Return JSON in this exact format:
 {
-  "captions": [
-    {
-      "tone": "Friendly",
-      "text": "Caption text here...",
-      "suggested_hashtags": ["#HashtagOne", "#HashtagTwo"]
-    },
-    {
-      "tone": "Professional", 
-      "text": "Caption text here...",
-      "suggested_hashtags": ["#HashtagOne", "#HashtagTwo"]
-    },
-    {
-      "tone": "Fun",
-      "text": "Caption text here...",
-      "suggested_hashtags": ["#HashtagOne", "#HashtagTwo"]
-    }
-  ]
+  "caption": {
+    "text": "The actual caption text here...",
+    "reasoning": "This works because it addresses [specific pain point] and connects to [value prop]...",
+    "suggested_hashtags": ["#Industry", "#Location", "#Topic", "#Value"]
+  }
 }`;
 
     // Call Lovable AI
@@ -95,7 +114,7 @@ Return JSON in this format:
         model: 'google/gemini-2.5-flash',
         messages: [
           { role: 'system', content: systemPrompt },
-          { role: 'user', content: `Generate 3 caption variations for this post idea` }
+          { role: 'user', content: `Generate one highly targeted caption for this post idea that leverages the context provided.` }
         ],
         response_format: { type: 'json_object' }
       }),

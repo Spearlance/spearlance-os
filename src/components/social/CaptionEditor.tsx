@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, ChevronLeft } from "lucide-react";
+import { Loader2, ChevronLeft, Sparkles } from "lucide-react";
 import { useClient } from "@/contexts/ClientContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -20,46 +20,57 @@ export const CaptionEditor = ({ postIdea, onComplete, onBack }: CaptionEditorPro
   const { selectedClient } = useClient();
   const { toast } = useToast();
   const [isGenerating, setIsGenerating] = useState(true);
-  const [captions, setCaptions] = useState<any[]>([]);
-  const [selectedCaption, setSelectedCaption] = useState<any>(null);
+  const [isRegenerating, setIsRegenerating] = useState(false);
+  const [caption, setCaption] = useState<any>(null);
   const [editedCaption, setEditedCaption] = useState('');
   const [addHashtags, setAddHashtags] = useState(true);
   const [hashtags, setHashtags] = useState<string[]>([]);
+  const [regenerateCount, setRegenerateCount] = useState(0);
 
   useEffect(() => {
     generateCaptions();
   }, []);
 
-  const generateCaptions = async () => {
-    setIsGenerating(true);
+  const generateCaptions = async (isRegenerate = false) => {
     try {
+      if (isRegenerate) {
+        setIsRegenerating(true);
+      }
+
       const { data, error } = await supabase.functions.invoke('social-generate-captions', {
-        body: {
+        body: { 
           client_id: selectedClient?.id,
           post_idea: postIdea,
-          topic_category: postIdea.topic_category,
+          topic_category: postIdea.category,
+          variation_number: regenerateCount
         }
       });
 
       if (error) throw error;
-
-      setCaptions(data.captions || []);
+      
+      if (data?.caption) {
+        setCaption(data.caption);
+        setEditedCaption(data.caption.text);
+        setHashtags(data.caption.suggested_hashtags || []);
+        if (isRegenerate) {
+          setRegenerateCount(prev => prev + 1);
+        }
+      }
     } catch (error: any) {
-      console.error('Error generating captions:', error);
+      console.error('Error generating caption:', error);
       toast({
-        title: "Couldn't generate captions",
+        title: "Couldn't generate caption",
         description: error.message || "Please try again",
         variant: "destructive"
       });
     } finally {
       setIsGenerating(false);
+      setIsRegenerating(false);
     }
   };
 
-  const handleSelectCaption = (caption: any) => {
-    setSelectedCaption(caption);
-    setEditedCaption(caption.text);
-    setHashtags(caption.suggested_hashtags || []);
+  const handleRegenerate = () => {
+    generateCaptions(true);
   };
 
   const handleContinue = () => {
@@ -73,17 +84,9 @@ export const CaptionEditor = ({ postIdea, onComplete, onBack }: CaptionEditorPro
     }
 
     const finalHashtags = addHashtags ? hashtags : [];
-    onComplete(editedCaption, selectedCaption?.tone || 'custom', finalHashtags);
+    onComplete(editedCaption, 'contextual', finalHashtags);
   };
 
-  const getToneColor = (tone: string) => {
-    switch (tone) {
-      case 'Friendly': return 'bg-green-50 border-green-200 hover:bg-green-100';
-      case 'Professional': return 'bg-blue-50 border-blue-200 hover:bg-blue-100';
-      case 'Fun': return 'bg-purple-50 border-purple-200 hover:bg-purple-100';
-      default: return 'bg-muted';
-    }
-  };
 
   return (
     <div className="space-y-6">
@@ -99,88 +102,101 @@ export const CaptionEditor = ({ postIdea, onComplete, onBack }: CaptionEditorPro
         </CardHeader>
       </Card>
 
-      {/* Loading State */}
-      {isGenerating && (
-        <Card>
-          <CardContent className="flex flex-col items-center gap-4 py-12">
-            <Loader2 className="h-12 w-12 animate-spin text-primary" />
-            <p className="text-lg font-medium">Writing captions for you...</p>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Caption Options */}
-      {!isGenerating && captions.length > 0 && (
-        <div className="space-y-4">
-          <h3 className="text-xl font-semibold">Choose a Tone</h3>
-          <div className="grid gap-4">
-            {captions.map((caption, index) => (
-              <Card
-                key={index}
-                className={`cursor-pointer transition-all ${getToneColor(caption.tone)} ${
-                  selectedCaption?.tone === caption.tone ? 'ring-2 ring-primary' : ''
-                }`}
-                onClick={() => handleSelectCaption(caption)}
-              >
-                <CardHeader>
-                  <CardTitle className="text-base flex items-center gap-2">
-                    {caption.tone}
-                    {selectedCaption?.tone === caption.tone && (
-                      <Badge variant="default" className="ml-auto">Selected</Badge>
-                    )}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm whitespace-pre-wrap">{caption.text}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+      {isGenerating ? (
+        <div className="flex flex-col items-center justify-center py-12 space-y-3">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-sm text-muted-foreground">Crafting your perfect caption...</p>
         </div>
-      )}
+      ) : caption ? (
+        <div className="space-y-6">
+          {/* Generated Caption Card */}
+          <Card className="bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
+            <CardContent className="p-6 space-y-4">
+              <div className="flex items-start gap-2">
+                <div className="flex-1 space-y-3">
+                  <div>
+                    <h3 className="font-semibold text-lg mb-2">🎯 Your Caption</h3>
+                    <p className="text-sm leading-relaxed">{caption.text}</p>
+                  </div>
 
-      {/* Edit Caption */}
-      {selectedCaption && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Edit Your Caption</CardTitle>
-            <CardDescription>
-              Make it your own. Add your personal touch or use it as-is.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
+                  {caption.reasoning && (
+                    <div className="bg-background/50 rounded-lg p-3 border border-primary/10">
+                      <p className="text-xs font-medium text-primary mb-1">💡 Why this works:</p>
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        {caption.reasoning}
+                      </p>
+                    </div>
+                  )}
+
+                  {caption.suggested_hashtags?.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {caption.suggested_hashtags.map((tag: string, i: number) => (
+                        <Badge key={i} variant="secondary" className="text-xs">
+                          {tag}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleRegenerate}
+                    disabled={isRegenerating}
+                    className="w-full mt-2"
+                  >
+                    {isRegenerating ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Generating...
+                      </>
+                    ) : (
+                      '🔄 Generate Different Caption'
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Edit Caption Section */}
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="caption-edit" className="text-base font-semibold">✏️ Edit Your Caption</Label>
               <Textarea
+                id="caption-edit"
                 value={editedCaption}
                 onChange={(e) => setEditedCaption(e.target.value)}
                 rows={6}
                 className="resize-none"
-                placeholder="Write your caption here..."
+                placeholder="Edit your caption here..."
               />
-              <p className="text-sm text-muted-foreground mt-2">
-                {editedCaption.split(' ').length} words
+              <p className="text-xs text-muted-foreground">
+                {editedCaption.split(/\s+/).filter(Boolean).length} words
               </p>
             </div>
 
             <div className="flex items-center space-x-2">
               <Switch
-                id="hashtags"
+                id="add-hashtags"
                 checked={addHashtags}
                 onCheckedChange={setAddHashtags}
               />
-              <Label htmlFor="hashtags">Add hashtags automatically</Label>
+              <Label htmlFor="add-hashtags">Add hashtags automatically</Label>
             </div>
 
             {addHashtags && hashtags.length > 0 && (
               <div className="flex flex-wrap gap-2">
-                {hashtags.map((tag, i) => (
-                  <Badge key={i} variant="secondary">{tag}</Badge>
+                {hashtags.map((tag, index) => (
+                  <Badge key={index} variant="secondary">
+                    {tag}
+                  </Badge>
                 ))}
               </div>
             )}
-          </CardContent>
-        </Card>
-      )}
+          </div>
+        </div>
+      ) : null}
 
       {/* Actions */}
       <div className="flex gap-4">
@@ -188,7 +204,7 @@ export const CaptionEditor = ({ postIdea, onComplete, onBack }: CaptionEditorPro
           <ChevronLeft className="h-4 w-4 mr-2" />
           Back
         </Button>
-        {selectedCaption && (
+        {caption && (
           <Button onClick={handleContinue} size="lg" className="flex-1">
             Continue to Image
           </Button>
