@@ -3,7 +3,8 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Copy, Check } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Copy, Check, ChevronDown } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -85,46 +86,11 @@ export default function ColorPalettePicker({
   };
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Color Presets</CardTitle>
-          <CardDescription>Quick start with professionally curated color palettes</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {COLOR_PRESETS.map((preset) => (
-              <div
-                key={preset.name}
-                className="border rounded-lg p-4 cursor-pointer hover:border-primary transition-colors"
-                onClick={() => applyPreset(preset)}
-              >
-                <p className="font-medium mb-3">{preset.name}</p>
-                <div className="flex gap-2">
-                  <div
-                    className="h-12 w-full rounded"
-                    style={{ backgroundColor: preset.primary }}
-                  />
-                  <div
-                    className="h-12 w-full rounded"
-                    style={{ backgroundColor: preset.secondary }}
-                  />
-                  <div
-                    className="h-12 w-full rounded"
-                    style={{ backgroundColor: preset.accent }}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Custom Colors</CardTitle>
-          <CardDescription>Define your unique brand color palette</CardDescription>
-        </CardHeader>
+    <Card>
+      <CardHeader>
+        <CardTitle>Brand Colors</CardTitle>
+        <CardDescription>Define your unique brand color palette</CardDescription>
+      </CardHeader>
         <CardContent className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
@@ -236,8 +202,41 @@ export default function ColorPalettePicker({
               rows={4}
             />
           </div>
+
+          <Collapsible className="mt-6">
+            <CollapsibleTrigger className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+              <ChevronDown className="h-4 w-4" />
+              Need inspiration? Browse color presets
+            </CollapsibleTrigger>
+            <CollapsibleContent className="mt-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                {COLOR_PRESETS.map((preset) => (
+                  <div
+                    key={preset.name}
+                    className="border rounded-lg p-3 cursor-pointer hover:border-primary transition-colors"
+                    onClick={() => applyPreset(preset)}
+                  >
+                    <p className="font-medium text-sm mb-2">{preset.name}</p>
+                    <div className="flex gap-1.5">
+                      <div
+                        className="h-8 w-full rounded"
+                        style={{ backgroundColor: preset.primary }}
+                      />
+                      <div
+                        className="h-8 w-full rounded"
+                        style={{ backgroundColor: preset.secondary }}
+                      />
+                      <div
+                        className="h-8 w-full rounded"
+                        style={{ backgroundColor: preset.accent }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
         </CardContent>
       </Card>
-    </div>
   );
 }
