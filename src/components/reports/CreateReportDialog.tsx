@@ -182,7 +182,7 @@ export const CreateReportDialog = ({
         <DialogHeader>
           <DialogTitle>Create New Report</DialogTitle>
           <DialogDescription>
-            Add a new report with Oviond dashboard link
+            Add a new report with dashboard link
           </DialogDescription>
         </DialogHeader>
 
@@ -203,10 +203,10 @@ export const CreateReportDialog = ({
             />
           </div>
 
-          {/* Oviond URL */}
+          {/* Report Link */}
           <div className="space-y-2">
             <Label htmlFor="oviond_url">
-              Oviond URL <span className="text-destructive">*</span>
+              Link to Report <span className="text-destructive">*</span>
             </Label>
             <Input
               id="oviond_url"
@@ -215,7 +215,7 @@ export const CreateReportDialog = ({
               onChange={(e) =>
                 setFormData({ ...formData, oviond_url: e.target.value })
               }
-              placeholder="https://oviond.com/..."
+              placeholder="https://..."
             />
           </div>
 

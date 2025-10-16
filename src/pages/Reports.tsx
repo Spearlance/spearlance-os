@@ -18,8 +18,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, Info } from "lucide-react";
 import { format } from "date-fns";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface Report {
   id: string;
@@ -258,6 +259,16 @@ const Reports = () => {
             </Button>
           )}
         </div>
+
+        {/* AI Disclaimer */}
+        <Alert className="mb-6">
+          <Info className="h-4 w-4" />
+          <AlertTitle>AI Report Analysis</AlertTitle>
+          <AlertDescription>
+            To help our AI assistant understand your reports, please add a summary to each report. 
+            We're also working on integrating popular reporting platforms into Spearlance for automated insights—stay tuned!
+          </AlertDescription>
+        </Alert>
 
         {/* Filters */}
         <ReportFilters

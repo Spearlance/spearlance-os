@@ -280,14 +280,14 @@ export const ReportDrawer = ({
             </TabsList>
 
             <TabsContent value="overview" className="space-y-6">
-              {/* Oviond Link */}
+              {/* Report Link */}
               <div>
                 <Button
                   className="w-full"
                   onClick={() => window.open(report.oviond_url, "_blank")}
                 >
                   <ExternalLink className="mr-2 h-4 w-4" />
-                  Open in Oviond
+                  Open Report
                 </Button>
               </div>
 
