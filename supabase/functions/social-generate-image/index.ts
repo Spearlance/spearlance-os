@@ -159,6 +159,23 @@ Generate a clean, eye-catching image that represents this message visually.`;
       }
     }
 
+    // Helper function to generate descriptive title from caption
+    const generateAssetTitle = (captionText: string, variationNumber: number): string => {
+      // Take first sentence or first 60 chars
+      let titleBase = captionText
+        .split(/[.!?]/)[0]
+        .substring(0, 60)
+        .trim();
+      
+      // Clean up emojis and special characters
+      titleBase = titleBase.replace(/[^\w\s-]/g, '').trim();
+      
+      // Add variation number if multiple images
+      return variationNumber > 1 
+        ? `${titleBase}... (${variationNumber})`
+        : `${titleBase}${titleBase.length === 60 ? '...' : ''}`;
+    };
+
     // Process each generated image
     const processedImages = [];
 
@@ -195,7 +212,7 @@ Generate a clean, eye-catching image that represents this message visually.`;
               .insert({
                 client_id: client_id,
                 folder_id: folderId,
-                title: `Social Media - ${new Date().toLocaleDateString()} (${i + 1})`,
+                title: generateAssetTitle(caption_text, i + 1),
                 type: 'image',
                 storage_type: 'upload',
                 file_url: urlData.publicUrl,
