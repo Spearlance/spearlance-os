@@ -37,16 +37,30 @@ export const CaptionEditor = ({ postIdea, onComplete, onBack }: CaptionEditorPro
         setIsRegenerating(true);
       }
 
+      // Create AbortController for timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+      
       const { data, error } = await supabase.functions.invoke('social-generate-captions', {
         body: { 
           client_id: selectedClient?.id,
           post_idea: postIdea,
           topic_category: postIdea.category,
           variation_number: regenerateCount
-        }
+        },
+        signal: controller.signal
       });
+      
+      clearTimeout(timeoutId);
 
-      if (error) throw error;
+      if (error) {
+        if (error.message?.includes('Rate limit') || error.message?.includes('429')) {
+          throw new Error('You\'ve hit the AI usage limit. Please wait a moment and try again.');
+        } else if (error.message?.includes('usage limit') || error.message?.includes('402')) {
+          throw new Error('AI usage limit reached. Please add credits to your workspace.');
+        }
+        throw error;
+      }
       
       if (data?.caption) {
         setCaption(data.caption);
@@ -58,9 +72,22 @@ export const CaptionEditor = ({ postIdea, onComplete, onBack }: CaptionEditorPro
       }
     } catch (error: any) {
       console.error('Error generating caption:', error);
+      
+      let errorMessage = "Please try again";
+      
+      if (error.name === 'AbortError') {
+        errorMessage = 'Caption generation took too long. Please try again.';
+      } else if (error.message?.includes('Rate limit')) {
+        errorMessage = 'You\'ve hit the AI usage limit. Please wait a moment and try again.';
+      } else if (error.message?.includes('usage limit')) {
+        errorMessage = 'AI usage limit reached. Please add credits to your workspace.';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
       toast({
         title: "Couldn't generate caption",
-        description: error.message || "Please try again",
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {

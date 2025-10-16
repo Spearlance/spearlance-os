@@ -5,6 +5,32 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Retry logic wrapper
+async function retryWithBackoff<T>(
+  fn: () => Promise<T>,
+  maxRetries = 2,
+  baseDelay = 2000
+): Promise<T> {
+  let lastError: any;
+  
+  for (let i = 0; i <= maxRetries; i++) {
+    try {
+      return await fn();
+    } catch (error: any) {
+      lastError = error;
+      console.log(`Attempt ${i + 1} failed:`, error.message);
+      
+      if (i < maxRetries) {
+        const delay = baseDelay * Math.pow(2, i);
+        console.log(`Retrying in ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+  }
+  
+  throw lastError;
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -26,8 +52,9 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Fetch comprehensive brand context
-    const [brandVoice, avatar, brand, client, businessModel] = await Promise.all([
+    // Fetch comprehensive brand context with Promise.allSettled
+    console.log('📚 Fetching brand context...');
+    const [brandVoice, avatar, brand, client, businessModel] = await Promise.allSettled([
       supabaseClient.from('client_brand_voice').select('*').eq('client_id', client_id).maybeSingle(),
       supabaseClient.from('avatars').select('*').eq('client_id', client_id).maybeSingle(),
       supabaseClient.from('brand_guides').select('*').eq('client_id', client_id).maybeSingle(),
@@ -35,11 +62,13 @@ Deno.serve(async (req) => {
       supabaseClient.from('client_business_model').select('*').eq('client_id', client_id).maybeSingle(),
     ]);
 
-    const voice = brandVoice.data;
-    const targetAudience = avatar.data;
-    const brandGuide = brand.data;
-    const clientInfo = client.data;
-    const businessModelData = businessModel.data;
+    const voice = brandVoice.status === 'fulfilled' ? brandVoice.value.data : null;
+    const targetAudience = avatar.status === 'fulfilled' ? avatar.value.data : null;
+    const brandGuide = brand.status === 'fulfilled' ? brand.value.data : null;
+    const clientInfo = client.status === 'fulfilled' ? client.value.data : null;
+    const businessModelData = businessModel.status === 'fulfilled' ? businessModel.value.data : null;
+    
+    console.log('✅ Brand context loaded');
 
     // Build deep context prompt
     const systemPrompt = `You are an expert social media strategist creating content for ${clientInfo?.company_name || clientInfo?.name || 'this business'}, a ${clientInfo?.industry || 'professional services'} business.
@@ -103,32 +132,44 @@ Return JSON in this exact format:
   }
 }`;
 
-    // Call Lovable AI
-    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${Deno.env.get('LOVABLE_API_KEY')}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: `Generate one highly targeted caption for this post idea that leverages the context provided.` }
-        ],
-        response_format: { type: 'json_object' }
-      }),
+    // Call Lovable AI with retry logic
+    console.log('✍️ Generating caption...');
+    const captions = await retryWithBackoff(async () => {
+      const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${Deno.env.get('LOVABLE_API_KEY')}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'google/gemini-2.5-flash',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: `Generate one highly targeted caption for this post idea that leverages the context provided.` }
+          ],
+          response_format: { type: 'json_object' }
+        }),
+      });
+
+      if (!aiResponse.ok) {
+        const errorText = await aiResponse.text();
+        console.error('❌ AI API error:', errorText);
+        
+        if (aiResponse.status === 429) {
+          throw new Error('Rate limit exceeded. Please wait a moment and try again.');
+        } else if (aiResponse.status === 402) {
+          throw new Error('AI usage limit reached. Please add credits to your workspace.');
+        }
+        
+        throw new Error(`AI API error: ${aiResponse.status}`);
+      }
+
+      const aiData = await aiResponse.json();
+      const content = aiData.choices[0].message.content;
+      return JSON.parse(content);
     });
-
-    if (!aiResponse.ok) {
-      const errorText = await aiResponse.text();
-      console.error('AI API error:', errorText);
-      throw new Error(`AI API error: ${aiResponse.status}`);
-    }
-
-    const aiData = await aiResponse.json();
-    const content = aiData.choices[0].message.content;
-    const captions = JSON.parse(content);
+    
+    console.log('✅ Caption generated successfully');
 
     return new Response(
       JSON.stringify(captions),
@@ -136,10 +177,22 @@ Return JSON in this exact format:
     );
 
   } catch (error: any) {
-    console.error('Error:', error);
+    console.error('❌ Error:', error);
+    
+    let errorMessage = error.message || 'Caption generation failed';
+    let status = 500;
+    
+    if (error.message?.includes('Rate limit')) {
+      status = 429;
+      errorMessage = 'You\'ve hit the AI usage limit. Please wait a moment and try again.';
+    } else if (error.message?.includes('usage limit')) {
+      status = 402;
+      errorMessage = 'AI usage limit reached. Please add credits to your workspace.';
+    }
+    
     return new Response(
-      JSON.stringify({ error: error.message }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({ error: errorMessage }),
+      { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });

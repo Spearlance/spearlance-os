@@ -5,6 +5,32 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Retry logic wrapper
+async function retryWithBackoff<T>(
+  fn: () => Promise<T>,
+  maxRetries = 2,
+  baseDelay = 2000
+): Promise<T> {
+  let lastError: any;
+  
+  for (let i = 0; i <= maxRetries; i++) {
+    try {
+      return await fn();
+    } catch (error: any) {
+      lastError = error;
+      console.log(`Attempt ${i + 1} failed:`, error.message);
+      
+      if (i < maxRetries) {
+        const delay = baseDelay * Math.pow(2, i);
+        console.log(`Retrying in ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+  }
+  
+  throw lastError;
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -26,16 +52,19 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Fetch brand context
-    const [brandGuide, moodBoards, client] = await Promise.all([
+    // Fetch brand context with Promise.allSettled for better error handling
+    console.log('📚 Fetching brand context...');
+    const [brandGuide, moodBoards, client] = await Promise.allSettled([
       supabaseClient.from('brand_guides').select('*').eq('client_id', client_id).maybeSingle(),
       supabaseClient.from('mood_boards').select('*').eq('client_id', client_id).order('created_at', { ascending: false }).limit(1).maybeSingle(),
       supabaseClient.from('clients').select('industry, logo_url').eq('id', client_id).single(),
     ]);
 
-    const brand = brandGuide.data;
-    const moodBoard = moodBoards.data;
-    const clientData = client.data;
+    const brand = brandGuide.status === 'fulfilled' ? brandGuide.value.data : null;
+    const moodBoard = moodBoards.status === 'fulfilled' ? moodBoards.value.data : null;
+    const clientData = client.status === 'fulfilled' ? client.value.data : null;
+    
+    console.log('✅ Brand context loaded');
 
     // Build image generation prompt
     let basePrompt = `Create a professional social media post image.
@@ -106,32 +135,53 @@ Generate a clean, eye-catching image that represents this message visually.`;
       ];
     }
 
-    // Call Lovable AI image generation
-    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${Deno.env.get('LOVABLE_API_KEY')}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash-image-preview',
-        messages: messages,
-        modalities: ['image', 'text']
-      }),
+    // Call Lovable AI image generation with retry logic
+    console.log('🎨 Generating images with AI...');
+    const aiData = await retryWithBackoff(async () => {
+      const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${Deno.env.get('LOVABLE_API_KEY')}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'google/gemini-2.5-flash-image-preview',
+          messages: messages,
+          modalities: ['image', 'text']
+        }),
+      });
+
+      if (!aiResponse.ok) {
+        const errorText = await aiResponse.text();
+        console.error('❌ AI API error:', errorText);
+        
+        // Handle specific error types
+        if (aiResponse.status === 429) {
+          throw new Error('Rate limit exceeded. Please wait a moment and try again.');
+        } else if (aiResponse.status === 402) {
+          throw new Error('AI usage limit reached. Please add credits to your workspace.');
+        } else if (aiResponse.status >= 500) {
+          throw new Error('AI service temporarily unavailable. Please try again.');
+        }
+        
+        throw new Error(`AI generation failed: ${errorText}`);
+      }
+
+      return await aiResponse.json();
     });
-
-    if (!aiResponse.ok) {
-      const errorText = await aiResponse.text();
-      console.error('AI API error:', errorText);
-      throw new Error(`AI API error: ${aiResponse.status}`);
-    }
-
-    const aiData = await aiResponse.json();
+    
+    console.log('✅ Images generated successfully');
     
     // Extract images from chat completion response
     const generatedImages = aiData.choices?.[0]?.message?.images || [];
     
-    // Check if "Social Media" folder exists for this client
+    if (generatedImages.length === 0) {
+      throw new Error('No images were generated. Please try again.');
+    }
+    
+    console.log('💾 Processing and saving images...');
+    
+    // Check if "Social Media" folder exists
     const { data: existingFolder } = await supabaseClient
       .from('asset_folders')
       .select('id')
@@ -143,7 +193,7 @@ Generate a clean, eye-catching image that represents this message visually.`;
 
     // Create folder if it doesn't exist
     if (!folderId) {
-      const { data: newFolder, error: folderError } = await supabaseClient
+      const { data: newFolder } = await supabaseClient
         .from('asset_folders')
         .insert({
           client_id: client_id,
@@ -154,29 +204,26 @@ Generate a clean, eye-catching image that represents this message visually.`;
         .select('id')
         .single();
       
-      if (!folderError && newFolder) {
+      if (newFolder) {
         folderId = newFolder.id;
       }
     }
 
-    // Helper function to generate descriptive title from caption
+    // Helper function to generate descriptive title
     const generateAssetTitle = (captionText: string, variationNumber: number): string => {
-      // Take first sentence or first 60 chars
       let titleBase = captionText
         .split(/[.!?]/)[0]
         .substring(0, 60)
+        .trim()
+        .replace(/[^\w\s-]/g, '')
         .trim();
       
-      // Clean up emojis and special characters
-      titleBase = titleBase.replace(/[^\w\s-]/g, '').trim();
-      
-      // Add variation number if multiple images
       return variationNumber > 1 
         ? `${titleBase}... (${variationNumber})`
         : `${titleBase}${titleBase.length === 60 ? '...' : ''}`;
     };
 
-    // Process each generated image
+    // Process images - return base64 for immediate display, save URLs for later
     const processedImages = [];
 
     for (let i = 0; i < generatedImages.length; i++) {
@@ -185,11 +232,9 @@ Generate a clean, eye-catching image that represents this message visually.`;
       
       if (base64Data && base64Data.startsWith('data:image')) {
         try {
-          // Extract base64 content and convert to buffer
           const base64Content = base64Data.split(',')[1];
           const buffer = Uint8Array.from(atob(base64Content), c => c.charCodeAt(0));
           
-          // Upload to storage in social-media subfolder
           const timestamp = Date.now();
           const fileName = `${client_id}/social-media/generated-${timestamp}-${i}.png`;
           
@@ -201,13 +246,11 @@ Generate a clean, eye-catching image that represents this message visually.`;
             });
           
           if (!uploadError && uploadData) {
-            // Get public URL
             const { data: urlData } = supabaseClient.storage
               .from('client-assets')
               .getPublicUrl(fileName);
             
-            // Create asset record
-            const { data: assetData, error: assetError } = await supabaseClient
+            await supabaseClient
               .from('assets')
               .insert({
                 client_id: client_id,
@@ -219,30 +262,16 @@ Generate a clean, eye-catching image that represents this message visually.`;
                 preview_url: urlData.publicUrl,
                 tags: ['social-media', 'ai-generated'],
                 created_by: (await supabaseClient.auth.getUser()).data.user?.id
-              })
-              .select()
-              .single();
+              });
             
-            if (!assetError && assetData) {
-              console.log(`✅ Saved image ${i + 1} to Assets folder:`, assetData.id);
-              
-              processedImages.push({
-                image_url: urlData.publicUrl,
-                asset_id: assetData.id,
-                prompt_used: basePrompt,
-                variation_number: i + 1
-              });
-            } else {
-              console.error(`❌ Failed to create asset record:`, assetError);
-              // Fallback to base64 if asset creation fails
-              processedImages.push({
-                image_url: base64Data,
-                prompt_used: basePrompt,
-                variation_number: i + 1
-              });
-            }
+            console.log(`✅ Saved image ${i + 1} to Assets`);
+            
+            processedImages.push({
+              image_url: urlData.publicUrl,
+              prompt_used: basePrompt,
+              variation_number: i + 1
+            });
           } else {
-            console.error(`❌ Failed to upload to storage:`, uploadError);
             // Fallback to base64 if upload fails
             processedImages.push({
               image_url: base64Data,
@@ -252,7 +281,7 @@ Generate a clean, eye-catching image that represents this message visually.`;
           }
         } catch (err) {
           console.error(`❌ Error processing image ${i}:`, err);
-          // Fallback to base64 on any error
+          // Fallback to base64 on error
           processedImages.push({
             image_url: base64Data,
             prompt_used: basePrompt,
@@ -261,8 +290,7 @@ Generate a clean, eye-catching image that represents this message visually.`;
         }
       }
     }
-
-    // Use processed images if we have them, otherwise fallback to original base64
+    
     const images = processedImages.length > 0 ? processedImages : 
       generatedImages.map((img: any, index: number) => ({
         image_url: img.image_url?.url,
@@ -276,10 +304,27 @@ Generate a clean, eye-catching image that represents this message visually.`;
     );
 
   } catch (error: any) {
-    console.error('Error:', error);
+    console.error('❌ Error:', error);
+    
+    // Provide user-friendly error messages
+    let errorMessage = error.message || 'Image generation failed';
+    let status = 500;
+    
+    if (error.message?.includes('Rate limit')) {
+      status = 429;
+      errorMessage = 'You\'ve hit the AI usage limit. Please wait a moment and try again.';
+    } else if (error.message?.includes('usage limit')) {
+      status = 402;
+      errorMessage = 'AI usage limit reached. Please add credits to your workspace.';
+    } else if (error.message?.includes('timeout') || error.message?.includes('took too long')) {
+      errorMessage = 'Image generation took too long. Try using a simpler prompt or try again.';
+    } else if (error.message?.includes('Connection')) {
+      errorMessage = 'Connection timed out. Please check your internet and try again.';
+    }
+    
     return new Response(
-      JSON.stringify({ error: error.message }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({ error: errorMessage }),
+      { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });

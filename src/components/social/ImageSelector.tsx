@@ -25,6 +25,8 @@ export const ImageSelector = ({ caption, onComplete, onBack }: ImageSelectorProp
   const [showAIDialog, setShowAIDialog] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedImages, setGeneratedImages] = useState<any[]>([]);
+  const [loadingMessage, setLoadingMessage] = useState("Creating your image...");
+  const [showRetry, setShowRetry] = useState(false);
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -56,27 +58,73 @@ export const ImageSelector = ({ caption, onComplete, onBack }: ImageSelectorProp
 
   const handleGenerateAI = async (mode: 'ai_only' | 'with_upload' | 'with_brand_asset', referenceImage?: string) => {
     setIsGenerating(true);
+    setShowRetry(false);
+    setLoadingMessage("Creating your image...");
+    
+    // Progressive loading messages
+    const messageTimers: NodeJS.Timeout[] = [];
+    messageTimers.push(setTimeout(() => setLoadingMessage("Still working on it..."), 5000));
+    messageTimers.push(setTimeout(() => setLoadingMessage("Almost there, hang tight..."), 15000));
+    messageTimers.push(setTimeout(() => setLoadingMessage("This is taking longer than usual, but we're still working on it..."), 30000));
+    
+    // Cleanup function for timers
+    const clearTimers = () => messageTimers.forEach(timer => clearTimeout(timer));
+    
     try {
+      // Create AbortController for timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 45000); // 45 second timeout
+      
       const { data, error } = await supabase.functions.invoke('social-generate-image', {
         body: {
           client_id: selectedClient?.id,
           caption_text: caption,
           image_mode: mode,
           reference_image: referenceImage,
-        }
+        },
+        signal: controller.signal
       });
+      
+      clearTimeout(timeoutId);
 
-      if (error) throw error;
+      if (error) {
+        // Handle specific error types
+        if (error.message?.includes('Rate limit') || error.message?.includes('429')) {
+          throw new Error('You\'ve hit the AI usage limit. Please wait a moment and try again.');
+        } else if (error.message?.includes('usage limit') || error.message?.includes('402')) {
+          throw new Error('AI usage limit reached. Please add credits to your workspace.');
+        }
+        throw error;
+      }
 
       setGeneratedImages(data.images || []);
+      setShowRetry(false);
     } catch (error: any) {
       console.error('Error generating image:', error);
+      
+      let errorMessage = "Please try again";
+      
+      if (error.name === 'AbortError') {
+        errorMessage = 'Image generation took too long. Try using a simpler image or try again.';
+      } else if (error.message?.includes('Rate limit')) {
+        errorMessage = 'You\'ve hit the AI usage limit. Please wait a moment and try again.';
+      } else if (error.message?.includes('usage limit')) {
+        errorMessage = 'AI usage limit reached. Please add credits to your workspace.';
+      } else if (error.message?.includes('Connection') || error.message?.includes('network')) {
+        errorMessage = 'Connection timed out. Please check your internet and try again.';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
       toast({
         title: "Couldn't generate image",
-        description: error.message || "Please try again",
+        description: errorMessage,
         variant: "destructive"
       });
+      
+      setShowRetry(true);
     } finally {
+      clearTimers();
       setIsGenerating(false);
     }
   };
@@ -167,8 +215,25 @@ export const ImageSelector = ({ caption, onComplete, onBack }: ImageSelectorProp
           {isGenerating && (
             <div className="flex flex-col items-center gap-4 py-12">
               <Loader2 className="h-12 w-12 animate-spin text-primary" />
-              <p className="text-lg font-medium">Creating your image...</p>
-              <p className="text-sm text-muted-foreground">This usually takes 10-15 seconds</p>
+              <p className="text-lg font-medium">{loadingMessage}</p>
+              <div className="flex flex-col gap-1 items-center">
+                <p className="text-sm text-muted-foreground">⏳ Loading brand information</p>
+                <p className="text-sm text-muted-foreground">🎨 Generating image with AI</p>
+                <p className="text-sm text-muted-foreground">💾 Saving to your assets</p>
+              </div>
+            </div>
+          )}
+          
+          {showRetry && !isGenerating && (
+            <div className="flex flex-col items-center gap-4 py-8">
+              <p className="text-sm text-muted-foreground">Generation failed. Would you like to try again?</p>
+              <Button
+                onClick={() => handleGenerateAI('ai_only')}
+                size="lg"
+              >
+                <Sparkles className="mr-2 h-4 w-4" />
+                Retry Generation
+              </Button>
             </div>
           )}
 
