@@ -82,14 +82,10 @@ serve(async (req) => {
 
     console.log('Inviting team member:', { email, name, role, client_id });
 
-    // Generate a temporary password
-    const tempPassword = `Temp${Math.random().toString(36).slice(-8)}!`;
-
-    // Create the user with admin client
+    // Create the user without password - they'll set it via reset link
     const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
       email,
-      password: tempPassword,
-      email_confirm: true,
+      email_confirm: false, // User will confirm via password reset link
       user_metadata: {
         name,
         role,
@@ -143,7 +139,21 @@ serve(async (req) => {
     const clientName = clientData?.name || 'the team';
     const appUrl = 'https://os.spearlance.com';
 
-    // Send invitation email
+    // Generate password reset link
+    const { data: resetData, error: resetError } = await supabaseAdmin.auth.admin.generateLink({
+      type: 'recovery',
+      email: email,
+      options: {
+        redirectTo: `${appUrl}/auth/reset-password`
+      }
+    });
+
+    if (resetError) {
+      console.error('Error generating reset link:', resetError);
+      throw new Error('Failed to generate password reset link');
+    }
+
+    // Send invitation email with password reset link
     try {
       await resend.emails.send({
         from: 'Team Invitation <noreply@em.os.spearlance.com>',
@@ -154,13 +164,13 @@ serve(async (req) => {
           <p>Hi ${name},</p>
           <p>You've been invited to join <strong>${clientName}</strong>'s account.</p>
           
-          <h2>Your login credentials:</h2>
-          <p><strong>Email:</strong> ${email}<br>
-          <strong>Temporary Password:</strong> ${tempPassword}</p>
+          <h2>Set up your account:</h2>
+          <p>Click the link below to set your password and activate your account:</p>
           
-          <p><a href="${appUrl}/auth" style="display: inline-block; padding: 12px 24px; background-color: #0070f3; color: white; text-decoration: none; border-radius: 5px; margin: 16px 0;">Log in here</a></p>
+          <p><a href="${resetData.properties.action_link}" style="display: inline-block; padding: 12px 24px; background-color: #0070f3; color: white; text-decoration: none; border-radius: 5px; margin: 16px 0;">Set Password & Log In</a></p>
           
-          <p><strong>Important:</strong> Please change your password after your first login.</p>
+          <p><strong>Important:</strong> This link will expire in 24 hours for security reasons.</p>
+          <p>Your email: <strong>${email}</strong></p>
           
           <p>Best regards,<br>The Team</p>
         `,

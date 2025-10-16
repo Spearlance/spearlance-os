@@ -86,14 +86,12 @@ serve(async (req) => {
       throw new Error('User with this email already exists');
     }
 
-    const tempPassword = Math.random().toString(36).slice(-12) + Math.random().toString(36).slice(-12);
-
     console.log('Creating new user:', { email, name, role });
 
+    // Create user without password - they'll set it via reset link
     const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
       email,
-      password: tempPassword,
-      email_confirm: true,
+      email_confirm: false, // User will confirm via password reset link
       user_metadata: {
         name,
         role,
@@ -119,9 +117,22 @@ serve(async (req) => {
 
     console.log('User created successfully');
 
-    // Prepare email content
+    // Generate password reset link
     const appUrl = 'https://os.spearlance.com';
-    
+    const { data: resetData, error: resetError } = await supabaseAdmin.auth.admin.generateLink({
+      type: 'recovery',
+      email: email,
+      options: {
+        redirectTo: `${appUrl}/auth/reset-password`
+      }
+    });
+
+    if (resetError) {
+      console.error('Error generating reset link:', resetError);
+      throw new Error('Failed to generate password reset link');
+    }
+
+    // Prepare email content
     let clientNamesText = '';
     if (client_ids.length > 0) {
       const { data: clientsData } = await supabaseAdmin
@@ -137,7 +148,7 @@ serve(async (req) => {
 
     const roleDisplay = role.charAt(0).toUpperCase() + role.slice(1);
 
-    // Send invitation email
+    // Send invitation email with password reset link
     try {
       await resend.emails.send({
         from: 'Platform Invitation <noreply@em.os.spearlance.com>',
@@ -150,13 +161,13 @@ serve(async (req) => {
           
           ${clientNamesText}
           
-          <h2>Your login credentials:</h2>
-          <p><strong>Email:</strong> ${email}<br>
-          <strong>Temporary Password:</strong> ${tempPassword}</p>
+          <h2>Set up your account:</h2>
+          <p>Click the link below to set your password and activate your account:</p>
           
-          <p><a href="${appUrl}/auth" style="display: inline-block; padding: 12px 24px; background-color: #0070f3; color: white; text-decoration: none; border-radius: 5px; margin: 16px 0;">Log in here</a></p>
+          <p><a href="${resetData.properties.action_link}" style="display: inline-block; padding: 12px 24px; background-color: #0070f3; color: white; text-decoration: none; border-radius: 5px; margin: 16px 0;">Set Password & Log In</a></p>
           
-          <p><strong>Important:</strong> Please change your password after your first login.</p>
+          <p><strong>Important:</strong> This link will expire in 24 hours for security reasons.</p>
+          <p>Your email: <strong>${email}</strong></p>
           
           <p>Best regards,<br>The Team</p>
         `,
