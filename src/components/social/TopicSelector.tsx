@@ -117,7 +117,7 @@ export const TopicSelector = ({ onComplete }: TopicSelectorProps) => {
                 <button
                   key={topic.id}
                   onClick={() => handleTopicSelect(topic.id)}
-                  className={`flex flex-col items-center justify-center p-4 rounded-lg border-2 transition-all min-w-[100px] ${
+                  className={`flex flex-col items-center justify-center p-4 rounded-lg border-2 transition-all min-w-[120px] w-[120px] ${
                     isSelected 
                       ? 'border-primary bg-primary/5' 
                       : 'border-border hover:border-primary/50 hover:bg-accent'
@@ -149,7 +149,7 @@ export const TopicSelector = ({ onComplete }: TopicSelectorProps) => {
                 <div key={topic.id} className="flex flex-col gap-1">
                   <button
                     onClick={() => handleTopicSelect(topic.id)}
-                    className={`flex flex-col items-center justify-center p-4 rounded-lg border-2 transition-all min-w-[100px] ${
+                    className={`flex flex-col items-center justify-center p-4 rounded-lg border-2 transition-all min-w-[120px] w-[120px] ${
                       isSelected 
                         ? 'border-primary bg-primary/5' 
                         : 'border-border hover:border-primary/50 hover:bg-accent'
