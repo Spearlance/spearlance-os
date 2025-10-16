@@ -3,6 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PostCreator } from "@/components/social/PostCreator";
 import { PostScheduler } from "@/components/social/PostScheduler";
 import { PostsList } from "@/components/social/PostsList";
+import { SocialMediaCallout } from "@/components/social/SocialMediaCallout";
 import { useClient } from "@/contexts/ClientContext";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
@@ -32,6 +33,8 @@ const SocialMedia = () => {
           Create and schedule posts that perfectly match your brand
         </p>
       </div>
+
+      <SocialMediaCallout />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="grid w-full max-w-2xl grid-cols-3">
