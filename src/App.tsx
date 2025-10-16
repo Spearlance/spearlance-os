@@ -27,6 +27,9 @@ import Reports from "./pages/Reports";
 import SocialMedia from "./pages/SocialMedia";
 import Support from "./pages/Support";
 import TicketDetail from "./pages/TicketDetail";
+import SupportDocs from "./pages/SupportDocs";
+import SupportDocsArticle from "./pages/SupportDocsArticle";
+import AdminSupportDocs from "./pages/AdminSupportDocs";
 import Settings from "./pages/Settings";
 import Admin from "./pages/Admin";
 import Admin2FASetup from "./pages/Admin2FASetup";
@@ -74,6 +77,9 @@ const App = () => (
             <Route path="/social-media" element={<MainLayout><SocialMedia /></MainLayout>} />
             <Route path="/support" element={<MainLayout><Support /></MainLayout>} />
             <Route path="/support/:id" element={<MainLayout><TicketDetail /></MainLayout>} />
+            <Route path="/support/docs" element={<MainLayout><SupportDocs /></MainLayout>} />
+            <Route path="/support/docs/:category/:slug" element={<MainLayout><SupportDocsArticle /></MainLayout>} />
+            <Route path="/admin/support-docs" element={<MainLayout><AdminSupportDocs /></MainLayout>} />
             <Route path="/settings" element={<MainLayout><Settings /></MainLayout>} />
             <Route path="/admin" element={<MainLayout><Admin /></MainLayout>} />
             <Route path="/admin/2fa-setup" element={<MainLayout><Admin2FASetup /></MainLayout>} />

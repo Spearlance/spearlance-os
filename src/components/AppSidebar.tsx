@@ -64,8 +64,12 @@ const menuItems = [
   { title: "Launch Pad", url: "/launchpad", icon: Rocket },
   { title: "Tasks", url: "/tasks", icon: CheckSquare },
   { title: "Avatar", url: "/avatar", icon: Users },
-  { title: "Support", url: "/support", icon: HelpCircle },
   { title: "Settings", url: "/settings", icon: Settings },
+];
+
+const supportSubItems = [
+  { title: "Knowledge Base", url: "/support/docs", icon: BookOpen },
+  { title: "Support Tickets", url: "/support", icon: HelpCircle },
 ];
 
 const brandSubItems = [
@@ -100,6 +104,7 @@ export function AppSidebar() {
   const [brandOpen, setBrandOpen] = useState(false);
   const [marketingOpen, setMarketingOpen] = useState(true);
   const [communicationsOpen, setCommunicationsOpen] = useState(false);
+  const [supportOpen, setSupportOpen] = useState(false);
   const { isComplete } = useLaunchPadStatus();
   const { isSelfService } = useAccountType();
 
@@ -350,6 +355,42 @@ export function AppSidebar() {
                 </SidebarMenuItem>
               </Collapsible>
 
+              <Collapsible open={supportOpen} onOpenChange={setSupportOpen}>
+                <SidebarMenuItem>
+                  <CollapsibleTrigger asChild>
+                    <SidebarMenuButton>
+                      <HelpCircle className="h-4 w-4" />
+                      {!collapsed && (
+                        <>
+                          <span>Support</span>
+                          <ChevronDown 
+                            className={`ml-auto h-4 w-4 transition-transform ${
+                              supportOpen ? "rotate-180" : ""
+                            }`}
+                          />
+                        </>
+                      )}
+                    </SidebarMenuButton>
+                  </CollapsibleTrigger>
+                  {!collapsed && (
+                    <CollapsibleContent>
+                      <SidebarMenuSub>
+                        {supportSubItems.map((subItem) => (
+                          <SidebarMenuSubItem key={subItem.title}>
+                            <SidebarMenuSubButton asChild>
+                              <NavLink to={subItem.url} end className={getNavClass}>
+                                <subItem.icon className="h-4 w-4" />
+                                <span>{subItem.title}</span>
+                              </NavLink>
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
+                        ))}
+                      </SidebarMenuSub>
+                    </CollapsibleContent>
+                  )}
+                </SidebarMenuItem>
+              </Collapsible>
+
               {menuItems.slice(4).map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
@@ -362,14 +403,24 @@ export function AppSidebar() {
               ))}
 
               {userRole === "admin" && (
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild>
-                    <NavLink to="/admin" end className={getNavClass}>
-                      <Shield className="h-4 w-4" />
-                      {!collapsed && <span>Admin</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
+                <>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild>
+                      <NavLink to="/admin" end className={getNavClass}>
+                        <Shield className="h-4 w-4" />
+                        {!collapsed && <span>Admin</span>}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild>
+                      <NavLink to="/admin/support-docs" end className={getNavClass}>
+                        <BookOpen className="h-4 w-4" />
+                        {!collapsed && <span>Support Docs</span>}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </>
               )}
             </SidebarMenu>
           </SidebarGroupContent>
