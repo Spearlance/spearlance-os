@@ -241,16 +241,25 @@ export function AppSidebar() {
                     {!collapsed && (
                       <CollapsibleContent>
                         <SidebarMenuSub>
-                          {communicationsSubItems.map((subItem) => (
-                            <SidebarMenuSubItem key={subItem.title}>
-                              <SidebarMenuSubButton asChild>
-                                <NavLink to={subItem.url} className={getNavClass}>
-                                  <subItem.icon className="h-4 w-4" />
-                                  <span>{subItem.title}</span>
-                                </NavLink>
-                              </SidebarMenuSubButton>
-                            </SidebarMenuSubItem>
-                          ))}
+                {communicationsSubItems
+                  .filter((subItem) => {
+                    // Hide "Logs" from non-FMM/Admin users
+                    if (subItem.title === "Logs") {
+                      return userRole === "admin" || userRole === "fmm";
+                    }
+                    return true;
+                  })
+                  .map((subItem) => (
+                    <SidebarMenuSubItem key={subItem.title}>
+                      <SidebarMenuSubButton asChild>
+                        <NavLink to={subItem.url} className={getNavClass}>
+                          <subItem.icon className="h-4 w-4" />
+                          <span>{subItem.title}</span>
+                        </NavLink>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                  ))
+                }
                         </SidebarMenuSub>
                       </CollapsibleContent>
                     )}
