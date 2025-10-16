@@ -4,10 +4,12 @@ import { useClient } from "@/contexts/ClientContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Calendar, CheckSquare, FolderOpen, Users, ExternalLink, Plus, Rocket, Wrench } from "lucide-react";
+import { Calendar, CheckSquare, Target, Zap, AlertCircle, BookOpen, RefreshCw, Rocket } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useLaunchPadStatus } from "@/hooks/useLaunchPadStatus";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/hooks/use-toast";
 
 interface DashboardStats {
   nextMeeting?: any;
@@ -17,28 +19,102 @@ interface DashboardStats {
     done: number;
   };
   recentMeetings: any[];
-  recentAssets: any[];
-  avatar?: any;
   marketingTools: any[];
+}
+
+interface PriorityAction {
+  title: string;
+  description: string;
+  reason: string;
+  link: string;
+  priority: 'urgent' | 'important' | 'momentum';
+}
+
+interface DailyActionPlan {
+  id: string;
+  context_summary: string;
+  priority_actions: PriorityAction[];
+  avatar_story: string;
+  generated_at: string;
 }
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const { selectedClient } = useClient();
   const { isComplete, loading: launchPadLoading } = useLaunchPadStatus();
   const [stats, setStats] = useState<DashboardStats>({
     taskCounts: { to_do: 0, in_progress: 0, done: 0 },
     recentMeetings: [],
-    recentAssets: [],
     marketingTools: [],
   });
+  const [actionPlan, setActionPlan] = useState<DailyActionPlan | null>(null);
   const [loading, setLoading] = useState(true);
+  const [generatingPlan, setGeneratingPlan] = useState(false);
 
   useEffect(() => {
     if (selectedClient) {
       loadDashboardData();
+      loadDailyActionPlan();
     }
   }, [selectedClient]);
+
+  const loadDailyActionPlan = async (force = false) => {
+    if (!selectedClient) return;
+
+    try {
+      setGeneratingPlan(true);
+
+      // Check if plan exists for today
+      if (!force) {
+        const today = new Date().toISOString().split('T')[0];
+        const { data: existingPlan } = await supabase
+          .from('daily_action_plans')
+          .select('*')
+          .eq('client_id', selectedClient.id)
+          .eq('plan_date', today)
+          .maybeSingle();
+
+        if (existingPlan) {
+          setActionPlan({
+            ...existingPlan,
+            priority_actions: existingPlan.priority_actions as unknown as PriorityAction[]
+          });
+          setGeneratingPlan(false);
+          return;
+        }
+      }
+
+      // Generate new plan
+      const { data, error } = await supabase.functions.invoke('generate-daily-action-plan', {
+        body: { client_id: selectedClient.id, force }
+      });
+
+      if (error) {
+        console.error('Error generating plan:', error);
+        toast({
+          title: "Failed to generate action plan",
+          description: error.message || "Please try again later",
+          variant: "destructive"
+        });
+      } else if (data) {
+        setActionPlan({
+          ...data,
+          priority_actions: data.priority_actions as unknown as PriorityAction[]
+        });
+        if (force) {
+          toast({
+            title: "Action plan refreshed",
+            description: "Your daily plan has been updated"
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error loading action plan:', error);
+    } finally {
+      setGeneratingPlan(false);
+    }
+  };
 
   const loadDashboardData = async () => {
     if (!selectedClient) return;
@@ -74,22 +150,7 @@ const Dashboard = () => {
         .gte('date_time', new Date().toISOString())
         .order('date_time', { ascending: true })
         .limit(1)
-        .single();
-
-      // Load recent assets
-      const { data: assets } = await supabase
-        .from('assets')
-        .select('*')
-        .eq('client_id', selectedClient.id)
-        .order('created_at', { ascending: false })
-        .limit(3);
-
-      // Load avatar
-      const { data: avatar } = await supabase
-        .from('avatars')
-        .select('*')
-        .eq('client_id', selectedClient.id)
-        .single();
+        .maybeSingle();
 
       // Load marketing tools
       const { data: tools } = await supabase
@@ -103,14 +164,38 @@ const Dashboard = () => {
         nextMeeting: nextMeeting || undefined,
         taskCounts,
         recentMeetings: meetings || [],
-        recentAssets: assets || [],
-        avatar: avatar || undefined,
         marketingTools: tools || [],
       });
     } catch (error) {
       console.error('Error loading dashboard data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const getPriorityIcon = (priority: string) => {
+    switch (priority) {
+      case 'urgent':
+        return <AlertCircle className="h-5 w-5 text-destructive" />;
+      case 'important':
+        return <Target className="h-5 w-5 text-primary" />;
+      case 'momentum':
+        return <Zap className="h-5 w-5 text-accent" />;
+      default:
+        return <Target className="h-5 w-5" />;
+    }
+  };
+
+  const getPriorityLabel = (priority: string) => {
+    switch (priority) {
+      case 'urgent':
+        return 'Urgent';
+      case 'important':
+        return 'Important';
+      case 'momentum':
+        return 'Quick Win';
+      default:
+        return priority;
     }
   };
 
@@ -152,12 +237,110 @@ const Dashboard = () => {
             Launch Pad Setup Incomplete
           </AlertTitle>
           <AlertDescription className="text-destructive/90">
-            Complete your Launch Pad setup to unlock the full potential of your marketing operations. 
-            Click here to continue where you left off.
+            Complete your Launch Pad setup to unlock personalized daily action plans and the full potential of your marketing operations.
           </AlertDescription>
         </Alert>
       )}
 
+      {/* Daily Action Plan Hero Section */}
+      {isComplete && (
+        <Card className="shadow-elegant border-primary/20">
+          <CardHeader>
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <Target className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                  <CardTitle className="text-2xl">Your Action Plan for Today</CardTitle>
+                  <CardDescription className="text-base mt-1">
+                    {new Date().toLocaleDateString('en-US', { 
+                      weekday: 'long', 
+                      year: 'numeric', 
+                      month: 'long', 
+                      day: 'numeric' 
+                    })}
+                  </CardDescription>
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => loadDailyActionPlan(true)}
+                disabled={generatingPlan}
+              >
+                <RefreshCw className={`h-4 w-4 mr-2 ${generatingPlan ? 'animate-spin' : ''}`} />
+                Refresh Plan
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {generatingPlan && !actionPlan ? (
+              <div className="space-y-4">
+                <Skeleton className="h-4 w-3/4" />
+                <div className="space-y-3">
+                  <Skeleton className="h-24 w-full" />
+                  <Skeleton className="h-24 w-full" />
+                  <Skeleton className="h-24 w-full" />
+                </div>
+              </div>
+            ) : actionPlan ? (
+              <>
+                {actionPlan.context_summary && (
+                  <p className="text-muted-foreground">{actionPlan.context_summary}</p>
+                )}
+                
+                <div className="space-y-3">
+                  {actionPlan.priority_actions.map((action, index) => (
+                    <Card 
+                      key={index}
+                      className="border-l-4 hover:shadow-md transition-shadow cursor-pointer"
+                      style={{
+                        borderLeftColor: action.priority === 'urgent' ? 'hsl(var(--destructive))' : 
+                                        action.priority === 'important' ? 'hsl(var(--primary))' : 
+                                        'hsl(var(--accent))'
+                      }}
+                      onClick={() => navigate(action.link)}
+                    >
+                      <CardContent className="p-4">
+                        <div className="flex items-start gap-4">
+                          {getPriorityIcon(action.priority)}
+                          <div className="flex-1 space-y-2">
+                            <div className="flex items-center gap-2">
+                              <h4 className="font-semibold">{action.title}</h4>
+                              <Badge variant="outline" className="text-xs">
+                                {getPriorityLabel(action.priority)}
+                              </Badge>
+                            </div>
+                            <p className="text-sm text-muted-foreground">{action.description}</p>
+                          </div>
+                          <Button size="sm" variant="ghost">
+                            Take Action →
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <div className="text-center py-8">
+                <Target className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                <p className="text-muted-foreground">No action plan available yet</p>
+                <Button 
+                  onClick={() => loadDailyActionPlan(true)} 
+                  className="mt-4"
+                  disabled={generatingPlan}
+                >
+                  Generate Today's Plan
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Task Stats */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         <Card className="shadow-elegant hover:shadow-glow transition-all">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -210,6 +393,34 @@ const Dashboard = () => {
         </Card>
       </div>
 
+      {/* Avatar Story Card */}
+      {actionPlan?.avatar_story && (
+        <Card className="shadow-elegant border-accent/20">
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <BookOpen className="h-5 w-5 text-accent" />
+              <div>
+                <CardTitle>A Day in the Life of Your Customer</CardTitle>
+                <CardDescription>Understanding who you serve</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
+              {actionPlan.avatar_story}
+            </p>
+            <Button 
+              variant="link" 
+              className="mt-4 px-0"
+              onClick={() => navigate('/avatar')}
+            >
+              Learn more about your avatar →
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Recent Meetings and Marketing Tools */}
       <div className="grid gap-6 md:grid-cols-2">
         <Card className="shadow-elegant">
           <CardHeader>
@@ -221,126 +432,79 @@ const Dashboard = () => {
               <p className="text-sm text-muted-foreground">No meetings yet</p>
             ) : (
               stats.recentMeetings.map((meeting) => (
-                <div key={meeting.id} className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
+                <div 
+                  key={meeting.id} 
+                  className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted cursor-pointer transition-colors"
+                  onClick={() => navigate(`/meetings/${meeting.id}`)}
+                >
                   <Calendar className="h-5 w-5 text-primary mt-0.5" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">
+                    <p className="text-sm font-medium">
+                      {meeting.title}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
                       {new Date(meeting.date_time).toLocaleDateString()}
                     </p>
-                    <p className="text-sm text-muted-foreground line-clamp-2">
-                      {meeting.summary}
-                    </p>
-                  </div>
-                </div>
-              ))
-            )}
-          </CardContent>
-        </Card>
-
-        <Card className="shadow-elegant">
-          <CardHeader>
-            <CardTitle>Recent Assets</CardTitle>
-            <CardDescription>Latest uploaded files</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {stats.recentAssets.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No assets yet</p>
-            ) : (
-              stats.recentAssets.map((asset) => (
-                <div key={asset.id} className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
-                  <FolderOpen className="h-5 w-5 text-primary mt-0.5" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{asset.title}</p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <Badge variant="outline" className="text-xs">{asset.type}</Badge>
-                    </div>
-                  </div>
-                </div>
-              ))
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {stats.avatar && (
-        <Card className="shadow-elegant">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5 text-primary" />
-              Customer Avatar
-            </CardTitle>
-            <CardDescription>{stats.avatar.avatar_name}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {stats.avatar.pains && (
-                <div>
-                  <h4 className="text-sm font-medium mb-2">Top Pains:</h4>
-                  <p className="text-sm text-muted-foreground">{stats.avatar.pains}</p>
-                </div>
-              )}
-              {stats.avatar.ad_hooks && stats.avatar.ad_hooks.length > 0 && (
-                <div>
-                  <h4 className="text-sm font-medium mb-2">Ad Hooks:</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {stats.avatar.ad_hooks.slice(0, 3).map((hook: string, i: number) => (
-                      <Badge key={i} variant="secondary">{hook}</Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {stats.marketingTools.length > 0 && (
-        <Card className="shadow-elegant">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle>Your Marketing Tools</CardTitle>
-                <CardDescription>Quick access to your platforms</CardDescription>
-              </div>
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={() => navigate("/marketing/tools")}
-              >
-                View All
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-              {stats.marketingTools.map((tool) => (
-                <Button
-                  key={tool.id}
-                  variant="outline"
-                  size="sm"
-                  asChild
-                  className="h-auto flex-col gap-2 p-4"
-                >
-                  <a href={tool.url} target="_blank" rel="noopener noreferrer">
-                    {tool.logo_url ? (
-                      <img 
-                        src={tool.logo_url} 
-                        alt={tool.name}
-                        className="h-8 w-8 object-contain"
-                      />
-                    ) : (
-                      <Wrench className="h-6 w-6" />
+                    {meeting.summary && (
+                      <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
+                        {meeting.summary}
+                      </p>
                     )}
-                    <span className="text-xs font-medium text-center line-clamp-2">
-                      {tool.name}
-                    </span>
-                  </a>
-                </Button>
-              ))}
-            </div>
+                  </div>
+                </div>
+              ))
+            )}
           </CardContent>
         </Card>
-      )}
+
+        {stats.marketingTools.length > 0 && (
+          <Card className="shadow-elegant">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Your Marketing Tools</CardTitle>
+                  <CardDescription>Quick access to your platforms</CardDescription>
+                </div>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => navigate("/marketing/tools")}
+                >
+                  View All
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 gap-3">
+                {stats.marketingTools.slice(0, 4).map((tool) => (
+                  <Button
+                    key={tool.id}
+                    variant="outline"
+                    size="sm"
+                    asChild
+                    className="h-auto flex-col gap-2 p-4 hover:shadow-md transition-shadow"
+                  >
+                    <a href={tool.url} target="_blank" rel="noopener noreferrer">
+                      {tool.logo_url ? (
+                        <img 
+                          src={tool.logo_url} 
+                          alt={tool.name}
+                          className="h-8 w-8 object-contain"
+                        />
+                      ) : (
+                        <Target className="h-6 w-6" />
+                      )}
+                      <span className="text-xs font-medium text-center line-clamp-2">
+                        {tool.name}
+                      </span>
+                    </a>
+                  </Button>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
     </div>
   );
 };

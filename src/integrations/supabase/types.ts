@@ -1167,6 +1167,50 @@ export type Database = {
           },
         ]
       }
+      daily_action_plans: {
+        Row: {
+          avatar_story: string | null
+          client_id: string
+          context_summary: string | null
+          created_at: string | null
+          data_snapshot: Json | null
+          generated_at: string
+          id: string
+          plan_date: string
+          priority_actions: Json
+        }
+        Insert: {
+          avatar_story?: string | null
+          client_id: string
+          context_summary?: string | null
+          created_at?: string | null
+          data_snapshot?: Json | null
+          generated_at?: string
+          id?: string
+          plan_date?: string
+          priority_actions?: Json
+        }
+        Update: {
+          avatar_story?: string | null
+          client_id?: string
+          context_summary?: string | null
+          created_at?: string | null
+          data_snapshot?: Json | null
+          generated_at?: string
+          id?: string
+          plan_date?: string
+          priority_actions?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_action_plans_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       front_webhook_logs: {
         Row: {
           client_id: string | null

@@ -65,3 +65,27 @@ verify_jwt = false
 
 [functions.generate-mood-board]
 verify_jwt = true
+
+[functions.generate-daily-action-plan]
+verify_jwt = true
+
+[functions.social-generate-ideas]
+verify_jwt = true
+
+[functions.social-generate-captions]
+verify_jwt = true
+
+[functions.social-generate-image]
+verify_jwt = true
+
+[functions.backfill-social-media-images]
+verify_jwt = true
+
+[functions.front-webhook-handler]
+verify_jwt = false
+
+[functions.front-sync-conversations]
+verify_jwt = true
+
+[functions.create-user]
+verify_jwt = true
