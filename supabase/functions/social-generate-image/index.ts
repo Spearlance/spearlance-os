@@ -130,11 +130,128 @@ Generate a clean, eye-catching image that represents this message visually.`;
     
     // Extract images from chat completion response
     const generatedImages = aiData.choices?.[0]?.message?.images || [];
-    const images = generatedImages.map((img: any, index: number) => ({
-      image_url: img.image_url?.url,
-      prompt_used: basePrompt,
-      variation_number: index + 1
-    }));
+    
+    // Check if "Social Media" folder exists for this client
+    const { data: existingFolder } = await supabaseClient
+      .from('asset_folders')
+      .select('id')
+      .eq('client_id', client_id)
+      .eq('name', 'Social Media')
+      .maybeSingle();
+
+    let folderId = existingFolder?.id;
+
+    // Create folder if it doesn't exist
+    if (!folderId) {
+      const { data: newFolder, error: folderError } = await supabaseClient
+        .from('asset_folders')
+        .insert({
+          client_id: client_id,
+          name: 'Social Media',
+          color: '#8B5CF6',
+          created_by: (await supabaseClient.auth.getUser()).data.user?.id
+        })
+        .select('id')
+        .single();
+      
+      if (!folderError && newFolder) {
+        folderId = newFolder.id;
+      }
+    }
+
+    // Process each generated image
+    const processedImages = [];
+
+    for (let i = 0; i < generatedImages.length; i++) {
+      const img = generatedImages[i];
+      const base64Data = img.image_url?.url;
+      
+      if (base64Data && base64Data.startsWith('data:image')) {
+        try {
+          // Extract base64 content and convert to buffer
+          const base64Content = base64Data.split(',')[1];
+          const buffer = Uint8Array.from(atob(base64Content), c => c.charCodeAt(0));
+          
+          // Upload to storage in social-media subfolder
+          const timestamp = Date.now();
+          const fileName = `${client_id}/social-media/generated-${timestamp}-${i}.png`;
+          
+          const { data: uploadData, error: uploadError } = await supabaseClient.storage
+            .from('client-assets')
+            .upload(fileName, buffer, {
+              contentType: 'image/png',
+              upsert: false
+            });
+          
+          if (!uploadError && uploadData) {
+            // Get public URL
+            const { data: urlData } = supabaseClient.storage
+              .from('client-assets')
+              .getPublicUrl(fileName);
+            
+            // Create asset record
+            const { data: assetData, error: assetError } = await supabaseClient
+              .from('assets')
+              .insert({
+                client_id: client_id,
+                folder_id: folderId,
+                title: `Social Media - ${new Date().toLocaleDateString()} (${i + 1})`,
+                type: 'image',
+                storage_type: 'upload',
+                file_url: urlData.publicUrl,
+                preview_url: urlData.publicUrl,
+                tags: ['social-media', 'ai-generated'],
+                created_by: (await supabaseClient.auth.getUser()).data.user?.id
+              })
+              .select()
+              .single();
+            
+            if (!assetError && assetData) {
+              console.log(`✅ Saved image ${i + 1} to Assets folder:`, assetData.id);
+              
+              processedImages.push({
+                image_url: urlData.publicUrl,
+                asset_id: assetData.id,
+                prompt_used: basePrompt,
+                variation_number: i + 1
+              });
+            } else {
+              console.error(`❌ Failed to create asset record:`, assetError);
+              // Fallback to base64 if asset creation fails
+              processedImages.push({
+                image_url: base64Data,
+                prompt_used: basePrompt,
+                variation_number: i + 1
+              });
+            }
+          } else {
+            console.error(`❌ Failed to upload to storage:`, uploadError);
+            // Fallback to base64 if upload fails
+            processedImages.push({
+              image_url: base64Data,
+              prompt_used: basePrompt,
+              variation_number: i + 1
+            });
+          }
+        } catch (err) {
+          console.error(`❌ Error processing image ${i}:`, err);
+          // Fallback to base64 on any error
+          processedImages.push({
+            image_url: base64Data,
+            prompt_used: basePrompt,
+            variation_number: i + 1
+          });
+        }
+      }
+    }
+
+    // Use processed images if we have them, otherwise fallback to original base64
+    const images = processedImages.length > 0 ? processedImages : 
+      generatedImages.map((img: any, index: number) => ({
+        image_url: img.image_url?.url,
+        prompt_used: basePrompt,
+        variation_number: index + 1
+      }));
 
     return new Response(
       JSON.stringify({ images }),
