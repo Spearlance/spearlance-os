@@ -35,6 +35,14 @@ export function AssetDrawer({ asset, open, onOpenChange, onUpdate }: AssetDrawer
     }
   }, [asset.id]);
 
+  // Sync local state when asset changes
+  useEffect(() => {
+    setTitle(asset.title);
+    setType(asset.type);
+    setFileUrl(asset.file_url || "");
+    setTags(asset.tags?.join(", ") || "");
+  }, [asset]);
+
   const loadRelatedItems = async () => {
     // Load tasks that reference this asset
     const { data: tasks } = await supabase
@@ -106,6 +114,8 @@ export function AssetDrawer({ asset, open, onOpenChange, onUpdate }: AssetDrawer
 
   const handleDelete = async () => {
     try {
+      let storageDeleted = true;
+      
       // If it's an uploaded file, delete from storage first
       if (asset.storage_type === 'upload' && asset.file_url) {
         const pathMatch = asset.file_url.match(/client-assets\/(.+)$/);
@@ -116,25 +126,34 @@ export function AssetDrawer({ asset, open, onOpenChange, onUpdate }: AssetDrawer
           
           if (storageError) {
             console.error("Error deleting from storage:", storageError);
-            // Continue with database deletion even if storage deletion fails
+            storageDeleted = false;
           }
         }
       }
 
       // Delete the database record
-      const { error } = await supabase
+      const { error: dbError } = await supabase
         .from("assets")
         .delete()
         .eq("id", asset.id);
 
-      if (error) throw error;
+      if (dbError) {
+        throw new Error(`Database deletion failed: ${dbError.message}`);
+      }
 
-      toast({ title: "Asset deleted successfully" });
+      toast({ 
+        title: "Asset deleted successfully",
+        description: storageDeleted ? undefined : "Note: The file may still exist in storage"
+      });
       onUpdate();
       onOpenChange(false);
     } catch (error) {
       console.error("Error deleting asset:", error);
-      toast({ title: "Error deleting asset", variant: "destructive" });
+      toast({ 
+        title: "Error deleting asset", 
+        description: error instanceof Error ? error.message : "Unknown error",
+        variant: "destructive" 
+      });
     }
   };
 
@@ -192,6 +211,16 @@ export function AssetDrawer({ asset, open, onOpenChange, onUpdate }: AssetDrawer
                   src={asset.preview_url}
                   alt={title}
                   className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                    if (e.currentTarget.parentElement) {
+                      e.currentTarget.parentElement.classList.add('flex', 'items-center', 'justify-center');
+                      const icon = document.createElement('div');
+                      icon.className = 'text-muted-foreground text-sm';
+                      icon.textContent = 'Image not available';
+                      e.currentTarget.parentElement.appendChild(icon);
+                    }
+                  }}
                 />
               </div>
             )}

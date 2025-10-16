@@ -363,12 +363,28 @@ export default function Assets() {
                       src={asset.file_url}
                       alt={asset.title}
                       className="w-full h-48 object-cover"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                        const parent = e.currentTarget.parentElement;
+                        if (parent) {
+                          parent.classList.add('bg-muted', 'flex', 'items-center', 'justify-center');
+                          parent.innerHTML = `<div class="text-muted-foreground">${getTypeIcon(asset.type)}</div>`;
+                        }
+                      }}
                     />
                   ) : asset.preview_url ? (
                     <img
                       src={asset.preview_url}
                       alt={asset.title}
                       className="w-full h-48 object-cover"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                        const parent = e.currentTarget.parentElement;
+                        if (parent) {
+                          parent.classList.add('bg-muted', 'flex', 'items-center', 'justify-center');
+                          parent.innerHTML = `<div class="text-muted-foreground">${getTypeIcon(asset.type)}</div>`;
+                        }
+                      }}
                     />
                   ) : (
                     <div className="w-full h-48 bg-muted flex items-center justify-center">
