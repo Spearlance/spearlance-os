@@ -12,6 +12,7 @@ import { AvailabilitySettings } from "@calcom/atoms";
 import { useCalReady } from "@/components/CalProvider";
 import { InviteTeamMemberDialog } from "@/components/settings/InviteTeamMemberDialog";
 import { TeamMembersList } from "@/components/settings/TeamMembersList";
+import { ClientLogoUploader } from "@/components/settings/ClientLogoUploader";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Clock, Copy, Info } from "lucide-react";
@@ -103,6 +104,23 @@ export default function Settings() {
           </TabsList>
 
           <TabsContent value="general" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Client Logo</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ClientLogoUploader
+                clientId={client.id}
+                clientName={client.name}
+                currentLogoUrl={client.logo_url}
+                onLogoUpdated={(newUrl) => {
+                  setClient({ ...client, logo_url: newUrl });
+                  refreshClients();
+                }}
+              />
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle>Client Information</CardTitle>

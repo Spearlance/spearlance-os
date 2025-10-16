@@ -265,6 +265,14 @@ export function StageAssets({ submissionId, onContinue, onBack, onSaveExit }: St
         .update({ current_version_id: version.id })
         .eq("id", asset.id);
 
+      // If this is a logo upload, sync it to clients.logo_url
+      if (category === "logo") {
+        await supabase
+          .from("clients")
+          .update({ logo_url: urlData.publicUrl })
+          .eq("id", selectedClient.id);
+      }
+
       return { id: asset.id, name: file.name, category };
     } catch (error) {
       console.error("Upload error:", error);
