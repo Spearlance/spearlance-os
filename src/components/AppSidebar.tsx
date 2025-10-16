@@ -220,7 +220,7 @@ export function AppSidebar() {
                 </SidebarMenuItem>
               ))}
 
-              {!isLoading && !isSelfService && (
+              {!isLoading && (
                 <Collapsible open={communicationsOpen} onOpenChange={setCommunicationsOpen}>
                   <SidebarMenuItem>
                     <CollapsibleTrigger asChild>

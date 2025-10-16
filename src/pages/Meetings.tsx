@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { CreateMeetingDialog } from "@/components/meetings/CreateMeetingDialog";
+import { TldvCallout } from "@/components/meetings/TldvCallout";
 import { Plus, Info } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
@@ -27,6 +28,8 @@ export default function Meetings() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [userRole, setUserRole] = useState<string>("");
+  const [hasTldv, setHasTldv] = useState<boolean>(false);
+  const [checkingTldv, setCheckingTldv] = useState<boolean>(true);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -44,6 +47,35 @@ export default function Meetings() {
     };
     fetchUserRole();
   }, []);
+
+  useEffect(() => {
+    const checkTldvStatus = async () => {
+      if (!selectedClient) {
+        setCheckingTldv(false);
+        return;
+      }
+      
+      setCheckingTldv(true);
+      try {
+        const { data, error } = await supabase
+          .from('marketing_tools')
+          .select('id')
+          .eq('client_id', selectedClient.id)
+          .eq('name', 'TLDV')
+          .maybeSingle();
+        
+        if (error) throw error;
+        setHasTldv(!!data);
+      } catch (error) {
+        console.error('Error checking TLDV status:', error);
+        setHasTldv(false);
+      } finally {
+        setCheckingTldv(false);
+      }
+    };
+    
+    checkTldvStatus();
+  }, [selectedClient]);
 
   useEffect(() => {
     if (selectedClient) {
@@ -106,6 +138,10 @@ export default function Meetings() {
             refresh subscriptions every 12-24 hours.
           </AlertDescription>
         </Alert>
+      )}
+
+      {!checkingTldv && !hasTldv && (
+        <TldvCallout />
       )}
 
       <div className="border rounded-lg">
