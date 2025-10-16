@@ -20,6 +20,13 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { Info } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface CreateReportDialogProps {
   open: boolean;
@@ -311,7 +318,19 @@ export const CreateReportDialog = ({
 
           {/* Summary */}
           <div className="space-y-2">
-            <Label htmlFor="summary">Summary</Label>
+            <div className="flex items-center gap-2">
+              <Label htmlFor="summary">Summary</Label>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    <p>Please add a summary of your report including key metrics and numbers if you want the AI assistant to reference this report in conversations.</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
             <Textarea
               id="summary"
               value={formData.summary}
