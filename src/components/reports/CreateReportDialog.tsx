@@ -321,11 +321,17 @@ export const CreateReportDialog = ({
             <div className="flex items-center gap-2">
               <Label htmlFor="summary">Summary</Label>
               <TooltipProvider>
-                <Tooltip>
+                <Tooltip delayDuration={300}>
                   <TooltipTrigger asChild>
                     <Info className="h-4 w-4 text-muted-foreground cursor-help" />
                   </TooltipTrigger>
-                  <TooltipContent className="max-w-xs">
+                  <TooltipContent 
+                    className="max-w-xs z-[100]" 
+                    side="right"
+                    sideOffset={5}
+                    avoidCollisions={true}
+                    collisionPadding={10}
+                  >
                     <p>Please add a summary of your report including key metrics and numbers if you want the AI assistant to reference this report in conversations.</p>
                   </TooltipContent>
                 </Tooltip>
