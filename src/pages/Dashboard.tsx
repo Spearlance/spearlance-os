@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Calendar, CheckSquare, Target, Zap, AlertCircle, BookOpen, RefreshCw, Rocket, Sparkles, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useLaunchPadStatus } from "@/hooks/useLaunchPadStatus";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
@@ -462,16 +463,25 @@ const Dashboard = () => {
           </CardHeader>
           {actionPlan.avatar_story && (
             <CardContent>
-              <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
-                {actionPlan.avatar_story}
-              </p>
-              <Button 
-                variant="link" 
-                className="mt-4 px-0"
-                onClick={() => navigate('/avatar')}
-              >
-                Learn more about your avatar →
-              </Button>
+              <Accordion type="single" collapsible defaultValue="">
+                <AccordionItem value="story" className="border-0">
+                  <AccordionTrigger className="text-sm font-medium hover:no-underline">
+                    Read Story
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
+                      {actionPlan.avatar_story}
+                    </p>
+                    <Button 
+                      variant="link" 
+                      className="mt-4 px-0"
+                      onClick={() => navigate('/avatar')}
+                    >
+                      Learn more about your avatar →
+                    </Button>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
             </CardContent>
           )}
         </Card>
