@@ -32,6 +32,7 @@ import Admin from "./pages/Admin";
 import Admin2FASetup from "./pages/Admin2FASetup";
 import CalendarCallback from "./pages/CalendarCallback";
 import ResetPassword from "./pages/ResetPassword";
+import BackfillImages from "./pages/BackfillImages";
 
 const queryClient = new QueryClient();
 
@@ -76,6 +77,7 @@ const App = () => (
             <Route path="/settings" element={<MainLayout><Settings /></MainLayout>} />
             <Route path="/admin" element={<MainLayout><Admin /></MainLayout>} />
             <Route path="/admin/2fa-setup" element={<MainLayout><Admin2FASetup /></MainLayout>} />
+            <Route path="/backfill-images" element={<MainLayout><BackfillImages /></MainLayout>} />
             <Route path="/calendar/callback" element={<CalendarCallback />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
