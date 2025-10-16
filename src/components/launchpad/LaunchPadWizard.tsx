@@ -6,7 +6,6 @@ import { LaunchPadStage, LaunchPadSubmission } from "@/lib/launchpadTypes";
 import { ProgressHeader } from "./ProgressHeader";
 import { StageDiscovery } from "./StageDiscovery";
 import { StageMarketing } from "./StageMarketing";
-import { StageAccess } from "./StageAccess";
 import { StageAssets } from "./StageAssets";
 import { StageAvatar } from "./StageAvatar";
 import { SuccessScreen } from "./SuccessScreen";
@@ -194,17 +193,6 @@ export function LaunchPadWizard() {
             onSaveExit={handleSaveExit}
           />
         )}
-
-        {/* Access stage - Hidden for now, will be synced with Connected Accounts in Settings */}
-        {/* {submission.stage === "access" && (
-          <StageAccess
-            submissionId={submission.id}
-            initialData={submission.responses_json?.access}
-            onContinue={() => handleStageChange("assets")}
-            onBack={() => handleStageChange("marketing")}
-            onSaveExit={handleSaveExit}
-          />
-        )} */}
 
         {submission.stage === "assets" && (
           <StageAssets

@@ -10,7 +10,6 @@ interface ProgressHeaderProps {
 const allStages = [
   { id: "discovery" as LaunchPadStage, label: "Discovery", description: "Business details" },
   { id: "marketing" as LaunchPadStage, label: "Marketing", description: "Service details" },
-  { id: "access" as LaunchPadStage, label: "Access", description: "Connect accounts", hidden: true }, // Hidden - will be synced with Connected Accounts in Settings
   { id: "assets" as LaunchPadStage, label: "Assets", description: "Brand materials" },
   { id: "avatar" as LaunchPadStage, label: "Avatar", description: "AI insights" },
 ];

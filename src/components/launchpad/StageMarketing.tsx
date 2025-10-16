@@ -111,7 +111,7 @@ export function StageMarketing({ submissionId, onContinue, onBack, onSaveExit }:
     const { error } = await supabase
       .from("launchpad_submissions")
       .update({ 
-        stage: "access",
+        stage: "assets",
         responses_json: updatedResponses as any,
       })
       .eq("id", submissionId);
@@ -255,7 +255,7 @@ export function StageMarketing({ submissionId, onContinue, onBack, onSaveExit }:
             Save & Exit
           </Button>
           <Button onClick={handleContinue}>
-            Continue to Access
+            Continue to Assets
           </Button>
         </div>
       </div>

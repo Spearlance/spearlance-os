@@ -2722,7 +2722,6 @@ export type Database = {
       launchpad_stage:
         | "discovery"
         | "marketing"
-        | "access"
         | "assets"
         | "avatar"
         | "complete"
@@ -2868,7 +2867,6 @@ export const Constants = {
       launchpad_stage: [
         "discovery",
         "marketing",
-        "access",
         "assets",
         "avatar",
         "complete",

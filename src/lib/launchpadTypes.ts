@@ -1,6 +1,6 @@
 // Type definitions for Launch Pad responses_json structure
 
-export type LaunchPadStage = 'discovery' | 'marketing' | 'access' | 'assets' | 'avatar' | 'complete';
+export type LaunchPadStage = 'discovery' | 'marketing' | 'assets' | 'avatar' | 'complete';
 
 export interface DiscoveryData {
   company: {
@@ -47,32 +47,6 @@ export interface DiscoveryData {
   };
 }
 
-export interface AccessData {
-  ads: {
-    meta_business_id?: string;
-    google_ads_customer_id?: string;
-    ga_property_id?: string;
-  };
-  domain: {
-    provider: string;
-    login_url?: string;
-    proof_asset_id?: string;
-  };
-  web: {
-    platform: string;
-    admin_url?: string;
-  };
-  crm: {
-    name?: string;
-    url?: string;
-  };
-  storage: {
-    drive_folder_url?: string;
-    canva_folder_url?: string;
-  };
-  access_confirmed: boolean;
-}
-
 export interface AssetsData {
   ids: string[];
 }
@@ -84,14 +58,12 @@ export interface MarketingData {
 export interface ResponsesJson {
   discovery?: DiscoveryData;
   marketing?: MarketingData;
-  access?: AccessData;
   assets?: AssetsData;
 }
 
 export interface CompletedAt {
   discovery?: string;
   marketing?: string;
-  access?: string;
   assets?: string;
   avatar?: string;
   complete?: string;
