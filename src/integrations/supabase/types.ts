@@ -1546,6 +1546,7 @@ export type Database = {
           created_at: string | null
           created_by: string | null
           id: string
+          idea_type: string
           marketing_channel_id: string | null
           marketing_stage_id: string | null
           notes: string | null
@@ -1554,6 +1555,7 @@ export type Database = {
           source_conversation_id: string | null
           status: string | null
           tags: string[] | null
+          target_avatar_id: string | null
           title: string
           updated_at: string | null
           version: number | null
@@ -1564,6 +1566,7 @@ export type Database = {
           created_at?: string | null
           created_by?: string | null
           id?: string
+          idea_type?: string
           marketing_channel_id?: string | null
           marketing_stage_id?: string | null
           notes?: string | null
@@ -1572,6 +1575,7 @@ export type Database = {
           source_conversation_id?: string | null
           status?: string | null
           tags?: string[] | null
+          target_avatar_id?: string | null
           title: string
           updated_at?: string | null
           version?: number | null
@@ -1582,6 +1586,7 @@ export type Database = {
           created_at?: string | null
           created_by?: string | null
           id?: string
+          idea_type?: string
           marketing_channel_id?: string | null
           marketing_stage_id?: string | null
           notes?: string | null
@@ -1590,6 +1595,7 @@ export type Database = {
           source_conversation_id?: string | null
           status?: string | null
           tags?: string[] | null
+          target_avatar_id?: string | null
           title?: string
           updated_at?: string | null
           version?: number | null
@@ -1628,6 +1634,13 @@ export type Database = {
             columns: ["source_conversation_id"]
             isOneToOne: false
             referencedRelation: "chat_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketing_ideas_target_avatar_id_fkey"
+            columns: ["target_avatar_id"]
+            isOneToOne: false
+            referencedRelation: "avatars"
             referencedColumns: ["id"]
           },
         ]

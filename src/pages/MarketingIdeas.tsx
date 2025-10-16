@@ -13,7 +13,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Lightbulb, Calendar, Tag, Plus, Search, Eye, Pencil, Copy, Trash2, X, Download, Target } from 'lucide-react';
+import { Lightbulb, Calendar, Tag, Plus, Search, Eye, Pencil, Copy, Trash2, X, Download, Target, StickyNote, FileText, ExternalLink, ArrowRight } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
@@ -22,9 +22,11 @@ export default function MarketingIdeas() {
   const { selectedClient } = useClient();
   const queryClient = useQueryClient();
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
+  const [selectedTypeFilter, setSelectedTypeFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedIdea, setSelectedIdea] = useState<any>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [typeSelectionDialogOpen, setTypeSelectionDialogOpen] = useState(false);
   const [editForm, setEditForm] = useState({ title: '', status: '', tags: '', notes: '' });
   const [offerFormData, setOfferFormData] = useState({
     target_audience: '',
@@ -39,9 +41,12 @@ export default function MarketingIdeas() {
   });
   const [selectedStageId, setSelectedStageId] = useState<string>('');
   const [selectedChannelId, setSelectedChannelId] = useState<string>('');
+  const [selectedAvatarId, setSelectedAvatarId] = useState<string>('');
+  const [useCustomAudience, setUseCustomAudience] = useState(false);
+  const [noteContent, setNoteContent] = useState('');
 
   const { data: ideas = [], isLoading } = useQuery({
-    queryKey: ['marketing-ideas', selectedClient?.id, selectedStatus],
+    queryKey: ['marketing-ideas', selectedClient?.id, selectedStatus, selectedTypeFilter],
     queryFn: async () => {
       if (!selectedClient) return [];
       
@@ -50,13 +55,18 @@ export default function MarketingIdeas() {
         .select(`
           *,
           marketing_stage:marketing_flow_stages(id, name),
-          marketing_channel:marketing_flow_channels(id, name)
+          marketing_channel:marketing_flow_channels(id, name),
+          avatar:avatars(id, avatar_name)
         `)
         .eq('client_id', selectedClient.id)
         .order('created_at', { ascending: false });
 
       if (selectedStatus !== 'all') {
         query = query.eq('status', selectedStatus);
+      }
+
+      if (selectedTypeFilter !== 'all') {
+        query = query.eq('idea_type', selectedTypeFilter);
       }
 
       const { data, error } = await query;
@@ -66,8 +76,24 @@ export default function MarketingIdeas() {
       return (data || []).map(idea => ({
         ...idea,
         marketing_stage_name: idea.marketing_stage?.name,
-        marketing_channel_name: idea.marketing_channel?.name
+        marketing_channel_name: idea.marketing_channel?.name,
+        avatar_name: idea.avatar?.avatar_name
       }));
+    },
+    enabled: !!selectedClient,
+  });
+
+  // Query avatars for the dropdown
+  const { data: avatars = [] } = useQuery({
+    queryKey: ['avatars', selectedClient?.id],
+    queryFn: async () => {
+      if (!selectedClient) return [];
+      const { data } = await supabase
+        .from('avatars')
+        .select('id, avatar_name, ai_summary')
+        .eq('client_id', selectedClient.id)
+        .order('avatar_name');
+      return data || [];
     },
     enabled: !!selectedClient,
   });
@@ -170,17 +196,20 @@ export default function MarketingIdeas() {
   });
 
   const createDraftMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (ideaType: 'offer' | 'note') => {
       const { data: userData } = await supabase.auth.getUser();
       const { data, error } = await supabase
         .from('marketing_ideas')
         .insert({
           client_id: selectedClient.id,
           created_by: userData.user?.id,
-          title: 'Untitled Marketing Idea',
+          title: ideaType === 'offer' ? 'Untitled Offer' : 'Untitled Idea',
           status: 'draft',
-          content: { manual_offer: true, form_data: {}, raw_markdown: '' },
-          offer_type: 'gso',
+          idea_type: ideaType,
+          content: ideaType === 'offer' 
+            ? { manual_offer: true, form_data: {}, raw_markdown: '' }
+            : { notes: '' },
+          offer_type: ideaType === 'offer' ? 'gso' : null,
         })
         .select()
         .single();
@@ -189,11 +218,33 @@ export default function MarketingIdeas() {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['marketing-ideas'] });
-      toast.success('Draft created');
+      toast.success(data.idea_type === 'offer' ? 'Offer draft created' : 'Idea created');
       setSelectedIdea(data);
+      setTypeSelectionDialogOpen(false);
     },
     onError: (error: any) => {
-      toast.error('Failed to create draft: ' + error.message);
+      toast.error('Failed to create: ' + error.message);
+    },
+  });
+
+  const convertToOfferMutation = useMutation({
+    mutationFn: async (ideaId: string) => {
+      const { error } = await supabase
+        .from('marketing_ideas')
+        .update({
+          idea_type: 'offer',
+          content: { manual_offer: true, form_data: {}, raw_markdown: '' },
+          offer_type: 'gso'
+        })
+        .eq('id', ideaId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['marketing-ideas'] });
+      toast.success('Converted to complete offer');
+    },
+    onError: (error: any) => {
+      toast.error('Failed to convert: ' + error.message);
     },
   });
 
@@ -215,6 +266,7 @@ export default function MarketingIdeas() {
           status,
           marketing_stage_id: selectedStageId || null,
           marketing_channel_id: selectedChannelId || null,
+          target_avatar_id: selectedAvatarId || null,
           updated_at: new Date().toISOString()
         })
         .eq('id', selectedIdea.id);
@@ -232,6 +284,33 @@ export default function MarketingIdeas() {
     },
     onError: (error: any) => {
       toast.error('Failed to save offer: ' + error.message);
+    },
+  });
+
+  const saveNoteMutation = useMutation({
+    mutationFn: async ({ status }: { status: string }) => {
+      if (!selectedIdea) throw new Error('No idea selected');
+      
+      const { error } = await supabase
+        .from('marketing_ideas')
+        .update({
+          content: { notes: noteContent },
+          status,
+          marketing_stage_id: selectedStageId || null,
+          marketing_channel_id: selectedChannelId || null,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', selectedIdea.id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['marketing-ideas'] });
+      toast.success('Idea saved');
+      setSelectedIdea(null);
+    },
+    onError: (error: any) => {
+      toast.error('Failed to save idea: ' + error.message);
     },
   });
 
@@ -278,18 +357,20 @@ export default function MarketingIdeas() {
     idea.tags?.some((tag: string) => tag.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
-  // Load form data when viewing a manual offer or empty draft
+  // Load form data when viewing a manual offer or note
   useEffect(() => {
     if (!selectedIdea) return;
     
-    const isEmptyDraft = !selectedIdea.content?.raw_markdown || selectedIdea.content.raw_markdown.trim() === '';
-    const isManualOffer = selectedIdea.content?.manual_offer;
+    const isOffer = selectedIdea.idea_type === 'offer';
+    const isNote = selectedIdea.idea_type === 'note';
     
-    if (isManualOffer && selectedIdea.content?.form_data) {
+    if (isOffer && selectedIdea.content?.form_data) {
       setOfferFormData(selectedIdea.content.form_data);
       setSelectedStageId(selectedIdea.marketing_stage_id || '');
       setSelectedChannelId(selectedIdea.marketing_channel_id || '');
-    } else if (isEmptyDraft) {
+      setSelectedAvatarId(selectedIdea.target_avatar_id || '');
+      setUseCustomAudience(!selectedIdea.target_avatar_id);
+    } else if (isOffer) {
       setOfferFormData({
         target_audience: '',
         value_proposition: '',
@@ -303,6 +384,12 @@ export default function MarketingIdeas() {
       });
       setSelectedStageId('');
       setSelectedChannelId('');
+      setSelectedAvatarId('');
+      setUseCustomAudience(true);
+    } else if (isNote) {
+      setNoteContent(selectedIdea.content?.notes || '');
+      setSelectedStageId(selectedIdea.marketing_stage_id || '');
+      setSelectedChannelId(selectedIdea.marketing_channel_id || '');
     }
   }, [selectedIdea?.id]);
 
@@ -403,11 +490,12 @@ export default function MarketingIdeas() {
   }
 
   if (selectedIdea) {
+    const isOffer = selectedIdea.idea_type === 'offer';
+    const isNote = selectedIdea.idea_type === 'note';
     const sections = parseMarkdownSections(selectedIdea.content.raw_markdown || '');
     const offerScore = extractOfferScore(selectedIdea.content);
     const offerProgress = selectedIdea.content?.offer_progress;
-    const isEmptyDraft = !selectedIdea.content.raw_markdown || selectedIdea.content.raw_markdown.trim() === '';
-    const isManualOffer = selectedIdea.content?.manual_offer;
+    const hasContent = selectedIdea.content.raw_markdown && selectedIdea.content.raw_markdown.trim() !== '';
 
     return (
       <div className="container mx-auto p-6 space-y-6">
@@ -417,22 +505,24 @@ export default function MarketingIdeas() {
             Back to Ideas
           </Button>
           <div className="flex gap-2">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline">
-                  <Download className="h-4 w-4 mr-2" />
-                  Export
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuItem onClick={() => exportAsMarkdown(selectedIdea)}>
-                  Export as Markdown
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => copyToClipboard(selectedIdea.content.raw_markdown)}>
-                  Copy All Text
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {hasContent && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline">
+                    <Download className="h-4 w-4 mr-2" />
+                    Export
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuItem onClick={() => exportAsMarkdown(selectedIdea)}>
+                    Export as Markdown
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => copyToClipboard(selectedIdea.content.raw_markdown)}>
+                    Copy All Text
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
             <Button variant="outline" onClick={() => openEditDialog(selectedIdea)}>
               <Pencil className="h-4 w-4 mr-2" />
               Edit
@@ -452,6 +542,16 @@ export default function MarketingIdeas() {
           <CardHeader>
             <div className="flex items-start justify-between">
               <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <Badge variant={isOffer ? 'default' : 'secondary'}>
+                    {isOffer ? '📋 Offer' : '💡 Idea'}
+                  </Badge>
+                  {(selectedIdea as any).avatar_name && (
+                    <Badge variant="outline">
+                      👤 {(selectedIdea as any).avatar_name}
+                    </Badge>
+                  )}
+                </div>
                 <CardTitle className="text-2xl mb-2">{selectedIdea.title}</CardTitle>
                 <CardDescription>
                   Created {format(new Date(selectedIdea.created_at), 'PPP')}
@@ -487,8 +587,109 @@ export default function MarketingIdeas() {
           </CardHeader>
         </Card>
 
-        {/* Offer Builder Form for Empty Drafts */}
-        {(isEmptyDraft || isManualOffer) && (
+        {/* Simple Idea Form */}
+        {isNote && (
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Idea Notes</CardTitle>
+                  <CardDescription>
+                    Quick notes and brainstorming
+                  </CardDescription>
+                </div>
+                <Button 
+                  variant="outline"
+                  size="sm"
+                  onClick={() => convertToOfferMutation.mutate(selectedIdea.id)}
+                  disabled={convertToOfferMutation.isPending}
+                >
+                  <ArrowRight className="h-4 w-4 mr-2" />
+                  Convert to Offer
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Optional Strategic Context */}
+              <Accordion type="single" collapsible>
+                <AccordionItem value="context">
+                  <AccordionTrigger className="text-sm">
+                    Link to Marketing Strategy (Optional)
+                  </AccordionTrigger>
+                  <AccordionContent className="space-y-4 pt-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Marketing Stage</Label>
+                        <Select 
+                          value={selectedStageId} 
+                          onValueChange={setSelectedStageId}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Choose a stage..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {stages.map((stage: any) => (
+                              <SelectItem key={stage.id} value={stage.id}>
+                                {stage.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label>Channel</Label>
+                        <Select 
+                          value={selectedChannelId} 
+                          onValueChange={setSelectedChannelId}
+                          disabled={!selectedStageId}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder={
+                              selectedStageId ? "Choose a channel..." : "Select stage first"
+                            } />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {channels.map((channel: any) => (
+                              <SelectItem key={channel.id} value={channel.id}>
+                                {channel.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+
+              {/* Notes Field */}
+              <div className="space-y-2">
+                <Label>Your Ideas</Label>
+                <Textarea 
+                  placeholder="Write your thoughts, campaign ideas, strategy notes..."
+                  value={noteContent}
+                  onChange={(e) => setNoteContent(e.target.value)}
+                  rows={15}
+                  className="font-mono"
+                />
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-2">
+                <Button onClick={() => saveNoteMutation.mutate({ status: 'draft' })} disabled={saveNoteMutation.isPending}>
+                  Save as Draft
+                </Button>
+                <Button variant="default" onClick={() => saveNoteMutation.mutate({ status: 'live' })} disabled={saveNoteMutation.isPending}>
+                  Save & Mark Ready
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Offer Builder Form */}
+        {isOffer && (
           <Card>
             <CardHeader>
               <CardTitle>Build Your Offer</CardTitle>
@@ -556,13 +757,76 @@ export default function MarketingIdeas() {
               {/* Core Offer Fields */}
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label>Target Audience</Label>
-                  <Textarea 
-                    placeholder="Who is this offer for? Be specific about demographics, pain points, goals..."
-                    value={offerFormData.target_audience}
-                    onChange={(e) => setOfferFormData({...offerFormData, target_audience: e.target.value})}
-                    rows={3}
-                  />
+                  <Label>Target Audience *</Label>
+                  {avatars.length > 0 ? (
+                    <>
+                      <Select 
+                        value={useCustomAudience ? 'custom' : selectedAvatarId} 
+                        onValueChange={(value) => {
+                          if (value === 'custom') {
+                            setUseCustomAudience(true);
+                            setSelectedAvatarId('');
+                          } else {
+                            setUseCustomAudience(false);
+                            setSelectedAvatarId(value);
+                            const avatar = avatars.find(a => a.id === value);
+                            if (avatar?.ai_summary) {
+                              setOfferFormData({...offerFormData, target_audience: avatar.ai_summary});
+                            }
+                          }
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a customer avatar..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="custom">✏️ Write custom audience</SelectItem>
+                          {avatars.map((avatar: any) => (
+                            <SelectItem key={avatar.id} value={avatar.id}>
+                              👤 {avatar.avatar_name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {!useCustomAudience && selectedAvatarId && (
+                        <div className="p-3 bg-muted rounded-md text-sm">
+                          {avatars.find(a => a.id === selectedAvatarId)?.ai_summary || 'No summary available'}
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="text-sm text-muted-foreground flex items-center gap-2">
+                      No customer avatars yet.
+                      <Button 
+                        variant="link" 
+                        size="sm" 
+                        className="p-0 h-auto"
+                        onClick={() => window.open('/avatar', '_blank')}
+                      >
+                        <ExternalLink className="h-3 w-3 mr-1" />
+                        Create one
+                      </Button>
+                    </div>
+                  )}
+                  {(useCustomAudience || avatars.length === 0) && (
+                    <Textarea 
+                      placeholder="Who is this offer for? Be specific about demographics, pain points, goals..."
+                      value={offerFormData.target_audience}
+                      onChange={(e) => setOfferFormData({...offerFormData, target_audience: e.target.value})}
+                      rows={3}
+                    />
+                  )}
+                  {avatars.length > 0 && (
+                    <Button 
+                      variant="link" 
+                      size="sm" 
+                      className="p-0 h-auto"
+                      onClick={() => window.open('/avatar', '_blank')}
+                    >
+                      <Plus className="h-3 w-3 mr-1" />
+                      Create new avatar
+                    </Button>
+                  )}
                 </div>
                 
                 <div className="space-y-2">
@@ -794,12 +1058,51 @@ export default function MarketingIdeas() {
 
   return (
     <div className="container mx-auto p-6">
+      {/* Type Selection Dialog */}
+      <Dialog open={typeSelectionDialogOpen} onOpenChange={setTypeSelectionDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>What would you like to create?</DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-1 gap-4 py-4">
+            <Button
+              variant="outline"
+              className="h-auto p-6 flex flex-col items-start gap-2 hover:border-primary"
+              onClick={() => createDraftMutation.mutate('offer')}
+              disabled={createDraftMutation.isPending}
+            >
+              <div className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                <span className="font-semibold text-lg">Complete Offer</span>
+              </div>
+              <p className="text-sm text-muted-foreground text-left">
+                Build a structured offer with target audience, value prop, pricing, and more
+              </p>
+            </Button>
+            <Button
+              variant="outline"
+              className="h-auto p-6 flex flex-col items-start gap-2 hover:border-primary"
+              onClick={() => createDraftMutation.mutate('note')}
+              disabled={createDraftMutation.isPending}
+            >
+              <div className="flex items-center gap-2">
+                <StickyNote className="h-5 w-5" />
+                <span className="font-semibold text-lg">Simple Idea</span>
+              </div>
+              <p className="text-sm text-muted-foreground text-left">
+                Quick notes and brainstorming - no structured fields required
+              </p>
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold mb-2">Marketing Ideas</h1>
           <p className="text-muted-foreground">Saved offers and campaign concepts for {selectedClient.name}</p>
         </div>
-        <Button onClick={() => createDraftMutation.mutate()} disabled={createDraftMutation.isPending}>
+        <Button onClick={() => setTypeSelectionDialogOpen(true)}>
           <Plus className="h-4 w-4 mr-2" />
           Create New
         </Button>
@@ -816,6 +1119,15 @@ export default function MarketingIdeas() {
           />
         </div>
       </div>
+
+      {/* Type Filter Tabs */}
+      <Tabs value={selectedTypeFilter} onValueChange={setSelectedTypeFilter} className="mb-4">
+        <TabsList>
+          <TabsTrigger value="all">All</TabsTrigger>
+          <TabsTrigger value="offer">📋 Offers</TabsTrigger>
+          <TabsTrigger value="note">💡 Ideas</TabsTrigger>
+        </TabsList>
+      </Tabs>
 
       <Tabs value={selectedStatus} onValueChange={setSelectedStatus} className="mb-6">
         <TabsList>
@@ -854,7 +1166,19 @@ export default function MarketingIdeas() {
               <Card key={idea.id} className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setSelectedIdea(idea)}>
               <CardHeader>
                 <div className="flex items-start justify-between mb-2">
-                  <CardTitle className="text-lg line-clamp-2">{idea.title}</CardTitle>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Badge variant={idea.idea_type === 'offer' ? 'default' : 'secondary'} className="text-xs">
+                        {idea.idea_type === 'offer' ? '📋 Offer' : '💡 Idea'}
+                      </Badge>
+                      {(idea as any).avatar_name && (
+                        <Badge variant="outline" className="text-xs">
+                          👤 {(idea as any).avatar_name}
+                        </Badge>
+                      )}
+                    </div>
+                    <CardTitle className="text-lg line-clamp-2">{idea.title}</CardTitle>
+                  </div>
                   <Badge variant={getStatusColor(idea.status)} className="ml-2 flex-shrink-0">
                     {idea.status.replace('_', ' ')}
                   </Badge>
