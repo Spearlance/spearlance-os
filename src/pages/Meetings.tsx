@@ -26,8 +26,24 @@ export default function Meetings() {
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [userRole, setUserRole] = useState<string>("");
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  useEffect(() => {
+    const fetchUserRole = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", user.id)
+          .maybeSingle();
+        setUserRole(profile?.role || "");
+      }
+    };
+    fetchUserRole();
+  }, []);
 
   useEffect(() => {
     if (selectedClient) {
@@ -80,15 +96,17 @@ export default function Meetings() {
         </div>
       </div>
 
-      <Alert className="bg-blue-50 dark:bg-blue-950/50 border-blue-200 dark:border-blue-800">
-        <Info className="h-4 w-4 text-blue-600 dark:text-blue-500" />
-        <AlertTitle className="text-blue-900 dark:text-blue-100">Calendar Sync Information</AlertTitle>
-        <AlertDescription className="text-blue-800 dark:text-blue-200">
-          Meetings logged here are available in your iCal subscription feed immediately, 
-          but external calendar apps (Google Calendar, Apple Calendar, etc.) typically 
-          refresh subscriptions every 12-24 hours.
-        </AlertDescription>
-      </Alert>
+      {(userRole === 'admin' || userRole === 'fmm') && (
+        <Alert className="bg-blue-50 dark:bg-blue-950/50 border-blue-200 dark:border-blue-800">
+          <Info className="h-4 w-4 text-blue-600 dark:text-blue-500" />
+          <AlertTitle className="text-blue-900 dark:text-blue-100">Calendar Sync Information</AlertTitle>
+          <AlertDescription className="text-blue-800 dark:text-blue-200">
+            Meetings logged here are available in your iCal subscription feed immediately, 
+            but external calendar apps (Google Calendar, Apple Calendar, etc.) typically 
+            refresh subscriptions every 12-24 hours.
+          </AlertDescription>
+        </Alert>
+      )}
 
       <div className="border rounded-lg">
         <Table>

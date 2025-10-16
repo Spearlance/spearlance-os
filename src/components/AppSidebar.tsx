@@ -194,7 +194,7 @@ export function AppSidebar() {
                 </SidebarMenuItem>
               ))}
 
-              {!isSelfService && (userRole === 'admin' || userRole === 'fmm') && (
+              {!isSelfService && (
                 <Collapsible open={communicationsOpen} onOpenChange={setCommunicationsOpen}>
                   <SidebarMenuItem>
                     <CollapsibleTrigger asChild>
