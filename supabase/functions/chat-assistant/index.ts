@@ -137,6 +137,63 @@ async function logToolCall(
   });
 }
 
+// Create or update marketing idea draft for Offer Mode auto-save
+async function createOrUpdateOfferDraft(
+  supabase: any,
+  clientId: string,
+  userId: string,
+  conversationId: string,
+  step: number,
+  partialContent: string,
+  offerData: any
+) {
+  // Check if this conversation already has a linked marketing idea
+  const { data: existingIdea } = await supabase
+    .from('marketing_ideas')
+    .select('id')
+    .eq('source_conversation_id', conversationId)
+    .maybeSingle();
+
+  const content = {
+    raw_markdown: partialContent,
+    offer_progress: {
+      step: step,
+      data: offerData,
+      last_updated: new Date().toISOString()
+    }
+  };
+
+  if (existingIdea) {
+    // Update existing draft
+    await supabase
+      .from('marketing_ideas')
+      .update({ 
+        content,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', existingIdea.id);
+    
+    return existingIdea.id;
+  } else {
+    // Create new draft
+    const { data: newIdea } = await supabase
+      .from('marketing_ideas')
+      .insert({
+        client_id: clientId,
+        created_by: userId,
+        title: `Offer in Progress - ${new Date().toLocaleDateString()}`,
+        status: 'draft',
+        content,
+        offer_type: 'complete_offer',
+        source_conversation_id: conversationId
+      })
+      .select('id')
+      .single();
+    
+    return newIdea?.id;
+  }
+}
+
 // Tool implementations - all enforce client_id scoping
 async function getClientInfo(supabase: any, clientId: string) {
   const { data: client } = await supabase

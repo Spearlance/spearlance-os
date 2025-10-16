@@ -103,6 +103,34 @@ export default function MarketingIdeas() {
     },
   });
 
+  const createDraftMutation = useMutation({
+    mutationFn: async () => {
+      const { data: userData } = await supabase.auth.getUser();
+      const { data, error } = await supabase
+        .from('marketing_ideas')
+        .insert({
+          client_id: selectedClient.id,
+          created_by: userData.user?.id,
+          title: 'Untitled Marketing Idea',
+          status: 'draft',
+          content: { raw_markdown: '' },
+          offer_type: 'gso',
+        })
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['marketing-ideas'] });
+      toast.success('Draft created');
+      setSelectedIdea(data);
+    },
+    onError: (error: any) => {
+      toast.error('Failed to create draft: ' + error.message);
+    },
+  });
+
   const filteredIdeas = ideas.filter((idea) =>
     idea.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     idea.tags?.some((tag: string) => tag.toLowerCase().includes(searchQuery.toLowerCase()))
@@ -207,6 +235,8 @@ export default function MarketingIdeas() {
   if (selectedIdea) {
     const sections = parseMarkdownSections(selectedIdea.content.raw_markdown || '');
     const offerScore = extractOfferScore(selectedIdea.content);
+    const offerProgress = selectedIdea.content?.offer_progress;
+    const isEmptyDraft = !selectedIdea.content.raw_markdown || selectedIdea.content.raw_markdown.trim() === '';
 
     return (
       <div className="container mx-auto p-6 space-y-6">
@@ -256,9 +286,16 @@ export default function MarketingIdeas() {
                   Created {format(new Date(selectedIdea.created_at), 'PPP')}
                 </CardDescription>
               </div>
-              <Badge variant={getStatusColor(selectedIdea.status)}>
-                {selectedIdea.status.replace('_', ' ')}
-              </Badge>
+              <div className="flex gap-2">
+                {offerProgress && (
+                  <Badge variant="outline">
+                    Step {offerProgress.step}/7
+                  </Badge>
+                )}
+                <Badge variant={getStatusColor(selectedIdea.status)}>
+                  {selectedIdea.status.replace('_', ' ')}
+                </Badge>
+              </div>
             </div>
             {selectedIdea.tags && selectedIdea.tags.length > 0 && (
               <div className="flex gap-2 mt-4">
@@ -278,6 +315,19 @@ export default function MarketingIdeas() {
             )}
           </CardHeader>
         </Card>
+
+        {/* Empty State for Blank Drafts */}
+        {isEmptyDraft && (
+          <Card>
+            <CardContent className="text-center py-12">
+              <Lightbulb className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+              <h3 className="text-lg font-semibold mb-2">Blank Draft</h3>
+              <p className="text-muted-foreground mb-4">
+                This is a blank draft. Edit the details above to add information, or use the chatbot's Offer Mode to build a complete offer.
+              </p>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Summary Card - Only showing Complete Offer Score */}
         {offerScore && (
@@ -392,9 +442,15 @@ export default function MarketingIdeas() {
 
   return (
     <div className="container mx-auto p-6">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold mb-2">Marketing Ideas</h1>
-        <p className="text-muted-foreground">Saved offers and campaign concepts for {selectedClient.name}</p>
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold mb-2">Marketing Ideas</h1>
+          <p className="text-muted-foreground">Saved offers and campaign concepts for {selectedClient.name}</p>
+        </div>
+        <Button onClick={() => createDraftMutation.mutate()} disabled={createDraftMutation.isPending}>
+          <Plus className="h-4 w-4 mr-2" />
+          Create New
+        </Button>
       </div>
 
       <div className="mb-6 flex items-center gap-4">
@@ -440,8 +496,10 @@ export default function MarketingIdeas() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredIdeas.map((idea) => (
-            <Card key={idea.id} className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setSelectedIdea(idea)}>
+          {filteredIdeas.map((idea) => {
+            const offerProgress = (idea.content as any)?.offer_progress;
+            return (
+              <Card key={idea.id} className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setSelectedIdea(idea)}>
               <CardHeader>
                 <div className="flex items-start justify-between mb-2">
                   <CardTitle className="text-lg line-clamp-2">{idea.title}</CardTitle>
@@ -469,7 +527,8 @@ export default function MarketingIdeas() {
                 )}
               </CardHeader>
             </Card>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
