@@ -278,6 +278,34 @@ export default function MarketingIdeas() {
     idea.tags?.some((tag: string) => tag.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
+  // Load form data when viewing a manual offer or empty draft
+  useEffect(() => {
+    if (!selectedIdea) return;
+    
+    const isEmptyDraft = !selectedIdea.content?.raw_markdown || selectedIdea.content.raw_markdown.trim() === '';
+    const isManualOffer = selectedIdea.content?.manual_offer;
+    
+    if (isManualOffer && selectedIdea.content?.form_data) {
+      setOfferFormData(selectedIdea.content.form_data);
+      setSelectedStageId(selectedIdea.marketing_stage_id || '');
+      setSelectedChannelId(selectedIdea.marketing_channel_id || '');
+    } else if (isEmptyDraft) {
+      setOfferFormData({
+        target_audience: '',
+        value_proposition: '',
+        deliverables: '',
+        pricing: '',
+        call_to_action: '',
+        bonus_stack: '',
+        guarantee: '',
+        urgency: '',
+        social_proof: ''
+      });
+      setSelectedStageId('');
+      setSelectedChannelId('');
+    }
+  }, [selectedIdea?.id]);
+
   const openEditDialog = (idea: any) => {
     setEditForm({
       title: idea.title,
@@ -380,29 +408,6 @@ export default function MarketingIdeas() {
     const offerProgress = selectedIdea.content?.offer_progress;
     const isEmptyDraft = !selectedIdea.content.raw_markdown || selectedIdea.content.raw_markdown.trim() === '';
     const isManualOffer = selectedIdea.content?.manual_offer;
-
-    // Load form data when viewing a manual offer
-    useEffect(() => {
-      if (isManualOffer && selectedIdea.content?.form_data) {
-        setOfferFormData(selectedIdea.content.form_data);
-        setSelectedStageId(selectedIdea.marketing_stage_id || '');
-        setSelectedChannelId(selectedIdea.marketing_channel_id || '');
-      } else if (isEmptyDraft) {
-        setOfferFormData({
-          target_audience: '',
-          value_proposition: '',
-          deliverables: '',
-          pricing: '',
-          call_to_action: '',
-          bonus_stack: '',
-          guarantee: '',
-          urgency: '',
-          social_proof: ''
-        });
-        setSelectedStageId('');
-        setSelectedChannelId('');
-      }
-    }, [selectedIdea?.id, isManualOffer, isEmptyDraft]);
 
     return (
       <div className="container mx-auto p-6 space-y-6">
