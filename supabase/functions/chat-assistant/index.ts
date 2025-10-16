@@ -571,6 +571,87 @@ async function gatherGSOInputs(supabase: any, clientId: string) {
   };
 }
 
+// Helper function to assess comprehensive account status
+async function assessAccountStatus(supabase: any, clientId: string) {
+  try {
+    // Gather comprehensive account status data in parallel
+    const [
+      clientInfo,
+      avatars,
+      tasks,
+      channels,
+      reports,
+      meetings,
+      assets,
+      launchpad
+    ] = await Promise.all([
+      supabase.from('clients').select('*').eq('id', clientId).single(),
+      supabase.from('avatars').select('*').eq('client_id', clientId),
+      supabase.from('tasks').select('*').eq('client_id', clientId),
+      supabase.from('marketing_flow_channels')
+        .select(`
+          *,
+          stage:marketing_flow_stages!inner(
+            flow:marketing_flows!inner(client_id)
+          )
+        `)
+        .eq('stage.flow.client_id', clientId),
+      supabase.from('reports').select('*').eq('client_id', clientId).order('created_at', { ascending: false }).limit(5),
+      supabase.from('meetings').select('*').eq('client_id', clientId).gte('date_time', new Date(Date.now() - 30*24*60*60*1000).toISOString()),
+      supabase.from('assets').select('*').eq('client_id', clientId),
+      supabase.from('launchpad_submissions').select('stage, completed_at').eq('client_id', clientId).maybeSingle()
+    ]);
+
+    // Calculate task metrics
+    const taskList = tasks.data || [];
+    const taskMetrics = {
+      total: taskList.length,
+      done: taskList.filter((t: any) => t.status === 'done').length,
+      in_progress: taskList.filter((t: any) => t.status === 'in_progress').length,
+      to_do: taskList.filter((t: any) => t.status === 'to_do').length
+    };
+
+    // Calculate channel metrics
+    const channelList = channels.data || [];
+    const channelMetrics = {
+      total: channelList.length,
+      active: channelList.filter((c: any) => c.status === 'active').length,
+      avg_progress: channelList.length > 0 
+        ? Math.round(channelList.reduce((sum: number, c: any) => sum + (c.progress || 0), 0) / channelList.length)
+        : 0
+    };
+
+    // Build comprehensive status object
+    return {
+      launchpad: {
+        stage: launchpad.data?.stage || 'not_started',
+        is_complete: launchpad.data?.stage === 'complete',
+        completed_stages: launchpad.data?.completed_at ? Object.keys(launchpad.data.completed_at) : []
+      },
+      avatars: {
+        count: avatars.data?.length || 0,
+        has_avatars: (avatars.data?.length || 0) > 0
+      },
+      tasks: taskMetrics,
+      channels: channelMetrics,
+      reports: {
+        total: reports.data?.length || 0,
+        recent: reports.data || []
+      },
+      meetings: {
+        recent_count: meetings.data?.length || 0
+      },
+      assets: {
+        count: assets.data?.length || 0
+      },
+      client_info: clientInfo.data
+    };
+  } catch (error) {
+    console.error('Error assessing account status:', error);
+    return { error: 'Failed to assess account status' };
+  }
+}
+
 // Tool definitions for Lovable AI
 const tools = [
   {
@@ -744,6 +825,14 @@ const tools = [
     function: {
       name: "gather_gso_inputs",
       description: "Pull all client data needed to build a Complete Offer (avatars, services, proof, assets, economics, existing marketing ideas). Call this when user requests to build an offer, campaign, or pricing strategy. Returns avatars, services, channels, reports, client info, and past marketing ideas including Complete Offers.",
+      parameters: { type: "object", properties: {}, required: [] }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "assess_account_status",
+      description: "Get comprehensive account status including LaunchPad progress, avatars, tasks, channels, reports, meetings, and assets. Use this when users ask 'what should I focus on', 'how are we doing', 'what do I do first', 'I'm stuck', 'help me get started', or need overall guidance and onboarding help.",
       parameters: { type: "object", properties: {}, required: [] }
     }
   }
@@ -1222,6 +1311,109 @@ YOUR ROLE
 - Be conversational, energetic, and helpful
 - Always explain WHAT is being worked on, not just list tasks
 
+ACTION AI CAPABILITIES
+You are also an intelligent navigation assistant that helps users understand and use the platform effectively.
+
+When users ask questions like:
+- "What should I do first?"
+- "How do I [action]?"
+- "Where do I find [feature]?"
+- "I'm confused about [topic]"
+- "What is [feature]?"
+- "Help me get started"
+- "I'm stuck"
+- "I don't know what to do"
+
+Provide clear, actionable guidance:
+
+NAVIGATION PATTERNS:
+
+1. **Getting Started / "What should I do first?"**
+   - Call assess_account_status to check LaunchPad completion and overall account health
+   - If LaunchPad incomplete: "Great question! Let's start with LaunchPad (/launchpad). It's a guided setup that helps you define your business, avatars, and marketing foundation. You're currently on the [stage] stage. Ready to continue?"
+   - If LaunchPad complete: Assess their account activity and provide personalized recommendations based on gaps
+
+2. **Feature Explanation / "What is [feature]?"**
+   Known features:
+   - **LaunchPad**: "LaunchPad is your guided onboarding journey with 4 stages: Discovery (define your business), Marketing (choose channels), Assets (organize files), and Avatar (know your customer). It unlocks your Daily Action Plan on the Dashboard. Want to visit it? (/launchpad)"
+   - **Offer Mode**: "Offer Mode is a specialized AI workflow that guides you through creating complete marketing offers in 6 steps: positioning, deliverables, pricing, bonuses, guarantees, and lead generation. Want to try it? Just toggle 'Offer Mode' in this chat!"
+   - **Tasks**: "Tasks help you track marketing work across different stages (Get Attention, Create Demand, Capture Demand, Close Demand). You can create, assign, and track progress. Check them out at /tasks."
+   - **Marketing Flowchart**: "The Marketing Flowchart (/marketing-flowchart) shows your complete marketing strategy across 4 stages with channels, tasks, and progress tracking. It's your visual strategy map!"
+   - **Avatar**: "Avatars are detailed profiles of your ideal customers (/avatar). They include demographics, pains, goals, and objections - everything you need to create targeted marketing."
+   - **Assets**: "Assets (/assets) is your organized file system for logos, images, documents, and marketing materials. You can create folders and manage versions."
+   - **Reports**: "Reports (/reports) track your marketing performance over time. Log metrics, campaigns, and results to measure ROI and progress."
+   - **Brand Guide**: "Your Brand Guide (/brand-guide) stores visual identity elements: colors, fonts, personality, and style guidelines for consistent branding."
+   - **Meetings**: "Meetings (/meetings) helps you log strategy sessions, track decisions, and manage action items. Great for keeping everyone aligned!"
+
+3. **How-To Guidance / "How do I [action]?"**
+   Common actions:
+   - **Create a task**: "Go to /tasks and click the '+ New Task' button. Choose a title, description, priority, and assignee. You can also link it to marketing channels!"
+   - **Add an avatar**: "Head to /avatar and click '+ Create Avatar'. Fill in demographics, pains, goals, and objections. The more detail, the better AI-generated marketing will be!"
+   - **Upload assets**: "Visit /assets, optionally create a folder first, then click 'Upload Asset' to add files. You can version them too!"
+   - **Log a report**: "Go to /reports and click '+ New Report'. Add metrics, insights, and date ranges to track campaign performance over time."
+   - **Set up marketing channels**: "Check out /marketing-flowchart. You can add channels to each stage (Get Attention, Create Demand, etc.) and link tasks to them."
+   - **Build an offer**: "Switch on 'Offer Mode' right here in this chat! I'll guide you through a 6-step process to create a complete marketing offer."
+   - **Book a meeting**: "Visit /meetings and click 'Book Meeting' to schedule time with your team. You can also log past meetings for reference."
+
+4. **Account Health Check / "How are we doing?" or "What should I focus on?"**
+   When users ask for overall guidance:
+   
+   a) Call assess_account_status to get comprehensive data
+   
+   b) Synthesize into Action Plan format:
+   
+   "Let me check your account status...
+   
+   **Foundation ✅ (or ⚠️)**
+   [Status of LaunchPad, avatars, services]
+   
+   **Current Focus 🎯**
+   [What's actively being worked on - tasks, channels]
+   
+   **Recommended Next Steps 💡**
+   1. [Highest priority action with link]
+   2. [Second priority with link]
+   3. [Third priority with link]
+   
+   Want to dive into any of these?"
+
+5. **Confusion / Lost Users**
+   When users express confusion or frustration:
+   - Acknowledge: "No worries! Let me help you get oriented. 🧭"
+   - Call assess_account_status to understand their situation
+   - If LaunchPad incomplete: Suggest completing it first
+   - If complete but no activity: Suggest creating first task or offer
+   - If active but overwhelmed: Prioritize their current work
+   - Offer specific help: "Want me to walk you through [specific feature]?"
+
+FEATURE KEYWORDS (for automatic detection):
+When users mention these terms, provide relevant guidance:
+- "launchpad", "launch pad", "setup", "onboarding" → Explain LaunchPad + call assess_account_status
+- "offer", "campaign", "create offer" → Suggest Offer Mode
+- "task", "to-do", "work", "assignment" → Guide to /tasks
+- "avatar", "customer", "ideal client", "target audience" → Guide to /avatar
+- "channel", "marketing", "flowchart", "strategy" → Guide to /marketing-flowchart
+- "report", "analytics", "metrics", "performance" → Guide to /reports
+- "meeting", "call", "discussion" → Guide to /meetings
+- "asset", "file", "image", "logo", "document" → Guide to /assets
+- "brand", "colors", "fonts", "style" → Guide to /brand-guide
+- "confused", "lost", "don't know", "help", "stuck", "what to do", "get started" → Call assess_account_status
+
+NAVIGATION RESPONSE PATTERN:
+[Quick answer to their question]
+[Explanation of what/why/how]
+[Direct link or instruction: "Visit /path or click [button]"]
+[Offer to help further: "Want me to guide you through this?" or "Need help with anything else?"]
+
+Keep navigation responses:
+- Clear and concise (60-150 words)
+- Action-oriented (always include next step)
+- Link-rich (use actual routes: /tasks, /avatar, /reports, /launchpad, /marketing-flowchart, /brand-guide, /meetings, /assets)
+- Friendly and encouraging (maintain conversational tone)
+- Contextual (reference their current account state when relevant)
+
+Always acknowledge the user's question first, then provide guidance.
+
 You have access to:
 - Client information, services, and avatars
 - Tasks, reports, meetings, and tickets
@@ -1606,6 +1798,9 @@ When providing advice, you can reference these frameworks to support your recomm
               break;
             case 'gather_gso_inputs':
               result = await gatherGSOInputs(supabaseClient, client_id);
+              break;
+            case 'assess_account_status':
+              result = await assessAccountStatus(supabaseClient, client_id);
               break;
             default:
               result = { error: 'Unknown function' };
