@@ -1075,7 +1075,7 @@ export default function MarketingIdeas() {
                 <FileText className="h-5 w-5" />
                 <span className="font-semibold text-lg">Complete Offer</span>
               </div>
-              <p className="text-sm text-muted-foreground text-left">
+              <p className="text-sm text-muted-foreground text-left whitespace-normal break-words">
                 Build a structured offer with target audience, value prop, pricing, and more
               </p>
             </Button>
@@ -1089,7 +1089,7 @@ export default function MarketingIdeas() {
                 <StickyNote className="h-5 w-5" />
                 <span className="font-semibold text-lg">Simple Idea</span>
               </div>
-              <p className="text-sm text-muted-foreground text-left">
+              <p className="text-sm text-muted-foreground text-left whitespace-normal break-words">
                 Quick notes and brainstorming - no structured fields required
               </p>
             </Button>
