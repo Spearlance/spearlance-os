@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useClient } from '@/contexts/ClientContext';
@@ -382,7 +382,7 @@ export default function MarketingIdeas() {
     const isManualOffer = selectedIdea.content?.manual_offer;
 
     // Load form data when viewing a manual offer
-    useState(() => {
+    useEffect(() => {
       if (isManualOffer && selectedIdea.content?.form_data) {
         setOfferFormData(selectedIdea.content.form_data);
         setSelectedStageId(selectedIdea.marketing_stage_id || '');
@@ -402,7 +402,7 @@ export default function MarketingIdeas() {
         setSelectedStageId('');
         setSelectedChannelId('');
       }
-    });
+    }, [selectedIdea?.id, isManualOffer, isEmptyDraft]);
 
     return (
       <div className="container mx-auto p-6 space-y-6">
