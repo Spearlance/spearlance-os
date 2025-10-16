@@ -4,7 +4,7 @@ import { useClient } from "@/contexts/ClientContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Calendar, CheckSquare, Target, Zap, AlertCircle, BookOpen, RefreshCw, Rocket } from "lucide-react";
+import { Calendar, CheckSquare, Target, Zap, AlertCircle, BookOpen, RefreshCw, Rocket, Sparkles, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useLaunchPadStatus } from "@/hooks/useLaunchPadStatus";
@@ -51,6 +51,7 @@ const Dashboard = () => {
   const [actionPlan, setActionPlan] = useState<DailyActionPlan | null>(null);
   const [loading, setLoading] = useState(true);
   const [generatingPlan, setGeneratingPlan] = useState(false);
+  const [generatingStory, setGeneratingStory] = useState(false);
 
   useEffect(() => {
     if (selectedClient) {
@@ -113,6 +114,36 @@ const Dashboard = () => {
       console.error('Error loading action plan:', error);
     } finally {
       setGeneratingPlan(false);
+    }
+  };
+
+  const generateAvatarStory = async () => {
+    if (!selectedClient) return;
+    
+    setGeneratingStory(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-avatar-story', {
+        body: { client_id: selectedClient.id }
+      });
+      
+      if (error) throw error;
+      
+      if (data?.avatar_story) {
+        setActionPlan(prev => prev ? { ...prev, avatar_story: data.avatar_story } : null);
+        toast({
+          title: "Story Generated!",
+          description: "Your customer's story is ready to read.",
+        });
+      }
+    } catch (error) {
+      console.error('Error generating avatar story:', error);
+      toast({
+        title: "Generation Failed",
+        description: "Could not generate the avatar story. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setGeneratingStory(false);
     }
   };
 
@@ -393,30 +424,56 @@ const Dashboard = () => {
         </Card>
       </div>
 
-      {/* Avatar Story Card */}
-      {actionPlan?.avatar_story && (
+      {/* Avatar Story Card - Generate on Demand */}
+      {actionPlan && (
         <Card className="shadow-elegant border-accent/20">
           <CardHeader>
             <div className="flex items-center gap-3">
               <BookOpen className="h-5 w-5 text-accent" />
-              <div>
+              <div className="flex-1">
                 <CardTitle>A Day in the Life of Your Customer</CardTitle>
-                <CardDescription>Understanding who you serve</CardDescription>
+                <CardDescription>
+                  {actionPlan.avatar_story 
+                    ? "Understanding who you serve" 
+                    : "Click to generate a personalized story"}
+                </CardDescription>
               </div>
+              {!actionPlan.avatar_story && (
+                <Button 
+                  onClick={generateAvatarStory}
+                  disabled={generatingStory}
+                  variant="default"
+                  size="sm"
+                >
+                  {generatingStory ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="mr-2 h-4 w-4" />
+                      Generate Story
+                    </>
+                  )}
+                </Button>
+              )}
             </div>
           </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
-              {actionPlan.avatar_story}
-            </p>
-            <Button 
-              variant="link" 
-              className="mt-4 px-0"
-              onClick={() => navigate('/avatar')}
-            >
-              Learn more about your avatar →
-            </Button>
-          </CardContent>
+          {actionPlan.avatar_story && (
+            <CardContent>
+              <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
+                {actionPlan.avatar_story}
+              </p>
+              <Button 
+                variant="link" 
+                className="mt-4 px-0"
+                onClick={() => navigate('/avatar')}
+              >
+                Learn more about your avatar →
+              </Button>
+            </CardContent>
+          )}
         </Card>
       )}
 

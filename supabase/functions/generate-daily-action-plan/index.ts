@@ -128,11 +128,7 @@ RULES:
    - Priority level: "urgent" (time-sensitive/blocking), "important" (strategic/goal-aligned), or "momentum" (quick wins)
 
 4. Write in friendly, encouraging tone
-5. Acknowledge recent wins to build motivation
-
-6. For the Avatar Story: Create a fun, engaging "day in the life" narrative (2-3 paragraphs) 
-   that helps the client empathize with their ideal customer. Make it vivid, personal, and relatable.
-   Use the avatar's actual pains and goals to craft a realistic scenario.`;
+5. Acknowledge recent wins to build motivation`;
 
     const userPrompt = `Analyze this client's marketing operation and create today's action plan:
 
@@ -188,14 +184,12 @@ Generate a JSON response with this EXACT structure:
       "link": "/path/to/action",
       "priority": "urgent" | "important" | "momentum"
     }
-  ],
-  "avatar_story": "Engaging 2-3 paragraph story about a day in the avatar's life. Make it vivid and relatable."
+  ]
 }
 
 Important: 
 - Return ONLY valid JSON, no other text
 - Generate 3-5 actions maximum
-- If no avatar exists, create a generic customer story based on the industry
 - Make links specific: /tasks for task actions, /meetings for meeting prep, /marketing/ideas for marketing execution, /marketing/flowchart for channel work`;
 
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
@@ -234,7 +228,6 @@ Important:
         plan_date: today,
         priority_actions: generatedPlan.priority_actions,
         context_summary: generatedPlan.context_summary,
-        avatar_story: generatedPlan.avatar_story,
         data_snapshot: {
           tasks_count: tasks.length,
           overdue_count: overdueTasks.length,

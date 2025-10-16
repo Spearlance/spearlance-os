@@ -69,6 +69,9 @@ verify_jwt = true
 [functions.generate-daily-action-plan]
 verify_jwt = true
 
+[functions.generate-avatar-story]
+verify_jwt = true
+
 [functions.social-generate-ideas]
 verify_jwt = true
 
