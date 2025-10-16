@@ -96,6 +96,7 @@ export function AppSidebar() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [userRole, setUserRole] = useState<string>("");
+  const [isLoading, setIsLoading] = useState(true);
   const [brandOpen, setBrandOpen] = useState(false);
   const [marketingOpen, setMarketingOpen] = useState(true);
   const [communicationsOpen, setCommunicationsOpen] = useState(false);
@@ -112,6 +113,7 @@ export function AppSidebar() {
           .eq("id", user.id)
           .maybeSingle();
         setUserRole(profile?.role || "");
+        setIsLoading(false);
       }
     };
     fetchUserRole();
@@ -194,7 +196,31 @@ export function AppSidebar() {
                 </SidebarMenuItem>
               ))}
 
-              {!isSelfService && (
+              {menuItems.slice(1, 3).map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild>
+                    <NavLink to={item.url} end className={getNavClass}>
+                      <item.icon className="h-4 w-4" />
+                      {!collapsed && (
+                        <span className="flex items-center gap-2">
+                          {item.title}
+                          {item.title === "Launch Pad" && !isComplete && (
+                            <Badge 
+                              variant="destructive" 
+                              className="h-2 w-2 p-0 rounded-full"
+                              aria-label="Incomplete"
+                            >
+                              <span className="sr-only">Incomplete</span>
+                            </Badge>
+                          )}
+                        </span>
+                      )}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+
+              {!isLoading && !isSelfService && (
                 <Collapsible open={communicationsOpen} onOpenChange={setCommunicationsOpen}>
                   <SidebarMenuItem>
                     <CollapsibleTrigger asChild>
@@ -231,30 +257,6 @@ export function AppSidebar() {
                   </SidebarMenuItem>
                 </Collapsible>
               )}
-
-              {menuItems.slice(1, 3).map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <NavLink to={item.url} end className={getNavClass}>
-                      <item.icon className="h-4 w-4" />
-                      {!collapsed && (
-                        <span className="flex items-center gap-2">
-                          {item.title}
-                          {item.title === "Launch Pad" && !isComplete && (
-                            <Badge 
-                              variant="destructive" 
-                              className="h-2 w-2 p-0 rounded-full"
-                              aria-label="Incomplete"
-                            >
-                              <span className="sr-only">Incomplete</span>
-                            </Badge>
-                          )}
-                        </span>
-                      )}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
 
               <Collapsible open={brandOpen} onOpenChange={setBrandOpen}>
                 <SidebarMenuItem>
