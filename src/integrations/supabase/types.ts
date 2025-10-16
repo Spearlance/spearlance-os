@@ -1546,6 +1546,8 @@ export type Database = {
           created_at: string | null
           created_by: string | null
           id: string
+          marketing_channel_id: string | null
+          marketing_stage_id: string | null
           notes: string | null
           offer_type: string | null
           parent_idea_id: string | null
@@ -1562,6 +1564,8 @@ export type Database = {
           created_at?: string | null
           created_by?: string | null
           id?: string
+          marketing_channel_id?: string | null
+          marketing_stage_id?: string | null
           notes?: string | null
           offer_type?: string | null
           parent_idea_id?: string | null
@@ -1578,6 +1582,8 @@ export type Database = {
           created_at?: string | null
           created_by?: string | null
           id?: string
+          marketing_channel_id?: string | null
+          marketing_stage_id?: string | null
           notes?: string | null
           offer_type?: string | null
           parent_idea_id?: string | null
@@ -1594,6 +1600,20 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketing_ideas_marketing_channel_id_fkey"
+            columns: ["marketing_channel_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_flow_channels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketing_ideas_marketing_stage_id_fkey"
+            columns: ["marketing_stage_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_flow_stages"
             referencedColumns: ["id"]
           },
           {
