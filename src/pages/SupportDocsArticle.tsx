@@ -78,7 +78,6 @@ export default function SupportDocsArticle() {
         await supabase.from("support_article_views").insert({
           article_id: articleData.id,
           user_id: user.id,
-          client_id: selectedClient?.id || null,
         });
 
         // Increment view count
@@ -127,7 +126,7 @@ export default function SupportDocsArticle() {
         .insert({
           article_id: article.id,
           user_id: user.id,
-          helpful,
+          is_helpful: helpful,
         });
 
       if (error) throw error;
