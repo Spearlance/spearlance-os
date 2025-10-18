@@ -2432,6 +2432,67 @@ export type Database = {
           },
         ]
       }
+      support_article_feedback: {
+        Row: {
+          article_id: string
+          created_at: string | null
+          id: string
+          is_helpful: boolean
+          user_id: string | null
+        }
+        Insert: {
+          article_id: string
+          created_at?: string | null
+          id?: string
+          is_helpful: boolean
+          user_id?: string | null
+        }
+        Update: {
+          article_id?: string
+          created_at?: string | null
+          id?: string
+          is_helpful?: boolean
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_article_feedback_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "support_articles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_article_views: {
+        Row: {
+          article_id: string
+          id: string
+          user_id: string | null
+          viewed_at: string | null
+        }
+        Insert: {
+          article_id: string
+          id?: string
+          user_id?: string | null
+          viewed_at?: string | null
+        }
+        Update: {
+          article_id?: string
+          id?: string
+          user_id?: string | null
+          viewed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_article_views_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "support_articles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       support_articles: {
         Row: {
           category: string
@@ -2444,6 +2505,7 @@ export type Database = {
           id: string
           is_published: boolean | null
           not_helpful_count: number | null
+          published_at: string | null
           slug: string
           subcategory: string | null
           tags: string[] | null
@@ -2462,6 +2524,7 @@ export type Database = {
           id?: string
           is_published?: boolean | null
           not_helpful_count?: number | null
+          published_at?: string | null
           slug: string
           subcategory?: string | null
           tags?: string[] | null
@@ -2480,6 +2543,7 @@ export type Database = {
           id?: string
           is_published?: boolean | null
           not_helpful_count?: number | null
+          published_at?: string | null
           slug?: string
           subcategory?: string | null
           tags?: string[] | null
