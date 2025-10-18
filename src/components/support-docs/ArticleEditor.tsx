@@ -101,7 +101,6 @@ export function ArticleEditor({ article, open, onClose, onSave }: ArticleEditorP
         tags,
         is_published: formData.is_published,
         featured_order: formData.featured_order ? parseInt(formData.featured_order) : null,
-        updated_by: user.id,
         published_at: formData.is_published && !article?.is_published ? new Date().toISOString() : article?.published_at,
       };
 
