@@ -2432,6 +2432,63 @@ export type Database = {
           },
         ]
       }
+      support_articles: {
+        Row: {
+          category: string
+          content: string
+          created_at: string | null
+          created_by: string | null
+          excerpt: string | null
+          featured_order: number | null
+          helpful_count: number | null
+          id: string
+          is_published: boolean | null
+          not_helpful_count: number | null
+          slug: string
+          subcategory: string | null
+          tags: string[] | null
+          title: string
+          updated_at: string | null
+          view_count: number | null
+        }
+        Insert: {
+          category: string
+          content: string
+          created_at?: string | null
+          created_by?: string | null
+          excerpt?: string | null
+          featured_order?: number | null
+          helpful_count?: number | null
+          id?: string
+          is_published?: boolean | null
+          not_helpful_count?: number | null
+          slug: string
+          subcategory?: string | null
+          tags?: string[] | null
+          title: string
+          updated_at?: string | null
+          view_count?: number | null
+        }
+        Update: {
+          category?: string
+          content?: string
+          created_at?: string | null
+          created_by?: string | null
+          excerpt?: string | null
+          featured_order?: number | null
+          helpful_count?: number | null
+          id?: string
+          is_published?: boolean | null
+          not_helpful_count?: number | null
+          slug?: string
+          subcategory?: string | null
+          tags?: string[] | null
+          title?: string
+          updated_at?: string | null
+          view_count?: number | null
+        }
+        Relationships: []
+      }
       task_comments: {
         Row: {
           body: string
