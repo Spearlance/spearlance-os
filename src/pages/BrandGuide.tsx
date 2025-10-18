@@ -228,7 +228,7 @@ export default function BrandGuide() {
     }
   };
 
-  if (clientLoading || loading) {
+  if (clientLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -243,6 +243,14 @@ export default function BrandGuide() {
           <h2 className="text-2xl font-semibold mb-2">No Client Selected</h2>
           <p className="text-muted-foreground">Please select a client to manage their brand guide</p>
         </div>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     );
   }

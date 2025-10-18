@@ -42,7 +42,7 @@ interface DailyActionPlan {
 const Dashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { selectedClient } = useClient();
+  const { selectedClient, loading: clientLoading } = useClient();
   const { isComplete, loading: launchPadLoading } = useLaunchPadStatus();
   const [stats, setStats] = useState<DashboardStats>({
     taskCounts: { to_do: 0, in_progress: 0, done: 0 },
@@ -50,7 +50,7 @@ const Dashboard = () => {
     marketingTools: [],
   });
   const [actionPlan, setActionPlan] = useState<DailyActionPlan | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [dataLoading, setDataLoading] = useState(true);
   const [generatingPlan, setGeneratingPlan] = useState(false);
   const [generatingStory, setGeneratingStory] = useState(false);
 
@@ -152,7 +152,7 @@ const Dashboard = () => {
     if (!selectedClient) return;
 
     try {
-      setLoading(true);
+      setDataLoading(true);
 
       // Load task counts
       const { data: tasks } = await supabase
@@ -201,7 +201,7 @@ const Dashboard = () => {
     } catch (error) {
       console.error('Error loading dashboard data:', error);
     } finally {
-      setLoading(false);
+      setDataLoading(false);
     }
   };
 
@@ -231,6 +231,14 @@ const Dashboard = () => {
     }
   };
 
+  if (clientLoading || dataLoading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
   if (!selectedClient) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -238,14 +246,6 @@ const Dashboard = () => {
           <CardTitle className="mb-2">No Client Selected</CardTitle>
           <CardDescription>Please select a client to view the dashboard</CardDescription>
         </Card>
-      </div>
-    );
-  }
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
     );
   }

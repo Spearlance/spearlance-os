@@ -23,7 +23,7 @@ import { CompetitorDialog } from "@/components/competitors/CompetitorDialog";
 import { CompetitorCard } from "@/components/competitors/CompetitorCard";
 
 export default function MarketingProfile() {
-  const { selectedClient } = useClient();
+  const { selectedClient, loading: clientLoading } = useClient();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
@@ -656,6 +656,14 @@ export default function MarketingProfile() {
       description: "Your brand story has been updated successfully",
     });
   };
+
+  if (clientLoading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   if (!selectedClient) {
     return (

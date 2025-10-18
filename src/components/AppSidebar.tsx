@@ -158,10 +158,10 @@ export function AppSidebar() {
       </div>
 
       <SidebarContent>
-        {!collapsed && selectedClient && clients.length > 0 && (
+        {!collapsed && selectedClient && clients.length > 1 && (
           <div className="px-4 py-3 border-b border-sidebar-border">
             <label className="text-xs font-medium text-sidebar-foreground/60 mb-2 block">
-              Client
+              Account
             </label>
             <Select
               value={selectedClient.id}

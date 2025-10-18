@@ -13,7 +13,7 @@ import { useNavigate } from "react-router-dom";
 import { Info } from "lucide-react";
 
 export function LaunchPadWizard() {
-  const { selectedClient } = useClient();
+  const { selectedClient, loading: clientLoading } = useClient();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [submission, setSubmission] = useState<LaunchPadSubmission | null>(null);
@@ -136,7 +136,7 @@ export function LaunchPadWizard() {
     }
   };
 
-  if (loading) {
+  if (clientLoading || loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <p className="text-muted-foreground">Loading...</p>
@@ -144,10 +144,18 @@ export function LaunchPadWizard() {
     );
   }
 
-  if (!submission) {
+  if (!selectedClient) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <p className="text-muted-foreground">No client selected</p>
+      </div>
+    );
+  }
+
+  if (!submission) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <p className="text-muted-foreground">Unable to load Launch Pad</p>
       </div>
     );
   }

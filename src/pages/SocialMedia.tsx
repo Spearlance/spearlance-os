@@ -9,8 +9,16 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 
 const SocialMedia = () => {
-  const { selectedClient } = useClient();
+  const { selectedClient, loading: clientLoading } = useClient();
   const [activeTab, setActiveTab] = useState("creator");
+
+  if (clientLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   if (!selectedClient) {
     return (

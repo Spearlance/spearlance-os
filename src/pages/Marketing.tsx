@@ -48,7 +48,7 @@ export default function Marketing() {
 
   const loadServices = async () => {
     if (!selectedClient) return;
-
+    
     setLoading(true);
     const { data, error } = await supabase
       .from("services")
