@@ -140,7 +140,7 @@ Create a clean, modern, visually appealing social media post image. Include mini
               .maybeSingle();
 
             if (!folder) {
-              const { data: newFolder } = await supabase
+              const { data: newFolder, error: folderError } = await supabase
                 .from('asset_folders')
                 .insert({
                   client_id,
@@ -149,6 +149,11 @@ Create a clean, modern, visually appealing social media post image. Include mini
                 })
                 .select()
                 .single();
+              
+              if (folderError || !newFolder) {
+                throw new Error(`Failed to create folder: ${folderError?.message || 'Unknown error'}`);
+              }
+              
               folder = newFolder;
             }
 
@@ -175,7 +180,7 @@ Create a clean, modern, visually appealing social media post image. Include mini
               .from('assets')
               .insert({
                 client_id,
-                folder_id: folder.id,
+                folder_id: folder!.id,
                 title: `Social Post - ${idea.topic_title || 'Generated'}`,
                 type: 'image',
                 storage_type: 'supabase',
