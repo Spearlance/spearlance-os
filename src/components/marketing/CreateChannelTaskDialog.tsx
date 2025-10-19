@@ -74,7 +74,7 @@ export default function CreateChannelTaskDialog({
           status: formData.status,
           priority: formData.priority,
           due_date: formData.dueDate || null,
-          assigned_to: formData.assigneeId || null,
+          assignee_user_id: formData.assigneeId || null,
           client_id: clientId,
         })
         .select()
@@ -191,13 +191,14 @@ export default function CreateChannelTaskDialog({
             <div className="space-y-2">
               <Label htmlFor="assignee">Assignee</Label>
               <Select
-                value={formData.assigneeId}
-                onValueChange={(value) => setFormData({ ...formData, assigneeId: value })}
+                value={formData.assigneeId || "unassigned"}
+                onValueChange={(value) => setFormData({ ...formData, assigneeId: value === "unassigned" ? "" : value })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select assignee" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="unassigned">Unassigned</SelectItem>
                   {users.map((user) => (
                     <SelectItem key={user.id} value={user.id}>
                       {user.name}
