@@ -3,7 +3,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Sparkles, Image as ImageIcon, Eye, Loader2 } from "lucide-react";
+import { Sparkles, Image as ImageIcon, Eye, Loader2, Plus } from "lucide-react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -17,14 +17,17 @@ interface Post {
   image_url: string | null;
   platform: string[] | null;
   status: string;
+  client_id: string;
 }
 
 interface MonthlyCalendarTableProps {
   posts: Post[];
   onRefresh: () => void;
+  selectedMonth: number;
+  selectedYear: number;
 }
 
-export const MonthlyCalendarTable = ({ posts, onRefresh }: MonthlyCalendarTableProps) => {
+export const MonthlyCalendarTable = ({ posts, onRefresh, selectedMonth, selectedYear }: MonthlyCalendarTableProps) => {
   const { toast } = useToast();
   const [selectedPosts, setSelectedPosts] = useState<string[]>([]);
   const [generatingCaptions, setGeneratingCaptions] = useState(false);
@@ -32,6 +35,29 @@ export const MonthlyCalendarTable = ({ posts, onRefresh }: MonthlyCalendarTableP
   const [progress, setProgress] = useState("");
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+
+  // Generate all days for the selected month
+  const getDaysInMonth = (month: number, year: number) => {
+    const firstDay = new Date(year, month - 1, 1);
+    const lastDay = new Date(year, month, 0);
+    const days: Date[] = [];
+    
+    for (let d = new Date(firstDay); d <= lastDay; d.setDate(d.getDate() + 1)) {
+      days.push(new Date(d));
+    }
+    
+    return days;
+  };
+
+  const allDays = getDaysInMonth(selectedMonth, selectedYear);
+
+  // Group posts by their scheduled date (YYYY-MM-DD format)
+  const postsByDate = posts.reduce((acc, post) => {
+    const dateKey = format(new Date(post.scheduled_date), 'yyyy-MM-dd');
+    if (!acc[dateKey]) acc[dateKey] = [];
+    acc[dateKey].push(post);
+    return acc;
+  }, {} as Record<string, Post[]>);
 
   const togglePostSelection = (postId: string) => {
     setSelectedPosts(prev =>
@@ -123,6 +149,59 @@ export const MonthlyCalendarTable = ({ posts, onRefresh }: MonthlyCalendarTableP
     }
   };
 
+  const handleAddPost = async (date: Date) => {
+    try {
+      const clientId = posts[0]?.client_id;
+      if (!clientId) {
+        toast({
+          title: "Error",
+          description: "Client ID not found. Please refresh the page.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Create a blank post for this date
+      const { data: newPost, error } = await supabase
+        .from('social_media_posts')
+        .insert([{
+          client_id: clientId,
+          scheduled_date: date.toISOString(),
+          status: 'idea',
+          topic_category: 'custom',
+          post_idea_json: {
+            topic_title: 'New Post',
+            topic_description: 'Click to edit this post',
+            category: 'custom',
+          },
+        }])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      toast({
+        title: "Post Created",
+        description: `New post created for ${format(date, 'MMMM d, yyyy')}`,
+      });
+
+      onRefresh();
+      
+      // Open the drawer for the new post
+      if (newPost) {
+        setSelectedPost(newPost as Post);
+        setDrawerOpen(true);
+      }
+    } catch (error: any) {
+      console.error('Error creating post:', error);
+      toast({
+        title: "Creation Failed",
+        description: error.message || "Failed to create post.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const getPostStatus = (post: Post) => {
     const hasCaption = !!post.caption_text;
     const hasImage = !!post.image_url;
@@ -152,8 +231,14 @@ export const MonthlyCalendarTable = ({ posts, onRefresh }: MonthlyCalendarTableP
     }
   };
 
-  const readyCount = posts.filter(p => getPostStatus(p) === "ready").length;
-  const progressPercent = Math.round((readyCount / posts.length) * 100);
+  // Count how many days have at least one "ready" post
+  const daysWithReadyPosts = Object.keys(postsByDate).filter(dateKey => {
+    const dayPosts = postsByDate[dateKey];
+    return dayPosts.some(p => getPostStatus(p) === "ready");
+  }).length;
+
+  const totalDays = allDays.length;
+  const progressPercent = totalDays > 0 ? Math.round((daysWithReadyPosts / totalDays) * 100) : 0;
 
   return (
     <div className="space-y-4">
@@ -161,9 +246,11 @@ export const MonthlyCalendarTable = ({ posts, onRefresh }: MonthlyCalendarTableP
       <div className="space-y-2">
         <div className="flex items-center justify-between text-sm">
           <span className="text-muted-foreground">
-            {format(new Date(posts[0]?.scheduled_date), 'MMMM yyyy')} Plan Progress
+            {format(new Date(selectedYear, selectedMonth - 1), 'MMMM yyyy')} Plan Progress
           </span>
-          <span className="font-semibold">{readyCount}/{posts.length} posts ready ({progressPercent}%)</span>
+          <span className="font-semibold">
+            {daysWithReadyPosts}/{totalDays} days with ready posts ({progressPercent}%)
+          </span>
         </div>
         <div className="h-2 bg-secondary rounded-full overflow-hidden">
           <div 
@@ -236,109 +323,198 @@ export const MonthlyCalendarTable = ({ posts, onRefresh }: MonthlyCalendarTableP
             </TableRow>
           </TableHeader>
           <TableBody>
-            {posts.map((post) => {
-              const idea = post.post_idea_json || {};
-              const status = getPostStatus(post);
+            {allDays.map((day) => {
+              const dateKey = format(day, 'yyyy-MM-dd');
+              const dayPosts = postsByDate[dateKey] || [];
+              const hasPosts = dayPosts.length > 0;
 
-              return (
-                <TableRow 
-                  key={post.id}
-                  className="cursor-pointer hover:bg-muted/50"
-                  onClick={() => {
-                    setSelectedPost(post);
-                    setDrawerOpen(true);
-                  }}
-                >
-                  <TableCell onClick={(e) => e.stopPropagation()}>
-                    <Checkbox
-                      checked={selectedPosts.includes(post.id)}
-                      onCheckedChange={() => togglePostSelection(post.id)}
-                    />
-                  </TableCell>
-                  <TableCell className="font-medium">
-                    {format(new Date(post.scheduled_date), 'MMM d')}
-                  </TableCell>
-                  <TableCell>
-                    <div>
-                      <div className="font-medium">{idea.topic_title || 'Untitled'}</div>
-                      <div className="text-xs text-muted-foreground line-clamp-1">
-                        {idea.topic_description}
+              // If no posts for this day, show "No Posts" row
+              if (!hasPosts) {
+                return (
+                  <TableRow key={dateKey} className="hover:bg-muted/30">
+                    <TableCell>
+                      <Checkbox disabled className="opacity-50" />
+                    </TableCell>
+                    <TableCell>
+                      <div>
+                        <div className="font-semibold">{format(day, 'MMM d')}</div>
+                        <div className="text-xs text-muted-foreground">{format(day, 'EEEE')}</div>
                       </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className="text-xs">
-                      {idea.category?.replace(/_/g, ' ') || 'N/A'}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    {post.caption_text ? (
-                      <Badge className="bg-green-500/10 text-green-700 dark:text-green-400">
-                        ✓ Has Caption
-                      </Badge>
-                    ) : (
-                      <Badge variant="outline" className="text-muted-foreground">
-                        No caption
-                      </Badge>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {post.image_url ? (
-                      <Badge className="bg-green-500/10 text-green-700 dark:text-green-400">
-                        ✓ Has Image
-                      </Badge>
-                    ) : (
-                      <Badge variant="outline" className="text-muted-foreground">
-                        No image
-                      </Badge>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                    <div className="flex items-center justify-end gap-1">
-                      {!post.caption_text && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleGenerateCaptions([post.id]);
-                          }}
-                          disabled={generatingCaptions || generatingImages}
-                          title="Generate caption"
-                        >
-                          <Sparkles className="h-3 w-3" />
-                        </Button>
-                      )}
-                      {!post.image_url && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleGenerateImages([post.id]);
-                          }}
-                          disabled={generatingCaptions || generatingImages}
-                          title="Generate image"
-                        >
-                          <ImageIcon className="h-3 w-3" />
-                        </Button>
-                      )}
+                    </TableCell>
+                    <TableCell colSpan={4} className="text-center text-muted-foreground">
+                      No posts scheduled
+                    </TableCell>
+                    <TableCell className="text-right">
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedPost(post);
-                          setDrawerOpen(true);
-                        }}
-                        title="View and edit details"
+                        onClick={() => handleAddPost(day)}
+                        title="Add post for this day"
                       >
-                        <Eye className="h-3 w-3" />
+                        <Plus className="h-3 w-3 mr-1" />
+                        Add Post
                       </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              );
+                    </TableCell>
+                  </TableRow>
+                );
+              }
+
+              // If there are posts for this day, show each one
+              return dayPosts.map((post, index) => {
+                const idea = post.post_idea_json || {};
+                const status = getPostStatus(post);
+                const isFirstPostOfDay = index === 0;
+                const isLastPostOfDay = index === dayPosts.length - 1;
+
+                return (
+                  <>
+                    <TableRow 
+                      key={post.id}
+                      className="cursor-pointer hover:bg-muted/50"
+                      onClick={() => {
+                        setSelectedPost(post);
+                        setDrawerOpen(true);
+                      }}
+                    >
+                      {/* Show checkbox only on first post of the day */}
+                      {isFirstPostOfDay && (
+                        <TableCell 
+                          rowSpan={dayPosts.length}
+                          className="align-top pt-4"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <Checkbox
+                            checked={dayPosts.every(p => selectedPosts.includes(p.id))}
+                            onCheckedChange={() => {
+                              const allSelected = dayPosts.every(p => selectedPosts.includes(p.id));
+                              if (allSelected) {
+                                setSelectedPosts(prev => prev.filter(id => !dayPosts.find(p => p.id === id)));
+                              } else {
+                                setSelectedPosts(prev => [...prev, ...dayPosts.map(p => p.id).filter(id => !prev.includes(id))]);
+                              }
+                            }}
+                          />
+                        </TableCell>
+                      )}
+                      
+                      {/* Show date only on first post of the day */}
+                      {isFirstPostOfDay && (
+                        <TableCell 
+                          rowSpan={dayPosts.length}
+                          className="font-medium align-top pt-4"
+                        >
+                          <div>
+                            <div className="font-semibold">{format(day, 'MMM d')}</div>
+                            <div className="text-xs text-muted-foreground">{format(day, 'EEEE')}</div>
+                            {dayPosts.length > 1 && (
+                              <Badge variant="outline" className="mt-1 text-xs">
+                                {dayPosts.length} posts
+                              </Badge>
+                            )}
+                          </div>
+                        </TableCell>
+                      )}
+
+                      {/* Rest of the columns (same as before) */}
+                      <TableCell>
+                        <div>
+                          <div className="font-medium">{idea.topic_title || 'Untitled'}</div>
+                          <div className="text-xs text-muted-foreground line-clamp-1">
+                            {idea.topic_description}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="text-xs">
+                          {idea.category?.replace(/_/g, ' ') || 'N/A'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {post.caption_text ? (
+                          <Badge className="bg-green-500/10 text-green-700 dark:text-green-400">
+                            ✓ Has Caption
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-muted-foreground">
+                            No caption
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {post.image_url ? (
+                          <Badge className="bg-green-500/10 text-green-700 dark:text-green-400">
+                            ✓ Has Image
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-muted-foreground">
+                            No image
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-end gap-1">
+                          {!post.caption_text && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleGenerateCaptions([post.id]);
+                              }}
+                              disabled={generatingCaptions || generatingImages}
+                              title="Generate caption"
+                            >
+                              <Sparkles className="h-3 w-3" />
+                            </Button>
+                          )}
+                          {!post.image_url && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleGenerateImages([post.id]);
+                              }}
+                              disabled={generatingCaptions || generatingImages}
+                              title="Generate image"
+                            >
+                              <ImageIcon className="h-3 w-3" />
+                            </Button>
+                          )}
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedPost(post);
+                              setDrawerOpen(true);
+                            }}
+                            title="View and edit details"
+                          >
+                            <Eye className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                    {/* Add "Add Another Post" button after last post of the day */}
+                    {isLastPostOfDay && (
+                      <TableRow key={`${dateKey}-add`} className="border-t-2 border-dashed hover:bg-muted/20">
+                        <TableCell colSpan={7} className="text-center py-2">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleAddPost(day)}
+                            className="text-muted-foreground hover:text-foreground"
+                          >
+                            <Plus className="h-3 w-3 mr-1" />
+                            Add another post for {format(day, 'MMM d')}
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </>
+                );
+              });
             })}
           </TableBody>
         </Table>

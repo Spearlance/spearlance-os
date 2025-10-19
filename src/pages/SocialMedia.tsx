@@ -119,7 +119,12 @@ const SocialMedia = () => {
 
         <TabsContent value="planner" className="space-y-6">
           {monthlyPosts && monthlyPosts.length > 0 ? (
-            <MonthlyCalendarTable posts={monthlyPosts} onRefresh={refetch} />
+            <MonthlyCalendarTable 
+              posts={monthlyPosts} 
+              onRefresh={refetch}
+              selectedMonth={selectedMonth}
+              selectedYear={selectedYear}
+            />
           ) : (
             <div className="text-center py-12 space-y-4">
               <Calendar className="h-16 w-16 mx-auto text-muted-foreground" />
