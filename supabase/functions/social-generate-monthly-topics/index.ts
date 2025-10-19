@@ -30,6 +30,26 @@ serve(async (req) => {
       throw new Error('Missing required parameters');
     }
 
+    // Validate month (1-12)
+    if (month < 1 || month > 12) {
+      throw new Error('Invalid month. Must be between 1 and 12');
+    }
+
+    // Validate year (current year or next year only)
+    const currentYear = new Date().getFullYear();
+    if (year < currentYear || year > currentYear + 1) {
+      throw new Error('Invalid year. Can only plan for current year or next year');
+    }
+
+    // Prevent generating posts for past months
+    const selectedDate = new Date(year, month - 1, 1);
+    const today = new Date();
+    const currentMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+
+    if (selectedDate < currentMonthStart) {
+      throw new Error('Cannot generate posts for months in the past');
+    }
+
     console.log('Generating monthly topics for client:', client_id, 'month:', month, 'year:', year);
 
     // Fetch client data for context

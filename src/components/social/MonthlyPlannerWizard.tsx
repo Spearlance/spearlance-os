@@ -1,10 +1,13 @@
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Calendar, Loader2, CheckCircle2 } from "lucide-react";
+import { Calendar, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useClient } from "@/contexts/ClientContext";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface MonthlyPlannerWizardProps {
   open: boolean;
@@ -12,16 +15,62 @@ interface MonthlyPlannerWizardProps {
   onComplete: () => void;
 }
 
+const getDefaultMonth = () => {
+  const today = new Date();
+  const dayOfMonth = today.getDate();
+  
+  // If after the 20th, suggest next month
+  if (dayOfMonth >= 20) {
+    return today.getMonth() === 11 ? 1 : today.getMonth() + 2; // +2 because getMonth() is 0-indexed
+  }
+  return today.getMonth() + 1; // Current month (1-12)
+};
+
+const getDefaultYear = () => {
+  const today = new Date();
+  const dayOfMonth = today.getDate();
+  
+  // If after 20th of December, suggest next year
+  if (today.getMonth() === 11 && dayOfMonth >= 20) {
+    return today.getFullYear() + 1;
+  }
+  return today.getFullYear();
+};
+
+const getAvailableMonths = () => {
+  const months = [];
+  const today = new Date();
+  
+  for (let i = 0; i < 3; i++) {
+    const date = new Date(today.getFullYear(), today.getMonth() + i, 1);
+    months.push({
+      value: `${date.getMonth() + 1}-${date.getFullYear()}`,
+      month: date.getMonth() + 1,
+      year: date.getFullYear(),
+      label: date.toLocaleString('default', { month: 'long', year: 'numeric' })
+    });
+  }
+  
+  return months;
+};
+
 export const MonthlyPlannerWizard = ({ open, onOpenChange, onComplete }: MonthlyPlannerWizardProps) => {
   const { selectedClient } = useClient();
   const { toast } = useToast();
   const [isGenerating, setIsGenerating] = useState(false);
   const [progress, setProgress] = useState<string>("");
   const [isComplete, setIsComplete] = useState(false);
+  const [selectedMonth, setSelectedMonth] = useState<number>(getDefaultMonth());
+  const [selectedYear, setSelectedYear] = useState<number>(getDefaultYear());
 
-  const currentMonth = new Date().getMonth() + 1;
-  const currentYear = new Date().getFullYear();
-  const monthName = new Date(currentYear, currentMonth - 1).toLocaleString('default', { month: 'long' });
+  const today = new Date();
+  const currentDay = today.getDate();
+  const currentMonth = today.getMonth() + 1;
+  const isSelectingCurrentMonth = selectedMonth === currentMonth && selectedYear === today.getFullYear();
+  const showWarning = isSelectingCurrentMonth && currentDay > 15;
+  
+  const selectedMonthName = new Date(selectedYear, selectedMonth - 1).toLocaleString('default', { month: 'long' });
+  const nextMonthName = new Date(selectedYear, selectedMonth).toLocaleString('default', { month: 'long' });
 
   const handleGenerate = async () => {
     if (!selectedClient) return;
@@ -36,8 +85,8 @@ export const MonthlyPlannerWizard = ({ open, onOpenChange, onComplete }: Monthly
       const { data, error } = await supabase.functions.invoke('social-generate-monthly-topics', {
         body: {
           client_id: selectedClient.id,
-          month: currentMonth,
-          year: currentYear,
+          month: selectedMonth,
+          year: selectedYear,
         },
       });
 
@@ -47,11 +96,11 @@ export const MonthlyPlannerWizard = ({ open, onOpenChange, onComplete }: Monthly
       await new Promise(resolve => setTimeout(resolve, 500));
 
       setIsComplete(true);
-      setProgress(`🎉 Success! ${data.posts_created} posts created for ${monthName}`);
+      setProgress(`🎉 Success! ${data.posts_created} posts created for ${selectedMonthName}`);
 
       toast({
         title: "Monthly Plan Created!",
-        description: `${data.posts_created} posts ready for ${monthName}. Let's add captions and images!`,
+        description: `${data.posts_created} posts ready for ${selectedMonthName}. Let's add captions and images!`,
       });
 
       setTimeout(() => {
@@ -80,15 +129,49 @@ export const MonthlyPlannerWizard = ({ open, onOpenChange, onComplete }: Monthly
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Calendar className="h-5 w-5" />
-            Generate {monthName} Plan
+            Generate Monthly Plan
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
           {!isGenerating && !isComplete && (
             <>
+              {/* Month/Year Selector */}
+              <div className="space-y-2">
+                <Label>Select Month to Plan</Label>
+                <Select 
+                  value={`${selectedMonth}-${selectedYear}`} 
+                  onValueChange={(val) => {
+                    const [m, y] = val.split('-');
+                    setSelectedMonth(parseInt(m));
+                    setSelectedYear(parseInt(y));
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {getAvailableMonths().map(m => (
+                      <SelectItem key={m.value} value={m.value}>
+                        {m.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Warning if selecting current month late in the month */}
+              {showWarning && (
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    We're already on day {currentDay} of {selectedMonthName}. Consider planning ahead for {nextMonthName}!
+                  </AlertDescription>
+                </Alert>
+              )}
+
               <p className="text-sm text-muted-foreground">
-                Create your entire social media calendar for {monthName} in seconds! We'll generate:
+                Create your entire social media calendar for {selectedMonthName} in seconds! We'll generate:
               </p>
               <ul className="text-sm space-y-2 text-muted-foreground">
                 <li className="flex items-start gap-2">
@@ -130,7 +213,7 @@ export const MonthlyPlannerWizard = ({ open, onOpenChange, onComplete }: Monthly
               Cancel
             </Button>
             <Button onClick={handleGenerate} className="flex-1">
-              Generate {monthName} Plan
+              Generate {selectedMonthName} Plan
             </Button>
           </div>
         )}
