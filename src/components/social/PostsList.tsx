@@ -35,6 +35,7 @@ export function PostsList() {
         .from('social_media_posts')
         .select('*')
         .eq('client_id', selectedClient!.id)
+        .neq('status', 'idea')
         .order('created_at', { ascending: false });
 
       if (statusFilter !== 'all') {
@@ -180,7 +181,7 @@ export function PostsList() {
           <p className="text-muted-foreground">
             {searchQuery || statusFilter !== 'all'
               ? "No posts match your filters"
-              : "No posts yet. Create your first post!"}
+              : "No posts yet. Go to Monthly Planner to generate content ideas, then add captions and images to see posts here."}
           </p>
         </Card>
       ) : (

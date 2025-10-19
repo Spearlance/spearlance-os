@@ -20,19 +20,23 @@ const SocialMedia = () => {
 
   const currentMonth = new Date().getMonth() + 1;
   const currentYear = new Date().getFullYear();
+  
+  const [selectedMonth, setSelectedMonth] = useState(currentMonth);
+  const [selectedYear, setSelectedYear] = useState(currentYear);
 
   const { data: monthlyPosts, refetch } = useQuery({
-    queryKey: ['monthly-posts', selectedClient?.id, currentMonth, currentYear],
+    queryKey: ['monthly-posts', selectedClient?.id, selectedMonth, selectedYear],
     queryFn: async () => {
       if (!selectedClient) return [];
       
-      const startDate = new Date(currentYear, currentMonth - 1, 1);
-      const endDate = new Date(currentYear, currentMonth, 0);
+      const startDate = new Date(selectedYear, selectedMonth - 1, 1);
+      const endDate = new Date(selectedYear, selectedMonth, 0);
 
       const { data, error } = await supabase
         .from('social_media_posts')
         .select('*')
         .eq('client_id', selectedClient.id)
+        .eq('status', 'idea')
         .gte('scheduled_date', startDate.toISOString())
         .lte('scheduled_date', endDate.toISOString())
         .order('scheduled_date', { ascending: true });
@@ -76,18 +80,41 @@ const SocialMedia = () => {
       <SocialMediaCallout />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="space-y-4">
           <TabsList className="grid w-full max-w-2xl grid-cols-3">
             <TabsTrigger value="planner">Monthly Planner</TabsTrigger>
             <TabsTrigger value="posts">Posts</TabsTrigger>
             <TabsTrigger value="creator">Single Post</TabsTrigger>
           </TabsList>
           
-          {activeTab === "planner" && (!monthlyPosts || monthlyPosts.length === 0) && (
-            <Button onClick={() => setShowMonthlyWizard(true)} size="lg">
-              <Calendar className="h-4 w-4 mr-2" />
-              Generate Monthly Plan
-            </Button>
+          {activeTab === "planner" && (
+            <div className="flex items-center gap-2">
+              <select
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+                className="px-3 py-2 border rounded-md bg-background"
+              >
+                {Array.from({ length: 12 }, (_, i) => i + 1).map(month => (
+                  <option key={month} value={month}>
+                    {new Date(2025, month - 1).toLocaleString('default', { month: 'long' })}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                className="px-3 py-2 border rounded-md bg-background"
+              >
+                <option value={currentYear}>{currentYear}</option>
+                <option value={currentYear + 1}>{currentYear + 1}</option>
+              </select>
+              {(!monthlyPosts || monthlyPosts.length === 0) && (
+                <Button onClick={() => setShowMonthlyWizard(true)} size="lg">
+                  <Calendar className="h-4 w-4 mr-2" />
+                  Generate Plan
+                </Button>
+              )}
+            </div>
           )}
         </div>
 
@@ -123,7 +150,12 @@ const SocialMedia = () => {
       <MonthlyPlannerWizard 
         open={showMonthlyWizard}
         onOpenChange={setShowMonthlyWizard}
-        onComplete={() => refetch()}
+        onComplete={() => {
+          setShowMonthlyWizard(false);
+          refetch();
+        }}
+        month={selectedMonth}
+        year={selectedYear}
       />
     </div>
   );

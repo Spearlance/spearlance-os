@@ -66,6 +66,23 @@ export const MonthlyCalendarTable = ({ posts, onRefresh }: MonthlyCalendarTableP
         description: `Successfully generated ${data.successful} of ${data.total} captions.`,
       });
 
+      // Update posts to 'draft' status if they now have both caption AND image
+      const { data: updatedPosts } = await supabase
+        .from('social_media_posts')
+        .select('id, caption_text, image_url, status')
+        .in('id', postIds);
+
+      const postsToMarkDraft = updatedPosts?.filter(p => 
+        p.status === 'idea' && p.caption_text && p.image_url
+      ).map(p => p.id) || [];
+
+      if (postsToMarkDraft.length > 0) {
+        await supabase
+          .from('social_media_posts')
+          .update({ status: 'draft' })
+          .in('id', postsToMarkDraft);
+      }
+
       setSelectedPosts([]);
       onRefresh();
     } catch (error: any) {
@@ -103,6 +120,23 @@ export const MonthlyCalendarTable = ({ posts, onRefresh }: MonthlyCalendarTableP
         title: "Images Generated!",
         description: `Successfully generated ${data.successful} of ${data.total} images.`,
       });
+
+      // Update posts to 'draft' status if they now have both caption AND image
+      const { data: updatedPosts } = await supabase
+        .from('social_media_posts')
+        .select('id, caption_text, image_url, status')
+        .in('id', postIds);
+
+      const postsToMarkDraft = updatedPosts?.filter(p => 
+        p.status === 'idea' && p.caption_text && p.image_url
+      ).map(p => p.id) || [];
+
+      if (postsToMarkDraft.length > 0) {
+        await supabase
+          .from('social_media_posts')
+          .update({ status: 'draft' })
+          .in('id', postsToMarkDraft);
+      }
 
       setSelectedPosts([]);
       onRefresh();

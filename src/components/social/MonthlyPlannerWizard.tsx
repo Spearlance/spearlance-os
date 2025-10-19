@@ -13,6 +13,8 @@ interface MonthlyPlannerWizardProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onComplete: () => void;
+  month?: number;
+  year?: number;
 }
 
 const getDefaultMonth = () => {
@@ -54,14 +56,14 @@ const getAvailableMonths = () => {
   return months;
 };
 
-export const MonthlyPlannerWizard = ({ open, onOpenChange, onComplete }: MonthlyPlannerWizardProps) => {
+export const MonthlyPlannerWizard = ({ open, onOpenChange, onComplete, month, year }: MonthlyPlannerWizardProps) => {
   const { selectedClient } = useClient();
   const { toast } = useToast();
   const [isGenerating, setIsGenerating] = useState(false);
   const [progress, setProgress] = useState<string>("");
   const [isComplete, setIsComplete] = useState(false);
-  const [selectedMonth, setSelectedMonth] = useState<number>(getDefaultMonth());
-  const [selectedYear, setSelectedYear] = useState<number>(getDefaultYear());
+  const [selectedMonth, setSelectedMonth] = useState<number>(month || getDefaultMonth());
+  const [selectedYear, setSelectedYear] = useState<number>(year || getDefaultYear());
 
   const today = new Date();
   const currentDay = today.getDate();

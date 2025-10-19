@@ -196,7 +196,7 @@ Spread the topics naturally across the month. Mix up the categories so there's v
         topic_category: topic.category,
         post_idea_json: topic,
         scheduled_date: scheduledDate.toISOString(),
-        status: 'draft',
+        status: 'idea',
         created_by: user.id,
       };
     });
