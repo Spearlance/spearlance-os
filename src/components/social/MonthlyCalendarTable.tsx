@@ -3,11 +3,21 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Sparkles, Image as ImageIcon, Eye, Loader2, Plus } from "lucide-react";
+import { Loader2, Plus, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { PostManagementDrawer } from "./PostManagementDrawer";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface Post {
   id: string;
@@ -35,6 +45,7 @@ export const MonthlyCalendarTable = ({ posts, onRefresh, selectedMonth, selected
   const [progress, setProgress] = useState("");
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [deletingPostId, setDeletingPostId] = useState<string | null>(null);
 
   // Generate all days for the selected month
   const getDaysInMonth = (month: number, year: number) => {
@@ -202,6 +213,38 @@ export const MonthlyCalendarTable = ({ posts, onRefresh, selectedMonth, selected
     }
   };
 
+  const handleDeletePost = async (postId: string) => {
+    setDeletingPostId(postId);
+  };
+
+  const confirmDelete = async () => {
+    if (!deletingPostId) return;
+    
+    try {
+      const { error } = await supabase
+        .from('social_media_posts')
+        .delete()
+        .eq('id', deletingPostId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Post Deleted",
+        description: "The post has been removed.",
+      });
+
+      onRefresh();
+    } catch (error: any) {
+      toast({
+        title: "Delete Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setDeletingPostId(null);
+    }
+  };
+
   const getPostStatus = (post: Post) => {
     const hasCaption = !!post.caption_text;
     const hasImage = !!post.image_url;
@@ -272,7 +315,7 @@ export const MonthlyCalendarTable = ({ posts, onRefresh, selectedMonth, selected
             {generatingCaptions ? (
               <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Generating...</>
             ) : (
-              <><Sparkles className="h-4 w-4 mr-2" /> Generate Captions</>
+              <>Generate Captions</>
             )}
           </Button>
           <Button
@@ -284,7 +327,7 @@ export const MonthlyCalendarTable = ({ posts, onRefresh, selectedMonth, selected
             {generatingImages ? (
               <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Generating...</>
             ) : (
-              <><ImageIcon className="h-4 w-4 mr-2" /> Generate Images</>
+              <>Generate Images</>
             )}
           </Button>
           <Button
@@ -451,50 +494,20 @@ export const MonthlyCalendarTable = ({ posts, onRefresh, selectedMonth, selected
                           </Badge>
                         )}
                       </TableCell>
-                      <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex items-center justify-end gap-1">
-                          {!post.caption_text && (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleGenerateCaptions([post.id]);
-                              }}
-                              disabled={generatingCaptions || generatingImages}
-                              title="Generate caption"
-                            >
-                              <Sparkles className="h-3 w-3" />
-                            </Button>
-                          )}
-                          {!post.image_url && (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleGenerateImages([post.id]);
-                              }}
-                              disabled={generatingCaptions || generatingImages}
-                              title="Generate image"
-                            >
-                              <ImageIcon className="h-3 w-3" />
-                            </Button>
-                          )}
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedPost(post);
-                              setDrawerOpen(true);
-                            }}
-                            title="View and edit details"
-                          >
-                            <Eye className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      </TableCell>
+              <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeletePost(post.id);
+                  }}
+                  title="Delete post"
+                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </TableCell>
                     </TableRow>
                     {/* Add "Add Another Post" button after last post of the day */}
                     {isLastPostOfDay && (
@@ -526,6 +539,23 @@ export const MonthlyCalendarTable = ({ posts, onRefresh, selectedMonth, selected
         onOpenChange={setDrawerOpen}
         onRefresh={onRefresh}
       />
+
+      <AlertDialog open={deletingPostId !== null} onOpenChange={(open) => !open && setDeletingPostId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Post?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete this post. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
