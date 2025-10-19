@@ -4,11 +4,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useClient } from "@/contexts/ClientContext";
 import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-} from "@/components/ui/drawer";
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -263,16 +263,16 @@ export const PostManagementDrawer = ({
   const idea = post.post_idea_json || {};
 
   return (
-    <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="max-w-2xl mx-auto max-h-[90vh]">
-        <DrawerHeader>
-          <DrawerTitle>
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent className="sm:max-w-2xl w-full overflow-y-auto">
+        <SheetHeader>
+          <SheetTitle>
             {idea.topic_title || 'Untitled Post'}
             <div className="text-sm font-normal text-muted-foreground mt-1">
               {format(new Date(post.scheduled_date), 'MMMM d, yyyy')}
             </div>
-          </DrawerTitle>
-        </DrawerHeader>
+          </SheetTitle>
+        </SheetHeader>
 
         <Tabs defaultValue="content" className="flex-1">
           <TabsList className="w-full">
@@ -281,7 +281,7 @@ export const PostManagementDrawer = ({
             <TabsTrigger value="channels" className="flex-1">Channels</TabsTrigger>
           </TabsList>
 
-          <ScrollArea className="h-[60vh]">
+          <ScrollArea className="h-[calc(100vh-200px)]">
             {/* Content Tab */}
             <TabsContent value="content" className="p-6 space-y-6">
               {/* Topic Info (readonly) */}
@@ -495,7 +495,7 @@ export const PostManagementDrawer = ({
             </TabsContent>
           </ScrollArea>
         </Tabs>
-      </DrawerContent>
-    </Drawer>
+      </SheetContent>
+    </Sheet>
   );
 };
