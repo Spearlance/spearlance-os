@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -46,6 +46,16 @@ export const MonthlyCalendarTable = ({ posts, onRefresh, selectedMonth, selected
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [deletingPostId, setDeletingPostId] = useState<string | null>(null);
+
+  // Sync selectedPost with posts array when data refreshes
+  useEffect(() => {
+    if (selectedPost && posts.length > 0) {
+      const updatedPost = posts.find(p => p.id === selectedPost.id);
+      if (updatedPost) {
+        setSelectedPost(updatedPost);
+      }
+    }
+  }, [posts]);
 
   // Generate all days for the selected month
   const getDaysInMonth = (month: number, year: number) => {
