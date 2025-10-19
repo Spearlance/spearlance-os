@@ -244,10 +244,47 @@ export const PostManagementDrawer = ({
     }
   };
 
-  const handleSelectGeneratedIdea = (idea: any) => {
+  const handleSelectGeneratedIdea = async (idea: any) => {
+    if (!post) return;
+    
     setTopicTitle(idea.title);
     setTopicDescription(idea.description);
     setGeneratedTopicIdeas([]);
+    setIsSaving(true);
+
+    try {
+      const updatedIdea = {
+        ...post.post_idea_json,
+        topic_title: idea.title,
+        topic_description: idea.description,
+        category: topicCategory,
+      };
+
+      const { error } = await supabase
+        .from('social_media_posts')
+        .update({
+          post_idea_json: updatedIdea,
+        })
+        .eq('id', post.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Topic Updated",
+        description: idea.title,
+      });
+      
+      setEditingTopic(false);
+      onRefresh();
+    } catch (error: any) {
+      toast({
+        title: "Save Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   // Generate caption
