@@ -3,10 +3,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Sparkles, Image as ImageIcon, Pencil, Eye, Loader2 } from "lucide-react";
+import { Sparkles, Image as ImageIcon, Eye, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { PostManagementDrawer } from "./PostManagementDrawer";
 
 interface Post {
   id: string;
@@ -14,6 +15,7 @@ interface Post {
   post_idea_json: any;
   caption_text: string | null;
   image_url: string | null;
+  platform: string[] | null;
   status: string;
 }
 
@@ -28,6 +30,8 @@ export const MonthlyCalendarTable = ({ posts, onRefresh }: MonthlyCalendarTableP
   const [generatingCaptions, setGeneratingCaptions] = useState(false);
   const [generatingImages, setGeneratingImages] = useState(false);
   const [progress, setProgress] = useState("");
+  const [selectedPost, setSelectedPost] = useState<Post | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   const togglePostSelection = (postId: string) => {
     setSelectedPosts(prev =>
@@ -65,23 +69,6 @@ export const MonthlyCalendarTable = ({ posts, onRefresh }: MonthlyCalendarTableP
         title: "Captions Generated!",
         description: `Successfully generated ${data.successful} of ${data.total} captions.`,
       });
-
-      // Update posts to 'draft' status if they now have both caption AND image
-      const { data: updatedPosts } = await supabase
-        .from('social_media_posts')
-        .select('id, caption_text, image_url, status')
-        .in('id', postIds);
-
-      const postsToMarkDraft = updatedPosts?.filter(p => 
-        p.status === 'idea' && p.caption_text && p.image_url
-      ).map(p => p.id) || [];
-
-      if (postsToMarkDraft.length > 0) {
-        await supabase
-          .from('social_media_posts')
-          .update({ status: 'draft' })
-          .in('id', postsToMarkDraft);
-      }
 
       setSelectedPosts([]);
       onRefresh();
@@ -121,23 +108,6 @@ export const MonthlyCalendarTable = ({ posts, onRefresh }: MonthlyCalendarTableP
         description: `Successfully generated ${data.successful} of ${data.total} images.`,
       });
 
-      // Update posts to 'draft' status if they now have both caption AND image
-      const { data: updatedPosts } = await supabase
-        .from('social_media_posts')
-        .select('id, caption_text, image_url, status')
-        .in('id', postIds);
-
-      const postsToMarkDraft = updatedPosts?.filter(p => 
-        p.status === 'idea' && p.caption_text && p.image_url
-      ).map(p => p.id) || [];
-
-      if (postsToMarkDraft.length > 0) {
-        await supabase
-          .from('social_media_posts')
-          .update({ status: 'draft' })
-          .in('id', postsToMarkDraft);
-      }
-
       setSelectedPosts([]);
       onRefresh();
     } catch (error: any) {
@@ -154,16 +124,31 @@ export const MonthlyCalendarTable = ({ posts, onRefresh }: MonthlyCalendarTableP
   };
 
   const getPostStatus = (post: Post) => {
-    if (post.caption_text && post.image_url) return "ready";
-    if (post.caption_text || post.image_url) return "partial";
-    return "draft";
+    const hasCaption = !!post.caption_text;
+    const hasImage = !!post.image_url;
+    const hasPlatform = post.platform && post.platform.length > 0;
+    
+    if (hasCaption && hasImage && hasPlatform) return "ready";
+    if (hasCaption && hasImage && !hasPlatform) return "needs-platform";
+    if (hasCaption || hasImage) return "partial";
+    return "idea";
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case "ready": return "bg-green-500/10 text-green-700 dark:text-green-400";
-      case "partial": return "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400";
+      case "needs-platform": return "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400";
+      case "partial": return "bg-blue-500/10 text-blue-700 dark:text-blue-400";
       default: return "bg-gray-500/10 text-gray-700 dark:text-gray-400";
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case "ready": return "✓ Ready";
+      case "needs-platform": return "Need Platforms";
+      case "partial": return "In Progress";
+      default: return "Idea Only";
     }
   };
 
@@ -256,8 +241,15 @@ export const MonthlyCalendarTable = ({ posts, onRefresh }: MonthlyCalendarTableP
               const status = getPostStatus(post);
 
               return (
-                <TableRow key={post.id}>
-                  <TableCell>
+                <TableRow 
+                  key={post.id}
+                  className="cursor-pointer hover:bg-muted/50"
+                  onClick={() => {
+                    setSelectedPost(post);
+                    setDrawerOpen(true);
+                  }}
+                >
+                  <TableCell onClick={(e) => e.stopPropagation()}>
                     <Checkbox
                       checked={selectedPosts.includes(post.id)}
                       onCheckedChange={() => togglePostSelection(post.id)}
@@ -281,8 +273,8 @@ export const MonthlyCalendarTable = ({ posts, onRefresh }: MonthlyCalendarTableP
                   </TableCell>
                   <TableCell>
                     {post.caption_text ? (
-                      <Badge className={getStatusColor("ready")}>
-                        ✓ Ready
+                      <Badge className="bg-green-500/10 text-green-700 dark:text-green-400">
+                        ✓ Has Caption
                       </Badge>
                     ) : (
                       <Badge variant="outline" className="text-muted-foreground">
@@ -292,8 +284,8 @@ export const MonthlyCalendarTable = ({ posts, onRefresh }: MonthlyCalendarTableP
                   </TableCell>
                   <TableCell>
                     {post.image_url ? (
-                      <Badge className={getStatusColor("ready")}>
-                        ✓ Ready
+                      <Badge className="bg-green-500/10 text-green-700 dark:text-green-400">
+                        ✓ Has Image
                       </Badge>
                     ) : (
                       <Badge variant="outline" className="text-muted-foreground">
@@ -301,14 +293,18 @@ export const MonthlyCalendarTable = ({ posts, onRefresh }: MonthlyCalendarTableP
                       </Badge>
                     )}
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                     <div className="flex items-center justify-end gap-1">
                       {!post.caption_text && (
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={() => handleGenerateCaptions([post.id])}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleGenerateCaptions([post.id]);
+                          }}
                           disabled={generatingCaptions || generatingImages}
+                          title="Generate caption"
                         >
                           <Sparkles className="h-3 w-3" />
                         </Button>
@@ -317,22 +313,28 @@ export const MonthlyCalendarTable = ({ posts, onRefresh }: MonthlyCalendarTableP
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={() => handleGenerateImages([post.id])}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleGenerateImages([post.id]);
+                          }}
                           disabled={generatingCaptions || generatingImages}
+                          title="Generate image"
                         >
                           <ImageIcon className="h-3 w-3" />
                         </Button>
                       )}
-                      {post.caption_text && (
-                        <Button size="sm" variant="ghost">
-                          <Pencil className="h-3 w-3" />
-                        </Button>
-                      )}
-                      {status === "ready" && (
-                        <Button size="sm" variant="ghost">
-                          <Eye className="h-3 w-3" />
-                        </Button>
-                      )}
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedPost(post);
+                          setDrawerOpen(true);
+                        }}
+                        title="View and edit details"
+                      >
+                        <Eye className="h-3 w-3" />
+                      </Button>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -341,6 +343,13 @@ export const MonthlyCalendarTable = ({ posts, onRefresh }: MonthlyCalendarTableP
           </TableBody>
         </Table>
       </div>
+
+      <PostManagementDrawer
+        post={selectedPost}
+        open={drawerOpen}
+        onOpenChange={setDrawerOpen}
+        onRefresh={onRefresh}
+      />
     </div>
   );
 };

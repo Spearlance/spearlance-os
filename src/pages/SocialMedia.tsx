@@ -36,7 +36,6 @@ const SocialMedia = () => {
         .from('social_media_posts')
         .select('*')
         .eq('client_id', selectedClient.id)
-        .eq('status', 'idea')
         .gte('scheduled_date', startDate.toISOString())
         .lte('scheduled_date', endDate.toISOString())
         .order('scheduled_date', { ascending: true });
