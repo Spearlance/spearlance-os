@@ -11,8 +11,17 @@ const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET') || '';
 serve(async (req) => {
   const signature = req.headers.get('stripe-signature');
   
+  console.log('Webhook received, signature present:', !!signature);
+  console.log('Webhook secret configured:', !!webhookSecret);
+  
   if (!signature) {
+    console.error('No Stripe signature in request');
     return new Response('No signature', { status: 400 });
+  }
+
+  if (!webhookSecret) {
+    console.error('STRIPE_WEBHOOK_SECRET not configured');
+    return new Response('Webhook secret not configured', { status: 500 });
   }
 
   try {
@@ -31,7 +40,7 @@ serve(async (req) => {
       case 'customer.subscription.updated': {
         const subscription = event.data.object as Stripe.Subscription;
         
-        await supabaseAdmin
+        const { error } = await supabaseAdmin
           .from('clients')
           .update({
             stripe_subscription_id: subscription.id,
@@ -42,6 +51,11 @@ serve(async (req) => {
           .eq('stripe_customer_id', subscription.customer as string)
           .eq('billing_method', 'stripe');
 
+        if (error) {
+          console.error('Failed to update subscription:', error);
+          throw new Error(`Database update failed: ${error.message}`);
+        }
+
         console.log('Updated subscription:', subscription.id, subscription.status);
         break;
       }
@@ -49,7 +63,7 @@ serve(async (req) => {
       case 'customer.subscription.deleted': {
         const subscription = event.data.object as Stripe.Subscription;
         
-        await supabaseAdmin
+        const { error } = await supabaseAdmin
           .from('clients')
           .update({
             subscription_status: 'canceled',
@@ -57,6 +71,11 @@ serve(async (req) => {
           })
           .eq('stripe_subscription_id', subscription.id)
           .eq('billing_method', 'stripe');
+
+        if (error) {
+          console.error('Failed to cancel subscription:', error);
+          throw new Error(`Database update failed: ${error.message}`);
+        }
 
         console.log('Subscription canceled:', subscription.id);
         break;
@@ -66,7 +85,7 @@ serve(async (req) => {
         const invoice = event.data.object as Stripe.Invoice;
         
         if (invoice.subscription) {
-          await supabaseAdmin
+          const { error } = await supabaseAdmin
             .from('clients')
             .update({
               subscription_status: 'active',
@@ -74,6 +93,11 @@ serve(async (req) => {
             })
             .eq('stripe_subscription_id', invoice.subscription as string)
             .eq('billing_method', 'stripe');
+
+          if (error) {
+            console.error('Failed to update payment status:', error);
+            throw new Error(`Database update failed: ${error.message}`);
+          }
 
           console.log('Payment succeeded for subscription:', invoice.subscription);
         }
@@ -84,13 +108,18 @@ serve(async (req) => {
         const invoice = event.data.object as Stripe.Invoice;
         
         if (invoice.subscription) {
-          await supabaseAdmin
+          const { error } = await supabaseAdmin
             .from('clients')
             .update({
               subscription_status: 'past_due'
             })
             .eq('stripe_subscription_id', invoice.subscription as string)
             .eq('billing_method', 'stripe');
+
+          if (error) {
+            console.error('Failed to mark payment as past due:', error);
+            throw new Error(`Database update failed: ${error.message}`);
+          }
 
           console.log('Payment failed for subscription:', invoice.subscription);
         }
@@ -107,12 +136,25 @@ serve(async (req) => {
     });
 
   } catch (error: any) {
-    console.error('Webhook error:', error);
+    console.error('Webhook error:', error.message);
+    console.error('Error stack:', error.stack);
+    
+    // Return appropriate status code
+    if (error.message?.includes('signature') || error.message?.includes('Signature')) {
+      return new Response(
+        JSON.stringify({ error: 'Signature verification failed' }),
+        { 
+          headers: { 'Content-Type': 'application/json' },
+          status: 400,
+        }
+      );
+    }
+    
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: 'Internal server error' }),
       { 
         headers: { 'Content-Type': 'application/json' },
-        status: 400,
+        status: 500,
       }
     );
   }
