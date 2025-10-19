@@ -503,24 +503,24 @@ const MarketingFlowchart = () => {
         />
       )}
 
+      <AddChannelDialog
+        open={addDialogOpen}
+        onOpenChange={setAddDialogOpen}
+        stages={stages}
+        selectedStageId={selectedStage?.id}
+        onSuccess={handleChannelUpdate}
+        selectedClient={selectedClient}
+      />
+
       {isAdminOrFMM && (
-        <>
-          <AddChannelDialog
-            open={addDialogOpen}
-            onOpenChange={setAddDialogOpen}
-            stages={stages}
-            selectedStageId={selectedStage?.id}
-            onSuccess={handleChannelUpdate}
-          />
-          <ApplyTemplateDialog
-            open={templateDialogOpen}
-            onOpenChange={setTemplateDialogOpen}
-            stages={stages}
-            selectedStageId={selectedStage?.id}
-            clientId={selectedClient.id}
-            onSuccess={handleChannelUpdate}
-          />
-        </>
+        <ApplyTemplateDialog
+          open={templateDialogOpen}
+          onOpenChange={setTemplateDialogOpen}
+          stages={stages}
+          selectedStageId={selectedStage?.id}
+          clientId={selectedClient.id}
+          onSuccess={handleChannelUpdate}
+        />
       )}
 
       {/* Task Drawer */}

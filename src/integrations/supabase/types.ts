@@ -1350,6 +1350,7 @@ export type Database = {
       }
       marketing_flow_channels: {
         Row: {
+          assigned_to: string | null
           created_at: string | null
           created_by: string | null
           id: string
@@ -1361,6 +1362,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          assigned_to?: string | null
           created_at?: string | null
           created_by?: string | null
           id?: string
@@ -1372,6 +1374,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          assigned_to?: string | null
           created_at?: string | null
           created_by?: string | null
           id?: string
@@ -1383,6 +1386,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "marketing_flow_channels_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "marketing_flow_channels_created_by_fkey"
             columns: ["created_by"]

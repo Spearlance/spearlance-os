@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import type { Database } from "@/integrations/supabase/types";
@@ -17,15 +16,19 @@ interface AddChannelDialogProps {
   stages: Stage[];
   selectedStageId?: string;
   onSuccess: () => void;
+  selectedClient?: { id: string; name: string } | null;
 }
 
-export function AddChannelDialog({ open, onOpenChange, stages, selectedStageId, onSuccess }: AddChannelDialogProps) {
+export function AddChannelDialog({ open, onOpenChange, stages, selectedStageId, onSuccess, selectedClient }: AddChannelDialogProps) {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [currentUserRole, setCurrentUserRole] = useState<string>("");
+  const [teamMembers, setTeamMembers] = useState<Array<{ id: string; name: string; role: string }>>([]);
+  const [loadingMembers, setLoadingMembers] = useState(true);
   const [formData, setFormData] = useState({
     stageId: selectedStageId || "",
     name: "",
-    ownership: "spearlance" as "spearlance" | "client" | "both",
+    assignedTo: "",
     status: "not_used" as "active" | "in_progress" | "paused" | "not_used",
   });
 
@@ -35,6 +38,64 @@ export function AddChannelDialog({ open, onOpenChange, stages, selectedStageId, 
       setFormData((prev) => ({ ...prev, stageId: selectedStageId }));
     }
   }, [selectedStageId, open]);
+
+  // Fetch current user role
+  useEffect(() => {
+    const fetchUserRole = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", user.id)
+          .maybeSingle();
+        setCurrentUserRole(profile?.role || "");
+      }
+    };
+    if (open) {
+      fetchUserRole();
+    }
+  }, [open]);
+
+  // Fetch and filter team members based on role
+  useEffect(() => {
+    const fetchTeamMembers = async () => {
+      if (!selectedClient?.id || !currentUserRole) return;
+
+      setLoadingMembers(true);
+      try {
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("id, name, email, role")
+          .contains("associated_client_ids", [selectedClient.id])
+          .order("name");
+
+        if (error) throw error;
+
+        let filteredMembers = data || [];
+        if (currentUserRole === "client") {
+          filteredMembers = filteredMembers.filter((m) => m.role === "client");
+        } else if (currentUserRole === "admin" || currentUserRole === "fmm") {
+          filteredMembers = filteredMembers.filter((m) => m.role === "admin" || m.role === "fmm");
+        }
+
+        setTeamMembers(filteredMembers);
+      } catch (error) {
+        console.error("Error fetching team members:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load team members",
+          variant: "destructive",
+        });
+      } finally {
+        setLoadingMembers(false);
+      }
+    };
+
+    if (open && currentUserRole) {
+      fetchTeamMembers();
+    }
+  }, [open, currentUserRole, selectedClient?.id, toast]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,7 +119,8 @@ export function AddChannelDialog({ open, onOpenChange, stages, selectedStageId, 
         .insert({
           stage_id: formData.stageId,
           name: formData.name,
-          ownership: formData.ownership,
+          assigned_to: formData.assignedTo || null,
+          ownership: "client",
           status: formData.status,
           created_by: user.id,
         });
@@ -73,7 +135,7 @@ export function AddChannelDialog({ open, onOpenChange, stages, selectedStageId, 
       setFormData({
         stageId: "",
         name: "",
-        ownership: "spearlance",
+        assignedTo: "",
         status: "not_used",
       });
       onSuccess();
@@ -128,30 +190,31 @@ export function AddChannelDialog({ open, onOpenChange, stages, selectedStageId, 
           </div>
 
           <div className="space-y-2">
-            <Label>Ownership</Label>
-            <RadioGroup
-              value={formData.ownership}
-              onValueChange={(value: any) => setFormData({ ...formData, ownership: value })}
-            >
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="spearlance" id="spearlance" />
-                <Label htmlFor="spearlance" className="font-normal cursor-pointer">
-                  Spearlance Handles
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="client" id="client" />
-                <Label htmlFor="client" className="font-normal cursor-pointer">
-                  Client Handles
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="both" id="both" />
-                <Label htmlFor="both" className="font-normal cursor-pointer">
-                  Both
-                </Label>
-              </div>
-            </RadioGroup>
+            <Label htmlFor="assignedTo">Assign To</Label>
+            {loadingMembers ? (
+              <p className="text-sm text-muted-foreground">Loading team members...</p>
+            ) : (
+              <Select
+                value={formData.assignedTo}
+                onValueChange={(value) => setFormData({ ...formData, assignedTo: value })}
+              >
+                <SelectTrigger id="assignedTo">
+                  <SelectValue placeholder="Select team member (optional)" />
+                </SelectTrigger>
+                <SelectContent>
+                  {teamMembers.map((member) => (
+                    <SelectItem key={member.id} value={member.id}>
+                      {member.name} ({member.role.toUpperCase()})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+            {teamMembers.length === 0 && !loadingMembers && (
+              <p className="text-sm text-muted-foreground">
+                No team members available to assign
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">
