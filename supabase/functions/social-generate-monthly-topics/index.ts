@@ -50,6 +50,44 @@ serve(async (req) => {
       throw new Error('Cannot generate posts for months in the past');
     }
 
+    // Check for existing batch and handle orphaned batches
+    const { data: existingBatch } = await supabase
+      .from('social_media_generation_batches')
+      .select('id')
+      .eq('client_id', client_id)
+      .eq('month', month)
+      .eq('year', year)
+      .maybeSingle();
+
+    if (existingBatch) {
+      // Check if posts actually exist for this month
+      const startDate = new Date(year, month - 1, 1).toISOString();
+      const endDate = new Date(year, month, 1).toISOString();
+      
+      const { count } = await supabase
+        .from('social_media_posts')
+        .select('*', { count: 'exact', head: true })
+        .eq('client_id', client_id)
+        .gte('scheduled_date', startDate)
+        .lt('scheduled_date', endDate);
+
+      if (count && count > 0) {
+        throw new Error(`You already have ${count} posts scheduled for ${new Date(year, month - 1).toLocaleString('default', { month: 'long' })} ${year}. Delete them first to regenerate.`);
+      }
+
+      // Orphaned batch found - delete it
+      console.log('Found orphaned batch record, deleting...');
+      const { error: deleteError } = await supabase
+        .from('social_media_generation_batches')
+        .delete()
+        .eq('id', existingBatch.id);
+        
+      if (deleteError) {
+        console.error('Error deleting orphaned batch:', deleteError);
+      }
+      console.log('Orphaned batch deleted, proceeding with fresh generation');
+    }
+
     console.log('Generating monthly topics for client:', client_id, 'month:', month, 'year:', year);
 
     // Fetch client data for context
@@ -149,27 +187,12 @@ Spread the topics naturally across the month. Mix up the categories so there's v
 
     console.log('Generated 30 topics successfully');
 
-    // Create batch record
-    const { data: batch, error: batchError } = await supabase
-      .from('social_media_generation_batches')
-      .insert({
-        client_id,
-        month,
-        year,
-        total_posts: 30,
-      })
-      .select()
-      .single();
-
-    if (batchError) throw batchError;
-
-    // Insert all posts as drafts
+    // Insert all posts as drafts FIRST (before creating batch record)
     const postsToInsert = topics.map((topic: any) => {
       const scheduledDate = new Date(year, month - 1, topic.day);
       
       return {
         client_id,
-        generation_batch_id: batch.id,
         topic_category: topic.category,
         post_idea_json: topic,
         scheduled_date: scheduledDate.toISOString(),
@@ -189,6 +212,33 @@ Spread the topics naturally across the month. Mix up the categories so there's v
     }
 
     console.log('Created', createdPosts.length, 'draft posts');
+
+    // NOW create batch record (only if posts succeeded)
+    const { data: batch, error: batchError } = await supabase
+      .from('social_media_generation_batches')
+      .insert({
+        client_id,
+        month,
+        year,
+        total_posts: createdPosts.length,
+      })
+      .select()
+      .single();
+
+    if (batchError) {
+      console.error('Error creating batch record:', batchError);
+      throw batchError;
+    }
+
+    // Link posts to batch
+    const { error: updateError } = await supabase
+      .from('social_media_posts')
+      .update({ generation_batch_id: batch.id })
+      .in('id', createdPosts.map(p => p.id));
+      
+    if (updateError) {
+      console.error('Error linking posts to batch:', updateError);
+    }
 
     return new Response(
       JSON.stringify({ 
