@@ -204,7 +204,7 @@ export function AddChannelDialog({ open, onOpenChange, stages, selectedStageId, 
                 <SelectContent>
                   {teamMembers.map((member) => (
                     <SelectItem key={member.id} value={member.id}>
-                      {member.name} ({member.role.toUpperCase()})
+                      {member.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
