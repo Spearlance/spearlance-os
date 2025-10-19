@@ -70,6 +70,17 @@ const SOCIAL_PLATFORMS = [
   { id: 'tiktok', label: 'TikTok', icon: Video, limit: 2200 },
 ];
 
+const POST_CATEGORIES = [
+  { id: 'tips', label: 'Tips & Advice', icon: '💡' },
+  { id: 'promotion', label: 'Promotion', icon: '📣' },
+  { id: 'show_work', label: 'Show Your Work', icon: '🔧' },
+  { id: 'behind_scenes', label: 'Behind the Scenes', icon: '👁️' },
+  { id: 'happy_customer', label: 'Happy Customer', icon: '❤️' },
+  { id: 'team', label: 'Team Spotlight', icon: '👥' },
+  { id: 'community', label: 'Community', icon: '🏢' },
+  { id: 'custom', label: 'Custom / Other', icon: '✏️' },
+];
+
 export const PostManagementDrawer = ({
   post,
   open,
@@ -87,12 +98,26 @@ export const PostManagementDrawer = ({
   const [isSaving, setIsSaving] = useState(false);
   const [isGeneratingCaption, setIsGeneratingCaption] = useState(false);
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+  const [editingTopic, setEditingTopic] = useState(false);
+  const [topicTitle, setTopicTitle] = useState("");
+  const [topicDescription, setTopicDescription] = useState("");
+  const [topicCategory, setTopicCategory] = useState("");
+  const [isGeneratingTopicIdeas, setIsGeneratingTopicIdeas] = useState(false);
+  const [generatedTopicIdeas, setGeneratedTopicIdeas] = useState<any[]>([]);
 
   useEffect(() => {
     if (post) {
       setCaption(post.caption_text || "");
       setScheduledDate(post.scheduled_date || "");
       setSelectedPlatforms(post.platform || []);
+      
+      // Initialize topic fields
+      const idea = post.post_idea_json || {};
+      setTopicTitle(idea.topic_title || "");
+      setTopicDescription(idea.topic_description || "");
+      setTopicCategory(idea.category || "custom");
+      setEditingTopic(false);
+      setGeneratedTopicIdeas([]);
     }
   }, [post]);
 
@@ -144,6 +169,85 @@ export const PostManagementDrawer = ({
     } finally {
       setIsSaving(false);
     }
+  };
+
+  // Save topic updates
+  const handleSaveTopic = async () => {
+    if (!post) return;
+    setIsSaving(true);
+
+    try {
+      const updatedIdea = {
+        ...post.post_idea_json,
+        topic_title: topicTitle,
+        topic_description: topicDescription,
+        category: topicCategory,
+      };
+
+      const { error } = await supabase
+        .from('social_media_posts')
+        .update({
+          post_idea_json: updatedIdea,
+        })
+        .eq('id', post.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Topic Updated",
+        description: "Your topic changes have been saved.",
+      });
+      
+      setEditingTopic(false);
+      onRefresh();
+    } catch (error: any) {
+      toast({
+        title: "Save Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Generate topic ideas with AI
+  const handleGenerateTopicIdeas = async () => {
+    if (!selectedClient || !topicCategory) return;
+    setIsGeneratingTopicIdeas(true);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('social-generate-ideas', {
+        body: {
+          client_id: selectedClient.id,
+          topic_category: topicCategory,
+        }
+      });
+
+      if (error) throw error;
+
+      setGeneratedTopicIdeas(data.ideas || []);
+      
+      toast({
+        title: "Ideas Generated!",
+        description: `Generated ${data.ideas?.length || 0} topic ideas for you.`,
+      });
+    } catch (error: any) {
+      console.error('Error generating topic ideas:', error);
+      toast({
+        title: "Generation Failed",
+        description: error.message || "Please try again",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingTopicIdeas(false);
+    }
+  };
+
+  const handleSelectGeneratedIdea = (idea: any) => {
+    setTopicTitle(idea.title);
+    setTopicDescription(idea.description);
+    setGeneratedTopicIdeas([]);
   };
 
   // Generate caption
@@ -284,18 +388,157 @@ export const PostManagementDrawer = ({
           <ScrollArea className="h-[calc(100vh-200px)]">
             {/* Content Tab */}
             <TabsContent value="content" className="p-6 space-y-6">
-              {/* Topic Info (readonly) */}
+              {/* Topic Section - Editable */}
               <div>
-                <Label>Topic</Label>
-                <Card className="p-4 mt-2 bg-muted/50">
-                  <p className="font-medium">{idea.topic_title}</p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {idea.topic_description}
-                  </p>
-                  <Badge variant="outline" className="mt-2">
-                    {idea.category?.replace(/_/g, ' ')}
-                  </Badge>
-                </Card>
+                <div className="flex items-center justify-between mb-2">
+                  <Label>Topic</Label>
+                  {!editingTopic ? (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setEditingTopic(true)}
+                    >
+                      <Sparkles className="h-3 w-3 mr-2" />
+                      Edit Topic
+                    </Button>
+                  ) : (
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setEditingTopic(false);
+                          // Reset to original values
+                          const idea = post.post_idea_json || {};
+                          setTopicTitle(idea.topic_title || "");
+                          setTopicDescription(idea.topic_description || "");
+                          setTopicCategory(idea.category || "custom");
+                          setGeneratedTopicIdeas([]);
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={handleSaveTopic}
+                        disabled={isSaving || !topicTitle.trim()}
+                      >
+                        {isSaving ? (
+                          <>
+                            <Loader2 className="h-3 w-3 mr-2 animate-spin" />
+                            Saving...
+                          </>
+                        ) : (
+                          'Save Topic'
+                        )}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+
+                {!editingTopic ? (
+                  // Read-only view
+                  <Card className="p-4 bg-muted/50">
+                    <p className="font-medium">{topicTitle}</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {topicDescription}
+                    </p>
+                    <Badge variant="outline" className="mt-2">
+                      {POST_CATEGORIES.find(c => c.id === topicCategory)?.icon}{' '}
+                      {POST_CATEGORIES.find(c => c.id === topicCategory)?.label || topicCategory}
+                    </Badge>
+                  </Card>
+                ) : (
+                  // Edit mode
+                  <div className="space-y-4">
+                    {/* Category Selector */}
+                    <div>
+                      <Label className="text-sm mb-2 block">Category</Label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {POST_CATEGORIES.map((cat) => (
+                          <Button
+                            key={cat.id}
+                            type="button"
+                            variant={topicCategory === cat.id ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setTopicCategory(cat.id)}
+                            className="justify-start"
+                          >
+                            <span className="mr-2">{cat.icon}</span>
+                            {cat.label}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* AI Topic Generation */}
+                    <div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={handleGenerateTopicIdeas}
+                        disabled={isGeneratingTopicIdeas || !topicCategory}
+                        className="w-full"
+                      >
+                        {isGeneratingTopicIdeas ? (
+                          <>
+                            <Loader2 className="h-3 w-3 mr-2 animate-spin" />
+                            Generating Ideas...
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="h-3 w-3 mr-2" />
+                            Generate AI Topic Ideas
+                          </>
+                        )}
+                      </Button>
+                    </div>
+
+                    {/* Generated Ideas List */}
+                    {generatedTopicIdeas.length > 0 && (
+                      <div className="space-y-2 max-h-64 overflow-y-auto">
+                        <Label className="text-sm">Select a generated idea:</Label>
+                        {generatedTopicIdeas.map((idea, index) => (
+                          <Card 
+                            key={index} 
+                            className="p-3 cursor-pointer hover:bg-accent transition-colors"
+                            onClick={() => handleSelectGeneratedIdea(idea)}
+                          >
+                            <p className="font-medium text-sm">{idea.title}</p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {idea.description}
+                            </p>
+                          </Card>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Manual Topic Fields */}
+                    <div>
+                      <Label htmlFor="topic-title">Topic Title</Label>
+                      <Input
+                        id="topic-title"
+                        value={topicTitle}
+                        onChange={(e) => setTopicTitle(e.target.value)}
+                        placeholder="Enter topic title..."
+                        className="mt-2"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="topic-description">Topic Description</Label>
+                      <Textarea
+                        id="topic-description"
+                        value={topicDescription}
+                        onChange={(e) => setTopicDescription(e.target.value)}
+                        placeholder="Describe what this post is about..."
+                        rows={3}
+                        className="mt-2"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Caption Editor */}
