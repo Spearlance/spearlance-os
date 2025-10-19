@@ -40,6 +40,8 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate }: TaskDrawerPro
   const [showLinkMeetingDialog, setShowLinkMeetingDialog] = useState(false);
   const [availableAssets, setAvailableAssets] = useState<any[]>([]);
   const [availableMeetings, setAvailableMeetings] = useState<any[]>([]);
+  const [showLinkChannelDialog, setShowLinkChannelDialog] = useState(false);
+  const [availableChannels, setAvailableChannels] = useState<any[]>([]);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -141,6 +143,35 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate }: TaskDrawerPro
     setAvailableMeetings(data || []);
   };
 
+  const loadAvailableChannels = async () => {
+    const { data: flow } = await supabase
+      .from("marketing_flows")
+      .select("id")
+      .eq("client_id", task.client_id)
+      .single();
+    
+    if (!flow) {
+      setAvailableChannels([]);
+      return;
+    }
+    
+    const { data: channels } = await supabase
+      .from("marketing_flow_channels")
+      .select(`
+        id,
+        name,
+        status,
+        marketing_flow_stages!inner (
+          name,
+          flow_id
+        )
+      `)
+      .eq("marketing_flow_stages.flow_id", flow.id)
+      .order("name");
+    
+    setAvailableChannels(channels || []);
+  };
+
   const handleLinkAsset = async (assetId: string) => {
     const currentIds = task.related_asset_ids || [];
     if (currentIds.includes(assetId)) {
@@ -218,6 +249,56 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate }: TaskDrawerPro
 
     toast({ title: "Meeting unlinked successfully" });
     task.related_meeting_ids = currentIds.filter(id => id !== meetingId);
+    loadRelatedItems();
+  };
+
+  const handleLinkChannel = async (channelId: string) => {
+    const { data: existingLink } = await supabase
+      .from("marketing_flow_task_links")
+      .select("id")
+      .eq("task_id", task.id)
+      .eq("channel_id", channelId)
+      .maybeSingle();
+    
+    if (existingLink) {
+      toast({ title: "Channel already linked" });
+      return;
+    }
+    
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    
+    const { error } = await supabase
+      .from("marketing_flow_task_links")
+      .insert({
+        task_id: task.id,
+        channel_id: channelId,
+        created_by: user.id
+      });
+    
+    if (error) {
+      toast({ title: "Error linking channel", variant: "destructive" });
+      return;
+    }
+    
+    toast({ title: "Channel linked successfully" });
+    loadRelatedItems();
+    setShowLinkChannelDialog(false);
+  };
+
+  const handleUnlinkChannel = async (channelId: string) => {
+    const { error } = await supabase
+      .from("marketing_flow_task_links")
+      .delete()
+      .eq("task_id", task.id)
+      .eq("channel_id", channelId);
+    
+    if (error) {
+      toast({ title: "Error unlinking channel", variant: "destructive" });
+      return;
+    }
+    
+    toast({ title: "Channel unlinked successfully" });
     loadRelatedItems();
   };
 
@@ -415,7 +496,49 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate }: TaskDrawerPro
               <div className="space-y-6">
                 {/* Related Channels */}
                 <div>
-                  <h3 className="font-medium mb-3">Related Channels</h3>
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-medium">Related Channels</h3>
+                    <Dialog open={showLinkChannelDialog} onOpenChange={setShowLinkChannelDialog}>
+                      <DialogTrigger asChild>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={loadAvailableChannels}
+                        >
+                          <Plus className="h-4 w-4 mr-1" />
+                          Link Channel
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Link Channel to Task</DialogTitle>
+                        </DialogHeader>
+                        <ScrollArea className="h-[400px] pr-4">
+                          <div className="space-y-2">
+                            {availableChannels.map((channel) => (
+                              <Card
+                                key={channel.id}
+                                className="cursor-pointer hover:bg-accent transition-colors"
+                                onClick={() => handleLinkChannel(channel.id)}
+                              >
+                                <CardContent className="p-4">
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex-1">
+                                      <div className="font-medium">{channel.name}</div>
+                                      <div className="text-sm text-muted-foreground mt-1">
+                                        Stage: {channel.marketing_flow_stages.name}
+                                      </div>
+                                    </div>
+                                    <Badge variant="outline">{channel.status}</Badge>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            ))}
+                          </div>
+                        </ScrollArea>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
                   {relatedChannels.length === 0 ? (
                     <p className="text-sm text-muted-foreground">No channels linked to this task</p>
                   ) : (
@@ -423,10 +546,21 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate }: TaskDrawerPro
                       {relatedChannels.map((channel) => (
                         <div
                           key={channel.id}
-                          className="flex items-center justify-between p-3 bg-muted rounded-lg cursor-pointer hover:bg-muted/80"
+                          className="relative group flex items-center justify-between p-3 bg-muted rounded-lg cursor-pointer hover:bg-muted/80"
                           onClick={() => navigate("/marketing/flowchart")}
                         >
-                          <div className="flex-1">
+                          <Button
+                            variant="destructive"
+                            size="icon"
+                            className="absolute top-2 right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleUnlinkChannel(channel.id);
+                            }}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                          <div className="flex-1 pr-8">
                             <div className="font-medium text-sm">{channel.name}</div>
                             <div className="text-xs text-muted-foreground mt-1">
                               Stage: {channel.marketing_flow_stages.name}
