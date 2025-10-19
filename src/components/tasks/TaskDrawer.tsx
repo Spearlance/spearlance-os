@@ -75,10 +75,10 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate }: TaskDrawerPro
 
   const loadRelatedItems = async () => {
     if (task.related_asset_ids && task.related_asset_ids.length > 0) {
-      const { data: assets } = await supabase
-        .from("assets")
-        .select("id, title, type, preview_url")
-        .in("id", task.related_asset_ids);
+    const { data: assets } = await supabase
+      .from("assets")
+      .select("id, title, type, preview_url, file_url")
+      .in("id", task.related_asset_ids);
 
       setRelatedAssets(assets || []);
     } else {
@@ -126,11 +126,11 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate }: TaskDrawerPro
   };
 
   const loadAvailableAssets = async () => {
-    const { data } = await supabase
-      .from("assets")
-      .select("id, title, type, preview_url")
-      .eq("client_id", task.client_id)
-      .order("title");
+      const { data } = await supabase
+        .from("assets")
+        .select("id, title, type, preview_url, file_url")
+        .eq("client_id", task.client_id)
+        .order("title");
     setAvailableAssets(data || []);
   };
 
@@ -300,7 +300,6 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate }: TaskDrawerPro
     
     toast({ title: "Channel unlinked successfully" });
     setRelatedChannels(relatedChannels.filter(c => c.id !== channelId));
-    loadRelatedItems();
   };
 
   const getTypeIcon = (type: string) => {
