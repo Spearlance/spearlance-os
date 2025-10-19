@@ -2320,7 +2320,7 @@ export type Database = {
           ai_post_ideas: Json | null
           brand_asset_id: string | null
           brand_colors_used: Json | null
-          caption_text: string
+          caption_text: string | null
           caption_tone: string | null
           client_id: string
           created_at: string | null
@@ -2347,7 +2347,7 @@ export type Database = {
           ai_post_ideas?: Json | null
           brand_asset_id?: string | null
           brand_colors_used?: Json | null
-          caption_text: string
+          caption_text?: string | null
           caption_tone?: string | null
           client_id: string
           created_at?: string | null
@@ -2374,7 +2374,7 @@ export type Database = {
           ai_post_ideas?: Json | null
           brand_asset_id?: string | null
           brand_colors_used?: Json | null
-          caption_text?: string
+          caption_text?: string | null
           caption_tone?: string | null
           client_id?: string
           created_at?: string | null
