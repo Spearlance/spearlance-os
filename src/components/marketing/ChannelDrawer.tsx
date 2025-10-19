@@ -245,15 +245,15 @@ export function ChannelDrawer({ open, onOpenChange, channel, onUpdate, isAdminOr
                 <p className="text-sm text-muted-foreground">Loading team members...</p>
               ) : (
                 <Select
-                  value={assignedTo || ""}
-                  onValueChange={(value) => setAssignedTo(value || null)}
+                  value={assignedTo || "unassigned"}
+                  onValueChange={(value) => setAssignedTo(value === "unassigned" ? null : value)}
                   disabled={!isAdminOrFMM}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Unassigned" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Unassigned</SelectItem>
+                    <SelectItem value="unassigned">Unassigned</SelectItem>
                     {teamMembers.map((member) => (
                       <SelectItem key={member.id} value={member.id}>
                         {member.name}
