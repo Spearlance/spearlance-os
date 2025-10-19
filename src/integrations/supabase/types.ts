@@ -2270,6 +2270,50 @@ export type Database = {
           },
         ]
       }
+      social_media_generation_batches: {
+        Row: {
+          client_id: string
+          completed_at: string | null
+          created_at: string | null
+          id: string
+          month: number
+          posts_with_captions: number | null
+          posts_with_images: number | null
+          total_posts: number | null
+          year: number
+        }
+        Insert: {
+          client_id: string
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          month: number
+          posts_with_captions?: number | null
+          posts_with_images?: number | null
+          total_posts?: number | null
+          year: number
+        }
+        Update: {
+          client_id?: string
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          month?: number
+          posts_with_captions?: number | null
+          posts_with_images?: number | null
+          total_posts?: number | null
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "social_media_generation_batches_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       social_media_posts: {
         Row: {
           ai_caption_options: Json | null
@@ -2282,6 +2326,7 @@ export type Database = {
           created_at: string | null
           created_by: string | null
           fonts_used: Json | null
+          generation_batch_id: string | null
           hashtags: string[] | null
           id: string
           image_source: string | null
@@ -2290,6 +2335,7 @@ export type Database = {
           mood_board_reference: string | null
           nano_banana_prompt: string | null
           platform: string[] | null
+          post_idea_json: Json | null
           posted_at: string | null
           scheduled_date: string | null
           status: string
@@ -2307,6 +2353,7 @@ export type Database = {
           created_at?: string | null
           created_by?: string | null
           fonts_used?: Json | null
+          generation_batch_id?: string | null
           hashtags?: string[] | null
           id?: string
           image_source?: string | null
@@ -2315,6 +2362,7 @@ export type Database = {
           mood_board_reference?: string | null
           nano_banana_prompt?: string | null
           platform?: string[] | null
+          post_idea_json?: Json | null
           posted_at?: string | null
           scheduled_date?: string | null
           status?: string
@@ -2332,6 +2380,7 @@ export type Database = {
           created_at?: string | null
           created_by?: string | null
           fonts_used?: Json | null
+          generation_batch_id?: string | null
           hashtags?: string[] | null
           id?: string
           image_source?: string | null
@@ -2340,6 +2389,7 @@ export type Database = {
           mood_board_reference?: string | null
           nano_banana_prompt?: string | null
           platform?: string[] | null
+          post_idea_json?: Json | null
           posted_at?: string | null
           scheduled_date?: string | null
           status?: string
@@ -2794,6 +2844,57 @@ export type Database = {
           {
             foreignKeyName: "tickets_requester_user_id_fkey"
             columns: ["requester_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_notification_preferences: {
+        Row: {
+          client_id: string
+          created_at: string | null
+          enabled: boolean | null
+          id: string
+          notification_method: string | null
+          notification_time: string | null
+          notification_type: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string | null
+          enabled?: boolean | null
+          id?: string
+          notification_method?: string | null
+          notification_time?: string | null
+          notification_type: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string | null
+          enabled?: boolean | null
+          id?: string
+          notification_method?: string | null
+          notification_time?: string | null
+          notification_type?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_notification_preferences_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_notification_preferences_user_id_fkey"
+            columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]

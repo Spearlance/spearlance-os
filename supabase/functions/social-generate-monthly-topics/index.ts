@@ -1,0 +1,193 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    const authHeader = req.headers.get('Authorization')!;
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user } } = await supabase.auth.getUser(token);
+
+    if (!user) {
+      throw new Error('Unauthorized');
+    }
+
+    const { client_id, month, year } = await req.json();
+
+    if (!client_id || !month || !year) {
+      throw new Error('Missing required parameters');
+    }
+
+    console.log('Generating monthly topics for client:', client_id, 'month:', month, 'year:', year);
+
+    // Fetch client data for context
+    const { data: client } = await supabase
+      .from('clients')
+      .select('name, industry, brand_name')
+      .eq('id', client_id)
+      .single();
+
+    // Fetch brand voice
+    const { data: brandVoice } = await supabase
+      .from('client_brand_voice')
+      .select('*')
+      .eq('client_id', client_id)
+      .maybeSingle();
+
+    // Fetch primary avatar
+    const { data: avatar } = await supabase
+      .from('avatars')
+      .select('*')
+      .eq('client_id', client_id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    // Generate diverse topic categories
+    const topicDistribution = {
+      educational: 8,
+      behind_the_scenes: 8,
+      customer_stories: 6,
+      promotional: 4,
+      quick_tips: 4,
+    };
+
+    const systemPrompt = `You are a social media strategist creating a monthly content calendar. Generate exactly 30 post ideas for ${new Date(year, month - 1).toLocaleString('default', { month: 'long' })} ${year}.
+
+Client Context:
+- Business: ${client?.name || 'Unknown'}
+- Industry: ${client?.industry || 'General'}
+- Brand Name: ${client?.brand_name || client?.name}
+${brandVoice?.tone ? `- Brand Tone: ${brandVoice.tone}` : ''}
+${avatar?.avatar_name ? `- Target Audience: ${avatar.avatar_name}` : ''}
+
+Topic Distribution:
+- 8 Educational posts (teach something valuable)
+- 8 Behind-the-scenes posts (show your process, team, culture)
+- 6 Customer stories (testimonials, case studies, wins)
+- 4 Promotional posts (offers, services, products)
+- 4 Quick tips (actionable bite-sized advice)
+
+Return a JSON array of exactly 30 objects with this structure:
+{
+  "day": 1-30,
+  "category": "educational|behind_the_scenes|customer_stories|promotional|quick_tips",
+  "topic_title": "Short catchy title",
+  "topic_description": "Brief description of what this post should cover",
+  "suggested_approach": "How to execute this post (format, style, key points)",
+  "ideal_for": "Why this topic works well for this day/timing"
+}
+
+Spread the topics naturally across the month. Mix up the categories so there's variety week-to-week. Make topics specific and actionable.`;
+
+    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
+    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${lovableApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'google/gemini-2.5-flash',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: `Generate 30 diverse social media post topics for ${new Date(year, month - 1).toLocaleString('default', { month: 'long' })} ${year}. Return ONLY valid JSON array, no markdown formatting.` }
+        ],
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Lovable AI error:', response.status, errorText);
+      throw new Error(`AI generation failed: ${response.status}`);
+    }
+
+    const aiData = await response.json();
+    let topicsText = aiData.choices[0].message.content;
+    
+    // Clean up markdown code blocks if present
+    topicsText = topicsText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+    
+    const topics = JSON.parse(topicsText);
+
+    if (!Array.isArray(topics) || topics.length !== 30) {
+      console.error('Invalid topics response:', topics);
+      throw new Error('AI did not generate exactly 30 topics');
+    }
+
+    console.log('Generated 30 topics successfully');
+
+    // Create batch record
+    const { data: batch, error: batchError } = await supabase
+      .from('social_media_generation_batches')
+      .insert({
+        client_id,
+        month,
+        year,
+        total_posts: 30,
+      })
+      .select()
+      .single();
+
+    if (batchError) throw batchError;
+
+    // Insert all posts as drafts
+    const postsToInsert = topics.map((topic: any) => {
+      const scheduledDate = new Date(year, month - 1, topic.day);
+      
+      return {
+        client_id,
+        generation_batch_id: batch.id,
+        topic_category: topic.category,
+        post_idea_json: topic,
+        scheduled_date: scheduledDate.toISOString(),
+        status: 'draft',
+        created_by: user.id,
+      };
+    });
+
+    const { data: createdPosts, error: postsError } = await supabase
+      .from('social_media_posts')
+      .insert(postsToInsert)
+      .select();
+
+    if (postsError) {
+      console.error('Error inserting posts:', postsError);
+      throw postsError;
+    }
+
+    console.log('Created', createdPosts.length, 'draft posts');
+
+    return new Response(
+      JSON.stringify({ 
+        success: true, 
+        batch_id: batch.id,
+        posts_created: createdPosts.length,
+        posts: createdPosts,
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+
+  } catch (error: any) {
+    console.error('Error generating monthly topics:', error);
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      { 
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      }
+    );
+  }
+});
