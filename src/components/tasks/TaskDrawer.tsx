@@ -299,6 +299,7 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate }: TaskDrawerPro
     }
     
     toast({ title: "Channel unlinked successfully" });
+    setRelatedChannels(relatedChannels.filter(c => c.id !== channelId));
     loadRelatedItems();
   };
 
@@ -602,10 +603,10 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate }: TaskDrawerPro
                               >
                                 <CardContent className="p-3">
                                   <div className="space-y-2">
-                                    {asset.preview_url ? (
+                                    {(asset.preview_url || (asset.type === 'image' && asset.file_url)) ? (
                                       <div className="w-full h-20 bg-muted rounded overflow-hidden">
                                         <img
-                                          src={asset.preview_url}
+                                          src={asset.preview_url || asset.file_url}
                                           alt={asset.title}
                                           className="w-full h-full object-cover"
                                         />
@@ -648,10 +649,10 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate }: TaskDrawerPro
                           </Button>
                           <CardContent className="p-3">
                             <div className="space-y-2">
-                              {asset.preview_url ? (
+                              {(asset.preview_url || (asset.type === 'image' && asset.file_url)) ? (
                                 <div className="w-full h-24 bg-muted rounded overflow-hidden">
                                   <img
-                                    src={asset.preview_url}
+                                    src={asset.preview_url || asset.file_url}
                                     alt={asset.title}
                                     className="w-full h-full object-cover"
                                   />
