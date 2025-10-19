@@ -120,7 +120,7 @@ export function AddChannelDialog({ open, onOpenChange, stages, selectedStageId, 
           stage_id: formData.stageId,
           name: formData.name,
           assigned_to: formData.assignedTo || null,
-          ownership: "client",
+          ownership: "client", // Default value for backward compatibility
           status: formData.status,
           created_by: user.id,
         });

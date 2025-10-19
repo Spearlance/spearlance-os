@@ -34,19 +34,73 @@ export function ChannelDrawer({ open, onOpenChange, channel, onUpdate, isAdminOr
   const [tasks, setTasks] = useState<Task[]>([]);
   const [newNote, setNewNote] = useState("");
   const [noteVisibility, setNoteVisibility] = useState<"internal" | "client">("internal");
-  const [ownership, setOwnership] = useState(channel.ownership);
+  const [assignedTo, setAssignedTo] = useState(channel.assigned_to);
   const [status, setStatus] = useState(channel.status);
   const [loading, setLoading] = useState(false);
   const [showCreateTask, setShowCreateTask] = useState(false);
+  const [teamMembers, setTeamMembers] = useState<Array<{ id: string; name: string; role: string }>>([]);
+  const [loadingMembers, setLoadingMembers] = useState(true);
+  const [currentUserRole, setCurrentUserRole] = useState<string>("");
 
   useEffect(() => {
     if (open) {
       loadNotes();
       loadTasks();
-      setOwnership(channel.ownership);
+      setAssignedTo(channel.assigned_to);
       setStatus(channel.status);
     }
   }, [open, channel.id]);
+
+  // Fetch current user role
+  useEffect(() => {
+    const fetchUserRole = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", user.id)
+          .maybeSingle();
+        setCurrentUserRole(profile?.role || "");
+      }
+    };
+    if (open) {
+      fetchUserRole();
+    }
+  }, [open]);
+
+  // Fetch team members based on role
+  useEffect(() => {
+    const fetchTeamMembers = async () => {
+      if (!clientId || !currentUserRole) return;
+
+      setLoadingMembers(true);
+      try {
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("id, name, email, role")
+          .contains("associated_client_ids", [clientId])
+          .order("name");
+
+        if (error) throw error;
+
+        let filteredMembers = data || [];
+        if (currentUserRole === "client") {
+          filteredMembers = filteredMembers.filter((m) => m.role === "client");
+        }
+
+        setTeamMembers(filteredMembers);
+      } catch (error) {
+        console.error("Error fetching team members:", error);
+      } finally {
+        setLoadingMembers(false);
+      }
+    };
+
+    if (open && currentUserRole) {
+      fetchTeamMembers();
+    }
+  }, [open, currentUserRole, clientId]);
 
   const loadNotes = async () => {
     const { data, error } = await supabase
@@ -134,8 +188,9 @@ export function ChannelDrawer({ open, onOpenChange, channel, onUpdate, isAdminOr
       const { error } = await supabase
         .from("marketing_flow_channels")
         .update({
-          ownership,
+          assigned_to: assignedTo || null,
           status,
+          ownership: "client", // Set default ownership
           updated_at: new Date().toISOString(),
         })
         .eq("id", channel.id);
@@ -185,21 +240,28 @@ export function ChannelDrawer({ open, onOpenChange, channel, onUpdate, isAdminOr
 
           <TabsContent value="details" className="space-y-4">
             <div className="space-y-2">
-              <Label>Ownership</Label>
-              <Select
-                value={ownership}
-                onValueChange={(value: any) => setOwnership(value)}
-                disabled={!isAdminOrFMM}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="spearlance">Spearlance</SelectItem>
-                  <SelectItem value="client">{clientName}</SelectItem>
-                  <SelectItem value="both">Both</SelectItem>
-                </SelectContent>
-              </Select>
+              <Label>Assigned To</Label>
+              {loadingMembers ? (
+                <p className="text-sm text-muted-foreground">Loading team members...</p>
+              ) : (
+                <Select
+                  value={assignedTo || ""}
+                  onValueChange={(value) => setAssignedTo(value || null)}
+                  disabled={!isAdminOrFMM}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Unassigned" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Unassigned</SelectItem>
+                    {teamMembers.map((member) => (
+                      <SelectItem key={member.id} value={member.id}>
+                        {member.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
 
             <div className="space-y-2">

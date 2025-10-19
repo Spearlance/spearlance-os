@@ -22,6 +22,7 @@ import type { Database } from "@/integrations/supabase/types";
 
 type Channel = Database["public"]["Tables"]["marketing_flow_channels"]["Row"] & {
   taskCount?: number;
+  assignedUserName?: string;
 };
 type Stage = Database["public"]["Tables"]["marketing_flow_stages"]["Row"] & {
   description?: string;
@@ -113,7 +114,7 @@ const MarketingFlowchart = () => {
         setSelectedStage(stagesData[0]);
       }
 
-      // Load channels with task counts
+      // Load channels with task counts and assigned user names
       const { data: channelsData, error: channelsError } = await supabase
         .from("marketing_flow_channels")
         .select("*")
@@ -121,7 +122,7 @@ const MarketingFlowchart = () => {
 
       if (channelsError) throw channelsError;
 
-      // Get task counts for each channel
+      // Get task counts and user names for each channel
       const channelsWithCounts = await Promise.all(
         (channelsData || []).map(async (channel) => {
           const { count } = await supabase
@@ -129,7 +130,17 @@ const MarketingFlowchart = () => {
             .select("*", { count: "exact", head: true })
             .eq("channel_id", channel.id);
           
-          return { ...channel, taskCount: count || 0 };
+          let assignedUserName = undefined;
+          if (channel.assigned_to) {
+            const { data: profile } = await supabase
+              .from("profiles")
+              .select("name")
+              .eq("id", channel.assigned_to)
+              .maybeSingle();
+            assignedUserName = profile?.name;
+          }
+          
+          return { ...channel, taskCount: count || 0, assignedUserName };
         })
       );
 
@@ -226,22 +237,19 @@ const MarketingFlowchart = () => {
     s.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const getOwnershipColor = (ownership: string) => {
-    const colors: Record<string, string> = {
-      spearlance: "hsl(var(--primary))",
-      client: "hsl(var(--muted-foreground))",
-      both: "hsl(var(--primary))",
+  const getAssignmentInfo = async (assignedTo: string | null) => {
+    if (!assignedTo) return { label: "Unassigned", color: "hsl(var(--muted-foreground))" };
+    
+    const { data } = await supabase
+      .from("profiles")
+      .select("name")
+      .eq("id", assignedTo)
+      .maybeSingle();
+    
+    return {
+      label: data?.name || "Unknown",
+      color: "hsl(var(--primary))",
     };
-    return colors[ownership] || "hsl(var(--muted-foreground))";
-  };
-
-  const getOwnershipLabel = (ownership: string, clientName: string) => {
-    const labels: Record<string, string> = {
-      spearlance: "Spearlance",
-      client: clientName,
-      both: "Both",
-    };
-    return labels[ownership] || ownership;
   };
 
   const statusLabels: Record<string, string> = {
@@ -398,15 +406,11 @@ const MarketingFlowchart = () => {
                         <AccordionTrigger className="hover:no-underline py-4">
                           <div className="flex items-center justify-between w-full pr-4">
                             <div className="flex items-center gap-3">
-                              <div
-                                className="w-1 h-8 rounded-full"
-                                style={{ backgroundColor: getOwnershipColor(channel.ownership) }}
-                              />
                               <span className="font-semibold text-base">
                                 {channel.name}
                               </span>
                               <Badge variant="outline" className="text-xs">
-                                {getOwnershipLabel(channel.ownership, selectedClient.name)}
+                                {channel.assignedUserName || "Unassigned"}
                               </Badge>
                               <Badge className={statusClasses[channel.status || "not_used"]}>
                                 {statusLabels[channel.status || "not_used"]}

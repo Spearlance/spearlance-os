@@ -1,10 +1,11 @@
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { CheckSquare } from "lucide-react";
+import { CheckSquare, User } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 
 type Channel = Database["public"]["Tables"]["marketing_flow_channels"]["Row"] & {
   taskCount?: number;
+  assignedUserName?: string;
 };
 
 interface ChannelCardProps {
@@ -12,31 +13,6 @@ interface ChannelCardProps {
   onClick: () => void;
   clientName: string;
 }
-
-const getOwnershipStyles = (ownership: string, clientName: string) => {
-  const styles: Record<string, any> = {
-    spearlance: {
-      border: "#13CF48",
-      bg: "#FFFFFF",
-      text: "#0E7E2A",
-      label: "Spearlance",
-    },
-    client: {
-      border: "#D1D5DB",
-      bg: "#FFFFFF",
-      text: "#374151",
-      label: clientName,
-    },
-    both: {
-      border: "#D1D5DB",
-      bg: "#FFFFFF",
-      text: "#374151",
-      label: "Both",
-      accentBar: true,
-    },
-  };
-  return styles[ownership];
-};
 
 const statusColors = {
   active: "bg-green-100 text-green-700 border-green-200",
@@ -53,41 +29,23 @@ const statusLabels = {
 };
 
 export function ChannelCard({ channel, onClick, clientName }: ChannelCardProps) {
-  const styles = getOwnershipStyles(channel.ownership, clientName);
   const statusClass = statusColors[channel.status];
-  const showAccentBar = channel.ownership === "both";
+  const assignmentLabel = channel.assignedUserName || "Unassigned";
 
   return (
     <div
-      className="relative min-w-[240px] h-[160px] rounded-lg p-4 cursor-pointer transition-shadow hover:shadow-md"
-      style={{
-        borderWidth: "1px",
-        borderStyle: "solid",
-        borderColor: styles.border,
-        backgroundColor: styles.bg,
-      }}
+      className="relative min-w-[240px] h-[160px] rounded-lg p-4 cursor-pointer transition-shadow hover:shadow-md border bg-card"
       onClick={onClick}
     >
-      {/* Accent bar for "both" ownership */}
-      {showAccentBar && (
-        <div
-          className="absolute left-0 top-0 bottom-0 w-1 rounded-l-lg"
-          style={{ backgroundColor: "#13CF48" }}
-        />
-      )}
-
       {/* Channel name */}
-      <h3 className="font-semibold mb-2 text-sm" style={{ color: styles.text }}>
+      <h3 className="font-semibold mb-2 text-sm text-foreground">
         {channel.name}
       </h3>
 
-      {/* Ownership badge */}
-      <Badge
-        variant="outline"
-        className="mb-2 text-xs"
-        style={{ borderColor: styles.border, color: styles.text }}
-      >
-        {styles.label}
+      {/* Assignment badge */}
+      <Badge variant="outline" className="mb-2 text-xs">
+        <User className="h-3 w-3 mr-1" />
+        {assignmentLabel}
       </Badge>
 
       {/* Status badge */}
@@ -96,7 +54,7 @@ export function ChannelCard({ channel, onClick, clientName }: ChannelCardProps) 
       </Badge>
 
       {/* Task count */}
-      <div className="flex items-center gap-1 text-sm text-gray-600 mb-2">
+      <div className="flex items-center gap-1 text-sm text-muted-foreground mb-2">
         <CheckSquare className="h-3 w-3" />
         <span>{channel.taskCount || 0} Tasks</span>
       </div>
@@ -104,7 +62,7 @@ export function ChannelCard({ channel, onClick, clientName }: ChannelCardProps) 
       {/* Progress bar */}
       <div className="space-y-1">
         <Progress value={Number(channel.progress) || 0} className="h-2" />
-        <span className="text-xs text-gray-600">{Math.round(Number(channel.progress) || 0)}%</span>
+        <span className="text-xs text-muted-foreground">{Math.round(Number(channel.progress) || 0)}%</span>
       </div>
     </div>
   );

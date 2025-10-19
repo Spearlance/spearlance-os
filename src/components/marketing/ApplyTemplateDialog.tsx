@@ -119,7 +119,8 @@ export function ApplyTemplateDialog({ open, onOpenChange, stages, selectedStageI
           .insert({
             stage_id: stageId,
             name: channelName,
-            ownership: "spearlance",
+            assigned_to: user.id, // Assign to current user
+            ownership: "client", // Default value for backward compatibility
             status: "not_used",
             created_by: user.id,
           })
