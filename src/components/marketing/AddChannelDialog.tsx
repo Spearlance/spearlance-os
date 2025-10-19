@@ -74,10 +74,10 @@ export function AddChannelDialog({ open, onOpenChange, stages, selectedStageId, 
 
         let filteredMembers = data || [];
         if (currentUserRole === "client") {
+          // Clients can only assign to other clients (not to admins/FMMs)
           filteredMembers = filteredMembers.filter((m) => m.role === "client");
-        } else if (currentUserRole === "admin" || currentUserRole === "fmm") {
-          filteredMembers = filteredMembers.filter((m) => m.role === "admin" || m.role === "fmm");
         }
+        // Admins and FMMs can assign to ANYONE, so no filtering needed for them
 
         setTeamMembers(filteredMembers);
       } catch (error) {
