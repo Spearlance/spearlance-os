@@ -500,6 +500,7 @@ const MarketingFlowchart = () => {
           onUpdate={handleChannelUpdate}
           isAdminOrFMM={isAdminOrFMM}
           clientName={selectedClient.name}
+          clientId={selectedClient.id}
         />
       )}
 

@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Plus, ExternalLink } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import type { Database } from "@/integrations/supabase/types";
+import CreateChannelTaskDialog from "./CreateChannelTaskDialog";
 
 type Channel = Database["public"]["Tables"]["marketing_flow_channels"]["Row"];
 type Note = Database["public"]["Tables"]["marketing_flow_channel_notes"]["Row"];
@@ -23,9 +24,10 @@ interface ChannelDrawerProps {
   onUpdate: () => void;
   isAdminOrFMM: boolean;
   clientName: string;
+  clientId: string;
 }
 
-export function ChannelDrawer({ open, onOpenChange, channel, onUpdate, isAdminOrFMM, clientName }: ChannelDrawerProps) {
+export function ChannelDrawer({ open, onOpenChange, channel, onUpdate, isAdminOrFMM, clientName, clientId }: ChannelDrawerProps) {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [notes, setNotes] = useState<Note[]>([]);
@@ -35,6 +37,7 @@ export function ChannelDrawer({ open, onOpenChange, channel, onUpdate, isAdminOr
   const [ownership, setOwnership] = useState(channel.ownership);
   const [status, setStatus] = useState(channel.status);
   const [loading, setLoading] = useState(false);
+  const [showCreateTask, setShowCreateTask] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -261,9 +264,9 @@ export function ChannelDrawer({ open, onOpenChange, channel, onUpdate, isAdminOr
             </div>
 
             {isAdminOrFMM && (
-              <Button variant="outline" className="w-full" onClick={() => navigate("/tasks")}>
+              <Button variant="outline" className="w-full" onClick={() => setShowCreateTask(true)}>
                 <Plus className="h-4 w-4 mr-2" />
-                Manage Tasks
+                Create Task
               </Button>
             )}
           </TabsContent>
@@ -318,6 +321,17 @@ export function ChannelDrawer({ open, onOpenChange, channel, onUpdate, isAdminOr
             </div>
           </TabsContent>
         </Tabs>
+
+        <CreateChannelTaskDialog
+          open={showCreateTask}
+          onOpenChange={setShowCreateTask}
+          channelId={channel.id}
+          clientId={clientId}
+          onSuccess={() => {
+            loadTasks();
+            onUpdate();
+          }}
+        />
       </SheetContent>
     </Sheet>
   );
