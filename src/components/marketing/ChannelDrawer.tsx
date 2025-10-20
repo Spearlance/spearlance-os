@@ -325,40 +325,36 @@ export function ChannelDrawer({ open, onOpenChange, channel, onUpdate, isAdminOr
               )}
             </div>
 
-            {isAdminOrFMM && (
-              <Button variant="outline" className="w-full" onClick={() => setShowCreateTask(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Create Task
-              </Button>
-            )}
+            <Button variant="outline" className="w-full" onClick={() => setShowCreateTask(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Create Task
+            </Button>
           </TabsContent>
 
           <TabsContent value="notes" className="space-y-4">
-            {isAdminOrFMM && (
-              <div className="space-y-2 p-4 border rounded-lg bg-gray-50">
-                <Label>Add Note</Label>
-                <Textarea
-                  value={newNote}
-                  onChange={(e) => setNewNote(e.target.value)}
-                  placeholder="Enter your note..."
-                  rows={3}
-                />
-                <div className="flex items-center gap-2">
-                  <Select value={noteVisibility} onValueChange={(value: any) => setNoteVisibility(value)}>
-                    <SelectTrigger className="w-40">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="internal">Internal</SelectItem>
-                      <SelectItem value="client">Client Visible</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Button onClick={handleAddNote} disabled={loading || !newNote.trim()}>
-                    Add Note
-                  </Button>
-                </div>
+            <div className="space-y-2 p-4 border rounded-lg bg-gray-50">
+              <Label>Add Note</Label>
+              <Textarea
+                value={newNote}
+                onChange={(e) => setNewNote(e.target.value)}
+                placeholder="Enter your note..."
+                rows={3}
+              />
+              <div className="flex items-center gap-2">
+                <Select value={noteVisibility} onValueChange={(value: any) => setNoteVisibility(value)}>
+                  <SelectTrigger className="w-40">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="internal">Internal</SelectItem>
+                    <SelectItem value="client">Client Visible</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button onClick={handleAddNote} disabled={loading || !newNote.trim()}>
+                  Add Note
+                </Button>
               </div>
-            )}
+            </div>
 
             <div className="space-y-2">
               {notes.length > 0 ? (
