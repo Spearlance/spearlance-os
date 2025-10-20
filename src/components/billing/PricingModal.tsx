@@ -104,12 +104,12 @@ export function PricingModal({ open, onOpenChange }: PricingModalProps) {
       users: "Unlimited Users",
       monthly: {
         price: 297,
-        priceId: "price_UNLIMITED_MONTHLY",
+        priceId: "price_1SKNIdJtbnnNcxGrzgUguBit",
         perMonth: 297
       },
       annual: {
         price: 2097,
-        priceId: "price_UNLIMITED_ANNUAL",
+        priceId: "price_1SKNMHJtbnnNcxGrjN6gcLQB",
         perMonth: 174.75,
         savings: 1467
       },
