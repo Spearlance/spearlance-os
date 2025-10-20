@@ -88,13 +88,13 @@ export function PricingModal({ open, onOpenChange }: PricingModalProps) {
         savings: 689
       },
       features: [
-        "Full Platform Access – Keep your marketing organized in one place",
-        "AI Daily Guidance – Get clear next steps every day",
-        "Marketing Templates – Proven systems for content, ads, and SEO",
-        "Performance Dashboard – Instantly see what's working",
-        "Marketing Meeting Assistant – Stay consistent with weekly check-ins",
-        "Smart Reminders – Never miss a post or review",
-        "Easy Upgrades – Add users, coaching, or services anytime"
+        "✅ Full Platform Access – All-in-one marketing hub",
+        "✅ AI Daily Guidance – Know what to do next",
+        "✅ Built-In Templates – For ads, SEO, and content",
+        "✅ Dashboard – See what's working fast",
+        "✅ Marketing Assistant – Weekly check-ins for consistency",
+        "✅ Smart Reminders – Never miss key tasks",
+        "✅ Easy Upgrades – Add users or coaching anytime"
       ],
       popular: false
     },
@@ -115,11 +115,11 @@ export function PricingModal({ open, onOpenChange }: PricingModalProps) {
       },
       features: [
         "Everything in Starter, plus:",
-        "Unlimited Team Access – Train your full staff to run marketing confidently",
-        "Priority Setup – Fast onboarding with hands-on support",
-        "🎁 BONUS: Free Website Redesign – SEO-optimized, ADA-compliant site your team can manage",
-        "🎁 BONUS: 1 Private Coaching Session – Get personalized strategy and direction",
-        "🎁 BONUS: 3 Months Private Slack Channel – Ask questions anytime, no calls required"
+        "🌟 Unlimited Team Access – Train your entire staff",
+        "🌟 Priority Setup – Quick personalized onboarding",
+        "🎁 Free Website Redesign ($2,000 Value)",
+        "🎁 1 Private Coaching Session ($500 Value)",
+        "🎁 3 Months Private Slack Channel ($600 Value)"
       ],
       popular: true
     }
