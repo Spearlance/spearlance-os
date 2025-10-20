@@ -65,6 +65,10 @@ export default function CreateChannelTaskDialog({
     setLoading(true);
 
     try {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
       // Create the task
       const { data: task, error: taskError } = await supabase
         .from("tasks")
@@ -76,6 +80,7 @@ export default function CreateChannelTaskDialog({
           due_date: formData.dueDate || null,
           assignee_user_id: formData.assigneeId || null,
           client_id: clientId,
+          creator_user_id: user.id,
         })
         .select()
         .single();
@@ -88,6 +93,7 @@ export default function CreateChannelTaskDialog({
         .insert({
           task_id: task.id,
           channel_id: channelId,
+          created_by: user.id,
         });
 
       if (linkError) throw linkError;
