@@ -77,9 +77,11 @@ serve(async (req) => {
       throw new Error('You do not have permission to invite users to this client');
     }
 
-    // Only admin/FMM can invite
-    if (callerProfile.role !== 'admin' && callerProfile.role !== 'fmm') {
-      throw new Error('Only admins and FMMs can invite team members');
+    // Enforce role-based invitation rules:
+    // - Only admins can invite FMM users
+    // - Everyone else (including clients) can invite client users
+    if (role === 'fmm' && callerProfile.role !== 'admin') {
+      throw new Error('Only admins can invite FMM users');
     }
 
     console.log('Inviting team member:', { email, name, role, client_id });
