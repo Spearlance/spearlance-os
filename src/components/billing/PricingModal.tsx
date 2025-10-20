@@ -5,9 +5,10 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Check, Loader2, Sparkles } from "lucide-react";
+import { Check, Loader2, Sparkles, Gift } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { cn } from "@/lib/utils";
 
 interface PricingModalProps {
   open: boolean;
@@ -73,7 +74,7 @@ export function PricingModal({ open, onOpenChange }: PricingModalProps) {
   const pricingTiers = {
     starter: {
       name: "Starter",
-      description: "Perfect for solo entrepreneurs",
+      description: "Perfect for solo entrepreneurs & small teams",
       users: "1 User",
       monthly: {
         price: 99,
@@ -87,20 +88,20 @@ export function PricingModal({ open, onOpenChange }: PricingModalProps) {
         savings: 689
       },
       features: [
-        "Full LaunchPad Access",
-        "Unlimited Tasks & Projects",
-        "Asset Library & Management",
-        "Avatar Builder",
-        "Marketing Flowchart & Ideas",
-        "1 Team Member",
-        "Reports & Analytics",
-        "Priority Email Support"
+        "LaunchPad: Get your business strategy mapped in days, not months",
+        "Unlimited tasks & projects to keep your entire team organized",
+        "Centralized asset library for all your brand files & marketing materials",
+        "AI-powered Ideal Customer Avatar Builder",
+        "Visual marketing flowchart & monthly content ideas generator",
+        "Up to 1 team member included",
+        "Real-time reports & analytics dashboard",
+        "Priority email support (24-hour response time)"
       ],
       popular: false
     },
     unlimited: {
       name: "Unlimited",
-      description: "For growing teams",
+      description: "For scaling businesses & agencies",
       users: "Unlimited Users",
       monthly: {
         price: 297,
@@ -114,14 +115,16 @@ export function PricingModal({ open, onOpenChange }: PricingModalProps) {
         savings: 1467
       },
       features: [
-        "Everything in Starter",
-        "Unlimited Team Members",
-        "Advanced Collaboration Tools",
-        "Custom Branding",
-        "Priority Support",
-        "Dedicated Account Manager",
-        "Custom Integrations",
-        "Advanced Analytics"
+        "Everything in Starter plan",
+        "Unlimited team members (scale your team without limits)",
+        "Advanced collaboration: Real-time editing, comments & task assignments",
+        "White-label client portals with your branding",
+        "Priority phone & chat support (4-hour response time)",
+        "Dedicated account manager for strategic guidance",
+        "Custom API integrations with your existing tools",
+        "Advanced analytics with custom reporting",
+        "🎁 BONUS: 1 Private Coaching Session with your team ($500 value)",
+        "🎁 BONUS: Free Website Redesign ($2,500 value)"
       ],
       popular: true
     }
@@ -210,12 +213,30 @@ export function PricingModal({ open, onOpenChange }: PricingModalProps) {
                 
                 <CardContent>
                   <ul className="space-y-2">
-                    {tier.features.map((feature) => (
-                      <li key={feature} className="flex items-start gap-2">
-                        <Check className="h-5 w-5 text-green-600 shrink-0 mt-0.5" />
-                        <span className="text-sm">{feature}</span>
-                      </li>
-                    ))}
+                    {tier.features.map((feature) => {
+                      const isBonus = feature.includes('🎁');
+                      return (
+                        <li 
+                          key={feature} 
+                          className={cn(
+                            "flex items-start gap-2",
+                            isBonus && "mt-3 pt-3 border-t"
+                          )}
+                        >
+                          {isBonus ? (
+                            <Gift className="h-5 w-5 text-purple-600 dark:text-purple-400 shrink-0 mt-0.5" />
+                          ) : (
+                            <Check className="h-5 w-5 text-green-600 dark:text-green-400 shrink-0 mt-0.5" />
+                          )}
+                          <span className={cn(
+                            "text-sm",
+                            isBonus && "font-semibold text-purple-700 dark:text-purple-300"
+                          )}>
+                            {feature}
+                          </span>
+                        </li>
+                      );
+                    })}
                   </ul>
                 </CardContent>
                 
