@@ -46,13 +46,15 @@ serve(async (req) => {
     // Check if caller has permission (admin or FMM)
     const { data: callerProfile, error: profileError } = await supabaseAdmin
       .from('profiles')
-      .select('role, associated_client_ids')
+      .select('role, associated_client_ids, name')
       .eq('id', userId)
       .single();
 
     if (profileError || !callerProfile) {
       throw new Error('Failed to fetch caller profile');
     }
+
+    const inviterName = callerProfile.name || 'Your team member';
 
     // Parse request body
     const { email, name, role, client_id }: InviteRequest = await req.json();
@@ -156,23 +158,87 @@ serve(async (req) => {
     // Send invitation email with password reset link
     try {
       await resend.emails.send({
-        from: 'Team Invitation <noreply@em.os.spearlance.com>',
+        from: 'Garrett Handley from Spearlance <garrett@em.os.spearlance.com>',
         to: [email],
-        subject: `You've been invited to ${clientName}`,
+        subject: `${inviterName} invited you to join ${clientName}`,
         html: `
-          <h1>Welcome to ${clientName}!</h1>
-          <p>Hi ${name},</p>
-          <p>You've been invited to join <strong>${clientName}</strong>'s account.</p>
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #ffffff;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #ffffff;">
+    <tr>
+      <td align="center" style="padding: 40px 20px;">
+        <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; max-width: 600px;">
           
-          <h2>Set up your account:</h2>
-          <p>Click the link below to set your password and activate your account:</p>
+          <!-- Logo Header -->
+          <tr>
+            <td style="padding: 40px 40px 30px 40px; text-align: center; border-bottom: 3px solid #13cf48;">
+              <img src="https://os.spearlance.com/spearlance-logo.png" alt="Spearlance" style="height: 60px; max-width: 100%;">
+            </td>
+          </tr>
           
-          <p><a href="${resetData.properties.action_link}" style="display: inline-block; padding: 12px 24px; background-color: #0070f3; color: white; text-decoration: none; border-radius: 5px; margin: 16px 0;">Set Password & Log In</a></p>
+          <!-- Content -->
+          <tr>
+            <td style="padding: 40px;">
+              <h1 style="color: #000000; margin: 0 0 24px 0; font-size: 28px; font-weight: 600;">You're invited to join ${clientName}!</h1>
+              
+              <p style="font-size: 16px; color: #333333; line-height: 1.6; margin: 0 0 16px 0;">Hi ${name},</p>
+              
+              <p style="font-size: 16px; color: #333333; line-height: 1.6; margin: 0 0 16px 0;">
+                <strong>${inviterName}</strong> has invited you to collaborate on <strong>${clientName}</strong>'s workspace in Spearlance.
+              </p>
+              
+              <p style="font-size: 16px; color: #333333; line-height: 1.6; margin: 0 0 24px 0;">
+                To get started, click the button below to create your password and access your account:
+              </p>
+              
+              <!-- CTA Button -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin: 0 0 32px 0;">
+                <tr>
+                  <td align="center">
+                    <a href="${resetData.properties.action_link}" style="display: inline-block; padding: 16px 40px; background-color: #13cf48; color: #ffffff; text-decoration: none; border-radius: 8px; font-size: 16px; font-weight: 600; box-shadow: 0 2px 8px rgba(19, 207, 72, 0.3);">
+                      Create Your Password
+                    </a>
+                  </td>
+                </tr>
+              </table>
+              
+              <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #13cf48; margin: 0 0 24px 0;">
+                <p style="margin: 0; font-size: 14px; color: #666666; line-height: 1.6;">
+                  <strong>Your Login Email:</strong> ${email}
+                </p>
+              </div>
+              
+              <p style="font-size: 14px; color: #999999; line-height: 1.6; margin: 0; padding-top: 24px; border-top: 1px solid #eeeeee;">
+                <strong>Important:</strong> This invitation link will expire in 24 hours for security reasons. If you have any questions, feel free to reach out directly!
+              </p>
+            </td>
+          </tr>
           
-          <p><strong>Important:</strong> This link will expire in 24 hours for security reasons.</p>
-          <p>Your email: <strong>${email}</strong></p>
-          
-          <p>Best regards,<br>The Team</p>
+          <!-- Footer / Signature -->
+          <tr>
+            <td style="background-color: #000000; padding: 40px; text-align: center;">
+              <p style="margin: 0 0 8px 0; font-size: 16px; color: #ffffff; font-weight: 600;">
+                Garrett Handley
+              </p>
+              <p style="margin: 0 0 4px 0; font-size: 14px; color: #13cf48;">
+                Founder, CEO
+              </p>
+              <p style="margin: 0; font-size: 14px; color: #cccccc;">
+                Spearlance LLC
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
         `,
       });
 
