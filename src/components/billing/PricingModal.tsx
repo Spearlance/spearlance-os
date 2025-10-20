@@ -132,9 +132,9 @@ export function PricingModal({ open, onOpenChange }: PricingModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl">
+      <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-2xl">Choose Your Plan</DialogTitle>
+          <DialogTitle className="text-xl">Choose Your Plan</DialogTitle>
           <DialogDescription>
             {daysRemaining > 0 ? (
               <span className="text-yellow-600 font-medium">
@@ -147,7 +147,7 @@ export function PricingModal({ open, onOpenChange }: PricingModalProps) {
         </DialogHeader>
 
         {/* Billing Period Toggle */}
-        <div className="flex items-center justify-center gap-3 mt-6">
+        <div className="flex items-center justify-center gap-3 mt-4">
           <ToggleGroup 
             type="single" 
             value={billingPeriod} 
@@ -166,7 +166,7 @@ export function PricingModal({ open, onOpenChange }: PricingModalProps) {
           </ToggleGroup>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-6 mt-6">
+        <div className="grid md:grid-cols-2 gap-4 mt-4">
           {Object.entries(pricingTiers).map(([key, tier]) => {
             const selectedPlan = billingPeriod === 'monthly' ? tier.monthly : tier.annual;
             const isLoadingThis = loading === `${key}-${billingPeriod}`;
@@ -185,12 +185,12 @@ export function PricingModal({ open, onOpenChange }: PricingModalProps) {
                   </div>
                 )}
                 
-                <CardHeader className={tier.popular ? "pt-8" : ""}>
+                <CardHeader className={cn(tier.popular ? "pt-8" : "", "pb-4")}>
                   <CardTitle className="flex items-center justify-between">
                     {tier.name}
                   </CardTitle>
                   <CardDescription>{tier.description}</CardDescription>
-                  <div className="text-3xl font-bold text-foreground mt-2">
+                  <div className="text-2xl font-bold text-foreground mt-2">
                     ${selectedPlan.price}
                     <span className="text-base font-normal text-muted-foreground">
                       /{billingPeriod === 'monthly' ? 'month' : 'year'}
@@ -206,8 +206,8 @@ export function PricingModal({ open, onOpenChange }: PricingModalProps) {
                   </Badge>
                 </CardHeader>
                 
-                <CardContent>
-                  <ul className="space-y-2">
+                <CardContent className="py-4">
+                  <ul className="space-y-1.5">
                     {tier.features.map((feature) => {
                       const isBonus = feature.includes('🎁');
                       return (
@@ -215,13 +215,13 @@ export function PricingModal({ open, onOpenChange }: PricingModalProps) {
                           key={feature} 
                           className={cn(
                             "flex items-start gap-2",
-                            isBonus && "mt-3 pt-3 border-t"
+                            isBonus && "mt-2 pt-2 border-t"
                           )}
                         >
                           {isBonus ? (
-                            <Gift className="h-5 w-5 text-purple-600 dark:text-purple-400 shrink-0 mt-0.5" />
+                            <Gift className="h-4 w-4 text-purple-600 dark:text-purple-400 shrink-0 mt-0.5" />
                           ) : (
-                            <Check className="h-5 w-5 text-green-600 dark:text-green-400 shrink-0 mt-0.5" />
+                            <Check className="h-4 w-4 text-green-600 dark:text-green-400 shrink-0 mt-0.5" />
                           )}
                           <span className={cn(
                             "text-sm",
@@ -259,7 +259,7 @@ export function PricingModal({ open, onOpenChange }: PricingModalProps) {
           })}
         </div>
 
-        <div className="mt-4 text-center text-sm text-muted-foreground">
+        <div className="mt-3 text-center text-xs text-muted-foreground">
           <p>Need a Fractional Marketing Manager? <a href="#" className="text-primary hover:underline">Contact us for custom pricing</a></p>
         </div>
       </DialogContent>
