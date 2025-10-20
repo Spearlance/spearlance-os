@@ -414,6 +414,7 @@ export type Database = {
           features: string[] | null
           id: string
           is_portal_only: boolean | null
+          max_team_members: number | null
           name: string
           price_monthly: number
         }
@@ -422,6 +423,7 @@ export type Database = {
           features?: string[] | null
           id?: string
           is_portal_only?: boolean | null
+          max_team_members?: number | null
           name: string
           price_monthly: number
         }
@@ -430,6 +432,7 @@ export type Database = {
           features?: string[] | null
           id?: string
           is_portal_only?: boolean | null
+          max_team_members?: number | null
           name?: string
           price_monthly?: number
         }

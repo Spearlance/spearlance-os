@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,8 +6,9 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { UserPlus } from "lucide-react";
+import { UserPlus, AlertCircle } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface InviteTeamMemberDialogProps {
   clientId: string;
@@ -43,6 +44,44 @@ export function InviteTeamMemberDialog({ clientId, canManageTeam, onInviteSucces
   });
 
   const isAdmin = userProfile?.role === 'admin';
+
+  // Fetch client's billing plan and team member count
+  const { data: billingData } = useQuery({
+    queryKey: ['team-member-limits', clientId],
+    queryFn: async () => {
+      // Get client's billing plan with max_team_members
+      const { data: clientData, error: clientError } = await supabase
+        .from('clients')
+        .select(`
+          id,
+          billing_plan_id,
+          billing_plans!inner(max_team_members, name)
+        `)
+        .eq('id', clientId)
+        .single();
+
+      if (clientError) throw clientError;
+
+      // Count current team members (only role='client')
+      const { count, error: countError } = await supabase
+        .from('profiles')
+        .select('id', { count: 'exact', head: true })
+        .contains('associated_client_ids', [clientId])
+        .eq('role', 'client');
+
+      if (countError) throw countError;
+
+      return {
+        maxTeamMembers: clientData?.billing_plans?.max_team_members ?? null,
+        currentCount: count || 0,
+        planName: clientData?.billing_plans?.name || 'Unknown Plan'
+      };
+    },
+    enabled: !!clientId && canManageTeam,
+  });
+
+  const isAtLimit = billingData?.maxTeamMembers !== null && 
+                    billingData?.currentCount >= billingData?.maxTeamMembers;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -128,7 +167,7 @@ export function InviteTeamMemberDialog({ clientId, canManageTeam, onInviteSucces
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="client">Client User</SelectItem>
+                  <SelectItem value="client">Team Member</SelectItem>
                   <SelectItem value="fmm">FMM</SelectItem>
                 </SelectContent>
               </Select>
@@ -136,14 +175,36 @@ export function InviteTeamMemberDialog({ clientId, canManageTeam, onInviteSucces
           )}
           {!isAdmin && (
             <p className="text-sm text-muted-foreground">
-              Team members will be invited as Client Users
+              Team members will be invited as Team Members
             </p>
+          )}
+          {billingData && (
+            <Alert>
+              <AlertDescription>
+                {billingData.maxTeamMembers === null ? (
+                  <>Your plan includes unlimited team members ({billingData.currentCount} active)</>
+                ) : (
+                  <>
+                    Your plan includes {billingData.maxTeamMembers} team member{billingData.maxTeamMembers === 1 ? '' : 's'} 
+                    ({billingData.currentCount}/{billingData.maxTeamMembers} used)
+                  </>
+                )}
+              </AlertDescription>
+            </Alert>
+          )}
+          {isAtLimit && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                Team member limit reached. Please upgrade your plan to add more team members.
+              </AlertDescription>
+            </Alert>
           )}
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
               Cancel
             </Button>
-            <Button type="submit" disabled={loading}>
+            <Button type="submit" disabled={loading || isAtLimit}>
               {loading ? "Inviting..." : "Send Invitation"}
             </Button>
           </div>

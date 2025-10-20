@@ -84,6 +84,53 @@ serve(async (req) => {
       throw new Error('Only admins can invite FMM users');
     }
 
+    // Check team member limits based on billing plan (only for 'client' role invitations)
+    if (role === 'client') {
+      const { data: clientData, error: clientError } = await supabaseAdmin
+        .from('clients')
+        .select(`
+          id,
+          billing_plan_id,
+          billing_plans!inner(max_team_members)
+        `)
+        .eq('id', client_id)
+        .single();
+
+      if (clientError) {
+        console.error('Error fetching client billing plan:', clientError);
+        throw new Error('Failed to verify team member limits');
+      }
+
+      // Type assertion for the joined data structure
+      const billingPlans = clientData?.billing_plans as { max_team_members: number | null } | { max_team_members: number | null }[];
+      const maxTeamMembers = Array.isArray(billingPlans) ? billingPlans[0]?.max_team_members : billingPlans?.max_team_members;
+
+      // Only check limits if plan has a max_team_members restriction (not NULL)
+      if (maxTeamMembers !== null && maxTeamMembers !== undefined) {
+        const maxAllowed = maxTeamMembers;
+        
+        // Count current team members (only role='client')
+        const { count, error: countError } = await supabaseAdmin
+          .from('profiles')
+          .select('id', { count: 'exact', head: true })
+          .contains('associated_client_ids', [client_id])
+          .eq('role', 'client');
+
+        if (countError) {
+          console.error('Error counting team members:', countError);
+          throw new Error('Failed to verify team member limits');
+        }
+
+        const currentCount = count || 0;
+
+        if (currentCount >= maxAllowed) {
+          throw new Error(
+            `Team member limit reached. Your plan allows ${maxAllowed} team member${maxAllowed === 1 ? '' : 's'}. Please upgrade to add more team members.`
+          );
+        }
+      }
+    }
+
     console.log('Inviting team member:', { email, name, role, client_id });
 
     // Create the user without password - they'll set it via reset link

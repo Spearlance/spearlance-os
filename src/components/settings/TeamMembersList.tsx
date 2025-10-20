@@ -26,6 +26,12 @@ export function TeamMembersList({ clientId, canManageTeam, refreshTrigger }: Tea
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
+  const getRoleDisplay = (role: string) => {
+    if (role === 'admin') return 'ADMIN';
+    if (role === 'fmm') return 'FMM';
+    return 'TEAM MEMBER';
+  };
+
   const fetchTeamMembers = async () => {
     setLoading(true);
     try {
@@ -144,7 +150,7 @@ export function TeamMembersList({ clientId, canManageTeam, refreshTrigger }: Tea
               <TableCell>{member.email}</TableCell>
               <TableCell>
                 <Badge variant={member.role === "admin" ? "default" : "secondary"}>
-                  {member.role.toUpperCase()}
+                  {getRoleDisplay(member.role)}
                 </Badge>
               </TableCell>
               <TableCell>{new Date(member.created_at).toLocaleDateString()}</TableCell>
