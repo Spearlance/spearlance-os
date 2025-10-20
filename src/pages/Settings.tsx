@@ -79,7 +79,7 @@ export default function Settings() {
 
   const canEditClient = client && (userProfile?.role === 'admin' || userProfile?.role === 'fmm');
   const showCalendarTab = userProfile?.role === 'fmm' || userProfile?.role === 'admin';
-  const canManageTeam = userProfile?.role === 'admin' || userProfile?.role === 'fmm';
+  const canManageTeam = true; // All authenticated users can invite team members
 
   return (
     <div className="space-y-6">
