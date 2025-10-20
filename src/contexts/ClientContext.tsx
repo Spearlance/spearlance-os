@@ -18,6 +18,12 @@ interface Client {
   company_name?: string;
   stripe_customer_id?: string;
   stripe_subscription_id?: string;
+  billing_plan_id?: string;
+  billing_plans?: {
+    name: string;
+    price_monthly: number;
+    max_team_members: number | null;
+  };
 }
 
 interface ClientContextType {
@@ -61,7 +67,10 @@ export const ClientProvider = ({ children }: { children: ReactNode }) => {
         .eq('id', user.id)
         .maybeSingle();
 
-      let query = supabase.from('clients').select('*').order('name');
+      let query = supabase.from('clients').select(`
+        *,
+        billing_plans(name, price_monthly, max_team_members)
+      `).order('name');
 
       // If not admin, filter by associated_client_ids
       if (profile?.role !== 'admin' && profile?.associated_client_ids) {
@@ -101,7 +110,10 @@ export const ClientProvider = ({ children }: { children: ReactNode }) => {
         .eq('id', user.id)
         .maybeSingle();
 
-      let query = supabase.from('clients').select('*').order('name');
+      let query = supabase.from('clients').select(`
+        *,
+        billing_plans(name, price_monthly, max_team_members)
+      `).order('name');
 
       if (profile?.role !== 'admin' && profile?.associated_client_ids) {
         query = query.in('id', profile.associated_client_ids);

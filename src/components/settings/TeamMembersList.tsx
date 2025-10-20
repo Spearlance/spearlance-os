@@ -13,6 +13,7 @@ interface TeamMember {
   email: string;
   role: string;
   created_at: string;
+  is_primary_contact?: boolean;
 }
 
 interface TeamMembersListProps {
@@ -42,7 +43,21 @@ export function TeamMembersList({ clientId, canManageTeam, refreshTrigger }: Tea
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setTeamMembers(data || []);
+
+      // Check which users are primary contacts
+      const { data: primaryContacts } = await supabase
+        .from("client_primary_contacts")
+        .select("user_id")
+        .eq("client_id", clientId);
+
+      const primaryContactIds = new Set(primaryContacts?.map(pc => pc.user_id) || []);
+
+      const membersWithPrimaryStatus = (data || []).map(member => ({
+        ...member,
+        is_primary_contact: primaryContactIds.has(member.id),
+      }));
+
+      setTeamMembers(membersWithPrimaryStatus);
     } catch (error: any) {
       console.error("Error fetching team members:", error);
       toast({
@@ -149,9 +164,16 @@ export function TeamMembersList({ clientId, canManageTeam, refreshTrigger }: Tea
               <TableCell className="font-medium">{member.name}</TableCell>
               <TableCell>{member.email}</TableCell>
               <TableCell>
-                <Badge variant={member.role === "admin" ? "default" : "secondary"}>
-                  {getRoleDisplay(member.role)}
-                </Badge>
+                <div className="flex items-center gap-2">
+                  <Badge variant={member.role === "admin" ? "default" : "secondary"}>
+                    {getRoleDisplay(member.role)}
+                  </Badge>
+                  {member.is_primary_contact && (
+                    <Badge variant="outline" className="bg-primary/10">
+                      PRIMARY CONTACT
+                    </Badge>
+                  )}
+                </div>
               </TableCell>
               <TableCell>{new Date(member.created_at).toLocaleDateString()}</TableCell>
               {canManageTeam && (

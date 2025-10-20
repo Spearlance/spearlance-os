@@ -13,6 +13,7 @@ import { useCalReady } from "@/components/CalProvider";
 import { InviteTeamMemberDialog } from "@/components/settings/InviteTeamMemberDialog";
 import { TeamMembersList } from "@/components/settings/TeamMembersList";
 import { ClientLogoUploader } from "@/components/settings/ClientLogoUploader";
+import { BillingTab } from "@/components/settings/BillingTab";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Clock, Copy, Info } from "lucide-react";
@@ -23,6 +24,7 @@ export default function Settings() {
   const [userProfile, setUserProfile] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [teamRefresh, setTeamRefresh] = useState(0);
+  const [isPrimaryContact, setIsPrimaryContact] = useState(false);
   const { toast } = useToast();
   const { isCalReady, isLoading: isCalLoading } = useCalReady();
 
@@ -41,12 +43,24 @@ export default function Settings() {
         .eq("id", user.id)
         .single();
       setUserProfile(profile);
+
+      // Check if user is a primary contact for the selected client
+      if (selectedClient) {
+        const { data: primaryContact } = await supabase
+          .from("client_primary_contacts")
+          .select("id")
+          .eq("client_id", selectedClient.id)
+          .eq("user_id", user.id)
+          .single();
+        
+        setIsPrimaryContact(!!primaryContact);
+      }
     }
   };
 
   useEffect(() => {
     fetchUserProfile();
-  }, []);
+  }, [selectedClient]);
 
   const handleSave = async () => {
     if (!userProfile) return;
@@ -80,6 +94,7 @@ export default function Settings() {
   const canEditClient = client && (userProfile?.role === 'admin' || userProfile?.role === 'fmm');
   const showCalendarTab = userProfile?.role === 'fmm' || userProfile?.role === 'admin';
   const canManageTeam = true; // All authenticated users can invite team members
+  const canViewBilling = userProfile?.role === 'admin' || (userProfile?.role === 'client' && isPrimaryContact);
 
   return (
     <div className="space-y-6">
@@ -101,6 +116,7 @@ export default function Settings() {
             <TabsTrigger value="general">General</TabsTrigger>
             {showCalendarTab && <TabsTrigger value="calendar">Calendar</TabsTrigger>}
             <TabsTrigger value="team">Team</TabsTrigger>
+            {canViewBilling && <TabsTrigger value="billing">Billing</TabsTrigger>}
           </TabsList>
 
           <TabsContent value="general" className="space-y-4">
@@ -355,6 +371,12 @@ export default function Settings() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {canViewBilling && (
+          <TabsContent value="billing" className="space-y-4">
+            <BillingTab client={client} />
+          </TabsContent>
+        )}
         </Tabs>
       )}
     </div>

@@ -855,6 +855,38 @@ export type Database = {
           },
         ]
       }
+      client_primary_contacts: {
+        Row: {
+          client_id: string
+          created_at: string | null
+          created_by: string | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_primary_contacts_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_team_invitations: {
         Row: {
           client_id: string
