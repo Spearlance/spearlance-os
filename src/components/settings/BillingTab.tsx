@@ -151,7 +151,7 @@ export function BillingTab({ client }: BillingTabProps) {
             Upgrade Plan
           </Button>
 
-          {client.stripe_customer_id && (
+          {client.stripe_customer_id && !isInTrial && (
             <Button
               onClick={handleManageBilling}
               disabled={loadingPortal}
@@ -168,10 +168,21 @@ export function BillingTab({ client }: BillingTabProps) {
             </Button>
           )}
 
-          <p className="text-xs text-muted-foreground">
-            The billing portal allows you to update payment methods, view invoices, and
-            manage your subscription.
-          </p>
+          {isInTrial && (
+            <div className="p-4 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
+              <p className="text-sm text-blue-900 dark:text-blue-100">
+                Billing management will be available once you add a payment method. 
+                Click "Upgrade Plan" to add your payment details.
+              </p>
+            </div>
+          )}
+
+          {!isInTrial && (
+            <p className="text-xs text-muted-foreground">
+              The billing portal allows you to update payment methods, view invoices, and
+              manage your subscription.
+            </p>
+          )}
         </CardContent>
       </Card>
 
