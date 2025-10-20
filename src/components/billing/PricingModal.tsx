@@ -74,7 +74,7 @@ export function PricingModal({ open, onOpenChange }: PricingModalProps) {
   const pricingTiers = {
     starter: {
       name: "Starter",
-      description: "Perfect for solo entrepreneurs & small teams",
+      description: "Best for small teams or solo operators who want structure and clarity",
       users: "1 User",
       monthly: {
         price: 99,
@@ -88,20 +88,19 @@ export function PricingModal({ open, onOpenChange }: PricingModalProps) {
         savings: 689
       },
       features: [
-        "LaunchPad: Get your business strategy mapped in days, not months",
-        "Unlimited tasks & projects to keep your entire team organized",
-        "Centralized asset library for all your brand files & marketing materials",
-        "AI-powered Ideal Customer Avatar Builder",
-        "Visual marketing flowchart & monthly content ideas generator",
-        "Up to 1 team member included",
-        "Real-time reports & analytics dashboard",
-        "Priority email support (24-hour response time)"
+        "Full SpearlanceOS Platform Access - Keep all your marketing tasks, website, and campaigns organized in one place",
+        "AI Daily Guidance - Wake up to clear, step-by-step tasks so your marketing never stalls",
+        "Built-In Marketing Templates and Playbooks - Proven systems that take the guesswork out of strategy, ads, SEO, and content",
+        "Performance Dashboard - See what is working and what is not without chasing random reports",
+        "Marketing Meeting AI Assistant - Get weekly check-ins that help you stay accountable and consistent",
+        "Email Reminders and Smart Notifications - Never forget to post, publish, or review results again",
+        "Optional Add-Ons Anytime - Upgrade later for coaching, additional users, or full Fractional Marketing Manager support"
       ],
       popular: false
     },
     unlimited: {
       name: "Unlimited",
-      description: "For scaling businesses & agencies",
+      description: "Best for growing teams who want expert help and complete marketing control",
       users: "Unlimited Users",
       monthly: {
         price: 297,
@@ -115,16 +114,12 @@ export function PricingModal({ open, onOpenChange }: PricingModalProps) {
         savings: 1467
       },
       features: [
-        "Everything in Starter plan",
-        "Unlimited team members (scale your team without limits)",
-        "Advanced collaboration: Real-time editing, comments & task assignments",
-        "White-label client portals with your branding",
-        "Priority phone & chat support (4-hour response time)",
-        "Dedicated account manager for strategic guidance",
-        "Custom API integrations with your existing tools",
-        "Advanced analytics with custom reporting",
-        "🎁 BONUS: 1 Private Coaching Session with your team ($500 value)",
-        "🎁 BONUS: Free Website Redesign ($2,500 value)"
+        "Everything in Starter, plus:",
+        "Unlimited Team Access - Train your entire staff to run marketing confidently with built-in systems and guidance",
+        "Priority Support and Setup Help - We personally guide your onboarding so your account and team are ready to go from day one",
+        "🎁 BONUS: Free Website Redesign Inside the App - Get a brand-new, SEO-optimized, ADA-compliant website that your team can manage easily",
+        "🎁 BONUS: 1 Private Coaching Session - Work directly with a Spearlance strategist to review your plan, fix bottlenecks, and hit the ground running",
+        "🎁 BONUS: 3 Months Private Slack Channel - 1-on-1 virtual support where you can ask questions and get answers (no meetings required)"
       ],
       popular: true
     }
