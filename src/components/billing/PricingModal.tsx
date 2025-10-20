@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from "@/components/ui/badge";
 import { Check, Loader2, Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 interface PricingModalProps {
   open: boolean;
@@ -17,8 +18,9 @@ export function PricingModal({ open, onOpenChange }: PricingModalProps) {
   const { selectedClient } = useClient();
   const { toast } = useToast();
   const [loading, setLoading] = useState<string | null>(null);
+  const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'annual'>('annual');
 
-  const handleCheckout = async (priceId: string, interval: string) => {
+  const handleCheckout = async (priceId: string, tierKey: string) => {
     if (!selectedClient) return;
 
     // Only allow Stripe checkout for Stripe billing clients
@@ -31,7 +33,7 @@ export function PricingModal({ open, onOpenChange }: PricingModalProps) {
       return;
     }
 
-    setLoading(interval);
+    setLoading(`${tierKey}-${billingPeriod}`);
 
     // Safety timeout - reset loading after 5 seconds
     const timeoutId = setTimeout(() => {
@@ -68,16 +70,62 @@ export function PricingModal({ open, onOpenChange }: PricingModalProps) {
     }
   };
 
-  const features = [
-    "Full LaunchPad Access",
-    "Unlimited Tasks & Projects",
-    "Asset Library & Management",
-    "Avatar Builder",
-    "Marketing Flowchart & Ideas",
-    "Team Collaboration",
-    "Reports & Analytics",
-    "Priority Email Support"
-  ];
+  const pricingTiers = {
+    starter: {
+      name: "Starter",
+      description: "Perfect for solo entrepreneurs",
+      users: "1 User",
+      monthly: {
+        price: 99,
+        priceId: "price_1AbCdEfGhIjKlMnO",
+        perMonth: 99
+      },
+      annual: {
+        price: 499,
+        priceId: "price_1XyZaBcDeFgHiJkL",
+        perMonth: 41.58,
+        savings: 689
+      },
+      features: [
+        "Full LaunchPad Access",
+        "Unlimited Tasks & Projects",
+        "Asset Library & Management",
+        "Avatar Builder",
+        "Marketing Flowchart & Ideas",
+        "1 Team Member",
+        "Reports & Analytics",
+        "Priority Email Support"
+      ],
+      popular: false
+    },
+    unlimited: {
+      name: "Unlimited",
+      description: "For growing teams",
+      users: "Unlimited Users",
+      monthly: {
+        price: 297,
+        priceId: "price_UNLIMITED_MONTHLY",
+        perMonth: 297
+      },
+      annual: {
+        price: 2097,
+        priceId: "price_UNLIMITED_ANNUAL",
+        perMonth: 174.75,
+        savings: 1467
+      },
+      features: [
+        "Everything in Starter",
+        "Unlimited Team Members",
+        "Advanced Collaboration Tools",
+        "Custom Branding",
+        "Priority Support",
+        "Dedicated Account Manager",
+        "Custom Integrations",
+        "Advanced Analytics"
+      ],
+      popular: true
+    }
+  };
 
   // Calculate days remaining if in trial
   const daysRemaining = selectedClient?.trial_end_date 
@@ -100,94 +148,99 @@ export function PricingModal({ open, onOpenChange }: PricingModalProps) {
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid md:grid-cols-2 gap-6 mt-4">
-          {/* Monthly Plan */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                Monthly
-              </CardTitle>
-              <CardDescription className="text-3xl font-bold text-foreground mt-2">
-                $99<span className="text-base font-normal text-muted-foreground">/month</span>
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ul className="space-y-2">
-                {features.map((feature) => (
-                  <li key={feature} className="flex items-start gap-2">
-                    <Check className="h-5 w-5 text-green-600 shrink-0 mt-0.5" />
-                    <span className="text-sm">{feature}</span>
-                  </li>
-                ))}
-              </ul>
-            </CardContent>
-            <CardFooter>
-              <Button 
-                className="w-full" 
-                onClick={() => handleCheckout('price_1AbCdEfGhIjKlMnO', 'month')}
-                disabled={loading !== null}
-              >
-                {loading === 'month' ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Loading...
-                  </>
-                ) : (
-                  'Choose Monthly'
-                )}
-              </Button>
-            </CardFooter>
-          </Card>
-
-          {/* Yearly Plan - Highlighted */}
-          <Card className="border-2 border-primary relative">
-            <div className="absolute -top-3 left-0 right-0 flex justify-center">
-              <Badge className="bg-gradient-to-r from-purple-600 to-blue-600 text-white">
-                <Sparkles className="h-3 w-3 mr-1" />
-                Best Value - Save $689
+        {/* Billing Period Toggle */}
+        <div className="flex items-center justify-center gap-3 mt-6">
+          <ToggleGroup 
+            type="single" 
+            value={billingPeriod} 
+            onValueChange={(value) => value && setBillingPeriod(value as 'monthly' | 'annual')}
+            className="bg-muted p-1 rounded-lg"
+          >
+            <ToggleGroupItem value="monthly" className="px-6">
+              Monthly
+            </ToggleGroupItem>
+            <ToggleGroupItem value="annual" className="px-6">
+              Annual
+              <Badge variant="secondary" className="ml-2 bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-100">
+                Save up to 41%
               </Badge>
-            </div>
-            <CardHeader className="pt-8">
-              <CardTitle className="flex items-center justify-between">
-                Yearly
-              </CardTitle>
-              <CardDescription className="text-3xl font-bold text-foreground mt-2">
-                $499<span className="text-base font-normal text-muted-foreground">/year</span>
-              </CardDescription>
-              <p className="text-sm text-green-600 font-medium">
-                Save 58% compared to monthly! ($41.58/month)
-              </p>
-            </CardHeader>
-            <CardContent>
-              <ul className="space-y-2">
-                {features.map((feature) => (
-                  <li key={feature} className="flex items-start gap-2">
-                    <Check className="h-5 w-5 text-green-600 shrink-0 mt-0.5" />
-                    <span className="text-sm">{feature}</span>
-                  </li>
-                ))}
-              </ul>
-            </CardContent>
-            <CardFooter>
-              <Button 
-                className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700" 
-                onClick={() => handleCheckout('price_1XyZaBcDeFgHiJkL', 'year')}
-                disabled={loading !== null}
+            </ToggleGroupItem>
+          </ToggleGroup>
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-6 mt-6">
+          {Object.entries(pricingTiers).map(([key, tier]) => {
+            const selectedPlan = billingPeriod === 'monthly' ? tier.monthly : tier.annual;
+            const isLoadingThis = loading === `${key}-${billingPeriod}`;
+            
+            return (
+              <Card 
+                key={key}
+                className={tier.popular ? "border-2 border-primary relative" : ""}
               >
-                {loading === 'year' ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Loading...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="mr-2 h-4 w-4" />
-                    Choose Yearly
-                  </>
+                {tier.popular && (
+                  <div className="absolute -top-3 left-0 right-0 flex justify-center">
+                    <Badge className="bg-gradient-to-r from-purple-600 to-blue-600 text-white">
+                      <Sparkles className="h-3 w-3 mr-1" />
+                      Most Popular
+                    </Badge>
+                  </div>
                 )}
-              </Button>
-            </CardFooter>
-          </Card>
+                
+                <CardHeader className={tier.popular ? "pt-8" : ""}>
+                  <CardTitle className="flex items-center justify-between">
+                    {tier.name}
+                  </CardTitle>
+                  <CardDescription>{tier.description}</CardDescription>
+                  <div className="text-3xl font-bold text-foreground mt-2">
+                    ${selectedPlan.price}
+                    <span className="text-base font-normal text-muted-foreground">
+                      /{billingPeriod === 'monthly' ? 'month' : 'year'}
+                    </span>
+                  </div>
+                  {billingPeriod === 'annual' && (
+                    <p className="text-sm text-green-600 font-medium">
+                      ${(selectedPlan as any).perMonth}/month • Save ${(selectedPlan as any).savings}/year
+                    </p>
+                  )}
+                  <Badge variant="secondary" className="w-fit mt-2">
+                    {tier.users}
+                  </Badge>
+                </CardHeader>
+                
+                <CardContent>
+                  <ul className="space-y-2">
+                    {tier.features.map((feature) => (
+                      <li key={feature} className="flex items-start gap-2">
+                        <Check className="h-5 w-5 text-green-600 shrink-0 mt-0.5" />
+                        <span className="text-sm">{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+                
+                <CardFooter>
+                  <Button
+                    className={tier.popular ? "w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700" : "w-full"}
+                    onClick={() => handleCheckout(selectedPlan.priceId, key)}
+                    disabled={loading !== null}
+                  >
+                    {isLoadingThis ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Loading...
+                      </>
+                    ) : (
+                      <>
+                        {tier.popular && <Sparkles className="mr-2 h-4 w-4" />}
+                        Choose {tier.name}
+                      </>
+                    )}
+                  </Button>
+                </CardFooter>
+              </Card>
+            );
+          })}
         </div>
 
         <div className="mt-4 text-center text-sm text-muted-foreground">
