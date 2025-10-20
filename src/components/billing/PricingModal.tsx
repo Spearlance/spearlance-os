@@ -133,40 +133,35 @@ export function PricingModal({ open, onOpenChange }: PricingModalProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="text-xl">Choose Your Plan</DialogTitle>
-          <DialogDescription>
-            {daysRemaining > 0 ? (
-              <span className="text-yellow-600 font-medium">
-                {daysRemaining} days remaining in your free trial • Select a plan to continue after trial
-              </span>
-            ) : (
-              "Select a plan to continue using Spearlance Marketing OS"
-            )}
-          </DialogDescription>
+        <DialogHeader className="space-y-2">
+          {daysRemaining > 0 && (
+            <div className="text-sm text-center text-yellow-600 font-medium">
+              {daysRemaining} days left in trial
+            </div>
+          )}
         </DialogHeader>
 
         {/* Billing Period Toggle */}
-        <div className="flex items-center justify-center gap-3 mt-4">
+        <div className="flex items-center justify-center gap-2 mt-2">
           <ToggleGroup 
             type="single" 
             value={billingPeriod} 
             onValueChange={(value) => value && setBillingPeriod(value as 'monthly' | 'annual')}
-            className="bg-muted p-1 rounded-lg"
+            className="bg-muted p-0.5 rounded-lg text-sm"
           >
-            <ToggleGroupItem value="monthly" className="px-6">
+            <ToggleGroupItem value="monthly" className="px-4 py-1.5">
               Monthly
             </ToggleGroupItem>
-            <ToggleGroupItem value="annual" className="px-6">
+            <ToggleGroupItem value="annual" className="px-4 py-1.5">
               Annual
-              <Badge variant="secondary" className="ml-2 bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-100">
-                Save up to 41%
+              <Badge variant="secondary" className="ml-1.5 text-xs bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-100">
+                Save 41%
               </Badge>
             </ToggleGroupItem>
           </ToggleGroup>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-4 mt-4">
+        <div className="grid md:grid-cols-2 gap-4 mt-3">
           {Object.entries(pricingTiers).map(([key, tier]) => {
             const selectedPlan = billingPeriod === 'monthly' ? tier.monthly : tier.annual;
             const isLoadingThis = loading === `${key}-${billingPeriod}`;
