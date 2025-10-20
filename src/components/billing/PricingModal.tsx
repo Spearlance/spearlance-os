@@ -88,13 +88,13 @@ export function PricingModal({ open, onOpenChange }: PricingModalProps) {
         savings: 689
       },
       features: [
-        "✅ Full Platform Access – All-in-one marketing hub",
-        "✅ AI Daily Guidance – Know what to do next",
-        "✅ Built-In Templates – For ads, SEO, and content",
-        "✅ Dashboard – See what's working fast",
-        "✅ Marketing Assistant – Weekly check-ins for consistency",
-        "✅ Smart Reminders – Never miss key tasks",
-        "✅ Easy Upgrades – Add users or coaching anytime"
+        "Full Platform Access – All-in-one marketing hub",
+        "AI Daily Guidance – Know what to do next",
+        "Built-In Templates – For ads, SEO, and content",
+        "Dashboard – See what's working fast",
+        "Marketing Assistant – Weekly check-ins for consistency",
+        "Smart Reminders – Never miss key tasks",
+        "Easy Upgrades – Add users or coaching anytime"
       ],
       popular: false
     },
@@ -115,11 +115,11 @@ export function PricingModal({ open, onOpenChange }: PricingModalProps) {
       },
       features: [
         "Everything in Starter, plus:",
-        "🌟 Unlimited Team Access – Train your entire staff",
-        "🌟 Priority Setup – Quick personalized onboarding",
-        "🎁 Free Website Redesign ($2,000 Value)",
-        "🎁 1 Private Coaching Session ($500 Value)",
-        "🎁 3 Months Private Slack Channel ($600 Value)"
+        "Unlimited Team Access – Train your entire staff",
+        "Priority Setup – Quick personalized onboarding",
+        "Free Website Redesign ($2,000 Value)",
+        "1 Private Coaching Session ($500 Value)",
+        "3 Months Private Slack Channel ($600 Value)"
       ],
       popular: true
     }
@@ -204,7 +204,7 @@ export function PricingModal({ open, onOpenChange }: PricingModalProps) {
                 <CardContent className="py-4">
                   <ul className="space-y-1.5">
                     {tier.features.map((feature) => {
-                      const isBonus = feature.includes('🎁');
+                      const isBonus = feature.includes('($');
                       return (
                         <li 
                           key={feature} 
