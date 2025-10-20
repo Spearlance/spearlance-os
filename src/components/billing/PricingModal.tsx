@@ -88,13 +88,13 @@ export function PricingModal({ open, onOpenChange }: PricingModalProps) {
         savings: 689
       },
       features: [
-        "Full SpearlanceOS Platform Access - Keep all your marketing tasks, website, and campaigns organized in one place",
-        "AI Daily Guidance - Wake up to clear, step-by-step tasks so your marketing never stalls",
-        "Built-In Marketing Templates and Playbooks - Proven systems that take the guesswork out of strategy, ads, SEO, and content",
-        "Performance Dashboard - See what is working and what is not without chasing random reports",
-        "Marketing Meeting AI Assistant - Get weekly check-ins that help you stay accountable and consistent",
-        "Email Reminders and Smart Notifications - Never forget to post, publish, or review results again",
-        "Optional Add-Ons Anytime - Upgrade later for coaching, additional users, or full Fractional Marketing Manager support"
+        "Full Platform Access – Keep your marketing organized in one place",
+        "AI Daily Guidance – Get clear next steps every day",
+        "Marketing Templates – Proven systems for content, ads, and SEO",
+        "Performance Dashboard – Instantly see what's working",
+        "Marketing Meeting Assistant – Stay consistent with weekly check-ins",
+        "Smart Reminders – Never miss a post or review",
+        "Easy Upgrades – Add users, coaching, or services anytime"
       ],
       popular: false
     },
@@ -115,11 +115,11 @@ export function PricingModal({ open, onOpenChange }: PricingModalProps) {
       },
       features: [
         "Everything in Starter, plus:",
-        "Unlimited Team Access - Train your entire staff to run marketing confidently with built-in systems and guidance",
-        "Priority Support and Setup Help - We personally guide your onboarding so your account and team are ready to go from day one",
-        "🎁 BONUS: Free Website Redesign Inside the App - Get a brand-new, SEO-optimized, ADA-compliant website that your team can manage easily",
-        "🎁 BONUS: 1 Private Coaching Session - Work directly with a Spearlance strategist to review your plan, fix bottlenecks, and hit the ground running",
-        "🎁 BONUS: 3 Months Private Slack Channel - 1-on-1 virtual support where you can ask questions and get answers (no meetings required)"
+        "Unlimited Team Access – Train your full staff to run marketing confidently",
+        "Priority Setup – Fast onboarding with hands-on support",
+        "🎁 BONUS: Free Website Redesign – SEO-optimized, ADA-compliant site your team can manage",
+        "🎁 BONUS: 1 Private Coaching Session – Get personalized strategy and direction",
+        "🎁 BONUS: 3 Months Private Slack Channel – Ask questions anytime, no calls required"
       ],
       popular: true
     }
