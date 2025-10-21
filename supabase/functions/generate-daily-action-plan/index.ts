@@ -65,7 +65,7 @@ serve(async (req) => {
       supabaseClient.from('marketing_ideas').select('title, idea_type, status').eq('client_id', client_id).eq('status', 'approved'),
       supabaseClient.from('services').select('name, description, key_benefits').eq('client_id', client_id),
       supabaseClient.from('meetings').select('title, date_time, summary').eq('client_id', client_id).gte('date_time', new Date().toISOString()).limit(5),
-      supabaseClient.from('avatars').select('avatar_name, demographics, goals, pains').eq('client_id', client_id).maybeSingle(),
+      supabaseClient.from('avatars').select('avatar_name, demographics, goals, pains').eq('client_id', client_id).limit(5),
       supabaseClient.from('assets').select('id, type').eq('client_id', client_id),
       supabaseClient
         .from('marketing_flow_channels')
@@ -87,7 +87,7 @@ serve(async (req) => {
     const marketingIdeas = marketingIdeasData.data || [];
     const services = servicesData.data || [];
     const meetings = meetingsData.data || [];
-    const avatar = avatarData.data;
+    const avatars = avatarData.data || [];
     const assets = assetsData.data || [];
     const channels = flowData.data || [];
 
@@ -119,16 +119,20 @@ RULES:
    - Build momentum (quick wins)
    - Align with quarterly goals
 
-2. Generate 3-5 priority actions max (focus > volume)
+2. DO NOT suggest avatar creation if avatar data already exists (check CUSTOMER AVATARS section)
+   - Only suggest avatar work if there are specific, actionable gaps (e.g., "Add pricing strategy to avatar")
+   - Generic "create avatar" or "define customer avatar" suggestions are NOT helpful when avatars exist
 
-3. Each action must include:
+3. Generate 3-5 priority actions max (focus > volume)
+
+4. Each action must include:
    - Clear title (action-oriented: "Prep for Thursday meeting with X")
    - Why it matters (context: "You have 2 days to prepare...")
    - Direct link to take action (e.g., /tasks, /meetings, /marketing/ideas)
    - Priority level: "urgent" (time-sensitive/blocking), "important" (strategic/goal-aligned), or "momentum" (quick wins)
 
-4. Write in friendly, encouraging tone
-5. Acknowledge recent wins to build motivation`;
+5. Write in friendly, encouraging tone
+6. Acknowledge recent wins to build motivation`;
 
     const userPrompt = `Analyze this client's marketing operation and create today's action plan:
 
@@ -162,13 +166,15 @@ ${meetings.length > 0 ? meetings.map(m => {
 MARKETING FLOWCHART STATUS:
 ${channels.length > 0 ? channels.slice(0, 5).map(c => `- ${c.name}: ${c.status} (${c.progress || 0}% complete)`).join('\n') : '- No marketing channels defined'}
 
-CUSTOMER AVATAR:
-${avatar ? `
-Name: ${avatar.avatar_name}
-Demographics: ${avatar.demographics || 'Not specified'}
-Goals: ${avatar.goals || 'Not specified'}
-Pains: ${avatar.pains || 'Not specified'}
-` : '- No customer avatar defined'}
+CUSTOMER AVATARS:
+${avatars.length > 0 ? `
+✅ ${avatars.length} AVATAR(S) EXIST - DO NOT SUGGEST AVATAR CREATION
+${avatars.map(a => `- ${a.avatar_name}
+  Demographics: ${a.demographics || 'Not specified'}
+  Goals: ${a.goals || 'Not specified'}
+  Pains: ${a.pains || 'Not specified'}`).join('\n')}
+(Note: Customer avatars are already defined. Only suggest avatar work if there are specific gaps that need filling in existing avatars)
+` : '❌ NO AVATARS DEFINED - This is a critical foundational gap that should be addressed'}
 
 ASSETS:
 - Total assets: ${assets.length}
@@ -199,7 +205,7 @@ Important:
   * /marketing/services - For service offerings
   * /marketing/tools - For marketing tools
   * /brand/guide - For brand guide, colors, fonts
-  * /avatar - For customer avatar work
+  * /avatar - ONLY for creating a NEW avatar OR updating specific missing fields in existing avatar (do not suggest if avatars already exist)
   * /social-media - For social media calendar and posts
   * /brand/assets - For brand assets and files
 - NEVER use routes like /goals, /quarterly-goals, or any route not listed above`;
