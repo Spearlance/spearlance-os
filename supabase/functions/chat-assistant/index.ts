@@ -2155,7 +2155,55 @@ When providing advice, you can reference these frameworks to support your recomm
         throw new Error(`Lovable AI error: ${finalResponse.status}`);
       }
 
-      // Stream the final response
+      // For LaunchPad mode, collect full response and return as JSON
+      if (launchpad_mode) {
+        const reader = finalResponse.body?.getReader();
+        const decoder = new TextDecoder();
+        let fullResponse = '';
+        
+        if (reader) {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            
+            const chunk = decoder.decode(value);
+            const lines = chunk.split('\n');
+            
+            for (const line of lines) {
+              if (line.startsWith('data: ') && line !== 'data: [DONE]') {
+                try {
+                  const json = JSON.parse(line.slice(6));
+                  fullResponse += json.choices?.[0]?.delta?.content || '';
+                } catch {}
+              }
+            }
+          }
+        }
+        
+        // Extract completeness from function results if extract_launchpad_data was called
+        let completeness = null;
+        const extractCall = functionCallsArray.find(fc => fc.name === 'extract_launchpad_data');
+        if (extractCall) {
+          try {
+            const args = JSON.parse(extractCall.arguments);
+            completeness = args.completeness;
+          } catch {}
+        }
+        
+        console.log('[LaunchPad Response]:', { responseLength: fullResponse.length, completeness });
+        
+        return new Response(JSON.stringify({
+          response: fullResponse,
+          completeness
+        }), {
+          headers: {
+            ...corsHeaders,
+            'Content-Type': 'application/json'
+          }
+        });
+      }
+
+      // For non-LaunchPad modes, stream the response
       return new Response(finalResponse.body, {
         headers: {
           ...corsHeaders,
@@ -2165,13 +2213,28 @@ When providing advice, you can reference these frameworks to support your recomm
         }
       });
     } else {
-      // No function calls - reconstruct and stream the original response
+      // No function calls detected
       console.log('No function calls detected, returning original response');
       
+      // For LaunchPad mode, return JSON response
+      if (launchpad_mode) {
+        console.log('[LaunchPad Response]:', { responseLength: assistantMessage?.length || 0, completeness: null });
+        
+        return new Response(JSON.stringify({
+          response: assistantMessage || '',
+          completeness: null
+        }), {
+          headers: {
+            ...corsHeaders,
+            'Content-Type': 'application/json'
+          }
+        });
+      }
+      
+      // For non-LaunchPad modes, stream the response
       const encoder = new TextEncoder();
       const stream = new ReadableStream({
         start(controller) {
-          // Send the accumulated message as a stream
           if (assistantMessage) {
             const chunk = {
               choices: [{
