@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { MessageSquare, FileText } from "lucide-react";
 
 interface LaunchPadModeSelectorProps {
@@ -17,15 +18,18 @@ export function LaunchPadModeSelector({ onSelectMode }: LaunchPadModeSelectorPro
       </div>
 
       <div className="grid md:grid-cols-2 gap-6">
-        {/* Chat Mode */}
-        <Card className="relative overflow-hidden group hover:shadow-lg transition-shadow cursor-pointer border-2 hover:border-primary" onClick={() => onSelectMode('chat')}>
+        {/* Chat Mode - Coming Soon */}
+        <Card className="relative overflow-hidden opacity-60 cursor-not-allowed border-2 transition-shadow">
           <CardHeader>
-            <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
-              <MessageSquare className="h-6 w-6 text-primary" />
+            <div className="flex items-start justify-between mb-4">
+              <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
+                <MessageSquare className="h-6 w-6 text-primary" />
+              </div>
+              <Badge variant="secondary" className="ml-2">Coming Soon</Badge>
             </div>
             <CardTitle className="text-2xl">Chat with AI</CardTitle>
             <CardDescription className="text-base">
-              Have a natural conversation with our AI assistant
+              Natural conversation with AI assistant (coming soon)
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -47,8 +51,8 @@ export function LaunchPadModeSelector({ onSelectMode }: LaunchPadModeSelectorPro
                 <span>Feels like talking to a consultant</span>
               </li>
             </ul>
-            <Button className="w-full" size="lg">
-              Start Chatting
+            <Button className="w-full" size="lg" disabled>
+              Coming Soon
             </Button>
           </CardContent>
         </Card>
