@@ -88,7 +88,7 @@ const App = () => (
             <Route path="/backfill-images" element={<MainLayout><BackfillImages /></MainLayout>} />
             <Route path="/calendar/callback" element={<CalendarCallback />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
+            <Route path="*" element={<MainLayout><NotFound /></MainLayout>} />
           </Routes>
         </CalProvider>
       </BrowserRouter>
