@@ -4,10 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { LaunchPadStage, LaunchPadSubmission } from "@/lib/launchpadTypes";
 import { ProgressHeader } from "./ProgressHeader";
-import { StageDiscovery } from "./StageDiscovery";
-import { StageMarketing } from "./StageMarketing";
-import { StageAssets } from "./StageAssets";
-import { StageAvatar } from "./StageAvatar";
+import { LaunchPadModeSelector } from "./LaunchPadModeSelector";
+import { ChatOnboarding } from "./ChatOnboarding";
+import { FormOnboarding } from "./FormOnboarding";
 import { SuccessScreen } from "./SuccessScreen";
 import { useNavigate } from "react-router-dom";
 import { Info } from "lucide-react";
@@ -18,6 +17,7 @@ export function LaunchPadWizard() {
   const navigate = useNavigate();
   const [submission, setSubmission] = useState<LaunchPadSubmission | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showModeSelector, setShowModeSelector] = useState(false);
 
   useEffect(() => {
     if (selectedClient) {
@@ -49,27 +49,15 @@ export function LaunchPadWizard() {
           ...data,
           completed_at: data.completed_at || {}
         } as LaunchPadSubmission);
+        
+        // If no mode is set, show mode selector
+        if (!data.onboarding_mode) {
+          setShowModeSelector(true);
+        }
       } else {
-        console.log('[LaunchPad] No submission found, creating new one');
-        // Create new submission
-        const { data: newSubmission, error: createError } = await supabase
-          .from("launchpad_submissions")
-          .insert({
-            client_id: selectedClient.id,
-            stage: "discovery",
-            responses_json: {},
-            completed_at: {},
-          })
-          .select()
-          .single();
-
-        if (createError) throw createError;
-
-        console.log('[LaunchPad] Created new submission:', newSubmission.id);
-        setSubmission({
-          ...newSubmission,
-          completed_at: newSubmission.completed_at || {}
-        } as LaunchPadSubmission);
+        console.log('[LaunchPad] No submission found, showing mode selector');
+        // Show mode selector for new submissions
+        setShowModeSelector(true);
       }
     } catch (error) {
       console.error("[LaunchPad] Error loading submission:", error);
@@ -136,6 +124,67 @@ export function LaunchPadWizard() {
     }
   };
 
+  const handleModeSelect = async (mode: 'chat' | 'form') => {
+    if (!selectedClient) return;
+
+    try {
+      // Create or update submission with selected mode
+      if (submission) {
+        await supabase
+          .from("launchpad_submissions")
+          .update({ onboarding_mode: mode })
+          .eq("id", submission.id);
+        
+        setSubmission({ ...submission, onboarding_mode: mode } as any);
+      } else {
+        const { data: newSubmission, error } = await supabase
+          .from("launchpad_submissions")
+          .insert({
+            client_id: selectedClient.id,
+            stage: "discovery",
+            responses_json: {},
+            completed_at: {},
+            onboarding_mode: mode,
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        setSubmission({
+          ...newSubmission,
+          completed_at: newSubmission.completed_at || {}
+        } as LaunchPadSubmission);
+      }
+
+      setShowModeSelector(false);
+    } catch (error) {
+      console.error("Error setting mode:", error);
+      toast({ title: "Error", variant: "destructive" });
+    }
+  };
+
+  const handleSwitchMode = async (newMode: 'chat' | 'form') => {
+    if (!submission) return;
+
+    try {
+      await supabase
+        .from("launchpad_submissions")
+        .update({ onboarding_mode: newMode })
+        .eq("id", submission.id);
+
+      setSubmission({ ...submission, onboarding_mode: newMode } as any);
+
+      toast({
+        title: `Switched to ${newMode === 'chat' ? 'Chat' : 'Form'} mode`,
+        description: "Your progress has been saved.",
+      });
+    } catch (error) {
+      console.error("Error switching mode:", error);
+      toast({ title: "Error switching mode", variant: "destructive" });
+    }
+  };
+
   if (clientLoading || loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -152,6 +201,11 @@ export function LaunchPadWizard() {
     );
   }
 
+  // Show mode selector if needed
+  if (showModeSelector) {
+    return <LaunchPadModeSelector onSelectMode={handleModeSelect} />;
+  }
+
   if (!submission) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -160,9 +214,23 @@ export function LaunchPadWizard() {
     );
   }
 
+  // Show success screen if complete
+  if (submission.stage === "complete") {
+    return (
+      <div className="min-h-screen">
+        <div className="container mx-auto px-4 py-8">
+          <SuccessScreen />
+        </div>
+      </div>
+    );
+  }
+
+  // Show chat or form mode based on selection
+  const isChatMode = (submission as any).onboarding_mode === 'chat';
+
   return (
     <div className="min-h-screen">
-      {submission.stage !== "complete" && (
+      {!isChatMode && (
         <>
           <ProgressHeader
             currentStage={submission.stage}
@@ -183,44 +251,21 @@ export function LaunchPadWizard() {
         </>
       )}
 
-      <div className="container mx-auto px-4 py-8">
-        {submission.stage === "discovery" && (
-          <StageDiscovery
-            submissionId={submission.id}
-            initialData={submission.responses_json?.discovery}
-            onContinue={() => handleStageChange("marketing")}
-            onSaveExit={handleSaveExit}
+      <div className={isChatMode ? "" : "container mx-auto px-4 py-8"}>
+        {isChatMode ? (
+          <ChatOnboarding
+            submission={submission}
+            onSwitchToForm={() => handleSwitchMode('form')}
           />
-        )}
-
-        {submission.stage === "marketing" && (
-          <StageMarketing
-            submissionId={submission.id}
-            onContinue={() => handleStageChange("assets")}
-            onBack={() => handleStageChange("discovery")}
+        ) : (
+          <FormOnboarding
+            submission={submission}
+            onStageChange={handleStageChange}
             onSaveExit={handleSaveExit}
-          />
-        )}
-
-        {submission.stage === "assets" && (
-          <StageAssets
-            submissionId={submission.id}
-            onContinue={() => handleStageChange("avatar")}
-            onBack={() => handleStageChange("marketing")}
-            onSaveExit={handleSaveExit}
-          />
-        )}
-
-        {submission.stage === "avatar" && (
-          <StageAvatar
-            submissionId={submission.id}
             onFinish={handleFinish}
-            onBack={() => handleStageChange("assets")}
-            onSaveExit={handleSaveExit}
+            onSwitchToChat={() => handleSwitchMode('chat')}
           />
         )}
-
-        {submission.stage === "complete" && <SuccessScreen />}
       </div>
     </div>
   );

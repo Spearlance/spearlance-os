@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, Palette, Sparkles, Home, Eye } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -123,37 +123,73 @@ export function SuccessScreen() {
         </Card>
       )}
 
+      {/* Next Steps Card */}
+      <Card className="bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
+        <CardContent className="pt-6">
+          <h2 className="text-xl font-semibold mb-4 text-center">What's Next?</h2>
+          <div className="space-y-3">
+            <div className="bg-background/60 backdrop-blur rounded-lg p-4">
+              <div className="flex items-start gap-3 mb-3">
+                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <span className="text-primary font-bold">1</span>
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-medium mb-1">Set Your Brand Identity</h3>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Define your colors, fonts, and visual style. This helps our AI create better marketing materials for you.
+                  </p>
+                  <Button className="w-full" onClick={() => navigate("/brand-guide")}>
+                    <Palette className="mr-2 h-4 w-4" />
+                    Go to Brand Guide
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-background/60 backdrop-blur rounded-lg p-4">
+              <div className="flex items-start gap-3 mb-3">
+                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <span className="text-primary font-bold">2</span>
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-medium mb-1">Create Your First Post</h3>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Once your brand is set, start creating engaging social media content powered by your avatar.
+                  </p>
+                  <Button variant="outline" className="w-full" onClick={() => navigate("/social-media")}>
+                    <Sparkles className="mr-2 h-4 w-4" />
+                    Go to Social Media
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Action Buttons */}
       <div className="flex flex-col sm:flex-row gap-4 justify-center">
         <Button
           onClick={() => navigate("/")}
-          className="bg-[#13cf48] hover:bg-[#10b93d] text-white"
+          variant="outline"
         >
+          <Home className="mr-2 h-4 w-4" />
           Go to Client Home
         </Button>
         
-        <Button
-          variant="outline"
-          onClick={() => navigate("/avatar")}
-        >
-          View Full Avatar
-        </Button>
-
-        {calConnected && (
+        {avatarData && (
           <Button
             variant="outline"
-            onClick={() => {
-              // Open booking dialog or navigate to meetings page
-              navigate("/meetings");
-            }}
+            onClick={() => navigate("/avatar")}
           >
-            Book Onboarding Review Call
+            <Eye className="mr-2 h-4 w-4" />
+            View Full Avatar
           </Button>
         )}
       </div>
 
       <div className="text-center text-sm text-muted-foreground">
-        <p>You can return to the Launch Pad anytime to view your results.</p>
+        <p>💡 Tip: Setting your brand identity first ensures all your marketing materials are on-brand!</p>
       </div>
     </div>
   );

@@ -1293,40 +1293,55 @@ export type Database = {
       }
       launchpad_submissions: {
         Row: {
+          avatar_completeness: number | null
           avatar_image_url: string | null
           brand_colors: Json | null
           client_id: string
           completed_at: Json
           created_at: string | null
+          discovery_completeness: number | null
           id: string
           ideal_client_story: string | null
           insights_summary: string | null
+          marketing_completeness: number | null
+          onboarding_conversation_id: string | null
+          onboarding_mode: string | null
           responses_json: Json | null
           stage: Database["public"]["Enums"]["launchpad_stage"] | null
           updated_at: string | null
         }
         Insert: {
+          avatar_completeness?: number | null
           avatar_image_url?: string | null
           brand_colors?: Json | null
           client_id: string
           completed_at?: Json
           created_at?: string | null
+          discovery_completeness?: number | null
           id?: string
           ideal_client_story?: string | null
           insights_summary?: string | null
+          marketing_completeness?: number | null
+          onboarding_conversation_id?: string | null
+          onboarding_mode?: string | null
           responses_json?: Json | null
           stage?: Database["public"]["Enums"]["launchpad_stage"] | null
           updated_at?: string | null
         }
         Update: {
+          avatar_completeness?: number | null
           avatar_image_url?: string | null
           brand_colors?: Json | null
           client_id?: string
           completed_at?: Json
           created_at?: string | null
+          discovery_completeness?: number | null
           id?: string
           ideal_client_story?: string | null
           insights_summary?: string | null
+          marketing_completeness?: number | null
+          onboarding_conversation_id?: string | null
+          onboarding_mode?: string | null
           responses_json?: Json | null
           stage?: Database["public"]["Enums"]["launchpad_stage"] | null
           updated_at?: string | null
@@ -1337,6 +1352,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: true
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "launchpad_submissions_onboarding_conversation_id_fkey"
+            columns: ["onboarding_conversation_id"]
+            isOneToOne: false
+            referencedRelation: "chat_conversations"
             referencedColumns: ["id"]
           },
         ]

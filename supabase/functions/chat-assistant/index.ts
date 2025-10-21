@@ -194,6 +194,130 @@ async function createOrUpdateOfferDraft(
   }
 }
 
+// Extract and save Launch Pad data from conversation
+async function extractLaunchpadData(
+  supabase: any,
+  params: any,
+  clientId: string,
+  submissionId: string
+) {
+  const { stage, data, completeness } = params;
+  
+  try {
+    // Get current submission
+    const { data: submission } = await supabase
+      .from('launchpad_submissions')
+      .select('responses_json')
+      .eq('id', submissionId)
+      .single();
+
+    const currentResponses = submission?.responses_json || {};
+
+    // Save data to appropriate tables based on stage
+    if (stage === 'discovery' && data) {
+      // Update clients table with company info
+      if (data.company) {
+        await supabase
+          .from('clients')
+          .update({
+            name: data.company.brand_name || undefined,
+            website_url: data.company.website_url || undefined,
+          })
+          .eq('id', clientId);
+      }
+
+      // Insert/update services
+      if (data.model?.services && Array.isArray(data.model.services)) {
+        for (const serviceName of data.model.services) {
+          // Check if service exists
+          const { data: existing } = await supabase
+            .from('services')
+            .select('id')
+            .eq('client_id', clientId)
+            .eq('name', serviceName)
+            .maybeSingle();
+
+          if (!existing) {
+            await supabase
+              .from('services')
+              .insert({
+                client_id: clientId,
+                name: serviceName,
+              });
+          }
+        }
+      }
+
+      // Update client_business_model
+      if (data.model || data.goals) {
+        await supabase
+          .from('client_business_model')
+          .upsert({
+            client_id: clientId,
+            aov: data.model?.aov || null,
+            ltv: data.model?.ltv || null,
+            sales_process: data.model?.sales_process || null,
+            quarterly_goals: data.goals?.quarter_goals || [],
+            annual_revenue_goal: data.goals?.annual_revenue_goal || null,
+          });
+      }
+
+      // Update client_brand_voice
+      if (data.voice) {
+        await supabase
+          .from('client_brand_voice')
+          .upsert({
+            client_id: clientId,
+            tone: data.voice.tone || null,
+            words_to_avoid: data.voice.words_to_avoid || null,
+          });
+      }
+    } else if (stage === 'marketing' && data) {
+      // Update services with marketing details
+      if (data.services && Array.isArray(data.services)) {
+        for (const serviceData of data.services) {
+          await supabase
+            .from('services')
+            .update({
+              description: serviceData.description || null,
+              differentiators: serviceData.differentiators || null,
+              key_benefits: serviceData.key_benefits || null,
+            })
+            .eq('client_id', clientId)
+            .eq('name', serviceData.name);
+        }
+      }
+    }
+
+    // Update submission with new data and completeness
+    const updatedResponses = {
+      ...currentResponses,
+      [stage]: data
+    };
+
+    await supabase
+      .from('launchpad_submissions')
+      .update({
+        responses_json: updatedResponses,
+        [`${stage}_completeness`]: completeness,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', submissionId);
+
+    return {
+      success: true,
+      message: `Saved ${stage} data (${completeness}% complete)`,
+      completeness: completeness
+    };
+  } catch (error: any) {
+    console.error(`Error in extractLaunchpadData:`, error);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+}
+
 // Tool implementations - all enforce client_id scoping
 async function getClientInfo(supabase: any, clientId: string) {
   const { data: client } = await supabase
@@ -835,6 +959,34 @@ const tools = [
       description: "Get comprehensive account status including LaunchPad progress, avatars, tasks, channels, reports, meetings, and assets. Use this when users ask 'what should I focus on', 'how are we doing', 'what do I do first', 'I'm stuck', 'help me get started', or need overall guidance and onboarding help.",
       parameters: { type: "object", properties: {}, required: [] }
     }
+  },
+  {
+    type: "function",
+    function: {
+      name: "extract_launchpad_data",
+      description: "Extract and save structured Launch Pad onboarding data from user's natural language responses. Call this after every 2-3 meaningful user messages to persist data progressively.",
+      parameters: {
+        type: "object",
+        properties: {
+          stage: {
+            type: "string",
+            enum: ["discovery", "marketing", "avatar"],
+            description: "Current onboarding stage"
+          },
+          data: {
+            type: "object",
+            description: "Extracted structured data matching the stage schema (company info, services, goals, etc.)"
+          },
+          completeness: {
+            type: "number",
+            description: "Percentage complete for this stage (0-100)",
+            minimum: 0,
+            maximum: 100
+          }
+        },
+        required: ["stage", "data", "completeness"]
+      }
+    }
   }
 ];
 
@@ -864,7 +1016,7 @@ serve(async (req) => {
       });
     }
 
-    const { messages, client_id, offer_mode = false } = await req.json();
+    const { messages, client_id, offer_mode = false, launchpad_mode = false, submission_id = null, current_stage = null } = await req.json();
 
     if (!client_id) {
       return new Response(JSON.stringify({ error: 'client_id is required' }), {
@@ -905,7 +1057,53 @@ serve(async (req) => {
     const userRole = profile?.role || 'client';
 
     // System prompt - conditional based on mode
-    const systemPrompt = offer_mode ? 
+    const systemPrompt = launchpad_mode ?
+      // LAUNCH PAD MODE: Conversational onboarding
+      `You are a friendly marketing AI assistant helping a client complete their Launch Pad onboarding through natural conversation.
+
+CONTEXT:
+- client_id: ${client_id}
+- submission_id: ${submission_id}
+- current_stage: ${current_stage}
+- today: ${new Date().toISOString().split('T')[0]}
+
+YOUR GOAL: Extract all necessary business information through warm, engaging conversation.
+
+CONVERSATION RULES:
+1. Be enthusiastic and encouraging ("Great!", "Perfect!", "Nice!")
+2. Ask ONE question at a time - never overwhelm with lists
+3. Use natural language, not form-field language
+4. Celebrate progress: "✓ Captured: [what you got]"
+5. Offer examples when users seem stuck
+6. Call extract_launchpad_data tool after every 2-3 user responses
+7. Allow corrections anytime: "Actually, let me change that..."
+
+STAGES & REQUIRED DATA:
+
+**Discovery Stage (current: ${current_stage === 'discovery' ? 'ACTIVE' : 'done'}):**
+Extract: company (legal_name, brand_name, website_url, hq_city, industry), contacts (primary_name, primary_email), services (array of names), model (aov, ltv, sales_process), goals (quarter_goals array, annual_revenue_goal), state (working, not_working, constraints), competition (competitors array), voice (tone, words_to_avoid)
+
+**Marketing Stage (current: ${current_stage === 'marketing' ? 'ACTIVE' : 'pending'}):**
+For each service: description, differentiators, key_benefits
+
+**Avatar Stage (current: ${current_stage === 'avatar' ? 'ACTIVE' : 'pending'}):**
+When user confirms readiness, acknowledge they can run analysis from the main form.
+
+EXTRACTION STRATEGY:
+- After every 2-3 user responses, call extract_launchpad_data with current data
+- Start with completeness: 0%, increment as data fills in (each field adds ~5-10%)
+- Mark stage 100% complete when all required fields captured
+- Show visual confirmation: "✓ Company info captured!" 
+
+EXAMPLE FLOW:
+AI: "What's your company's legal name and brand name?"
+User: "We're ABC Services LLC but everyone calls us ABC Pro"
+AI: "Perfect! ABC Pro it is. ✓ [Calls extract_launchpad_data with company data, completeness: 10%]
+
+What's your website?"
+
+IMPORTANT: Save data progressively. Never wait until end of stage.` :
+    offer_mode ?
       // OFFER MODE: Full Complete Offer Engine prompt
       `You are SpearlanceAI, Spearlance's intelligent marketing co-pilot in OFFER MODE. You are guiding the user through a structured 6-step Complete Offer creation workflow. You are client scoped at all times.
 
@@ -1801,6 +1999,9 @@ When providing advice, you can reference these frameworks to support your recomm
               break;
             case 'assess_account_status':
               result = await assessAccountStatus(supabaseClient, client_id);
+              break;
+            case 'extract_launchpad_data':
+              result = await extractLaunchpadData(supabaseClient, args, client_id, submission_id);
               break;
             default:
               result = { error: 'Unknown function' };

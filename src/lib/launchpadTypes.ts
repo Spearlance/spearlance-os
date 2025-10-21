@@ -1,6 +1,6 @@
 // Type definitions for Launch Pad responses_json structure
 
-export type LaunchPadStage = 'discovery' | 'marketing' | 'assets' | 'avatar' | 'complete';
+export type LaunchPadStage = 'discovery' | 'marketing' | 'avatar' | 'complete';
 
 export interface DiscoveryData {
   company: {
@@ -78,6 +78,11 @@ export interface LaunchPadSubmission {
   avatar_image_url?: string;
   ideal_client_story?: string;
   completed_at: CompletedAt;
+  onboarding_mode?: 'form' | 'chat';
+  onboarding_conversation_id?: string;
+  discovery_completeness?: number;
+  marketing_completeness?: number;
+  avatar_completeness?: number;
   created_at: string;
   updated_at: string;
 }
