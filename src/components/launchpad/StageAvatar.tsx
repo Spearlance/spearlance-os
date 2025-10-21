@@ -59,6 +59,13 @@ export function StageAvatar({ submissionId, onFinish, onBack, onSaveExit }: Stag
     if (avatar) {
       setHasAnalyzed(true);
       setAvatarName(avatar.avatar_name || "New Persona");
+      setDemographics(avatar.demographics || "");
+      setFirmographics(avatar.firmographics || "");
+      setGoals(avatar.goals || "");
+      setPains(avatar.pains || "");
+      setObjections(avatar.objections || "");
+      setMotivators(avatar.motivators || "");
+      setTone(avatar.tone_voice || "");
       setAiSummary(avatar.ai_summary || "");
       setAdHooks(avatar.ad_hooks || []);
       setChannels(avatar.channels?.join(", ") || "");
