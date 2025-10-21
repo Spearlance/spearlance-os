@@ -91,44 +91,48 @@ serve(async (req) => {
         .select(`
           id,
           billing_plan_id,
-          billing_plans!inner(max_team_members)
+          billing_plans(max_team_members)
         `)
         .eq('id', client_id)
         .single();
 
       if (clientError) {
         console.error('Error fetching client billing plan:', clientError);
-        throw new Error('Failed to verify team member limits');
+        throw new Error('Failed to verify client information');
       }
 
-      // Type assertion for the joined data structure
-      const billingPlans = clientData?.billing_plans as { max_team_members: number | null } | { max_team_members: number | null }[];
-      const maxTeamMembers = Array.isArray(billingPlans) ? billingPlans[0]?.max_team_members : billingPlans?.max_team_members;
+      // If client has a billing plan, check team member limits
+      if (clientData?.billing_plan_id) {
+        // Type assertion for the joined data structure
+        const billingPlans = clientData?.billing_plans as { max_team_members: number | null } | { max_team_members: number | null }[];
+        const maxTeamMembers = Array.isArray(billingPlans) ? billingPlans[0]?.max_team_members : billingPlans?.max_team_members;
 
-      // Only check limits if plan has a max_team_members restriction (not NULL)
-      if (maxTeamMembers !== null && maxTeamMembers !== undefined) {
-        const maxAllowed = maxTeamMembers;
-        
-        // Count current team members (only role='client')
-        const { count, error: countError } = await supabaseAdmin
-          .from('profiles')
-          .select('id', { count: 'exact', head: true })
-          .contains('associated_client_ids', [client_id])
-          .eq('role', 'client');
+        // Only enforce limits if plan has a max_team_members restriction (not NULL)
+        if (maxTeamMembers !== null && maxTeamMembers !== undefined) {
+          const maxAllowed = maxTeamMembers;
+          
+          // Count current team members (only role='client')
+          const { count, error: countError } = await supabaseAdmin
+            .from('profiles')
+            .select('id', { count: 'exact', head: true })
+            .contains('associated_client_ids', [client_id])
+            .eq('role', 'client');
 
-        if (countError) {
-          console.error('Error counting team members:', countError);
-          throw new Error('Failed to verify team member limits');
-        }
+          if (countError) {
+            console.error('Error counting team members:', countError);
+            throw new Error('Failed to verify team member limits');
+          }
 
-        const currentCount = count || 0;
+          const currentCount = count || 0;
 
-        if (currentCount >= maxAllowed) {
-          throw new Error(
-            `Team member limit reached. Your plan allows ${maxAllowed} team member${maxAllowed === 1 ? '' : 's'}. Please upgrade to add more team members.`
-          );
+          if (currentCount >= maxAllowed) {
+            throw new Error(
+              `Team member limit reached. Your plan allows ${maxAllowed} team member${maxAllowed === 1 ? '' : 's'}. Please upgrade to add more team members.`
+            );
+          }
         }
       }
+      // If no billing_plan_id, allow unlimited team members (demo/testing clients)
     }
 
     console.log('Inviting team member:', { email, name, role, client_id });
