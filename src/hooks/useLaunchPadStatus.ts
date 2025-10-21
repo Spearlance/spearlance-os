@@ -33,7 +33,7 @@ export function useLaunchPadStatus() {
         .maybeSingle();
 
       if (error) {
-        console.error("Error fetching Launch Pad status:", error);
+        console.error("Error fetching Launchpad status:", error);
         setStatus({ stage: null, isComplete: false, loading: false });
         return;
       }

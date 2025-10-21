@@ -236,7 +236,7 @@ export function StageAssets({ submissionId, onContinue, onBack, onSaveExit }: St
           storage_type: "upload",
           file_url: urlData.publicUrl,
           type: assetType,
-          tags: ["Launch Pad Upload", category],
+          tags: ["Launchpad Upload", category],
           created_by: user?.id,
           folder_id: selectedFolderId,
         })

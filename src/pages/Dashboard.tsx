@@ -266,10 +266,10 @@ const Dashboard = () => {
         >
           <Rocket className="h-5 w-5 text-destructive" />
           <AlertTitle className="text-destructive font-semibold">
-            Launch Pad Setup Incomplete
+            Launchpad Setup Incomplete
           </AlertTitle>
           <AlertDescription className="text-destructive/90">
-            Complete your Launch Pad setup to unlock personalized daily action plans and the full potential of your marketing operations.
+            Complete your Launchpad setup to unlock personalized daily action plans and the full potential of your marketing operations.
           </AlertDescription>
         </Alert>
       )}

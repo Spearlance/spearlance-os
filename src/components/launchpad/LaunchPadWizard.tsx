@@ -61,7 +61,7 @@ export function LaunchPadWizard() {
       }
     } catch (error) {
       console.error("[LaunchPad] Error loading submission:", error);
-      toast({ title: "Error loading Launch Pad", variant: "destructive" });
+      toast({ title: "Error loading Launchpad", variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -120,7 +120,7 @@ export function LaunchPadWizard() {
       handleStageChange("complete");
     } catch (error) {
       console.error("Finish error:", error);
-      toast({ title: "Error completing Launch Pad", variant: "destructive" });
+      toast({ title: "Error completing Launchpad", variant: "destructive" });
     }
   };
 
@@ -209,7 +209,7 @@ export function LaunchPadWizard() {
   if (!submission) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <p className="text-muted-foreground">Unable to load Launch Pad</p>
+        <p className="text-muted-foreground">Unable to load Launchpad</p>
       </div>
     );
   }

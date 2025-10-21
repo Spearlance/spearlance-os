@@ -139,7 +139,7 @@ export default function BrandGuide() {
             : { dos: [], donts: [] }
         });
       } else {
-        // Try to auto-populate from Launch Pad
+        // Try to auto-populate from Launchpad
         await loadLaunchPadData();
       }
     } catch (error: any) {

@@ -41,7 +41,7 @@ export function OnboardingProgress({ currentStage, completeness, completedAt = {
   return (
     <Card className="p-4">
       <div className="space-y-4">
-        <h3 className="font-semibold text-sm">Launch Pad Progress</h3>
+        <h3 className="font-semibold text-sm">Launchpad Progress</h3>
         
         <div className="space-y-3">
           {stages.map((stage, index) => {

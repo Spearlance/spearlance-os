@@ -104,12 +104,12 @@ export function ChatOnboarding({ submission, onSwitchToForm }: ChatOnboardingPro
       } else if (stageCompleteness < 100) {
         return `Welcome back! Here's where we are: 🚀\n\n✓ Discovery: ${currentCompleteness.discovery}% ${currentCompleteness.discovery >= 100 ? '✅' : ''}\n✓ Marketing: ${currentCompleteness.marketing}% ${currentCompleteness.marketing >= 100 ? '✅' : ''}\n✓ Avatar: ${Math.round(stageCompleteness)}% (in progress)\n\nWe're defining your ideal customer. Let's continue building out their profile - their pain points, goals, and decision-making factors. What else can you tell me about them?`;
       } else {
-        return `Incredible! Avatar stage complete! 🎉\n\n✓ Discovery: 100% ✅\n✓ Marketing: 100% ✅\n✓ Avatar: 100% ✅\n\nYou've completed all stages! Your Launch Pad profile is ready. Time to finalize and launch! 🚀`;
+        return `Incredible! Avatar stage complete! 🎉\n\n✓ Discovery: 100% ✅\n✓ Marketing: 100% ✅\n✓ Avatar: 100% ✅\n\nYou've completed all stages! Your Launchpad profile is ready. Time to finalize and launch! 🚀`;
       }
     }
 
     // Default fallback
-    return `Hi! Welcome back to your Launch Pad journey. ${companyName ? `Let's continue building your marketing foundation for ${companyName}.` : 'Ready to continue?'}`;
+    return `Hi! Welcome back to your Launchpad journey. ${companyName ? `Let's continue building your marketing foundation for ${companyName}.` : 'Ready to continue?'}`;
   };
 
   const initializeConversation = async () => {
@@ -126,7 +126,7 @@ export function ChatOnboarding({ submission, onSwitchToForm }: ChatOnboardingPro
         .insert({
           client_id: selectedClient.id,
           user_id: (await supabase.auth.getUser()).data.user?.id,
-          title: 'Launch Pad Onboarding',
+          title: 'Launchpad Onboarding',
         })
         .select()
         .single();
@@ -313,7 +313,7 @@ export function ChatOnboarding({ submission, onSwitchToForm }: ChatOnboardingPro
         .insert({
           client_id: selectedClient.id,
           user_id: (await supabase.auth.getUser()).data.user?.id,
-          title: 'Launch Pad Onboarding',
+          title: 'Launchpad Onboarding',
         })
         .select()
         .single();
@@ -372,7 +372,7 @@ export function ChatOnboarding({ submission, onSwitchToForm }: ChatOnboardingPro
         {/* Chat Area */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold">Launch Pad Chat</h2>
+            <h2 className="text-2xl font-bold">Launchpad Chat</h2>
             <div className="flex gap-2">
               <AlertDialog open={showRefreshDialog} onOpenChange={setShowRefreshDialog}>
                 <AlertDialogTrigger asChild>

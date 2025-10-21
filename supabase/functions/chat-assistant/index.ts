@@ -226,7 +226,7 @@ function deepMerge(target: any, source: any): any {
   return output;
 }
 
-// Extract and save Launch Pad data from conversation
+// Extract and save Launchpad data from conversation
 async function extractLaunchpadData(
   supabase: any,
   params: any,
@@ -1109,7 +1109,7 @@ const tools = [
     type: "function",
     function: {
       name: "extract_launchpad_data",
-      description: "Extract and save structured Launch Pad onboarding data from user's natural language responses. Call this after every 2-3 meaningful user messages to persist data progressively.",
+      description: "Extract and save structured Launchpad onboarding data from user's natural language responses. Call this after every 2-3 meaningful user messages to persist data progressively.",
       parameters: {
         type: "object",
         properties: {
@@ -1225,8 +1225,8 @@ serve(async (req) => {
     }
 
     const systemPrompt = launchpad_mode ?
-      // LAUNCH PAD MODE: Conversational onboarding
-      `You are a friendly marketing AI assistant helping a client complete their Launch Pad onboarding through natural conversation.
+      // LAUNCHPAD MODE: Conversational onboarding
+      `You are a friendly marketing AI assistant helping a client complete their Launchpad onboarding through natural conversation.
 
 CONTEXT:
 - client_id: ${client_id}
@@ -1850,7 +1850,7 @@ NAVIGATION PATTERNS:
 
 FEATURE KEYWORDS (for automatic detection):
 When users mention these terms, provide relevant guidance:
-- "launchpad", "launch pad", "setup", "onboarding" → Explain LaunchPad + call assess_account_status
+- "launchpad", "setup", "onboarding" → Explain Launchpad + call assess_account_status
 - "offer", "campaign", "create offer" → Suggest Offer Mode
 - "task", "to-do", "work", "assignment" → Guide to /tasks
 - "avatar", "customer", "ideal client", "target audience" → Guide to /avatar

@@ -16,7 +16,7 @@ export function SuccessScreen() {
           Your marketing operation is ready to go.
         </p>
         <Badge className="text-lg px-6 py-2 bg-[#13cf48] hover:bg-[#10b93d]">
-          Launch Pad Complete
+          Launchpad Complete
         </Badge>
       </div>
 

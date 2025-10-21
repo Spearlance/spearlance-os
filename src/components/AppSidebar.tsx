@@ -61,7 +61,7 @@ import { useAccountType } from "@/hooks/useAccountType";
 
 const menuItems = [
   { title: "Home", url: "/", icon: Home },
-  { title: "Launch Pad", url: "/launchpad", icon: Rocket },
+  { title: "Launchpad", url: "/launchpad", icon: Rocket },
   { title: "Tasks", url: "/tasks", icon: CheckSquare },
   { title: "Avatar", url: "/avatar", icon: Users },
   { title: "Settings", url: "/settings", icon: Settings },
@@ -209,7 +209,7 @@ export function AppSidebar() {
                       {!collapsed && (
                         <span className="flex items-center gap-2">
                           {item.title}
-                          {item.title === "Launch Pad" && !isComplete && (
+                          {item.title === "Launchpad" && !isComplete && (
                             <Badge 
                               variant="destructive" 
                               className="h-2 w-2 p-0 rounded-full"

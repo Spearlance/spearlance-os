@@ -187,7 +187,7 @@ export function StoryModal({ open, onOpenChange, submissionId, clientId, initial
         title: `Discovery Story Recording - ${new Date().toLocaleDateString()}`,
         file_url: publicUrl,
         storage_type: 'upload',
-        tags: ['Launch Pad Upload', 'Discovery Story'],
+        tags: ['Launchpad Upload', 'Discovery Story'],
         created_by: user?.id,
       }]);
 

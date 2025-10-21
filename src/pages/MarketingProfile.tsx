@@ -690,10 +690,10 @@ export default function MarketingProfile() {
         <Card className="p-6 text-center max-w-md">
           <CardTitle className="mb-2">No Profile Data</CardTitle>
           <CardDescription className="mb-4">
-            Complete the Discovery stage in Launch Pad to populate your marketing profile
+            Complete the Discovery stage in Launchpad to populate your marketing profile
           </CardDescription>
           <Button onClick={() => navigate("/launchpad")}>
-            Go to Launch Pad
+            Go to Launchpad
           </Button>
         </Card>
       </div>

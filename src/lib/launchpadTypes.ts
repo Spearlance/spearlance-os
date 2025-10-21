@@ -1,4 +1,4 @@
-// Type definitions for Launch Pad responses_json structure
+// Type definitions for Launchpad responses_json structure
 
 export type LaunchPadStage = 'discovery' | 'marketing' | 'avatar' | 'complete';
 
