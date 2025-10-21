@@ -56,7 +56,7 @@ export function SuccessScreen() {
                   <p className="text-sm text-muted-foreground mb-3">
                     Define your colors, fonts, and visual identity so all your marketing materials stay on-brand.
                   </p>
-                  <Button variant="outline" className="w-full" onClick={() => navigate("/brand-guide")}>
+                  <Button variant="outline" className="w-full" onClick={() => navigate("/brand/guide")}>
                     <Palette className="mr-2 h-4 w-4" />
                     Go to Brand Guide
                   </Button>
@@ -74,7 +74,7 @@ export function SuccessScreen() {
                   <p className="text-sm text-muted-foreground mb-3">
                     Connect your social media accounts and marketing tools to start reaching your ideal customers.
                   </p>
-                  <Button variant="outline" className="w-full" onClick={() => navigate("/marketing")}>
+                  <Button variant="outline" className="w-full" onClick={() => navigate("/marketing/services")}>
                     <Target className="mr-2 h-4 w-4" />
                     Set Up Channels
                   </Button>
