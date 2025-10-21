@@ -264,22 +264,46 @@ async function extractLaunchpadData(
 
       // Handle service renames first (if provided)
       if (mergedStageData.service_renames && Array.isArray(mergedStageData.service_renames)) {
+        console.log('[Rename Detection - Discovery] Attempting renames:', mergedStageData.service_renames);
+        
         for (const rename of mergedStageData.service_renames) {
           const { old_name, new_name } = rename;
           
-          await supabase
+          const { data: existingService } = await supabase
             .from('services')
-            .update({ name: new_name })
+            .select('id, name')
             .eq('client_id', clientId)
-            .eq('name', old_name);
+            .eq('name', old_name)
+            .maybeSingle();
           
-          console.log(`[Service Rename - Discovery] "${old_name}" → "${new_name}"`);
+          if (existingService) {
+            console.log(`[Service Rename - Discovery] Found existing service: ${old_name} (id: ${existingService.id})`);
+            
+            await supabase
+              .from('services')
+              .update({ name: new_name })
+              .eq('client_id', clientId)
+              .eq('name', old_name);
+            
+            console.log(`[Service Rename - Discovery] ✓ "${old_name}" → "${new_name}"`);
+          } else {
+            console.warn(`[Service Rename - Discovery] ⚠️ Service "${old_name}" not found, skipping rename`);
+          }
         }
       }
 
       // Insert/update services
       if (mergedStageData.model?.services && Array.isArray(mergedStageData.model.services)) {
+        // Get list of old names being renamed (to avoid creating duplicates)
+        const renamedOldNames = mergedStageData.service_renames?.map((r: { old_name: string; new_name: string }) => r.old_name) || [];
+        
         for (const serviceName of mergedStageData.model.services) {
+          // Skip if this was just renamed FROM (old name)
+          if (renamedOldNames.includes(serviceName)) {
+            console.log(`[Skip - Discovery] Not creating "${serviceName}" - it was renamed`);
+            continue;
+          }
+          
           // Check if service exists
           const { data: existing } = await supabase
             .from('services')
@@ -332,17 +356,32 @@ async function extractLaunchpadData(
 
       // Handle service renames first (if provided)
       if (mergedStageData.service_renames && Array.isArray(mergedStageData.service_renames)) {
+        console.log('[Rename Detection - Marketing] Attempting renames:', mergedStageData.service_renames);
+        
         for (const rename of mergedStageData.service_renames) {
           const { old_name, new_name } = rename;
           
-          // Update the service name in the database
-          await supabase
+          const { data: existingService } = await supabase
             .from('services')
-            .update({ name: new_name })
+            .select('id, name')
             .eq('client_id', clientId)
-            .eq('name', old_name);
+            .eq('name', old_name)
+            .maybeSingle();
           
-          console.log(`[Service Rename] "${old_name}" → "${new_name}"`);
+          if (existingService) {
+            console.log(`[Service Rename - Marketing] Found existing service: ${old_name} (id: ${existingService.id})`);
+            
+            // Update the service name in the database
+            await supabase
+              .from('services')
+              .update({ name: new_name })
+              .eq('client_id', clientId)
+              .eq('name', old_name);
+            
+            console.log(`[Service Rename - Marketing] ✓ "${old_name}" → "${new_name}"`);
+          } else {
+            console.warn(`[Service Rename - Marketing] ⚠️ Service "${old_name}" not found, skipping rename`);
+          }
         }
       }
 
@@ -1261,17 +1300,36 @@ If user wants to rename a service:
 - Respond: "✓ Renamed 'testing' to 'Website Design'! Now, tell me about Website Design..."
 
 **RECOGNIZING RENAME INTENTS:**
-These phrases indicate a rename request:
-- "rename [old] to [new]"
-- "change [old] to [new]"
-- "let's call it [new] instead of [old]"
+These phrases indicate a rename request (be flexible with syntax):
+- "rename [old] to [new]" OR "rename [old] [new]"
+- "change [old] to [new]" OR "change [old] [new]"
+- "let's rename [old] to [new]"
 - "actually it's [new] not [old]"
 - "[old] should be [new]"
+- "update [old] to [new]"
+- "call it [new] instead of [old]"
+- ANY variation where user mentions an EXISTING service name followed by a NEW name
+
+**CRITICAL RENAME DETECTION RULE:**
+If user mentions an EXISTING service name (check services in responses_json) followed by a different name in the same sentence, assume it's a rename request, NOT a new service.
+
+Example interpretations:
+- User: "rename testing Website Design" → Rename intent (missing "to" is OK)
+- User: "change testing to Web Design" → Rename intent
+- User: "testing should be Website Design" → Rename intent
+- User: "actually it's Website Design not testing" → Rename intent
+
+**BEFORE adding new services, ALWAYS:**
+1. Check current services list in the LaunchPad responses_json
+2. If user mentions an existing service name + a different name → It's a RENAME
+3. If user says "add [service]" or lists multiple NEW services → It's a NEW service
 
 When you detect a rename:
 1. Extract both old_name and new_name
 2. Include service_renames array in extract_launchpad_data call
-3. Continue conversation about the newly named service
+3. Do NOT include the old name in the services array
+4. Respond: "✓ Renamed '[old]' to '[new]'!"
+5. Continue conversation about the newly named service
 
 **Avatar Stage (current: ${current_stage === 'avatar' ? 'ACTIVE' : 'pending'}):**
 When user confirms readiness, acknowledge they can run analysis from the main form.
