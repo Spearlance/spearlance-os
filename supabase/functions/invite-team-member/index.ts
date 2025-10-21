@@ -137,52 +137,105 @@ serve(async (req) => {
 
     console.log('Inviting team member:', { email, name, role, client_id });
 
-    // Create the user without password - they'll set it via reset link
-    const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
-      email,
-      email_confirm: false, // User will confirm via password reset link
-      user_metadata: {
-        name,
-        role,
-      },
-    });
+    // Check if user already exists
+    const { data: existingUsers, error: lookupError } = await supabaseAdmin.auth.admin.listUsers();
 
-    if (createError) {
-      console.error('Error creating user:', createError);
-      throw new Error(`Failed to create user: ${createError.message}`);
+    if (lookupError) {
+      console.error('Error looking up existing users:', lookupError);
+      throw new Error('Failed to verify user existence');
     }
 
-    console.log('User created successfully:', newUser.user.id);
+    const existingUser = existingUsers.users.find(u => u.email === email);
 
-    // Update the auto-created profile to add client association
-    const { error: profileUpdateError } = await supabaseAdmin
-      .from('profiles')
-      .update({
-        associated_client_ids: [client_id],
-      })
-      .eq('id', newUser.user.id);
+    let invitedUserId: string;
+    let isNewUser: boolean;
 
-    if (profileUpdateError) {
-      console.error('Error updating profile:', profileUpdateError);
-      // Try to clean up the created user
-      await supabaseAdmin.auth.admin.deleteUser(newUser.user.id);
-      throw new Error(`Failed to update profile: ${profileUpdateError.message}`);
-    }
-
-    // Create user_roles entry
-    const { error: roleInsertError } = await supabaseAdmin
-      .from('user_roles')
-      .insert({
-        user_id: newUser.user.id,
-        role,
+    if (existingUser) {
+      // User already exists - add them to the client
+      console.log('User already exists:', existingUser.id);
+      invitedUserId = existingUser.id;
+      isNewUser = false;
+      
+      // Get current profile data
+      const { data: profile, error: profileFetchError } = await supabaseAdmin
+        .from('profiles')
+        .select('associated_client_ids, role')
+        .eq('id', invitedUserId)
+        .single();
+      
+      if (profileFetchError) {
+        throw new Error('Failed to fetch existing user profile');
+      }
+      
+      // Check if already associated with this client
+      if (profile.associated_client_ids?.includes(client_id)) {
+        throw new Error('User is already a member of this client');
+      }
+      
+      // Add client to their associated_client_ids array
+      const updatedClientIds = [...(profile.associated_client_ids || []), client_id];
+      
+      const { error: updateError } = await supabaseAdmin
+        .from('profiles')
+        .update({ associated_client_ids: updatedClientIds })
+        .eq('id', invitedUserId);
+      
+      if (updateError) {
+        console.error('Error adding client to existing user:', updateError);
+        throw new Error('Failed to add user to client');
+      }
+      
+      console.log('Added existing user to client');
+      
+    } else {
+      // User doesn't exist - create new user
+      isNewUser = true;
+      
+      const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
+        email,
+        email_confirm: false,
+        user_metadata: {
+          name,
+          role,
+        },
       });
 
-    if (roleInsertError) {
-      console.error('Error creating user role:', roleInsertError);
-      // Continue anyway as this is not critical
-    }
+      if (createError) {
+        console.error('Error creating user:', createError);
+        throw new Error(`Failed to create user: ${createError.message}`);
+      }
 
-    console.log('Team member invited successfully');
+      invitedUserId = newUser.user.id;
+      console.log('User created successfully:', invitedUserId);
+
+      // Update the auto-created profile to add client association
+      const { error: profileUpdateError } = await supabaseAdmin
+        .from('profiles')
+        .update({
+          associated_client_ids: [client_id],
+        })
+        .eq('id', invitedUserId);
+
+      if (profileUpdateError) {
+        console.error('Error updating profile:', profileUpdateError);
+        await supabaseAdmin.auth.admin.deleteUser(invitedUserId);
+        throw new Error(`Failed to update profile: ${profileUpdateError.message}`);
+      }
+
+      // Create user_roles entry
+      const { error: roleInsertError } = await supabaseAdmin
+        .from('user_roles')
+        .insert({
+          user_id: invitedUserId,
+          role,
+        });
+
+      if (roleInsertError) {
+        console.error('Error creating user role:', roleInsertError);
+      }
+
+      console.log('New user created and invited successfully');
+    }
 
     // Get client name for the email
     const { data: clientData } = await supabaseAdmin
@@ -194,27 +247,26 @@ serve(async (req) => {
     const clientName = clientData?.name || 'the team';
     const appUrl = 'https://os.spearlance.com';
 
-    // Generate password reset link
-    const { data: resetData, error: resetError } = await supabaseAdmin.auth.admin.generateLink({
-      type: 'recovery',
-      email: email,
-      options: {
-        redirectTo: `${appUrl}/reset-password`
+    let emailSubject: string;
+    let emailHtml: string;
+
+    if (isNewUser) {
+      // Generate password reset link for new users
+      const { data: resetData, error: resetError } = await supabaseAdmin.auth.admin.generateLink({
+        type: 'recovery',
+        email: email,
+        options: {
+          redirectTo: `${appUrl}/reset-password`
+        }
+      });
+
+      if (resetError) {
+        console.error('Error generating reset link:', resetError);
+        throw new Error('Failed to generate password reset link');
       }
-    });
 
-    if (resetError) {
-      console.error('Error generating reset link:', resetError);
-      throw new Error('Failed to generate password reset link');
-    }
-
-    // Send invitation email with password reset link
-    try {
-      await resend.emails.send({
-        from: 'Garrett Handley from Spearlance <garrett@em.os.spearlance.com>',
-        to: [email],
-        subject: `${inviterName} invited you to join ${clientName}`,
-        html: `
+      emailSubject = `${inviterName} invited you to join ${clientName}`;
+      emailHtml = `
 <!DOCTYPE html>
 <html>
 <head>
@@ -292,20 +344,111 @@ serve(async (req) => {
   </table>
 </body>
 </html>
-        `,
+      `;
+    } else {
+      // Send "You've been added" email for existing users
+      emailSubject = `${inviterName} added you to ${clientName}`;
+      emailHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #ffffff;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #ffffff;">
+    <tr>
+      <td align="center" style="padding: 40px 20px;">
+        <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; max-width: 600px;">
+          
+          <!-- Logo Header -->
+          <tr>
+            <td style="padding: 40px 40px 30px 40px; text-align: center; border-bottom: 3px solid #13cf48;">
+              <img src="https://os.spearlance.com/spearlance-logo.png" alt="Spearlance" style="height: 60px; max-width: 100%;">
+            </td>
+          </tr>
+          
+          <!-- Content -->
+          <tr>
+            <td style="padding: 40px;">
+              <h1 style="color: #000000; margin: 0 0 24px 0; font-size: 28px; font-weight: 600;">You've been added to ${clientName}!</h1>
+              
+              <p style="font-size: 16px; color: #333333; line-height: 1.6; margin: 0 0 16px 0;">Hi ${name},</p>
+              
+              <p style="font-size: 16px; color: #333333; line-height: 1.6; margin: 0 0 16px 0;">
+                <strong>${inviterName}</strong> has added you to <strong>${clientName}</strong>'s workspace in Spearlance.
+              </p>
+              
+              <p style="font-size: 16px; color: #333333; line-height: 1.6; margin: 0 0 24px 0;">
+                You can now access their workspace using your existing Spearlance account.
+              </p>
+              
+              <!-- CTA Button -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin: 0 0 32px 0;">
+                <tr>
+                  <td align="center">
+                    <a href="${appUrl}" style="display: inline-block; padding: 16px 40px; background-color: #13cf48; color: #ffffff; text-decoration: none; border-radius: 8px; font-size: 16px; font-weight: 600; box-shadow: 0 2px 8px rgba(19, 207, 72, 0.3);">
+                      Go to Spearlance
+                    </a>
+                  </td>
+                </tr>
+              </table>
+              
+              <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #13cf48; margin: 0 0 24px 0;">
+                <p style="margin: 0; font-size: 14px; color: #666666; line-height: 1.6;">
+                  <strong>Your Login Email:</strong> ${email}
+                </p>
+              </div>
+              
+              <p style="font-size: 14px; color: #999999; line-height: 1.6; margin: 0; padding-top: 24px; border-top: 1px solid #eeeeee;">
+                You now have access to ${clientName}'s workspace. Log in to start collaborating!
+              </p>
+            </td>
+          </tr>
+          
+          <!-- Footer / Signature -->
+          <tr>
+            <td style="background-color: #000000; padding: 40px; text-align: center;">
+              <p style="margin: 0 0 8px 0; font-size: 16px; color: #ffffff; font-weight: 600;">
+                Garrett Handley
+              </p>
+              <p style="margin: 0 0 4px 0; font-size: 14px; color: #13cf48;">
+                Founder, CEO
+              </p>
+              <p style="margin: 0; font-size: 14px; color: #cccccc;">
+                Spearlance LLC
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+      `;
+    }
+
+    // Send the appropriate email
+    try {
+      await resend.emails.send({
+        from: 'Garrett Handley from Spearlance <garrett@em.os.spearlance.com>',
+        to: [email],
+        subject: emailSubject,
+        html: emailHtml,
       });
 
-      console.log('Invitation email sent to:', email);
+      console.log('Email sent to:', email);
     } catch (emailError) {
       console.error('Error sending email:', emailError);
-      // Continue anyway - user was created successfully
     }
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: 'Invitation email sent successfully',
-        user_id: newUser.user.id,
+        message: isNewUser ? 'Invitation email sent successfully' : 'User added to client successfully',
+        user_id: invitedUserId,
+        is_new_user: isNewUser,
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
