@@ -194,6 +194,33 @@ async function createOrUpdateOfferDraft(
   }
 }
 
+// Helper function to deeply merge objects without overwriting existing values
+function deepMerge(target: any, source: any): any {
+  if (!target || typeof target !== 'object') return source;
+  if (!source || typeof source !== 'object') return target;
+  
+  const output = { ...target };
+  
+  for (const key in source) {
+    if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
+      // Recursively merge nested objects
+      output[key] = deepMerge(target[key] || {}, source[key]);
+    } else if (Array.isArray(source[key])) {
+      // For arrays, merge unique values
+      const targetArray = Array.isArray(target[key]) ? target[key] : [];
+      const sourceArray = source[key];
+      output[key] = [...new Set([...targetArray, ...sourceArray])];
+    } else {
+      // Only overwrite if target value is empty/null/undefined
+      if (target[key] === null || target[key] === undefined || target[key] === '') {
+        output[key] = source[key];
+      }
+    }
+  }
+  
+  return output;
+}
+
 // Extract and save Launch Pad data from conversation
 async function extractLaunchpadData(
   supabase: any,
@@ -212,23 +239,27 @@ async function extractLaunchpadData(
       .single();
 
     const currentResponses = submission?.responses_json || {};
+    const existingStageData = currentResponses[stage] || {};
+
+    // MERGE new data with existing (don't overwrite non-empty fields)
+    const mergedStageData = deepMerge(existingStageData, data);
 
     // Save data to appropriate tables based on stage
-    if (stage === 'discovery' && data) {
+    if (stage === 'discovery' && mergedStageData) {
       // Update clients table with company info
-      if (data.company) {
+      if (mergedStageData.company) {
         await supabase
           .from('clients')
           .update({
-            name: data.company.brand_name || undefined,
-            website_url: data.company.website_url || undefined,
+            name: mergedStageData.company.brand_name || undefined,
+            website_url: mergedStageData.company.website_url || undefined,
           })
           .eq('id', clientId);
       }
 
       // Insert/update services
-      if (data.model?.services && Array.isArray(data.model.services)) {
-        for (const serviceName of data.model.services) {
+      if (mergedStageData.model?.services && Array.isArray(mergedStageData.model.services)) {
+        for (const serviceName of mergedStageData.model.services) {
           // Check if service exists
           const { data: existing } = await supabase
             .from('services')
@@ -249,33 +280,33 @@ async function extractLaunchpadData(
       }
 
       // Update client_business_model
-      if (data.model || data.goals) {
+      if (mergedStageData.model || mergedStageData.goals) {
         await supabase
           .from('client_business_model')
           .upsert({
             client_id: clientId,
-            aov: data.model?.aov || null,
-            ltv: data.model?.ltv || null,
-            sales_process: data.model?.sales_process || null,
-            quarterly_goals: data.goals?.quarter_goals || [],
-            annual_revenue_goal: data.goals?.annual_revenue_goal || null,
+            aov: mergedStageData.model?.aov || null,
+            ltv: mergedStageData.model?.ltv || null,
+            sales_process: mergedStageData.model?.sales_process || null,
+            quarterly_goals: mergedStageData.goals?.quarter_goals || [],
+            annual_revenue_goal: mergedStageData.goals?.annual_revenue_goal || null,
           });
       }
 
       // Update client_brand_voice
-      if (data.voice) {
+      if (mergedStageData.voice) {
         await supabase
           .from('client_brand_voice')
           .upsert({
             client_id: clientId,
-            tone: data.voice.tone || null,
-            words_to_avoid: data.voice.words_to_avoid || null,
+            tone: mergedStageData.voice.tone || null,
+            words_to_avoid: mergedStageData.voice.words_to_avoid || null,
           });
       }
-    } else if (stage === 'marketing' && data) {
+    } else if (stage === 'marketing' && mergedStageData) {
       // Update services with marketing details
-      if (data.services && Array.isArray(data.services)) {
-        for (const serviceData of data.services) {
+      if (mergedStageData.services && Array.isArray(mergedStageData.services)) {
+        for (const serviceData of mergedStageData.services) {
           await supabase
             .from('services')
             .update({
@@ -289,10 +320,10 @@ async function extractLaunchpadData(
       }
     }
 
-    // Update submission with new data and completeness
+    // Update submission with merged data and completeness
     const updatedResponses = {
       ...currentResponses,
-      [stage]: data
+      [stage]: mergedStageData
     };
 
     await supabase
@@ -1057,6 +1088,18 @@ serve(async (req) => {
     const userRole = profile?.role || 'client';
 
     // System prompt - conditional based on mode
+    // Fetch existing submission data for LaunchPad mode
+    let existingLaunchpadData = null;
+    if (launchpad_mode && submission_id) {
+      const { data: submissionData } = await supabaseClient
+        .from('launchpad_submissions')
+        .select('responses_json, discovery_completeness, marketing_completeness, avatar_completeness')
+        .eq('id', submission_id)
+        .maybeSingle();
+      
+      existingLaunchpadData = submissionData;
+    }
+
     const systemPrompt = launchpad_mode ?
       // LAUNCH PAD MODE: Conversational onboarding
       `You are a friendly marketing AI assistant helping a client complete their Launch Pad onboarding through natural conversation.
@@ -1066,8 +1109,24 @@ CONTEXT:
 - submission_id: ${submission_id}
 - current_stage: ${current_stage}
 - today: ${new Date().toISOString().split('T')[0]}
+- existing_data: ${JSON.stringify(existingLaunchpadData?.responses_json || {})}
+- existing_completeness: discovery=${existingLaunchpadData?.discovery_completeness || 0}%, marketing=${existingLaunchpadData?.marketing_completeness || 0}%, avatar=${existingLaunchpadData?.avatar_completeness || 0}%
 
 YOUR GOAL: Extract all necessary business information through warm, engaging conversation.
+
+**IMPORTANT: The client may have already filled some information in form mode.**
+
+HANDLING EXISTING DATA:
+1. ALWAYS check existing_data first before asking questions
+2. If data exists for a field, acknowledge it: "I see you've already shared [X]"
+3. Only ask for MISSING information - never re-ask what's already captured
+4. When calling extract_launchpad_data, the system will merge with existing data (won't overwrite)
+5. Example: If company.brand_name exists → Skip that question and move to the next missing field
+
+Example flow:
+- If company name already filled → "I see your company is called ABC Pro. Perfect! ✓"
+- If services array is empty → "What services do you offer?"
+- If services exist with 3 items → "I see you offer [list]. Want to add more or move on?"
 
 CONVERSATION RULES:
 1. Be enthusiastic and encouraging ("Great!", "Perfect!", "Nice!")

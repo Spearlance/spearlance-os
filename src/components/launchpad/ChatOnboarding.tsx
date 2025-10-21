@@ -27,11 +27,11 @@ export function ChatOnboarding({ submission, onSwitchToForm }: ChatOnboardingPro
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
-  const [completeness, setCompleteness] = useState({
-    discovery: 0,
-    marketing: 0,
-    avatar: 0,
-  });
+  const [completeness, setCompleteness] = useState(() => ({
+    discovery: submission.discovery_completeness || 0,
+    marketing: submission.marketing_completeness || 0,
+    avatar: submission.avatar_completeness || 0,
+  }));
 
   useEffect(() => {
     initializeConversation();
@@ -72,10 +72,27 @@ export function ChatOnboarding({ submission, onSwitchToForm }: ChatOnboardingPro
         })
         .eq('id', submission.id);
 
-      // Send initial greeting
+      // Generate context-aware greeting based on existing data
+      const existingData = submission.responses_json || {};
+      const hasDiscoveryData = existingData.discovery && Object.keys(existingData.discovery.company || {}).length > 0;
+      const hasMarketingData = existingData.marketing?.services_completed;
+      const companyName = existingData.discovery?.company?.brand_name || existingData.discovery?.company?.legal_name;
+      const servicesCount = existingData.discovery?.model?.services?.length || 0;
+      const goalsCount = existingData.discovery?.goals?.quarter_goals?.length || 0;
+
+      let greetingContent = '';
+
+      if (hasDiscoveryData) {
+        // User has already filled discovery data in form mode
+        greetingContent = `Hi! I see you've already started your Launch Pad${companyName ? ` for ${companyName}` : ''}. Great work so far! 🎉\n\nI've loaded what you've already shared. Let me review...\n\n✓ Company info captured\n${servicesCount > 0 ? `✓ ${servicesCount} services listed\n` : ''}${goalsCount > 0 ? `✓ ${goalsCount} goals defined\n` : ''}\nLet's continue from where you left off. ${hasMarketingData ? 'Ready to work on your ideal customer avatar?' : 'Want to add more details, or move on to the next stage?'}`;
+      } else {
+        // Fresh start
+        greetingContent = `Hi! I'm your marketing AI assistant. I'm excited to learn about your business so I can help you grow!\n\nThis will take about 15-20 minutes. I'll ask you some questions about your company, what you offer, and where you want to go. Sound good?\n\nLet's start with the basics - what's your company's legal name, and what do people actually call you (your brand name)?`;
+      }
+
       const greeting: Message = {
         role: 'assistant',
-        content: `Hi! I'm your marketing AI assistant. I'm excited to learn about your business so I can help you grow!\n\nThis will take about 15-20 minutes. I'll ask you some questions about your company, what you offer, and where you want to go. Sound good?\n\nLet's start with the basics - what's your company's legal name, and what do people actually call you (your brand name)?`,
+        content: greetingContent,
         timestamp: new Date(),
       };
 
@@ -140,7 +157,10 @@ export function ChatOnboarding({ submission, onSwitchToForm }: ChatOnboardingPro
         body: {
           client_id: selectedClient.id,
           conversation_id: conversationId,
-          message: content,
+          messages: [...messages, userMessage].map(msg => ({
+            role: msg.role,
+            content: msg.content
+          })),
           launchpad_mode: true,
           submission_id: submission.id,
           current_stage: submission.stage,
