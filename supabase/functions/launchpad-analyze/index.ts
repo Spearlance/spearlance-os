@@ -191,24 +191,46 @@ Format your response as JSON:
       throw new Error('No content in AI response');
     }
 
-    // Parse JSON response, handling markdown code blocks
+    // Parse JSON response with robust markdown stripping
     let analysis;
     try {
       let jsonString = content.trim();
       
-      // Strip markdown code blocks if present
-      if (jsonString.startsWith('```')) {
-        // Remove opening ```json or ```
-        jsonString = jsonString.replace(/^```(?:json)?\s*\n/, '');
-        // Remove closing ```
-        jsonString = jsonString.replace(/\n```\s*$/, '');
+      // Strategy 1: Strip markdown code blocks with flexible patterns
+      // Handle ```json or ``` with optional whitespace and various line endings
+      jsonString = jsonString.replace(/^```(?:json)?[\s\r\n]+/, '');
+      jsonString = jsonString.replace(/[\s\r\n]+```\s*$/, '');
+      
+      // Strategy 2: If that didn't work, try to extract JSON between first { and last }
+      if (!jsonString.startsWith('{') && jsonString.includes('{')) {
+        const firstBrace = jsonString.indexOf('{');
+        const lastBrace = jsonString.lastIndexOf('}');
+        if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+          jsonString = jsonString.substring(firstBrace, lastBrace + 1);
+        }
       }
       
+      // Final trim to remove any remaining whitespace
+      jsonString = jsonString.trim();
+      
+      // Log the cleaned JSON for debugging
+      console.log('Cleaned JSON string (first 200 chars):', jsonString.substring(0, 200));
+      
       analysis = JSON.parse(jsonString);
+      console.log('Successfully parsed AI response');
     } catch (e) {
       console.error('Failed to parse AI response as JSON:', content);
+      console.error('Parse error:', e instanceof Error ? e.message : String(e));
       throw new Error('AI returned invalid JSON');
     }
+
+    // Validate required fields in analysis
+    if (!analysis.avatar || !analysis.insights_summary) {
+      console.error('Missing required fields in analysis:', Object.keys(analysis));
+      throw new Error('AI response missing required fields');
+    }
+
+    console.log('Analysis structure valid, proceeding with database updates');
 
     // Create or update avatar
     const { data: existingAvatar } = await supabase
