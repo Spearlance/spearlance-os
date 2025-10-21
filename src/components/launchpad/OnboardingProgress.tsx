@@ -21,8 +21,13 @@ const stages = [
 
 export function OnboardingProgress({ currentStage, completeness, completedAt = {} }: OnboardingProgressProps) {
   const getStageStatus = (stageId: string) => {
+    // Check if stage has been marked complete
     if (completedAt[stageId]) return 'complete';
-    if (currentStage === stageId) return 'active';
+    
+    // Check if stage has any progress
+    const progress = completeness[stageId as keyof typeof completeness] || 0;
+    if (progress > 0) return 'active';
+    
     return 'pending';
   };
 
@@ -56,15 +61,15 @@ export function OnboardingProgress({ currentStage, completeness, completedAt = {
                         <Badge variant="outline" className="text-xs bg-[#13cf48]/10 text-[#13cf48] border-[#13cf48]/20">
                           Complete
                         </Badge>
-                      ) : status === 'active' ? (
+                      ) : (status === 'active' || progress > 0) ? (
                         <span className="text-xs text-muted-foreground">{progress}%</span>
                       ) : null}
                     </div>
-                    {status === 'active' && (
+                    {(status === 'active' || status === 'complete' || progress > 0) && (
                       <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
                         <div 
                           className="h-full bg-primary transition-all duration-300"
-                          style={{ width: `${progress}%` }}
+                          style={{ width: status === 'complete' ? '100%' : `${progress}%` }}
                         />
                       </div>
                     )}

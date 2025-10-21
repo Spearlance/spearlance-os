@@ -335,6 +335,39 @@ async function extractLaunchpadData(
       })
       .eq('id', submissionId);
 
+    // Auto-advance when stage is 100% complete
+    if (completeness >= 100) {
+      const { data: currentSubmission } = await supabase
+        .from('launchpad_submissions')
+        .select('stage, completed_at')
+        .eq('id', submissionId)
+        .single();
+      
+      const completedAt = currentSubmission?.completed_at || {};
+      const newCompletedAt = {
+        ...completedAt,
+        [stage]: new Date().toISOString()
+      };
+      
+      // Determine next stage
+      let nextStage = currentSubmission?.stage;
+      if (stage === 'discovery' && currentSubmission?.stage === 'discovery') {
+        nextStage = 'marketing';
+      } else if (stage === 'marketing' && currentSubmission?.stage === 'marketing') {
+        nextStage = 'avatar';
+      } else if (stage === 'avatar' && currentSubmission?.stage === 'avatar') {
+        nextStage = 'complete';
+      }
+      
+      await supabase
+        .from('launchpad_submissions')
+        .update({
+          completed_at: newCompletedAt,
+          stage: nextStage
+        })
+        .eq('id', submissionId);
+    }
+
     return {
       success: true,
       message: `Saved ${stage} data (${completeness}% complete)`,
@@ -1197,6 +1230,14 @@ When user confirms readiness ("yes", "let's go", "I'm ready", etc.):
 - Immediately ask the first relevant question
 - Example: User says "Yes let's get started" → You say "Perfect! What's your company's legal name?"
 - Example: User says "yes" → You say "Great! First question: What do you call your business?"
+
+**STAGE DETECTION:**
+When extracting data with extract_launchpad_data, determine which stage the information belongs to:
+- Discovery stage: company name, services, goals, voice, contacts
+- Marketing stage: service details, differentiators, benefits
+- Avatar stage: ideal customer description, pain points, goals
+
+You can work on ANY stage regardless of current submission.stage. Pass the appropriate stage parameter to extract_launchpad_data. The system will auto-advance when stages reach 100% complete.
 
 **MANDATORY: You MUST call extract_launchpad_data after EVERY user message with business info. This is the PRIMARY purpose of this mode. Do NOT skip this step.**` :
     offer_mode ?

@@ -189,11 +189,19 @@ export function ChatOnboarding({ submission, onSwitchToForm }: ChatOnboardingPro
         setMessages(prev => [...prev, assistantMessage]);
 
         // Update completeness if provided
-        if (data.completeness) {
+        if (data.completeness !== undefined) {
+          const stageKey = data.stage || submission.stage;
           setCompleteness(prev => ({
             ...prev,
-            [submission.stage]: data.completeness,
+            [stageKey]: data.completeness,
           }));
+          
+          // If stage is now 100%, reload page to get updated stage
+          if (data.completeness >= 100) {
+            setTimeout(() => {
+              window.location.reload();
+            }, 1000);
+          }
         }
 
         // Save assistant message
