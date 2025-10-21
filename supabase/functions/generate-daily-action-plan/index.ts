@@ -57,9 +57,11 @@ serve(async (req) => {
       meetingsData,
       avatarData,
       assetsData,
-      flowData
+      flowData,
+      launchpadData,
+      competitorsData
     ] = await Promise.all([
-      supabaseClient.from('clients').select('name, industry, brand_name').eq('id', client_id).single(),
+      supabaseClient.from('clients').select('name, industry, brand_name, website_url, primary_contact_name, primary_contact_email').eq('id', client_id).single(),
       supabaseClient.from('tasks').select('title, status, priority, due_date, created_at').eq('client_id', client_id),
       supabaseClient.from('quarterly_goals').select('title, progress, start_date, end_date').eq('client_id', client_id),
       supabaseClient.from('marketing_ideas').select('title, idea_type, status').eq('client_id', client_id).eq('status', 'approved'),
@@ -78,7 +80,9 @@ serve(async (req) => {
             flow:marketing_flows!inner(client_id)
           )
         `)
-        .eq('stage.flow.client_id', client_id)
+        .eq('stage.flow.client_id', client_id),
+      supabaseClient.from('launchpad_submissions').select('responses_json').eq('client_id', client_id).maybeSingle(),
+      supabaseClient.from('competitors').select('id, name').eq('client_id', client_id)
     ]);
 
     const client = clientData.data;
@@ -90,6 +94,28 @@ serve(async (req) => {
     const avatars = avatarData.data || [];
     const assets = assetsData.data || [];
     const channels = flowData.data || [];
+    const launchpad = launchpadData.data;
+    const competitors = competitorsData.data || [];
+
+    // Extract discovery data from launchpad
+    const discoveryData = launchpad?.responses_json?.discovery;
+
+    // Calculate Marketing Profile completeness
+    const profileCompleteness = {
+      hasCompanyDetails: !!(client?.brand_name && client?.industry && client?.website_url),
+      hasPrimaryContact: !!(client?.primary_contact_name && client?.primary_contact_email),
+      hasEconomics: !!(discoveryData?.model?.aov || discoveryData?.model?.ltv || discoveryData?.goals?.annual_revenue_goal),
+      hasCurrentState: !!(discoveryData?.state?.working || discoveryData?.state?.not_working || discoveryData?.state?.constraints),
+      hasBrandVoice: !!(discoveryData?.voice?.tone || discoveryData?.voice?.words_to_avoid),
+      hasServices: services.length > 0,
+      hasGoals: goals.length > 0,
+      hasAvatars: avatars.length > 0,
+      hasCompetitors: competitors.length > 0
+    };
+
+    const profileScore = Object.values(profileCompleteness).filter(Boolean).length;
+    const profileTotal = Object.keys(profileCompleteness).length;
+    const profilePercentComplete = Math.round((profileScore / profileTotal) * 100);
 
     // Analyze tasks
     const now = new Date();
@@ -112,27 +138,55 @@ serve(async (req) => {
 
 Your job is to analyze a client's complete marketing operation and generate a focused daily action plan.
 
-RULES:
-1. Prioritize actions that:
-   - Unblock stuck work
-   - Prevent future problems (e.g., meeting prep)
-   - Build momentum (quick wins)
-   - Align with quarterly goals
+PRIORITIZATION RULES (FOLLOW THIS ORDER):
 
-2. DO NOT suggest avatar creation if avatar data already exists (check CUSTOMER AVATARS section)
-   - Only suggest avatar work if there are specific, actionable gaps (e.g., "Add pricing strategy to avatar")
-   - Generic "create avatar" or "define customer avatar" suggestions are NOT helpful when avatars exist
+**TIER 1 - URGENT (Always First)**
+Handle these IMMEDIATELY - they're time-sensitive or blocking:
+1. Overdue tasks (past due date)
+2. Tasks due within 2 days
+3. Meeting prep (if meeting is within 3 days)
+4. High-priority tasks marked as "blocked" or "in progress" for 7+ days
 
-3. Generate 3-5 priority actions max (focus > volume)
+**TIER 2 - FOUNDATIONAL (Marketing Profile)**
+These MUST be completed before effective marketing execution:
+- Check the MARKETING PROFILE COMPLETENESS section below
+- If profile is <80% complete, prioritize filling gaps:
+  * Company Details (brand, industry, website)
+  * Primary Contact info
+  * Economics (AOV, LTV, revenue goals, sales process)
+  * Current State (what's working/not working)
+  * Brand Voice (tone, style)
+  * Services (what you sell)
+  * Quarterly Goals (strategic direction)
+  * Customer Avatars (target audience)
+  * Competitors (competitive landscape)
+- Use link: /marketing/profile for ALL profile-related actions
 
-4. Each action must include:
-   - Clear title (action-oriented: "Prep for Thursday meeting with X")
-   - Why it matters (context: "You have 2 days to prepare...")
-   - Direct link to take action (e.g., /tasks, /meetings, /marketing/ideas)
-   - Priority level: "urgent" (time-sensitive/blocking), "important" (strategic/goal-aligned), or "momentum" (quick wins)
+**TIER 3 - EXECUTION (Marketing Channels)**
+After profile is >80% complete, focus on execution:
+- Setting up channels in Marketing Flowchart
+- Completing channel tasks
+- Executing approved marketing ideas
+- Creating social media content
 
-5. Write in friendly, encouraging tone
-6. Acknowledge recent wins to build motivation`;
+**TIER 4 - MOMENTUM (Quick Wins)**
+Low-effort tasks that build confidence and unlock progress:
+- Simple tasks that can be done quickly
+- Tasks that unblock other work
+- Administrative or organizational tasks
+
+**OUTPUT RULES:**
+- Generate 3-5 actions MAXIMUM
+- Mix priorities: If there are urgent items, include 1-2 foundational/execution items
+- If profile is incomplete (<80%), AT LEAST 1-2 actions should address profile gaps
+- Each action needs: title, description, reason, link, priority ("urgent", "important", "momentum")
+- Write in friendly, encouraging tone
+- Acknowledge wins when they exist
+
+**AVATAR GUIDANCE:**
+- DO NOT suggest avatar creation if avatar data already exists (check CUSTOMER AVATARS section)
+- Only suggest avatar work if there are specific, actionable gaps (e.g., "Add pricing strategy to avatar")
+- Generic "create avatar" or "define customer avatar" suggestions are NOT helpful when avatars exist`;
 
     const userPrompt = `Analyze this client's marketing operation and create today's action plan:
 
@@ -176,6 +230,19 @@ ${avatars.map(a => `- ${a.avatar_name}
 (Note: Customer avatars are already defined. Only suggest avatar work if there are specific gaps that need filling in existing avatars)
 ` : '❌ NO AVATARS DEFINED - This is a critical foundational gap that should be addressed'}
 
+MARKETING PROFILE COMPLETENESS: ${profilePercentComplete}% (${profileScore}/${profileTotal} sections)
+${!profileCompleteness.hasCompanyDetails ? '❌ Company Details incomplete (brand, industry, website)' : '✅ Company Details complete'}
+${!profileCompleteness.hasPrimaryContact ? '❌ Primary Contact missing' : '✅ Primary Contact set'}
+${!profileCompleteness.hasEconomics ? '❌ Economics undefined (AOV, LTV, revenue goals)' : '✅ Economics defined'}
+${!profileCompleteness.hasCurrentState ? '❌ Current State not documented (what\'s working/not working)' : '✅ Current State documented'}
+${!profileCompleteness.hasBrandVoice ? '❌ Brand Voice not defined (tone, style)' : '✅ Brand Voice defined'}
+${!profileCompleteness.hasServices ? '❌ No services defined' : `✅ ${services.length} service(s) defined`}
+${!profileCompleteness.hasGoals ? '❌ No quarterly goals set' : `✅ ${goals.length} goal(s) set`}
+${!profileCompleteness.hasAvatars ? '❌ No customer avatars defined' : `✅ ${avatars.length} avatar(s) defined`}
+${!profileCompleteness.hasCompetitors ? '❌ No competitors documented' : `✅ ${competitors.length} competitor(s) documented`}
+
+⚠️ ${profilePercentComplete < 80 ? 'FOUNDATIONAL WORK NEEDED: Marketing Profile should be prioritized before channel execution' : 'READY FOR EXECUTION: Profile is complete, focus on channels and campaigns'}
+
 ASSETS:
 - Total assets: ${assets.length}
 
@@ -197,18 +264,17 @@ Important:
 - Return ONLY valid JSON, no other text
 - Generate 3-5 actions maximum
 - Use ONLY these exact routes:
+  * /marketing/profile - 🎯 PRIMARY for ALL foundational work: quarterly goals, company details, economics, brand voice, services, current state, competitors
   * /tasks - For task-related actions
   * /meetings - For meeting prep or scheduling
-  * /marketing/profile - For quarterly goals, brand positioning, or strategy
   * /marketing/ideas - For marketing campaigns and ideas
-  * /marketing/flowchart - For channel setup and marketing flow
-  * /marketing/services - For service offerings
+  * /marketing/flowchart - For channel setup and marketing flow (ONLY after profile >80% complete)
   * /marketing/tools - For marketing tools
   * /brand/guide - For brand guide, colors, fonts
   * /avatar - ONLY for creating a NEW avatar OR updating specific missing fields in existing avatar (do not suggest if avatars already exist)
   * /social-media - For social media calendar and posts
   * /brand/assets - For brand assets and files
-- NEVER use routes like /goals, /quarterly-goals, or any route not listed above`;
+- NEVER use routes like /goals, /quarterly-goals, /services, /competitors - these all live in /marketing/profile`;
 
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
