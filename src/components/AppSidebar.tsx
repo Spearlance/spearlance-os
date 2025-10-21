@@ -201,7 +201,15 @@ export function AppSidebar() {
                 </SidebarMenuItem>
               ))}
 
-              {menuItems.slice(1, 3).map((item) => (
+              {menuItems.slice(1, 3)
+                .filter((item) => {
+                  // Hide Launchpad if completed
+                  if (item.title === "Launchpad" && isComplete) {
+                    return false;
+                  }
+                  return true;
+                })
+                .map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <NavLink to={item.url} end className={getNavClass}>
