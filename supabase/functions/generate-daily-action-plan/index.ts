@@ -190,7 +190,19 @@ Generate a JSON response with this EXACT structure:
 Important: 
 - Return ONLY valid JSON, no other text
 - Generate 3-5 actions maximum
-- Make links specific: /tasks for task actions, /meetings for meeting prep, /marketing/ideas for marketing execution, /marketing/flowchart for channel work`;
+- Use ONLY these exact routes:
+  * /tasks - For task-related actions
+  * /meetings - For meeting prep or scheduling
+  * /marketing/profile - For quarterly goals, brand positioning, or strategy
+  * /marketing/ideas - For marketing campaigns and ideas
+  * /marketing/flowchart - For channel setup and marketing flow
+  * /marketing/services - For service offerings
+  * /marketing/tools - For marketing tools
+  * /brand/guide - For brand guide, colors, fonts
+  * /avatar - For customer avatar work
+  * /social-media - For social media calendar and posts
+  * /brand/assets - For brand assets and files
+- NEVER use routes like /goals, /quarterly-goals, or any route not listed above`;
 
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
