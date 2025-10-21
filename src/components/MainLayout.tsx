@@ -1,9 +1,10 @@
 import { ReactNode, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { SidebarProvider } from "@/components/ui/sidebar";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { ClientProvider, useClient } from "@/contexts/ClientContext";
+import { MobileNoticeBanner } from "@/components/MobileNoticeBanner";
 import { Button } from "@/components/ui/button";
 import { Plus, Calendar, CheckSquare, HelpCircle } from "lucide-react";
 import { Session } from "@supabase/supabase-js";
@@ -148,6 +149,7 @@ function MainLayoutContent({ children }: MainLayoutProps) {
         <div className="flex-1 flex flex-col">
           <header className="h-16 border-b border-border bg-card flex items-center justify-between px-6">
             <div className="flex items-center gap-4">
+              <SidebarTrigger className="md:hidden" />
               <h1 className="text-lg font-semibold">SpearlanceOS</h1>
             </div>
             <div className="flex items-center gap-2">
@@ -168,6 +170,7 @@ function MainLayoutContent({ children }: MainLayoutProps) {
             </div>
           </header>
           <main className="flex-1 p-6 overflow-auto">
+            <MobileNoticeBanner />
             <TrialStatusBanner onUpgradeClick={() => setPricingModalOpen(true)} />
             {children}
           </main>
