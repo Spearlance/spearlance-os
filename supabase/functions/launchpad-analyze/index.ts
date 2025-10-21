@@ -57,9 +57,16 @@ serve(async (req) => {
     let websiteContent = '';
     if (client.website_url) {
       try {
-        console.log('Fetching website content from:', client.website_url);
-        const websiteResponse = await fetch(client.website_url, {
-          headers: { 'User-Agent': 'Mozilla/5.0' }
+        // Ensure URL has protocol
+        let url = client.website_url;
+        if (!url.startsWith('http://') && !url.startsWith('https://')) {
+          url = 'https://' + url;
+        }
+        
+        console.log('Fetching website content from:', url);
+        const websiteResponse = await fetch(url, {
+          headers: { 'User-Agent': 'Mozilla/5.0' },
+          signal: AbortSignal.timeout(5000), // 5 second timeout
         });
         if (websiteResponse.ok) {
           const html = await websiteResponse.text();
@@ -164,7 +171,7 @@ Format your response as JSON:
       body: JSON.stringify({
         model: 'google/gemini-2.5-flash',
         messages: [
-          { role: 'system', content: 'You are a marketing strategist. Always respond with valid JSON only.' },
+          { role: 'system', content: 'You are a marketing strategist. Always respond with valid JSON only. Do not wrap the response in markdown code blocks or any other formatting. Return raw JSON only.' },
           { role: 'user', content: prompt }
         ],
         temperature: 0.7,
@@ -184,10 +191,20 @@ Format your response as JSON:
       throw new Error('No content in AI response');
     }
 
-    // Parse JSON response
+    // Parse JSON response, handling markdown code blocks
     let analysis;
     try {
-      analysis = JSON.parse(content);
+      let jsonString = content.trim();
+      
+      // Strip markdown code blocks if present
+      if (jsonString.startsWith('```')) {
+        // Remove opening ```json or ```
+        jsonString = jsonString.replace(/^```(?:json)?\s*\n/, '');
+        // Remove closing ```
+        jsonString = jsonString.replace(/\n```\s*$/, '');
+      }
+      
+      analysis = JSON.parse(jsonString);
     } catch (e) {
       console.error('Failed to parse AI response as JSON:', content);
       throw new Error('AI returned invalid JSON');
