@@ -206,10 +206,15 @@ function deepMerge(target: any, source: any): any {
       // Recursively merge nested objects
       output[key] = deepMerge(target[key] || {}, source[key]);
     } else if (Array.isArray(source[key])) {
-      // For arrays, merge unique values
-      const targetArray = Array.isArray(target[key]) ? target[key] : [];
-      const sourceArray = source[key];
-      output[key] = [...new Set([...targetArray, ...sourceArray])];
+      // Special handling for service_renames - always replace, don't merge
+      if (key === 'service_renames') {
+        output[key] = source[key];
+      } else {
+        // For other arrays, merge unique values
+        const targetArray = Array.isArray(target[key]) ? target[key] : [];
+        const sourceArray = source[key];
+        output[key] = [...new Set([...targetArray, ...sourceArray])];
+      }
     } else {
       // Only overwrite if target value is empty/null/undefined
       if (target[key] === null || target[key] === undefined || target[key] === '') {
@@ -255,6 +260,21 @@ async function extractLaunchpadData(
             website_url: mergedStageData.company.website_url || undefined,
           })
           .eq('id', clientId);
+      }
+
+      // Handle service renames first (if provided)
+      if (mergedStageData.service_renames && Array.isArray(mergedStageData.service_renames)) {
+        for (const rename of mergedStageData.service_renames) {
+          const { old_name, new_name } = rename;
+          
+          await supabase
+            .from('services')
+            .update({ name: new_name })
+            .eq('client_id', clientId)
+            .eq('name', old_name);
+          
+          console.log(`[Service Rename - Discovery] "${old_name}" → "${new_name}"`);
+        }
       }
 
       // Insert/update services
@@ -304,6 +324,28 @@ async function extractLaunchpadData(
           });
       }
     } else if (stage === 'marketing' && mergedStageData) {
+      console.log('[Marketing Stage] Processing data:', {
+        has_renames: !!mergedStageData.service_renames,
+        rename_count: mergedStageData.service_renames?.length || 0,
+        services_count: mergedStageData.services?.length || 0
+      });
+
+      // Handle service renames first (if provided)
+      if (mergedStageData.service_renames && Array.isArray(mergedStageData.service_renames)) {
+        for (const rename of mergedStageData.service_renames) {
+          const { old_name, new_name } = rename;
+          
+          // Update the service name in the database
+          await supabase
+            .from('services')
+            .update({ name: new_name })
+            .eq('client_id', clientId)
+            .eq('name', old_name);
+          
+          console.log(`[Service Rename] "${old_name}" → "${new_name}"`);
+        }
+      }
+
       // Update services with marketing details
       if (mergedStageData.services && Array.isArray(mergedStageData.services)) {
         for (const serviceData of mergedStageData.services) {
@@ -1203,6 +1245,33 @@ Extract: company (legal_name, brand_name, website_url, hq_city, industry), conta
 
 **Marketing Stage (current: ${current_stage === 'marketing' ? 'ACTIVE' : 'pending'}):**
 For each service: description, differentiators, key_benefits
+
+**HANDLING SERVICE NAME CHANGES:**
+If user wants to rename a service:
+- User says: "Let's rename 'testing' to 'Website Design'" or "Change 'testing' to 'Website Design'"
+- You call extract_launchpad_data with:
+  {
+    stage: "marketing",
+    data: {
+      service_renames: [{old_name: "testing", new_name: "Website Design"}],
+      services: [{name: "Website Design", description: "..."}]
+    },
+    completeness: [current]
+  }
+- Respond: "✓ Renamed 'testing' to 'Website Design'! Now, tell me about Website Design..."
+
+**RECOGNIZING RENAME INTENTS:**
+These phrases indicate a rename request:
+- "rename [old] to [new]"
+- "change [old] to [new]"
+- "let's call it [new] instead of [old]"
+- "actually it's [new] not [old]"
+- "[old] should be [new]"
+
+When you detect a rename:
+1. Extract both old_name and new_name
+2. Include service_renames array in extract_launchpad_data call
+3. Continue conversation about the newly named service
 
 **Avatar Stage (current: ${current_stage === 'avatar' ? 'ACTIVE' : 'pending'}):**
 When user confirms readiness, acknowledge they can run analysis from the main form.
