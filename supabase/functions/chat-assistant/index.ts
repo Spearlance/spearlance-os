@@ -1134,7 +1134,7 @@ CONVERSATION RULES:
 3. Use natural language, not form-field language
 4. Celebrate progress: "✓ Captured: [what you got]"
 5. Offer examples when users seem stuck
-6. Call extract_launchpad_data tool after every 2-3 user responses
+6. **CRITICAL: YOU MUST call extract_launchpad_data tool IMMEDIATELY after EVERY user response that contains business information. This is NON-NEGOTIABLE.**
 7. Allow corrections anytime: "Actually, let me change that..."
 
 STAGES & REQUIRED DATA:
@@ -1149,19 +1149,22 @@ For each service: description, differentiators, key_benefits
 When user confirms readiness, acknowledge they can run analysis from the main form.
 
 EXTRACTION STRATEGY:
-- After every 2-3 user responses, call extract_launchpad_data with current data
+- **YOU MUST call extract_launchpad_data tool after EVERY single user response that contains any business data**
+- NEVER skip calling this tool - it's required to save progress
 - Start with completeness: 0%, increment as data fills in (each field adds ~5-10%)
 - Mark stage 100% complete when all required fields captured
-- Show visual confirmation: "✓ Company info captured!" 
+- Show visual confirmation: "✓ Company info captured!"
+- If user provides multiple pieces of info at once, extract ALL of it in one tool call
 
 EXAMPLE FLOW:
 AI: "What's your company's legal name and brand name?"
 User: "We're ABC Services LLC but everyone calls us ABC Pro"
-AI: "Perfect! ABC Pro it is. ✓ [Calls extract_launchpad_data with company data, completeness: 10%]
+AI: [IMMEDIATELY calls extract_launchpad_data tool with {stage: "discovery", data: {company: {legal_name: "ABC Services LLC", brand_name: "ABC Pro"}}, completeness: 15}]
+AI response: "Perfect! ABC Pro it is. ✓ Company name captured!
 
 What's your website?"
 
-IMPORTANT: Save data progressively. Never wait until end of stage.` :
+**MANDATORY: You MUST call extract_launchpad_data after EVERY user message with business info. This is the PRIMARY purpose of this mode. Do NOT skip this step.**` :
     offer_mode ?
       // OFFER MODE: Full Complete Offer Engine prompt
       `You are SpearlanceAI, Spearlance's intelligent marketing co-pilot in OFFER MODE. You are guiding the user through a structured 6-step Complete Offer creation workflow. You are client scoped at all times.
@@ -2000,6 +2003,14 @@ When providing advice, you can reference these frameworks to support your recomm
     );
 
     console.log('Collected function calls:', functionCallsArray.length);
+    
+    if (launchpad_mode && functionCallsArray.length === 0) {
+      console.warn('[LaunchPad] WARNING: No function calls detected in LaunchPad mode. AI should be calling extract_launchpad_data.');
+    }
+    
+    if (functionCallsArray.length > 0) {
+      console.log('[Function Calls]:', functionCallsArray.map(fc => fc.name).join(', '));
+    }
 
     // Phase 2: Execute functions and make second API call if needed
     if (functionCallsArray.length > 0) {
@@ -2007,7 +2018,8 @@ When providing advice, you can reference these frameworks to support your recomm
       const toolMessages: any[] = [];
 
       for (const fc of functionCallsArray) {
-        console.log(`Executing function: ${fc.name}`, fc.arguments);
+        console.log(`[Function Execution] ${fc.name}`);
+        console.log(`[Function Args] ${fc.arguments}`);
 
         let result: any;
         let error: string | null = null;
