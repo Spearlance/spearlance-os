@@ -193,7 +193,7 @@ serve(async (req) => {
       
       const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
         email,
-        email_confirm: false,
+        email_confirm: true, // Confirm email immediately to prevent auto-login on recovery link
         user_metadata: {
           name,
           role,
@@ -256,13 +256,13 @@ serve(async (req) => {
         type: 'recovery',
         email: email,
         options: {
-          redirectTo: `${appUrl}/reset-password`
+          redirectTo: `${appUrl}/set-password`
         }
       });
 
       if (resetError) {
         console.error('Error generating reset link:', resetError);
-        throw new Error('Failed to generate password reset link');
+        throw new Error('Failed to generate reset link');
       }
 
       emailSubject = `${inviterName} invited you to join ${clientName}`;
@@ -298,7 +298,7 @@ serve(async (req) => {
               </p>
               
               <p style="font-size: 16px; color: #333333; line-height: 1.6; margin: 0 0 24px 0;">
-                To get started, click the button below to create your password and access your account:
+                To get started, please set your password by clicking the button below:
               </p>
               
               <!-- CTA Button -->

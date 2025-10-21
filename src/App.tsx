@@ -36,6 +36,7 @@ import Admin from "./pages/Admin";
 import Admin2FASetup from "./pages/Admin2FASetup";
 import CalendarCallback from "./pages/CalendarCallback";
 import ResetPassword from "./pages/ResetPassword";
+import SetPassword from "./pages/SetPassword";
 import BackfillImages from "./pages/BackfillImages";
 
 const queryClient = new QueryClient();
@@ -50,6 +51,7 @@ const App = () => (
           <Routes>
             <Route path="/auth" element={<Auth />} />
             <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/set-password" element={<SetPassword />} />
             <Route
               path="/"
               element={
