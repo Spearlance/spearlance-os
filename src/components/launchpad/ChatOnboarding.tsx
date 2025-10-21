@@ -92,7 +92,7 @@ export function ChatOnboarding({ submission, onSwitchToForm }: ChatOnboardingPro
 
       const greeting: Message = {
         role: 'assistant',
-        content: greetingContent,
+        content: greetingContent || 'Hi! I\'m your marketing AI assistant. Let\'s get started with your Launch Pad!',
         timestamp: new Date(),
       };
 
@@ -121,11 +121,13 @@ export function ChatOnboarding({ submission, onSwitchToForm }: ChatOnboardingPro
       return;
     }
 
-    const loadedMessages: Message[] = data.map(msg => ({
-      role: msg.role as 'user' | 'assistant' | 'system',
-      content: msg.content,
-      timestamp: new Date(msg.created_at),
-    }));
+    const loadedMessages: Message[] = data
+      .filter(msg => msg.content) // Filter out messages without content
+      .map(msg => ({
+        role: msg.role as 'user' | 'assistant' | 'system',
+        content: msg.content || '', // Ensure content is never undefined
+        timestamp: new Date(msg.created_at),
+      }));
 
     setMessages(loadedMessages);
   };
@@ -169,30 +171,39 @@ export function ChatOnboarding({ submission, onSwitchToForm }: ChatOnboardingPro
 
       if (error) throw error;
 
-      const assistantMessage: Message = {
-        role: 'assistant',
-        content: data.response,
-        timestamp: new Date(),
-      };
-
-      setMessages(prev => [...prev, assistantMessage]);
-
-      // Update completeness if provided
-      if (data.completeness) {
-        setCompleteness(prev => ({
-          ...prev,
-          [submission.stage]: data.completeness,
-        }));
-      }
-
-      // Save assistant message
-      await supabase
-        .from('chat_messages')
-        .insert({
-          conversation_id: conversationId,
+      if (data.response && data.response.trim()) {
+        const assistantMessage: Message = {
           role: 'assistant',
           content: data.response,
+          timestamp: new Date(),
+        };
+
+        setMessages(prev => [...prev, assistantMessage]);
+
+        // Update completeness if provided
+        if (data.completeness) {
+          setCompleteness(prev => ({
+            ...prev,
+            [submission.stage]: data.completeness,
+          }));
+        }
+
+        // Save assistant message
+        await supabase
+          .from('chat_messages')
+          .insert({
+            conversation_id: conversationId,
+            role: 'assistant',
+            content: data.response,
+          });
+      } else {
+        console.error('Edge function returned empty response');
+        toast({
+          title: 'Error',
+          description: 'Failed to get response from assistant',
+          variant: 'destructive',
         });
+      }
 
     } catch (error: any) {
       console.error('Error sending message:', error);

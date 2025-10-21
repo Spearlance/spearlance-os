@@ -17,6 +17,12 @@ interface ChatMessageProps {
 }
 
 export const ChatMessage = ({ message }: ChatMessageProps) => {
+  // Guard against undefined content
+  if (!message || !message.content) {
+    console.error('ChatMessage received invalid message:', message);
+    return null;
+  }
+
   const isUser = message.role === 'user';
   const isSystem = message.role === 'system';
   const navigate = useNavigate();
