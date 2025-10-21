@@ -23,14 +23,8 @@ export function ProgressHeader({ currentStage, completedAt, onStageClick }: Prog
     return "upcoming";
   };
 
-  const canNavigateToStage = (stageId: LaunchPadStage) => {
-    if (completedAt && completedAt[stageId]) return true;
-    if (stageId === currentStage) return true;
-    return false;
-  };
-
   const handleStageClick = (stageId: LaunchPadStage) => {
-    if (canNavigateToStage(stageId) && onStageClick) {
+    if (onStageClick) {
       onStageClick(stageId);
     }
   };
@@ -46,16 +40,15 @@ export function ProgressHeader({ currentStage, completedAt, onStageClick }: Prog
                 <div className="flex flex-col items-center gap-2 flex-1">
                   <button
                     onClick={() => handleStageClick(stage.id)}
-                    disabled={!canNavigateToStage(stage.id)}
-                    className={`flex items-center justify-center w-12 h-12 rounded-full border-2 transition-all ${
+                    className={`flex items-center justify-center w-12 h-12 rounded-full border-2 transition-all cursor-pointer hover:opacity-80 ${
                       status === "complete"
-                        ? "bg-[#13cf48] border-[#13cf48] text-white cursor-pointer hover:opacity-80"
+                        ? "bg-[#13cf48] border-[#13cf48] text-white"
                         : status === "current"
-                        ? "border-[#13cf48] text-[#13cf48] bg-background cursor-pointer hover:opacity-80"
-                        : "border-muted text-muted-foreground bg-background cursor-not-allowed opacity-50"
+                        ? "border-[#13cf48] text-[#13cf48] bg-background"
+                        : "border-muted text-muted-foreground bg-background"
                     }`}
                     aria-label={`Navigate to ${stage.label}`}
-                    title={canNavigateToStage(stage.id) ? `Go to ${stage.label}` : `Complete previous stages first`}
+                    title={`Go to ${stage.label}`}
                   >
                     {status === "complete" ? (
                       <CheckCircle2 className="h-6 w-6" />

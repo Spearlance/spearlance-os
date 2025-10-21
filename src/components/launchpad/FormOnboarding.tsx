@@ -3,7 +3,8 @@ import { StageMarketing } from "./StageMarketing";
 import { StageAvatar } from "./StageAvatar";
 import { LaunchPadStage, LaunchPadSubmission } from "@/lib/launchpadTypes";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Bot } from "lucide-react";
 
 interface FormOnboardingProps {
   submission: LaunchPadSubmission;
@@ -18,15 +19,20 @@ export function FormOnboarding({
   onSaveExit,
   onFinish,
 }: FormOnboardingProps) {
-  const isStageAccessible = (stageId: LaunchPadStage) => {
-    if (stageId === 'discovery') return true;
-    if (stageId === 'marketing') return (submission.discovery_completeness || 0) > 0;
-    if (stageId === 'avatar') return (submission.marketing_completeness || 0) > 0;
-    return false;
-  };
-
   return (
     <div className="space-y-6">
+      <div className="flex justify-end">
+        <Button
+          variant="outline"
+          size="sm"
+          disabled
+          className="cursor-not-allowed opacity-60 gap-2"
+        >
+          <Bot className="h-4 w-4" />
+          Onboard with AI
+          <Badge variant="secondary" className="ml-1">Coming Soon</Badge>
+        </Button>
+      </div>
       {submission.stage === "discovery" && (
         <StageDiscovery
           submissionId={submission.id}
