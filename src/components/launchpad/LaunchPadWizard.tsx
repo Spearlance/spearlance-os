@@ -263,7 +263,6 @@ export function LaunchPadWizard() {
             onStageChange={handleStageChange}
             onSaveExit={handleSaveExit}
             onFinish={handleFinish}
-            onSwitchToChat={() => handleSwitchMode('chat')}
           />
         )}
       </div>

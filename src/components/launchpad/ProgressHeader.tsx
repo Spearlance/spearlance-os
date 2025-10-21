@@ -10,7 +10,6 @@ interface ProgressHeaderProps {
 const allStages = [
   { id: "discovery" as LaunchPadStage, label: "Discovery", description: "Business details" },
   { id: "marketing" as LaunchPadStage, label: "Marketing", description: "Service details" },
-  { id: "assets" as LaunchPadStage, label: "Assets", description: "Brand materials" },
   { id: "avatar" as LaunchPadStage, label: "Avatar", description: "AI insights" },
 ];
 

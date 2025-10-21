@@ -10,7 +10,6 @@ interface FormOnboardingProps {
   onStageChange: (stage: LaunchPadStage) => void;
   onSaveExit: () => void;
   onFinish: () => void;
-  onSwitchToChat: () => void;
 }
 
 export function FormOnboarding({
@@ -18,7 +17,6 @@ export function FormOnboarding({
   onStageChange,
   onSaveExit,
   onFinish,
-  onSwitchToChat,
 }: FormOnboardingProps) {
   const isStageAccessible = (stageId: LaunchPadStage) => {
     if (stageId === 'discovery') return true;
@@ -29,44 +27,6 @@ export function FormOnboarding({
 
   return (
     <div className="space-y-6">
-      {/* Switch to Chat CTA */}
-      <div className="flex justify-between items-center">
-        <div className="flex gap-2">
-          <Button
-            variant={submission.stage === 'discovery' ? 'default' : 'outline'}
-            onClick={() => onStageChange('discovery')}
-            size="sm"
-          >
-            {submission.completed_at?.discovery && '✓ '}Discovery
-          </Button>
-          <Button
-            variant={submission.stage === 'marketing' ? 'default' : 'outline'}
-            onClick={() => onStageChange('marketing')}
-            disabled={!isStageAccessible('marketing')}
-            size="sm"
-          >
-            {submission.completed_at?.marketing && '✓ '}Marketing
-          </Button>
-          <Button
-            variant={submission.stage === 'avatar' ? 'default' : 'outline'}
-            onClick={() => onStageChange('avatar')}
-            disabled={!isStageAccessible('avatar')}
-            size="sm"
-          >
-            {submission.completed_at?.avatar && '✓ '}Avatar
-          </Button>
-        </div>
-        
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onSwitchToChat}
-          className="text-muted-foreground hover:text-primary"
-        >
-          💬 Chat with AI Instead
-        </Button>
-      </div>
-
       {submission.stage === "discovery" && (
         <StageDiscovery
           submissionId={submission.id}
