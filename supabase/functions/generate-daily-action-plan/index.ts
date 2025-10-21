@@ -241,7 +241,7 @@ Important:
     const today = new Date().toISOString().split('T')[0];
     const { data: savedPlan, error: saveError } = await supabaseClient
       .from('daily_action_plans')
-      .insert({
+      .upsert({
         client_id,
         plan_date: today,
         priority_actions: generatedPlan.priority_actions,
@@ -252,7 +252,10 @@ Important:
           goals_count: goals.length,
           ideas_count: marketingIdeas.length,
           meetings_count: meetings.length
-        }
+        },
+        generated_at: new Date().toISOString()
+      }, {
+        onConflict: 'client_id,plan_date'
       })
       .select()
       .single();
