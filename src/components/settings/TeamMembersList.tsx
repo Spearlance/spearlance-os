@@ -20,9 +20,10 @@ interface TeamMembersListProps {
   clientId: string;
   canManageTeam: boolean;
   refreshTrigger?: number;
+  userProfile?: any;
 }
 
-export function TeamMembersList({ clientId, canManageTeam, refreshTrigger }: TeamMembersListProps) {
+export function TeamMembersList({ clientId, canManageTeam, refreshTrigger, userProfile }: TeamMembersListProps) {
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
@@ -76,6 +77,19 @@ export function TeamMembersList({ clientId, canManageTeam, refreshTrigger }: Tea
 
   const handleRemoveMember = async (memberId: string, memberName: string) => {
     try {
+      // Get current user info
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      // Prevent removing yourself
+      if (user?.id === memberId) {
+        toast({
+          title: "Cannot remove yourself",
+          description: "You cannot remove your own account from the team",
+          variant: "destructive",
+        });
+        return;
+      }
+
       // Remove the client from the user's associated_client_ids
       const { data: profile } = await supabase
         .from("profiles")
@@ -189,7 +203,8 @@ export function TeamMembersList({ clientId, canManageTeam, refreshTrigger }: Tea
                         <KeyRound className="w-4 h-4" />
                       </Button>
                     )}
-                    {member.role !== "admin" && (
+                    {member.role !== "admin" && 
+                     !(member.is_primary_contact && userProfile?.role === 'client') && (
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <Button variant="ghost" size="sm">

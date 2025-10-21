@@ -93,7 +93,7 @@ export default function Settings() {
 
   const canEditClient = client && (userProfile?.role === 'admin' || userProfile?.role === 'fmm');
   const showCalendarTab = userProfile?.role === 'fmm' || userProfile?.role === 'admin';
-  const canManageTeam = true; // All authenticated users can invite team members
+  const canManageTeam = userProfile?.role === 'admin' || userProfile?.role === 'fmm' || isPrimaryContact;
   const canViewBilling = userProfile?.role === 'admin' || (userProfile?.role === 'client' && isPrimaryContact);
 
   return (
@@ -367,6 +367,7 @@ export default function Settings() {
                 clientId={client.id}
                 canManageTeam={canManageTeam}
                 refreshTrigger={teamRefresh}
+                userProfile={userProfile}
               />
             </CardContent>
           </Card>
