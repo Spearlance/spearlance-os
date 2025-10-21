@@ -7,8 +7,19 @@ import { OnboardingProgress } from "./OnboardingProgress";
 import { ChatMessage } from "@/components/chatbot/ChatMessage";
 import { ChatInput } from "@/components/chatbot/ChatInput";
 import { LaunchPadSubmission } from "@/lib/launchpadTypes";
-import { FileText } from "lucide-react";
+import { FileText, RotateCcw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface ChatOnboardingProps {
   submission: LaunchPadSubmission;
@@ -32,10 +43,74 @@ export function ChatOnboarding({ submission, onSwitchToForm }: ChatOnboardingPro
     marketing: submission.marketing_completeness || 0,
     avatar: submission.avatar_completeness || 0,
   }));
+  const [showRefreshDialog, setShowRefreshDialog] = useState(false);
 
   useEffect(() => {
     initializeConversation();
   }, [submission.id]);
+
+  // Helper function to generate context-aware greeting
+  const generateContextualGreeting = (currentSubmission: LaunchPadSubmission, currentCompleteness: typeof completeness): string => {
+    const existingData = currentSubmission.responses_json || {};
+    const companyName = existingData.discovery?.company?.brand_name || existingData.discovery?.company?.legal_name;
+    const servicesCount = existingData.discovery?.model?.services?.length || 0;
+    const goalsCount = existingData.discovery?.goals?.quarter_goals?.length || 0;
+    const competitorsCount = existingData.discovery?.competition?.competitors?.length || 0;
+    const hasStory = existingData.discovery?.story?.completed;
+    const hasVoice = existingData.discovery?.voice?.tone;
+
+    const stage = currentSubmission.stage;
+    const stageCompleteness = currentCompleteness[stage as keyof typeof currentCompleteness] || 0;
+
+    // Discovery Stage Greetings
+    if (stage === 'discovery') {
+      const missingItems: string[] = [];
+      if (!companyName) missingItems.push('company details');
+      if (servicesCount === 0) missingItems.push('services');
+      if (goalsCount === 0) missingItems.push('goals');
+      if (competitorsCount === 0) missingItems.push('competitors');
+      if (!hasVoice) missingItems.push('brand voice');
+      if (!hasStory) missingItems.push('your story');
+
+      if (stageCompleteness === 0) {
+        return `Hi! I'm your marketing AI assistant. I'm excited to learn about your business so I can help you grow!\n\nThis will take about 15-20 minutes. I'll ask you some questions about your company, what you offer, and where you want to go. Sound good?\n\nLet's start with the basics - what's your company's legal name, and what do people actually call you (your brand name)?`;
+      } else if (stageCompleteness < 100) {
+        return `Hi! Let me catch you up on where we are. 🎯\n\n${companyName ? `✓ Company: ${companyName}\n` : ''}${servicesCount > 0 ? `✓ ${servicesCount} services listed\n` : ''}${goalsCount > 0 ? `✓ ${goalsCount} goals defined\n` : ''}${competitorsCount > 0 ? `✓ ${competitorsCount} competitors tracked\n` : ''}${hasVoice ? '✓ Brand voice defined\n' : ''}${hasStory ? '✓ Your story captured\n' : ''}\n⏳ Still need: ${missingItems.join(', ')}\n\nWe're ${Math.round(stageCompleteness)}% through Discovery. Let's keep going! ${missingItems.length > 0 ? `Want to tell me about ${missingItems[0]}?` : 'What should we focus on next?'}`;
+      } else {
+        return `Great progress! Discovery stage complete! 🎉\n\n✓ Discovery: 100% ✅\n\nWe have solid info on your company, goals, and brand voice. Ready to move to the Marketing stage and build out your service offerings?`;
+      }
+    }
+
+    // Marketing Stage Greetings
+    if (stage === 'marketing') {
+      const discoveryComplete = currentCompleteness.discovery >= 100;
+      
+      if (stageCompleteness === 0) {
+        return `${discoveryComplete ? 'Excellent! Discovery complete! 🎉\n\n' : ''}Welcome to the Marketing stage. Now we'll dive deeper into each of your ${servicesCount} services - understanding what makes them unique, who they're for, and how to position them.\n\nLet's start with your first service. Which one should we focus on?`;
+      } else if (stageCompleteness < 100) {
+        return `Great progress! Here's where we are: 🚀\n\n✓ Discovery: ${currentCompleteness.discovery}% ${currentCompleteness.discovery >= 100 ? '✅' : ''}\n✓ Marketing: ${Math.round(stageCompleteness)}% (in progress)\n\nWe're building out marketing details for your services. Let's continue with service differentiators, key benefits, and positioning. Which service should we focus on next?`;
+      } else {
+        return `Amazing work! Marketing stage complete! 🎉\n\n✓ Discovery: 100% ✅\n✓ Marketing: 100% ✅\n\nYou've built comprehensive service profiles. Ready to move to the Avatar stage and define your ideal customer?`;
+      }
+    }
+
+    // Avatar Stage Greetings
+    if (stage === 'avatar') {
+      const discoveryComplete = currentCompleteness.discovery >= 100;
+      const marketingComplete = currentCompleteness.marketing >= 100;
+      
+      if (stageCompleteness === 0) {
+        return `Welcome to the Avatar stage! 🎯\n\n${discoveryComplete ? '✓ Discovery: 100% ✅\n' : ''}${marketingComplete ? '✓ Marketing: 100% ✅\n' : ''}\nWe've built a strong foundation. Now we're creating your ideal customer avatar - understanding who your perfect customer is, their challenges, goals, and what makes them choose you.\n\nLet's start: Who is your ideal customer? Tell me about them - their role, industry, or business type.`;
+      } else if (stageCompleteness < 100) {
+        return `Welcome back! Here's where we are: 🚀\n\n✓ Discovery: ${currentCompleteness.discovery}% ${currentCompleteness.discovery >= 100 ? '✅' : ''}\n✓ Marketing: ${currentCompleteness.marketing}% ${currentCompleteness.marketing >= 100 ? '✅' : ''}\n✓ Avatar: ${Math.round(stageCompleteness)}% (in progress)\n\nWe're defining your ideal customer. Let's continue building out their profile - their pain points, goals, and decision-making factors. What else can you tell me about them?`;
+      } else {
+        return `Incredible! Avatar stage complete! 🎉\n\n✓ Discovery: 100% ✅\n✓ Marketing: 100% ✅\n✓ Avatar: 100% ✅\n\nYou've completed all stages! Your Launch Pad profile is ready. Time to finalize and launch! 🚀`;
+      }
+    }
+
+    // Default fallback
+    return `Hi! Welcome back to your Launch Pad journey. ${companyName ? `Let's continue building your marketing foundation for ${companyName}.` : 'Ready to continue?'}`;
+  };
 
   const initializeConversation = async () => {
     if (!selectedClient) return;
@@ -72,27 +147,12 @@ export function ChatOnboarding({ submission, onSwitchToForm }: ChatOnboardingPro
         })
         .eq('id', submission.id);
 
-      // Generate context-aware greeting based on existing data
-      const existingData = submission.responses_json || {};
-      const hasDiscoveryData = existingData.discovery && Object.keys(existingData.discovery.company || {}).length > 0;
-      const hasMarketingData = existingData.marketing?.services_completed;
-      const companyName = existingData.discovery?.company?.brand_name || existingData.discovery?.company?.legal_name;
-      const servicesCount = existingData.discovery?.model?.services?.length || 0;
-      const goalsCount = existingData.discovery?.goals?.quarter_goals?.length || 0;
-
-      let greetingContent = '';
-
-      if (hasDiscoveryData) {
-        // User has already filled discovery data in form mode
-        greetingContent = `Hi! I see you've already started your Launch Pad${companyName ? ` for ${companyName}` : ''}. Great work so far! 🎉\n\nI've loaded what you've already shared. Let me review...\n\n✓ Company info captured\n${servicesCount > 0 ? `✓ ${servicesCount} services listed\n` : ''}${goalsCount > 0 ? `✓ ${goalsCount} goals defined\n` : ''}\nLet's continue from where you left off. ${hasMarketingData ? 'Ready to work on your ideal customer avatar?' : 'Want to add more details, or move on to the next stage?'}`;
-      } else {
-        // Fresh start
-        greetingContent = `Hi! I'm your marketing AI assistant. I'm excited to learn about your business so I can help you grow!\n\nThis will take about 15-20 minutes. I'll ask you some questions about your company, what you offer, and where you want to go. Sound good?\n\nLet's start with the basics - what's your company's legal name, and what do people actually call you (your brand name)?`;
-      }
+      // Generate context-aware greeting
+      const greetingContent = generateContextualGreeting(submission, completeness);
 
       const greeting: Message = {
         role: 'assistant',
-        content: greetingContent || 'Hi! I\'m your marketing AI assistant. Let\'s get started with your Launch Pad!',
+        content: greetingContent,
         timestamp: new Date(),
       };
 
@@ -236,6 +296,76 @@ export function ChatOnboarding({ submission, onSwitchToForm }: ChatOnboardingPro
     }
   };
 
+  const handleRefresh = async () => {
+    if (!selectedClient || !conversationId) return;
+    
+    setIsLoading(true);
+    try {
+      // Archive current conversation
+      await supabase
+        .from('chat_conversations')
+        .update({ archived_at: new Date().toISOString() })
+        .eq('id', conversationId);
+
+      // Create new conversation
+      const { data: newConversation, error: convError } = await supabase
+        .from('chat_conversations')
+        .insert({
+          client_id: selectedClient.id,
+          user_id: (await supabase.auth.getUser()).data.user?.id,
+          title: 'Launch Pad Onboarding',
+        })
+        .select()
+        .single();
+
+      if (convError) throw convError;
+
+      // Update submission with new conversation ID
+      await supabase
+        .from('launchpad_submissions')
+        .update({ onboarding_conversation_id: newConversation.id })
+        .eq('id', submission.id);
+
+      setConversationId(newConversation.id);
+
+      // Generate fresh context-aware greeting
+      const greetingContent = generateContextualGreeting(submission, completeness);
+      
+      const greeting: Message = {
+        role: 'assistant',
+        content: greetingContent,
+        timestamp: new Date(),
+      };
+
+      setMessages([greeting]);
+
+      // Save initial message
+      await supabase
+        .from('chat_messages')
+        .insert({
+          conversation_id: newConversation.id,
+          role: 'assistant',
+          content: greeting.content,
+        });
+
+      toast({
+        title: 'Chat Refreshed',
+        description: 'Started a new conversation with updated context.',
+      });
+
+      setShowRefreshDialog(false);
+    } catch (error: any) {
+      console.error('Error refreshing chat:', error);
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to refresh chat',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="grid lg:grid-cols-[1fr,300px] gap-6">
@@ -243,14 +373,44 @@ export function ChatOnboarding({ submission, onSwitchToForm }: ChatOnboardingPro
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-bold">Launch Pad Chat</h2>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onSwitchToForm}
-            >
-              <FileText className="mr-2 h-4 w-4" />
-              Switch to Form
-            </Button>
+            <div className="flex gap-2">
+              <AlertDialog open={showRefreshDialog} onOpenChange={setShowRefreshDialog}>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={isLoading || !conversationId}
+                  >
+                    <RotateCcw className="mr-2 h-4 w-4" />
+                    Refresh Chat
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Start Fresh Conversation?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will start a new conversation with an updated summary of your progress. 
+                      Your data is saved - only the chat history will be archived.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleRefresh}>
+                      Refresh
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onSwitchToForm}
+              >
+                <FileText className="mr-2 h-4 w-4" />
+                Switch to Form
+              </Button>
+            </div>
           </div>
 
           <Card className="h-[600px] flex flex-col">
