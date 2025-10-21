@@ -171,6 +171,14 @@ export function ChatOnboarding({ submission, onSwitchToForm }: ChatOnboardingPro
 
       if (error) throw error;
 
+      console.log('[Frontend] Received response:', { 
+        hasResponse: !!data.response,
+        responseLength: data.response?.length || 0,
+        responsePreview: data.response?.substring(0, 100),
+        completeness: data.completeness,
+        fullData: data
+      });
+
       if (data.response && data.response.trim()) {
         const assistantMessage: Message = {
           role: 'assistant',
@@ -197,10 +205,13 @@ export function ChatOnboarding({ submission, onSwitchToForm }: ChatOnboardingPro
             content: data.response,
           });
       } else {
-        console.error('Edge function returned empty response');
+        console.error('[Frontend] Empty response received');
+        console.error('[Frontend] data.response:', data.response);
+        console.error('[Frontend] Full data object:', JSON.stringify(data));
+        console.error('[Frontend] Response type:', typeof data.response);
         toast({
-          title: 'Error',
-          description: 'Failed to get response from assistant',
+          title: 'No Response',
+          description: 'The assistant did not provide a response. Please try again.',
           variant: 'destructive',
         });
       }

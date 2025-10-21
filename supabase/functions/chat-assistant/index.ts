@@ -1049,6 +1049,16 @@ serve(async (req) => {
 
     const { messages, client_id, offer_mode = false, launchpad_mode = false, submission_id = null, current_stage = null } = await req.json();
 
+    console.log('[Request Debug]:', {
+      client_id,
+      offer_mode,
+      launchpad_mode,
+      submission_id,
+      current_stage,
+      message_count: messages.length,
+      last_message: messages[messages.length - 1]?.content?.substring(0, 100)
+    });
+
     if (!client_id) {
       return new Response(JSON.stringify({ error: 'client_id is required' }), {
         status: 400,
@@ -1997,6 +2007,17 @@ When providing advice, you can reference these frameworks to support your recomm
       }
     }
 
+    // Ensure we have some response
+    if (!assistantMessage || assistantMessage.trim().length === 0) {
+      console.warn('[Empty Response] AI returned no content, launchpad_mode:', launchpad_mode);
+      if (launchpad_mode) {
+        assistantMessage = "I apologize, but I didn't generate a proper response. Could you please try again?";
+      }
+    }
+
+    console.log('[Assistant Message] Final length:', assistantMessage?.length || 0);
+    console.log('[Assistant Message] Preview:', assistantMessage?.substring(0, 200));
+
     // Convert functionCalls object to array
     const functionCallsArray = Object.values(functionCalls).filter(
       (fc): fc is FunctionCall => fc.name !== ''
@@ -2214,22 +2235,37 @@ When providing advice, you can reference these frameworks to support your recomm
       });
     } else {
       // No function calls detected
-      console.log('No function calls detected, returning original response');
+      console.log('[No Functions] Detected 0 function calls');
+      console.log('[No Functions] launchpad_mode:', launchpad_mode, 'type:', typeof launchpad_mode);
+      console.log('[No Functions] assistantMessage length:', assistantMessage?.length || 0);
+      console.log('[No Functions] First 200 chars:', assistantMessage?.substring(0, 200));
+      
+      if (launchpad_mode) {
+        console.warn('[LaunchPad] WARNING: No function calls detected in LaunchPad mode. AI should be calling extract_launchpad_data.');
+      }
       
       // For LaunchPad mode, return JSON response
-      if (launchpad_mode) {
-        console.log('[LaunchPad Response]:', { responseLength: assistantMessage?.length || 0, completeness: null });
+      if (launchpad_mode === true) {
+        console.log('[LaunchPad Response] Returning JSON response');
+        console.log('[LaunchPad Response] Response length:', assistantMessage?.length || 0);
+        console.log('[LaunchPad Response] Full response:', assistantMessage);
         
-        return new Response(JSON.stringify({
+        const responseData = {
           response: assistantMessage || '',
           completeness: null
-        }), {
+        };
+        
+        console.log('[LaunchPad Response] Response object:', JSON.stringify(responseData));
+        
+        return new Response(JSON.stringify(responseData), {
           headers: {
             ...corsHeaders,
             'Content-Type': 'application/json'
           }
         });
       }
+      
+      console.log('[Non-LaunchPad] Streaming response for regular chat');
       
       // For non-LaunchPad modes, stream the response
       const encoder = new TextEncoder();
