@@ -52,7 +52,15 @@ serve(async (req) => {
       : 'general market area';
 
     // Build image generation prompt based on AI summary
-    const imagePrompt = `Create a natural, cinematic-style portrait of the ideal customer described below. 
+    const diversityInstructions = [
+      'Generate a diverse range of people across these images: vary ethnicity (Black, White, Hispanic, Asian, Middle Eastern, etc.), gender (men and women), and age ranges where appropriate.',
+      'Each of the 3 images you generate should show different demographic combinations to represent the full diversity of potential customers.',
+      'Do not default to any particular ethnicity or gender - actively vary these attributes.'
+    ].join(' ');
+
+    const imagePrompt = `${diversityInstructions}
+
+Create a natural, cinematic-style portrait of the ideal customer described below. 
 Focus on authenticity and realism rather than perfection or glamour. Capture their environment, posture, and facial expression in a way that tells a story about their daily life and work.
 
 They should look approachable, confident, and genuine — not like a stock photo model. 
@@ -67,7 +75,7 @@ Lighting should feel natural, with soft shadows and a realistic depth of field.
 Facial expression should convey focus, thoughtfulness, or warmth, depending on the tone from the avatar summary. 
 Props or background elements (like tools, a laptop, signage, or workspace items) should feel authentic but never cluttered.
 
-If the demographic implies age, gender, or ethnicity, represent it naturally without exaggeration. 
+Represent age naturally based on the description below, and ensure demographic representation is authentic without exaggeration or stereotyping.
 Avoid hyper-realistic rendering, AI filters, or over-sharpened looks. 
 This should look like a real photo of a genuine person running their business in their real environment.
 
