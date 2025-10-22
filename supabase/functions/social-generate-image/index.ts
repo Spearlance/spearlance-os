@@ -94,6 +94,15 @@ CRITICAL - DO NOT INCLUDE:
 - NO complex graphics that compete with the message
 - Keep text overlays minimal and relevant to caption only
 
+PROFESSIONAL VISUAL STANDARDS:
+- NO emojis, emoticons, or emoji-style graphics (😊🎉❤️ etc.)
+- NO stickers, cartoon elements, or decorative graphics
+- NO memes, internet culture references, or casual design trends
+- NO comic-style effects, speech bubbles, or informal typography
+- NO hand-drawn doodles, arrows, or casual annotations
+- Text should use clean, professional fonts only
+- Maintain a polished, corporate-appropriate aesthetic at all times
+
 HUMAN SUBJECTS GUIDELINES (when people are included):
 - NO hand-holding between adults (unless clearly parent-child)
 - NO romantic gestures, hugging, or physical affection between adults
