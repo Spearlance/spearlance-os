@@ -1,5 +1,8 @@
 project_id = "hrmhqybdsdngsvhjqwma"
 
+[functions.resend-admin-invitation]
+verify_jwt = true
+
 [functions.admin-update-user-role]
 verify_jwt = true
 

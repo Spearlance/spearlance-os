@@ -147,19 +147,17 @@ export function UserInfoDialog({ user, clients }: UserInfoDialogProps) {
           </div>
 
           {/* Password Reset Action */}
-          {user.role !== 'admin' && (
-            <div className="pt-4 border-t">
-              <Button
-                onClick={handlePasswordReset}
-                disabled={isSending}
-                className="w-full"
-                variant="outline"
-              >
-                <KeyRound className="h-4 w-4 mr-2" />
-                {isSending ? "Sending..." : "Send Password Reset"}
-              </Button>
-            </div>
-          )}
+          <div className="pt-4 border-t">
+            <Button
+              onClick={handlePasswordReset}
+              disabled={isSending}
+              className="w-full"
+              variant="outline"
+            >
+              <KeyRound className="h-4 w-4 mr-2" />
+              {isSending ? "Sending..." : "Send Password Reset"}
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
