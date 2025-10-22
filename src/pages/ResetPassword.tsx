@@ -16,16 +16,6 @@ const ResetPassword = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [success, setSuccess] = useState(false);
 
-  useEffect(() => {
-    // Check if user is already logged in and has valid session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      // If logged in and no recovery token, redirect to dashboard
-      if (session && !window.location.hash.includes('type=recovery')) {
-        navigate("/");
-      }
-    });
-  }, [navigate]);
-
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
 
