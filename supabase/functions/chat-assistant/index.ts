@@ -737,7 +737,7 @@ async function getTickets(supabase: any, params: any, clientId: string) {
 async function getMeetings(supabase: any, params: any, clientId: string) {
   let query = supabase
     .from('meetings')
-    .select('id, date_time, summary, attendees, status, decisions, next_steps', { count: 'exact' })
+    .select('id, date_time, summary, attendees, status, decisions, next_steps, transcript_text, recording_url, tags', { count: 'exact' })
     .eq('client_id', clientId);
   
   if (params.date_from) query = query.gte('date_time', params.date_from);
@@ -753,19 +753,22 @@ async function getMeetings(supabase: any, params: any, clientId: string) {
   
   if (error) throw error;
   
-  // Truncate summaries for list view
-  const truncated = (data || []).map((m: any) => ({
+  // Return full data without truncation for better AI context
+  const fullData = (data || []).map((m: any) => ({
     ...m,
-    summary: m.summary?.substring(0, 200) + (m.summary?.length > 200 ? '...' : ''),
-    decisions_count: m.decisions?.length || 0,
-    next_steps_count: m.next_steps?.length || 0
+    has_transcript: !!m.transcript_text,
+    has_recording: !!m.recording_url,
+    // Only truncate transcript if extremely long (>5000 chars)
+    transcript_text: m.transcript_text?.length > 5000 
+      ? m.transcript_text.substring(0, 5000) + '... [transcript truncated, full version available]'
+      : m.transcript_text
   }));
   
   return {
-    items: sanitizeDataForPrompt(truncated),
-    result_count: truncated.length,
+    items: sanitizeDataForPrompt(fullData),
+    result_count: fullData.length,
     total_count: count || 0,
-    next_offset: truncated.length >= limit ? offset + limit : null
+    next_offset: fullData.length >= limit ? offset + limit : null
   };
 }
 
@@ -786,10 +789,10 @@ async function searchMeetingNotes(supabase: any, params: any, clientId: string) 
   };
 }
 
-async function getCommunicationLogs(supabase: any, params: any, clientId: string) {
+async function getCommunicationLogs(supabase: any, params: any, clientId: string, userRole: string) {
   let query = supabase
     .from('communication_logs')
-    .select('id, subject_line, type, participants, last_message_at, tags, source, front_conversation_url', { count: 'exact' })
+    .select('id, subject_line, type, participants, last_message_at, tags, source, front_conversation_url, message_thread, internal_notes, attachments', { count: 'exact' })
     .eq('client_id', clientId);
   
   if (params.status) query = query.eq('status', params.status);
@@ -811,11 +814,46 @@ async function getCommunicationLogs(supabase: any, params: any, clientId: string
   
   if (error) throw error;
   
+  // Process message threads for better AI context
+  const processedData = (data || []).map((log: any) => {
+    let messagePreview = '';
+    
+    // Extract text from message_thread (assuming it's an array of message objects)
+    if (Array.isArray(log.message_thread) && log.message_thread.length > 0) {
+      // Get last 3 messages or entire thread if shorter
+      const recentMessages = log.message_thread.slice(-3);
+      messagePreview = recentMessages
+        .map((msg: any) => `[${msg.sender || 'Unknown'}]: ${msg.body || msg.text || ''}`)
+        .join('\n');
+      
+      // Truncate if extremely long
+      if (messagePreview.length > 2000) {
+        messagePreview = messagePreview.substring(0, 2000) + '... [conversation continues]';
+      }
+    }
+    
+    return {
+      id: log.id,
+      subject_line: log.subject_line,
+      type: log.type,
+      participants: log.participants,
+      last_message_at: log.last_message_at,
+      tags: log.tags,
+      source: log.source,
+      front_conversation_url: log.front_conversation_url,
+      message_preview: messagePreview,
+      message_count: Array.isArray(log.message_thread) ? log.message_thread.length : 0,
+      has_attachments: log.attachments && Object.keys(log.attachments).length > 0,
+      // Only include internal_notes for FMM/Admin roles
+      internal_notes: (userRole === 'admin' || userRole === 'fmm') ? log.internal_notes : undefined
+    };
+  });
+  
   return {
-    items: sanitizeDataForPrompt(data || []),
-    result_count: data?.length || 0,
+    items: sanitizeDataForPrompt(processedData),
+    result_count: processedData.length,
     total_count: count || 0,
-    next_offset: (data?.length || 0) >= limit ? offset + limit : null
+    next_offset: processedData.length >= limit ? offset + limit : null
   };
 }
 
@@ -1074,11 +1112,11 @@ const tools = [
     type: "function",
     function: {
       name: "get_communication_logs",
-      description: "Search email conversations and communication logs for the current client. Returns conversation subjects, participants, timestamps, and metadata. Use this to find past communications, email threads, or specific conversations.",
+      description: "Search email conversations, calls, and communication logs for the current client. Returns conversation subjects, participants, timestamps, AND the actual message content from recent exchanges. Use this when users reference specific conversations, emails, or discussions. The message preview includes the last few messages in the thread.",
       parameters: {
         type: "object",
         properties: {
-          query: { type: "string", description: "Search query for subject line or internal notes" },
+          query: { type: "string", description: "Search query for subject line, internal notes, or message content" },
           status: { type: "string", enum: ["active", "archived"], description: "Filter by conversation status" },
           tags: { type: "array", items: { type: "string" }, description: "Filter by tags" },
           date_from: { type: "string", format: "date-time", description: "Filter conversations from this date (ISO 8601)" },
@@ -1901,6 +1939,21 @@ UNDERSTANDING TIME CONTEXT
   * Proactively check previous period: "Let me check [previous period] instead..."
   * Suggest: "Would you like me to look at [alternative period]?"
 
+HANDLING TEMPORAL REFERENCES
+- When user says "the meeting today" or "today's meeting":
+  * Calculate today's date range: ${new Date().toISOString().split('T')[0]}
+  * Call get_meetings with date_from and date_to for today
+  * If no meetings today, check yesterday or suggest upcoming meetings
+  
+- When user says "that email about [topic]":
+  * Call get_communication_logs with query parameter for the topic
+  * Use recent date range (last 7-14 days) unless specified
+  * Reference the actual email content in your response
+
+- Always confirm the specific meeting/email you're referencing:
+  * "Looking at your meeting from [date] at [time] with [attendees]..."
+  * "Found the email thread about [topic] from [date]..."
+
 HOW TO INTERPRET DATA (not just list it)
 
 When analyzing tasks:
@@ -2275,9 +2328,9 @@ When providing advice, you can reference these frameworks to support your recomm
             case 'get_tickets':
               result = await getTickets(supabaseClient, args, client_id);
               break;
-            case 'get_communication_logs':
-              result = await getCommunicationLogs(supabaseClient, args, client_id);
-              break;
+        case 'get_communication_logs':
+          result = await getCommunicationLogs(supabaseClient, args, client_id, userRole);
+          break;
             case 'gather_gso_inputs':
               result = await gatherGSOInputs(supabaseClient, client_id);
               break;
