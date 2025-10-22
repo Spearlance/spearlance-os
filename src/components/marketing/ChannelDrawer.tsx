@@ -12,6 +12,7 @@ import { Plus, ExternalLink } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import type { Database } from "@/integrations/supabase/types";
 import CreateChannelTaskDialog from "./CreateChannelTaskDialog";
+import { DeleteChannelDialog } from "./DeleteChannelDialog";
 
 type Channel = Database["public"]["Tables"]["marketing_flow_channels"]["Row"];
 type Note = Database["public"]["Tables"]["marketing_flow_channel_notes"]["Row"];
@@ -214,6 +215,50 @@ export function ChannelDrawer({ open, onOpenChange, channel, onUpdate, isAdminOr
     }
   };
 
+  const handleDeleteChannel = async () => {
+    try {
+      // First delete all task links
+      const { error: linksError } = await supabase
+        .from("marketing_flow_task_links")
+        .delete()
+        .eq("channel_id", channel.id);
+
+      if (linksError) throw linksError;
+
+      // Then delete all notes
+      const { error: notesError } = await supabase
+        .from("marketing_flow_channel_notes")
+        .delete()
+        .eq("channel_id", channel.id);
+
+      if (notesError) throw notesError;
+
+      // Finally delete the channel itself
+      const { error: channelError } = await supabase
+        .from("marketing_flow_channels")
+        .delete()
+        .eq("id", channel.id);
+
+      if (channelError) throw channelError;
+
+      toast({
+        title: "Success",
+        description: "Channel deleted successfully",
+      });
+      
+      onOpenChange(false); // Close the drawer
+      onUpdate(); // Refresh the parent view
+    } catch (error) {
+      console.error("Error deleting channel:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete channel",
+        variant: "destructive",
+      });
+      throw error; // Re-throw so DeleteChannelDialog can handle loading state
+    }
+  };
+
   const getStatusBadgeClass = (taskStatus: string) => {
     const statusMap: Record<string, string> = {
       to_do: "bg-gray-100 text-gray-700",
@@ -228,7 +273,16 @@ export function ChannelDrawer({ open, onOpenChange, channel, onUpdate, isAdminOr
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
         <SheetHeader>
-          <SheetTitle>{channel.name}</SheetTitle>
+          <div className="flex items-center justify-between">
+            <SheetTitle>{channel.name}</SheetTitle>
+            {isAdminOrFMM && (
+              <DeleteChannelDialog
+                channelName={channel.name}
+                channelId={channel.id}
+                onConfirm={handleDeleteChannel}
+              />
+            )}
+          </div>
         </SheetHeader>
 
         <Tabs defaultValue="details" className="mt-6">
