@@ -117,19 +117,19 @@ serve(async (req) => {
 
     console.log('User created successfully');
 
-    // Generate password reset link
+    // Generate signup link
     const appUrl = 'https://os.spearlance.com';
-    const { data: resetData, error: resetError } = await supabaseAdmin.auth.admin.generateLink({
-      type: 'recovery',
+    const { data: signupData, error: signupError } = await supabaseAdmin.auth.admin.generateLink({
+      type: 'signup',
       email: email,
       options: {
-        redirectTo: `${appUrl}/auth/reset-password`
+        redirectTo: `${appUrl}/set-password`
       }
     });
 
-    if (resetError) {
-      console.error('Error generating reset link:', resetError);
-      throw new Error('Failed to generate password reset link');
+    if (signupError) {
+      console.error('Error generating signup link:', signupError);
+      throw new Error('Failed to generate signup link');
     }
 
     // Prepare email content
@@ -148,28 +148,49 @@ serve(async (req) => {
 
     const roleDisplay = role.charAt(0).toUpperCase() + role.slice(1);
 
-    // Send invitation email with password reset link
+    // Send invitation email with signup link
     try {
       await resend.emails.send({
-        from: 'Platform Invitation <noreply@em.os.spearlance.com>',
+        from: 'Spearlance Platform <noreply@em.os.spearlance.com>',
         to: [email],
-        subject: `You've been invited to the platform`,
+        subject: `Welcome to Spearlance - Set Your Password`,
         html: `
-          <h1>Welcome to the platform!</h1>
-          <p>Hi ${name},</p>
-          <p>You've been invited as a <strong>${roleDisplay}</strong>.</p>
-          
-          ${clientNamesText}
-          
-          <h2>Set up your account:</h2>
-          <p>Click the link below to set your password and activate your account:</p>
-          
-          <p><a href="${resetData.properties.action_link}" style="display: inline-block; padding: 12px 24px; background-color: #0070f3; color: white; text-decoration: none; border-radius: 5px; margin: 16px 0;">Set Password & Log In</a></p>
-          
-          <p><strong>Important:</strong> This link will expire in 24 hours for security reasons.</p>
-          <p>Your email: <strong>${email}</strong></p>
-          
-          <p>Best regards,<br>The Team</p>
+          <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h1 style="color: #1a1a1a; margin-bottom: 24px;">Welcome to Spearlance!</h1>
+            
+            <p style="color: #4a5568; font-size: 16px; line-height: 1.5;">Hi ${name},</p>
+            
+            <p style="color: #4a5568; font-size: 16px; line-height: 1.5;">
+              You've been invited to join Spearlance as an <strong>${roleDisplay}</strong>.
+            </p>
+            
+            ${clientNamesText}
+            
+            <div style="background: #f7fafc; padding: 20px; border-radius: 8px; margin: 24px 0;">
+              <h2 style="color: #2d3748; font-size: 18px; margin-top: 0;">Get Started</h2>
+              <p style="color: #4a5568; margin-bottom: 16px;">Click the button below to set your password and access your account:</p>
+              
+              <a href="${signupData.properties.action_link}" 
+                 style="display: inline-block; padding: 14px 28px; background-color: #4F46E5; color: white; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px;">
+                Create Your Password
+              </a>
+            </div>
+            
+            <div style="background: #fffbeb; border-left: 4px solid #f59e0b; padding: 12px 16px; margin: 24px 0;">
+              <p style="color: #92400e; margin: 0; font-size: 14px;">
+                <strong>Important:</strong> This link will expire in 24 hours for security reasons.
+              </p>
+            </div>
+            
+            <p style="color: #718096; font-size: 14px;">
+              Your email: <strong>${email}</strong>
+            </p>
+            
+            <p style="color: #4a5568; margin-top: 32px;">
+              Best regards,<br>
+              <strong>The Spearlance Team</strong>
+            </p>
+          </div>
         `,
       });
 
