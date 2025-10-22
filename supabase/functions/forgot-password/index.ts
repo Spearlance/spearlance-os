@@ -68,17 +68,17 @@ serve(async (req) => {
       subject: 'Reset Your Spearlance Password',
       html: `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h1 style="color: #1a1a1a; margin-bottom: 24px;">Password Reset Request</h1>
+          <h1 style="color: #1a1a1a; margin-bottom: 24px;">Reset Your Password</h1>
           
           <p style="color: #4a5568; font-size: 16px; line-height: 1.5;">Hi ${profile?.name || 'there'},</p>
           
           <p style="color: #4a5568; font-size: 16px; line-height: 1.5;">
-            We received a request to reset your Spearlance password. Click the button below to create a new password:
+            We received a request to reset your password for your Spearlance account. Click the button below to create a new password:
           </p>
           
           <div style="background: #f7fafc; padding: 20px; border-radius: 8px; margin: 24px 0;">
             <h2 style="color: #2d3748; font-size: 18px; margin-top: 0;">Reset Your Password</h2>
-            <p style="color: #4a5568; margin-bottom: 16px;">Click the button below to reset your password:</p>
+            <p style="color: #4a5568; margin-bottom: 16px;">Click the button below to securely reset your password:</p>
             
             <a href="${resetData.properties.action_link}" 
                style="display: inline-block; padding: 14px 28px; background-color: #4F46E5; color: white; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px;">
@@ -92,8 +92,8 @@ serve(async (req) => {
             </p>
           </div>
           
-          <p style="color: #718096; font-size: 14px;">
-            If you didn't request this password reset, you can safely ignore this email.
+          <p style="color: #718096; font-size: 14px; line-height: 1.5;">
+            If you didn't request this password reset, you can safely ignore this email. Your password will remain unchanged.
           </p>
           
           <p style="color: #4a5568; margin-top: 32px;">
