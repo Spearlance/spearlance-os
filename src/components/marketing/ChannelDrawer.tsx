@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, ExternalLink } from "lucide-react";
+import { Plus, ExternalLink, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import type { Database } from "@/integrations/supabase/types";
 import CreateChannelTaskDialog from "./CreateChannelTaskDialog";
@@ -273,16 +273,7 @@ export function ChannelDrawer({ open, onOpenChange, channel, onUpdate, isAdminOr
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
         <SheetHeader>
-          <div className="flex items-center justify-between">
-            <SheetTitle>{channel.name}</SheetTitle>
-            {isAdminOrFMM && (
-              <DeleteChannelDialog
-                channelName={channel.name}
-                channelId={channel.id}
-                onConfirm={handleDeleteChannel}
-              />
-            )}
-          </div>
+          <SheetTitle>{channel.name}</SheetTitle>
         </SheetHeader>
 
         <Tabs defaultValue="details" className="mt-6">
@@ -433,6 +424,22 @@ export function ChannelDrawer({ open, onOpenChange, channel, onUpdate, isAdminOr
             </div>
           </TabsContent>
         </Tabs>
+
+        {isAdminOrFMM && (
+          <div className="flex justify-end mt-6 pt-6 border-t">
+            <DeleteChannelDialog
+              channelName={channel.name}
+              channelId={channel.id}
+              onConfirm={handleDeleteChannel}
+              trigger={
+                <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive hover:bg-destructive/10">
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete Channel
+                </Button>
+              }
+            />
+          </div>
+        )}
 
         <CreateChannelTaskDialog
           open={showCreateTask}
