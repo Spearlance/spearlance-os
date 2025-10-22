@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.75.0";
-import { Resend } from "npm:resend@2.0.0";
+import { Resend } from "https://esm.sh/resend@2.0.0";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -51,10 +51,10 @@ serve(async (req) => {
 
     if (!targetProfile) throw new Error('Profile not found');
 
-    // Generate signup link
+    // Generate password reset link
     const appUrl = 'https://os.spearlance.com';
     const { data: signupData, error: signupError } = await supabaseAdmin.auth.admin.generateLink({
-      type: 'signup',
+      type: 'recovery',
       email: targetUser.user.email!,
       options: {
         redirectTo: `${appUrl}/set-password`

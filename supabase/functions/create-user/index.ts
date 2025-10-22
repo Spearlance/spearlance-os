@@ -117,10 +117,10 @@ serve(async (req) => {
 
     console.log('User created successfully');
 
-    // Generate signup link
+    // Generate password reset link
     const appUrl = 'https://os.spearlance.com';
     const { data: signupData, error: signupError } = await supabaseAdmin.auth.admin.generateLink({
-      type: 'signup',
+      type: 'recovery',
       email: email,
       options: {
         redirectTo: `${appUrl}/set-password`
