@@ -14,6 +14,7 @@ import { InviteTeamMemberDialog } from "@/components/settings/InviteTeamMemberDi
 import { TeamMembersList } from "@/components/settings/TeamMembersList";
 import { ClientLogoUploader } from "@/components/settings/ClientLogoUploader";
 import { BillingTab } from "@/components/settings/BillingTab";
+import { UserProfileTab } from "@/components/settings/UserProfileTab";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Clock, Copy, Info } from "lucide-react";
@@ -24,6 +25,7 @@ export default function Settings() {
   const [userProfile, setUserProfile] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [teamRefresh, setTeamRefresh] = useState(0);
+  const [profileRefresh, setProfileRefresh] = useState(0);
   const [isPrimaryContact, setIsPrimaryContact] = useState(false);
   const { toast } = useToast();
   const { isCalReady, isLoading: isCalLoading } = useCalReady();
@@ -39,7 +41,7 @@ export default function Settings() {
     if (user) {
       const { data: profile } = await supabase
         .from("profiles")
-        .select("*")
+        .select("id, name, email, role, avatar_url")
         .eq("id", user.id)
         .single();
       setUserProfile(profile);
@@ -60,7 +62,7 @@ export default function Settings() {
 
   useEffect(() => {
     fetchUserProfile();
-  }, [selectedClient]);
+  }, [selectedClient, profileRefresh]);
 
   const handleSave = async () => {
     if (!userProfile) return;
@@ -102,22 +104,36 @@ export default function Settings() {
         <h1 className="text-3xl font-bold">Settings</h1>
       </div>
 
-      {!client ? (
+      {!client && !userProfile ? (
         <Card>
           <CardContent className="py-8">
             <p className="text-center text-muted-foreground">
-              Please select a client from the sidebar to manage settings.
+              Loading...
             </p>
           </CardContent>
         </Card>
       ) : (
-        <Tabs defaultValue="general" className="w-full">
+        <Tabs defaultValue="profile" className="w-full">
           <TabsList>
-            <TabsTrigger value="general">General</TabsTrigger>
-            {showCalendarTab && <TabsTrigger value="calendar">Calendar</TabsTrigger>}
-            <TabsTrigger value="team">Team</TabsTrigger>
-            {canViewBilling && <TabsTrigger value="billing">Billing</TabsTrigger>}
+            <TabsTrigger value="profile">Profile</TabsTrigger>
+            {client && <TabsTrigger value="general">General</TabsTrigger>}
+            {client && showCalendarTab && <TabsTrigger value="calendar">Calendar</TabsTrigger>}
+            {client && <TabsTrigger value="team">Team</TabsTrigger>}
+            {client && canViewBilling && <TabsTrigger value="billing">Billing</TabsTrigger>}
           </TabsList>
+
+          <TabsContent value="profile" className="space-y-4">
+            {userProfile && (
+              <Card>
+                <CardContent className="pt-6">
+                  <UserProfileTab
+                    profile={userProfile}
+                    onProfileUpdated={() => setProfileRefresh(prev => prev + 1)}
+                  />
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
 
           <TabsContent value="general" className="space-y-4">
           <Card>

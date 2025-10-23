@@ -2053,6 +2053,7 @@ export type Database = {
       profiles: {
         Row: {
           associated_client_ids: string[] | null
+          avatar_url: string | null
           cal_access_token: string | null
           cal_availability_view_only: boolean | null
           cal_booking_enabled: boolean | null
@@ -2071,6 +2072,7 @@ export type Database = {
         }
         Insert: {
           associated_client_ids?: string[] | null
+          avatar_url?: string | null
           cal_access_token?: string | null
           cal_availability_view_only?: boolean | null
           cal_booking_enabled?: boolean | null
@@ -2089,6 +2091,7 @@ export type Database = {
         }
         Update: {
           associated_client_ids?: string[] | null
+          avatar_url?: string | null
           cal_access_token?: string | null
           cal_availability_view_only?: boolean | null
           cal_booking_enabled?: boolean | null
