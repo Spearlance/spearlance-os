@@ -4,8 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
@@ -38,11 +37,13 @@ const signinSchema = z.object({
 const Auth = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [companyName, setCompanyName] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
@@ -55,6 +56,13 @@ const Auth = () => {
         navigate("/");
       }
     });
+
+    // Load remembered email if exists
+    const rememberedEmail = localStorage.getItem('rememberedEmail');
+    if (rememberedEmail) {
+      setEmail(rememberedEmail);
+      setRememberMe(true);
+    }
   }, [navigate]);
 
   const handleSignUp = async (e: React.FormEvent) => {
@@ -154,6 +162,13 @@ const Auth = () => {
 
       if (error) throw error;
 
+      // Handle remember me
+      if (rememberMe) {
+        localStorage.setItem('rememberedEmail', email);
+      } else {
+        localStorage.removeItem('rememberedEmail');
+      }
+
       navigate("/");
     } catch (error: any) {
       toast({
@@ -203,32 +218,26 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-dark p-4">
-      <Card className="w-full max-w-md shadow-elegant">
-        <CardHeader className="space-y-1">
-          <div className="flex items-center justify-center mb-4">
-            <img 
-              src={spearlanceLogo}
-              alt="Spearlance Logo" 
-              className="h-[70px] w-[70px] object-contain"
-            />
-          </div>
-          <CardTitle className="text-2xl text-center">SpearlanceOS</CardTitle>
-          <CardDescription className="text-center">
-            Sign in to your account or create a new one
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Tabs defaultValue="signin" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="signin">Sign In</TabsTrigger>
-              <TabsTrigger value="signup">Sign Up</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="signin">
+    <div className="min-h-screen grid grid-cols-1 lg:grid-cols-2">
+      {/* Logo - Fixed top-left */}
+      <div className="absolute top-8 left-8 z-10">
+        <img 
+          src={spearlanceLogo}
+          alt="Spearlance Logo" 
+          className="h-12 w-12 object-contain"
+        />
+      </div>
+
+      {/* Left Column - Login/Signup Form */}
+      <div className="flex items-center justify-center p-8 lg:p-16 bg-background">
+        <div className="w-full max-w-md">
+          {!isSignUp ? (
+            // Sign In Form
+            <>
+              <h1 className="text-4xl font-bold mb-8">Log in</h1>
               <form onSubmit={handleSignIn} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="email">Email address</Label>
                   <Input
                     id="email"
                     type="email"
@@ -244,6 +253,7 @@ const Auth = () => {
                     <p className="text-sm text-destructive">{validationErrors.email}</p>
                   )}
                 </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="password">Password</Label>
                   <Input
@@ -261,28 +271,61 @@ const Auth = () => {
                     <p className="text-sm text-destructive">{validationErrors.password}</p>
                   )}
                 </div>
-                <Button
-                  type="submit"
-                  className="w-full"
-                  disabled={loading}
-                >
-                  {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Sign In
-                </Button>
-                <div className="text-center mt-4">
+
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="remember" 
+                      checked={rememberMe} 
+                      onCheckedChange={(checked) => setRememberMe(checked as boolean)}
+                    />
+                    <label 
+                      htmlFor="remember" 
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                    >
+                      Remember me
+                    </label>
+                  </div>
                   <Button
                     type="button"
                     variant="link"
-                    className="text-sm"
+                    className="text-sm px-0"
                     onClick={() => setShowForgotPassword(true)}
                   >
-                    Forgot your password?
+                    Forgot password?
+                  </Button>
+                </div>
+
+                <Button
+                  type="submit"
+                  className="w-full"
+                  size="lg"
+                  disabled={loading}
+                >
+                  {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Log in
+                </Button>
+
+                <div className="text-center mt-6">
+                  <span className="text-muted-foreground">No account? </span>
+                  <Button
+                    type="button"
+                    variant="link"
+                    className="px-0"
+                    onClick={() => {
+                      setIsSignUp(true);
+                      setValidationErrors({});
+                    }}
+                  >
+                    Sign up here
                   </Button>
                 </div>
               </form>
-            </TabsContent>
-
-            <TabsContent value="signup">
+            </>
+          ) : (
+            // Sign Up Form
+            <>
+              <h1 className="text-4xl font-bold mb-8">Create Account</h1>
               <form onSubmit={handleSignUp} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="signup-name">Full Name</Label>
@@ -301,6 +344,7 @@ const Auth = () => {
                     <p className="text-sm text-destructive">{validationErrors.name}</p>
                   )}
                 </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="signup-company">Company Name</Label>
                   <Input
@@ -318,8 +362,9 @@ const Auth = () => {
                     <p className="text-sm text-destructive">{validationErrors.companyName}</p>
                   )}
                 </div>
+
                 <div className="space-y-2">
-                  <Label htmlFor="signup-email">Email</Label>
+                  <Label htmlFor="signup-email">Email address</Label>
                   <Input
                     id="signup-email"
                     type="email"
@@ -335,6 +380,7 @@ const Auth = () => {
                     <p className="text-sm text-destructive">{validationErrors.email}</p>
                   )}
                 </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="signup-password">Password</Label>
                   <Input
@@ -356,19 +402,43 @@ const Auth = () => {
                     Must be 8+ characters with uppercase, lowercase, and number
                   </p>
                 </div>
+
                 <Button
                   type="submit"
                   className="w-full"
+                  size="lg"
                   disabled={loading}
                 >
                   {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Create Account
                 </Button>
+
+                <div className="text-center mt-6">
+                  <span className="text-muted-foreground">Already have an account? </span>
+                  <Button
+                    type="button"
+                    variant="link"
+                    className="px-0"
+                    onClick={() => {
+                      setIsSignUp(false);
+                      setValidationErrors({});
+                    }}
+                  >
+                    Sign in
+                  </Button>
+                </div>
               </form>
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Right Column - Future AI Recommendations */}
+      <div className="hidden lg:flex items-center justify-center bg-gradient-to-br from-purple-500 to-purple-700 p-16">
+        <div className="text-center text-white">
+          <p className="text-lg opacity-80">AI-powered insights coming soon</p>
+        </div>
+      </div>
 
       {/* Forgot Password Dialog */}
       <Dialog open={showForgotPassword} onOpenChange={setShowForgotPassword}>
