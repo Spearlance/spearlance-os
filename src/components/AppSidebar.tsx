@@ -52,7 +52,6 @@ import {
   BookOpen,
   Palette,
   Share2,
-  Globe,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -64,40 +63,34 @@ const menuItems = [
   { title: "Home", url: "/", icon: Home },
   { title: "Launchpad", url: "/launchpad", icon: Rocket },
   { title: "Tasks", url: "/tasks", icon: CheckSquare },
-  { title: "Avatar", url: "/avatar", icon: Users },
   { title: "Settings", url: "/settings", icon: Settings },
 ];
 
-const supportSubItems = [
-  { title: "Knowledge Base", url: "/support/docs", icon: BookOpen },
-  { title: "Support Tickets", url: "/support", icon: HelpCircle },
-];
-
-const brandSubItems = [
-  { title: "Guide", url: "/brand/guide", icon: BookOpen },
+const brandContentSubItems = [
+  { title: "Avatar", url: "/avatar", icon: Users },
+  { title: "Brand Guide", url: "/brand/guide", icon: BookOpen },
   { title: "Mood Board", url: "/brand/moodboard", icon: Palette },
   { title: "Assets", url: "/brand/assets", icon: FolderOpen },
+  { title: "Social Media", url: "/social-media", icon: Share2 },
 ];
 
 const marketingSubItems = [
-      { title: "Profile", url: "/marketing/profile", icon: User },
-      { title: "Services", url: "/marketing/services", icon: TrendingUp },
-      { title: "Ideas", url: "/marketing/ideas", icon: Lightbulb },
-      { title: "Social Media", url: "/social-media", icon: Share2 },
-      { title: "Tools", url: "/marketing/tools", icon: Wrench },
-      { title: "Flowchart", url: "/marketing/flowchart", icon: GitBranch },
-      { title: "Reports", url: "/marketing/reports", icon: FileText },
+  { title: "Profile", url: "/marketing/profile", icon: User },
+  { title: "Services", url: "/marketing/services", icon: TrendingUp },
+  { title: "Ideas", url: "/marketing/ideas", icon: Lightbulb },
+  { title: "Tools", url: "/marketing/tools", icon: Wrench },
+  { title: "Flowchart", url: "/marketing/flowchart", icon: GitBranch },
+  { title: "Reports", url: "/marketing/reports", icon: FileText },
 ];
 
-const communicationsSubItems = [
+const clientCommunicationSubItems = [
   { title: "Meetings", url: "/meetings", icon: Calendar },
   { title: "Logs", url: "/communications/logs", icon: MessageSquare },
 ];
 
-const websiteSubItems = [
-  { title: "Editor", url: "#", icon: FileText, comingSoon: true },
-  { title: "Analytics", url: "#", icon: TrendingUp, comingSoon: true },
-  { title: "Form Responses", url: "#", icon: MessageSquare, comingSoon: true },
+const helpSupportSubItems = [
+  { title: "Knowledge Base", url: "/support/docs", icon: BookOpen },
+  { title: "Support Tickets", url: "/support", icon: HelpCircle },
 ];
 
 export function AppSidebar() {
@@ -108,11 +101,10 @@ export function AppSidebar() {
   const { toast } = useToast();
   const [userRole, setUserRole] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
-  const [brandOpen, setBrandOpen] = useState(false);
+  const [brandContentOpen, setBrandContentOpen] = useState(false);
   const [marketingOpen, setMarketingOpen] = useState(true);
-  const [communicationsOpen, setCommunicationsOpen] = useState(false);
-  const [supportOpen, setSupportOpen] = useState(false);
-  const [websiteOpen, setWebsiteOpen] = useState(false);
+  const [clientCommunicationOpen, setClientCommunicationOpen] = useState(false);
+  const [helpSupportOpen, setHelpSupportOpen] = useState(false);
   const { isComplete } = useLaunchPadStatus();
   const { isSelfService } = useAccountType();
 
@@ -241,64 +233,17 @@ export function AppSidebar() {
                 </SidebarMenuItem>
               ))}
 
-              {!isLoading && (
-                <Collapsible open={communicationsOpen} onOpenChange={setCommunicationsOpen}>
-                  <SidebarMenuItem>
-                    <CollapsibleTrigger asChild>
-                      <SidebarMenuButton>
-                        <MessageSquare className="h-4 w-4" />
-                        {!collapsed && (
-                          <>
-                            <span>Communications</span>
-                            <ChevronDown 
-                              className={`ml-auto h-4 w-4 transition-transform ${
-                                communicationsOpen ? "rotate-180" : ""
-                              }`}
-                            />
-                          </>
-                        )}
-                      </SidebarMenuButton>
-                    </CollapsibleTrigger>
-                    {!collapsed && (
-                      <CollapsibleContent>
-                        <SidebarMenuSub>
-                {communicationsSubItems
-                  .filter((subItem) => {
-                    // Hide "Logs" from non-FMM/Admin users
-                    if (subItem.title === "Logs") {
-                      return userRole === "admin" || userRole === "fmm";
-                    }
-                    return true;
-                  })
-                  .map((subItem) => (
-                    <SidebarMenuSubItem key={subItem.title}>
-                      <SidebarMenuSubButton asChild>
-                        <NavLink to={subItem.url} className={getNavClass}>
-                          <subItem.icon className="h-4 w-4" />
-                          <span>{subItem.title}</span>
-                        </NavLink>
-                      </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
-                  ))
-                }
-                        </SidebarMenuSub>
-                      </CollapsibleContent>
-                    )}
-                  </SidebarMenuItem>
-                </Collapsible>
-              )}
-
-              <Collapsible open={brandOpen} onOpenChange={setBrandOpen}>
+              <Collapsible open={brandContentOpen} onOpenChange={setBrandContentOpen}>
                 <SidebarMenuItem>
                   <CollapsibleTrigger asChild>
                     <SidebarMenuButton>
                       <Sparkles className="h-4 w-4" />
                       {!collapsed && (
                         <>
-                          <span>Brand</span>
+                          <span>Brand & Content</span>
                           <ChevronDown 
                             className={`ml-auto h-4 w-4 transition-transform ${
-                              brandOpen ? "rotate-180" : ""
+                              brandContentOpen ? "rotate-180" : ""
                             }`}
                           />
                         </>
@@ -308,66 +253,13 @@ export function AppSidebar() {
                   {!collapsed && (
                     <CollapsibleContent>
                       <SidebarMenuSub>
-                        {brandSubItems.map((subItem) => (
+                        {brandContentSubItems.map((subItem) => (
                           <SidebarMenuSubItem key={subItem.title}>
                             <SidebarMenuSubButton asChild>
                               <NavLink to={subItem.url} end className={getNavClass}>
                                 <subItem.icon className="h-4 w-4" />
                                 <span>{subItem.title}</span>
                               </NavLink>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                        ))}
-                      </SidebarMenuSub>
-                    </CollapsibleContent>
-                  )}
-                </SidebarMenuItem>
-              </Collapsible>
-
-              {menuItems.slice(3, 4).map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <NavLink to={item.url} end className={getNavClass}>
-                      <item.icon className="h-4 w-4" />
-                      {!collapsed && <span>{item.title}</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-
-              <Collapsible open={websiteOpen} onOpenChange={setWebsiteOpen}>
-                <SidebarMenuItem>
-                  <CollapsibleTrigger asChild>
-                    <SidebarMenuButton>
-                      <Globe className="h-4 w-4" />
-                      {!collapsed && (
-                        <>
-                          <span>Website</span>
-                          <ChevronDown 
-                            className={`ml-auto h-4 w-4 transition-transform ${
-                              websiteOpen ? "rotate-180" : ""
-                            }`}
-                          />
-                        </>
-                      )}
-                    </SidebarMenuButton>
-                  </CollapsibleTrigger>
-                  {!collapsed && (
-                    <CollapsibleContent>
-                      <SidebarMenuSub>
-                        {websiteSubItems.map((subItem) => (
-                          <SidebarMenuSubItem key={subItem.title}>
-                            <SidebarMenuSubButton asChild>
-                              <div className="flex items-center gap-2 w-full opacity-50 cursor-not-allowed">
-                                <subItem.icon className="h-4 w-4" />
-                                <span>{subItem.title}</span>
-                                <Badge 
-                                  variant="secondary" 
-                                  className="ml-auto text-xs"
-                                >
-                                  Coming Soon
-                                </Badge>
-                              </div>
                             </SidebarMenuSubButton>
                           </SidebarMenuSubItem>
                         ))}
@@ -384,7 +276,7 @@ export function AppSidebar() {
                       <TrendingUp className="h-4 w-4" />
                       {!collapsed && (
                         <>
-                          <span>Marketing</span>
+                          <span>Marketing & Growth</span>
                           <ChevronDown 
                             className={`ml-auto h-4 w-4 transition-transform ${
                               marketingOpen ? "rotate-180" : ""
@@ -413,17 +305,64 @@ export function AppSidebar() {
                 </SidebarMenuItem>
               </Collapsible>
 
-              <Collapsible open={supportOpen} onOpenChange={setSupportOpen}>
+              {!isLoading && (
+                <Collapsible open={clientCommunicationOpen} onOpenChange={setClientCommunicationOpen}>
+                  <SidebarMenuItem>
+                    <CollapsibleTrigger asChild>
+                      <SidebarMenuButton>
+                        <MessageSquare className="h-4 w-4" />
+                        {!collapsed && (
+                          <>
+                            <span>Client Communication</span>
+                            <ChevronDown 
+                              className={`ml-auto h-4 w-4 transition-transform ${
+                                clientCommunicationOpen ? "rotate-180" : ""
+                              }`}
+                            />
+                          </>
+                        )}
+                      </SidebarMenuButton>
+                    </CollapsibleTrigger>
+                    {!collapsed && (
+                      <CollapsibleContent>
+                        <SidebarMenuSub>
+                {clientCommunicationSubItems
+                  .filter((subItem) => {
+                    // Hide "Logs" from non-FMM/Admin users
+                    if (subItem.title === "Logs") {
+                      return userRole === "admin" || userRole === "fmm";
+                    }
+                    return true;
+                  })
+                  .map((subItem) => (
+                    <SidebarMenuSubItem key={subItem.title}>
+                      <SidebarMenuSubButton asChild>
+                        <NavLink to={subItem.url} className={getNavClass}>
+                          <subItem.icon className="h-4 w-4" />
+                          <span>{subItem.title}</span>
+                        </NavLink>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                  ))
+                }
+                        </SidebarMenuSub>
+                      </CollapsibleContent>
+                    )}
+                  </SidebarMenuItem>
+                </Collapsible>
+              )}
+
+              <Collapsible open={helpSupportOpen} onOpenChange={setHelpSupportOpen}>
                 <SidebarMenuItem>
                   <CollapsibleTrigger asChild>
                     <SidebarMenuButton>
                       <HelpCircle className="h-4 w-4" />
                       {!collapsed && (
                         <>
-                          <span>Support</span>
+                          <span>Help & Support</span>
                           <ChevronDown 
                             className={`ml-auto h-4 w-4 transition-transform ${
-                              supportOpen ? "rotate-180" : ""
+                              helpSupportOpen ? "rotate-180" : ""
                             }`}
                           />
                         </>
@@ -433,7 +372,7 @@ export function AppSidebar() {
                   {!collapsed && (
                     <CollapsibleContent>
                       <SidebarMenuSub>
-                        {supportSubItems.map((subItem) => (
+                        {helpSupportSubItems.map((subItem) => (
                           <SidebarMenuSubItem key={subItem.title}>
                             <SidebarMenuSubButton asChild>
                               <NavLink to={subItem.url} end className={getNavClass}>
@@ -443,13 +382,23 @@ export function AppSidebar() {
                             </SidebarMenuSubButton>
                           </SidebarMenuSubItem>
                         ))}
+                        {userRole === "admin" && (
+                          <SidebarMenuSubItem>
+                            <SidebarMenuSubButton asChild>
+                              <NavLink to="/admin/support-docs" end className={getNavClass}>
+                                <BookOpen className="h-4 w-4" />
+                                <span>Support Docs</span>
+                              </NavLink>
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
+                        )}
                       </SidebarMenuSub>
                     </CollapsibleContent>
                   )}
                 </SidebarMenuItem>
               </Collapsible>
 
-              {menuItems.slice(4).map((item) => (
+              {menuItems.slice(3).map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <NavLink to={item.url} end className={getNavClass}>
@@ -461,24 +410,14 @@ export function AppSidebar() {
               ))}
 
               {userRole === "admin" && (
-                <>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild>
-                      <NavLink to="/admin" end className={getNavClass}>
-                        <Shield className="h-4 w-4" />
-                        {!collapsed && <span>Admin</span>}
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild>
-                      <NavLink to="/admin/support-docs" end className={getNavClass}>
-                        <BookOpen className="h-4 w-4" />
-                        {!collapsed && <span>Support Docs</span>}
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                </>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild>
+                    <NavLink to="/admin" end className={getNavClass}>
+                      <Shield className="h-4 w-4" />
+                      {!collapsed && <span>Admin</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
               )}
             </SidebarMenu>
           </SidebarGroupContent>
