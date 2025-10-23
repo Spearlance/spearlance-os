@@ -5,11 +5,14 @@ import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { CalendarIcon, MessageSquare, Paperclip } from "lucide-react";
+import { CalendarIcon, MessageSquare, Paperclip, Filter, X } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TaskDrawer } from "@/components/tasks/TaskDrawer";
 import { TemplateStageManager } from "@/components/tasks/TemplateStageManager";
 import { useToast } from "@/hooks/use-toast";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Button } from "@/components/ui/button";
 
 interface Task {
   id: string;
@@ -22,6 +25,7 @@ interface Task {
   client_id: string;
   related_asset_ids: string[];
   related_meeting_ids: string[];
+  linked_channel_id: string | null;
   profiles?: {
     name: string;
   };
@@ -36,19 +40,31 @@ export default function Tasks() {
   });
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [userRole, setUserRole] = useState<string>("");
+  const [assignmentFilter, setAssignmentFilter] = useState<'all' | 'mine'>('all');
+  const [channelFilter, setChannelFilter] = useState<string>('all');
+  const [marketingChannels, setMarketingChannels] = useState<Array<{id: string, name: string}>>([]);
+  const [currentUserId, setCurrentUserId] = useState<string>('');
   const { toast } = useToast();
 
   const isAdminOrFMM = userRole === 'admin' || userRole === 'fmm';
 
   useEffect(() => {
     loadUserRole();
+    loadCurrentUser();
   }, []);
 
   useEffect(() => {
     if (selectedClient) {
       loadTasks();
+      loadMarketingChannels();
     }
   }, [selectedClient]);
+
+  useEffect(() => {
+    if (selectedClient && currentUserId) {
+      loadTasks();
+    }
+  }, [assignmentFilter, channelFilter]);
 
   const loadUserRole = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -63,17 +79,55 @@ export default function Tasks() {
     if (data) setUserRole(data.role);
   };
 
-  const loadTasks = async () => {
+  const loadCurrentUser = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) setCurrentUserId(user.id);
+  };
+
+  const loadMarketingChannels = async () => {
     if (!selectedClient) return;
 
     const { data, error } = await supabase
+      .from('marketing_flow_channels')
+      .select(`
+        id,
+        name,
+        marketing_flow_stages!inner(
+          marketing_flows!inner(
+            client_id
+          )
+        )
+      `)
+      .eq('marketing_flow_stages.marketing_flows.client_id', selectedClient.id)
+      .order('name');
+
+    if (!error && data) {
+      setMarketingChannels(data);
+    }
+  };
+
+  const loadTasks = async () => {
+    if (!selectedClient) return;
+
+    let query = supabase
       .from("tasks")
       .select(`
         *,
         profiles:assignee_user_id (name)
       `)
-      .eq("client_id", selectedClient.id)
-      .order("created_at", { ascending: false });
+      .eq("client_id", selectedClient.id);
+
+    // Apply assignment filter
+    if (assignmentFilter === 'mine' && currentUserId) {
+      query = query.eq('assignee_user_id', currentUserId);
+    }
+
+    // Apply channel filter
+    if (channelFilter !== 'all') {
+      query = query.eq('linked_channel_id', channelFilter);
+    }
+
+    const { data, error } = await query.order("created_at", { ascending: false });
 
     if (error) {
       toast({ title: "Error loading tasks", variant: "destructive" });
@@ -149,7 +203,58 @@ export default function Tasks() {
           {isAdminOrFMM && <TabsTrigger value="templates">Templates</TabsTrigger>}
         </TabsList>
 
-        <TabsContent value="board" className="space-y-0">
+        <TabsContent value="board" className="space-y-4">
+          {/* Filter Section */}
+          <div className="flex items-center gap-4 p-4 bg-muted/30 rounded-lg border">
+            <Filter className="h-4 w-4 text-muted-foreground" />
+            
+            {/* Assignment Filter */}
+            <ToggleGroup 
+              type="single" 
+              value={assignmentFilter} 
+              onValueChange={(value) => value && setAssignmentFilter(value as 'all' | 'mine')}
+              className="border rounded-md"
+            >
+              <ToggleGroupItem value="all" className="text-sm">
+                All Tasks
+              </ToggleGroupItem>
+              <ToggleGroupItem value="mine" className="text-sm">
+                My Tasks
+              </ToggleGroupItem>
+            </ToggleGroup>
+
+            {/* Channel Filter */}
+            <Select value={channelFilter} onValueChange={setChannelFilter}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="All Channels" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Channels</SelectItem>
+                {marketingChannels.map(channel => (
+                  <SelectItem key={channel.id} value={channel.id}>
+                    {channel.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* Clear Filters Button */}
+            {(assignmentFilter !== 'all' || channelFilter !== 'all') && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setAssignmentFilter('all');
+                  setChannelFilter('all');
+                }}
+                className="ml-auto"
+              >
+                <X className="h-4 w-4 mr-1" />
+                Clear Filters
+              </Button>
+            )}
+          </div>
+
           <DragDropContext onDragEnd={onDragEnd}>
         <div className="grid grid-cols-3 gap-6">
           {["to_do", "in_progress", "done"].map((columnId) => (
