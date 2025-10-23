@@ -5,8 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
-import { Upload, X, Key } from "lucide-react";
+import { Upload, X, Key, Briefcase } from "lucide-react";
 
 interface UserProfileTabProps {
   profile: {
@@ -15,15 +17,33 @@ interface UserProfileTabProps {
     email: string | null;
     role: string;
     avatar_url: string | null;
+    job_title: string | null;
+    department: string | null;
+    bio: string | null;
+    expertise_level: string | null;
+    preferred_communication_style: string | null;
+    focus_areas: string[] | null;
   };
   onProfileUpdated: () => void;
 }
+
+const FOCUS_AREA_OPTIONS = [
+  "Content Marketing", "SEO", "Paid Advertising", "Social Media",
+  "Email Marketing", "Analytics", "Strategy", "Branding",
+  "Public Relations", "Event Marketing", "Partnerships"
+];
 
 export function UserProfileTab({ profile, onProfileUpdated }: UserProfileTabProps) {
   const { toast } = useToast();
   const [isUploading, setIsUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [name, setName] = useState(profile.name || "");
+  const [jobTitle, setJobTitle] = useState(profile.job_title || "");
+  const [department, setDepartment] = useState(profile.department || "");
+  const [bio, setBio] = useState(profile.bio || "");
+  const [expertiseLevel, setExpertiseLevel] = useState(profile.expertise_level || "intermediate");
+  const [communicationStyle, setCommunicationStyle] = useState(profile.preferred_communication_style || "balanced");
+  const [focusAreas, setFocusAreas] = useState<string[]>(profile.focus_areas || []);
 
   const getInitials = () => {
     if (!profile.name) return "?";
@@ -160,6 +180,59 @@ export function UserProfileTab({ profile, onProfileUpdated }: UserProfileTabProp
     }
   };
 
+  const handleSaveProfessionalDetails = async () => {
+    if (bio && bio.length > 500) {
+      toast({
+        title: "Bio too long",
+        description: "Please keep your bio under 500 characters",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSaving(true);
+
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          job_title: jobTitle.trim() || null,
+          department: department || null,
+          bio: bio.trim() || null,
+          expertise_level: expertiseLevel,
+          preferred_communication_style: communicationStyle,
+          focus_areas: focusAreas.length > 0 ? focusAreas : null,
+        })
+        .eq("id", profile.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Professional details updated",
+        description: "Your profile has been updated successfully",
+      });
+
+      onProfileUpdated();
+    } catch (error) {
+      console.error("Error updating professional details:", error);
+      toast({
+        title: "Update failed",
+        description: "Failed to update your professional details. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const toggleFocusArea = (area: string) => {
+    setFocusAreas(prev =>
+      prev.includes(area)
+        ? prev.filter(a => a !== area)
+        : [...prev, area]
+    );
+  };
+
   const handleChangePassword = async () => {
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(profile.email || "", {
@@ -262,6 +335,125 @@ export function UserProfileTab({ profile, onProfileUpdated }: UserProfileTabProp
               </Badge>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Professional Details Section */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          <Briefcase className="h-5 w-5" />
+          <h3 className="text-lg font-semibold">Professional Details</h3>
+        </div>
+        <p className="text-sm text-muted-foreground">
+          Help our AI assistant personalize suggestions and communication based on your role and expertise.
+        </p>
+        
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="jobTitle">Job Title</Label>
+            <Input
+              id="jobTitle"
+              value={jobTitle}
+              onChange={(e) => setJobTitle(e.target.value)}
+              placeholder="e.g., Marketing Director, CMO, Social Media Manager"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="department">Department</Label>
+            <Input
+              id="department"
+              value={department}
+              onChange={(e) => setDepartment(e.target.value)}
+              placeholder="e.g., Marketing, Sales, Operations"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="bio">About Your Role</Label>
+            <Textarea
+              id="bio"
+              value={bio}
+              onChange={(e) => setBio(e.target.value)}
+              placeholder="Tell us about your role, responsibilities, and focus areas..."
+              className="min-h-[100px]"
+              maxLength={500}
+            />
+            <p className="text-xs text-muted-foreground text-right">
+              {bio.length}/500 characters
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            <Label>Marketing Expertise</Label>
+            <RadioGroup value={expertiseLevel} onValueChange={setExpertiseLevel}>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="beginner" id="beginner" />
+                <Label htmlFor="beginner" className="font-normal cursor-pointer">
+                  <span className="font-medium">Beginner</span> - New to marketing, prefer simple explanations
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="intermediate" id="intermediate" />
+                <Label htmlFor="intermediate" className="font-normal cursor-pointer">
+                  <span className="font-medium">Intermediate</span> - Some experience, comfortable with standard terms
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="advanced" id="advanced" />
+                <Label htmlFor="advanced" className="font-normal cursor-pointer">
+                  <span className="font-medium">Advanced</span> - Expert level, prefer technical details
+                </Label>
+              </div>
+            </RadioGroup>
+          </div>
+
+          <div className="space-y-3">
+            <Label>Communication Preference</Label>
+            <RadioGroup value={communicationStyle} onValueChange={setCommunicationStyle}>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="concise" id="concise" />
+                <Label htmlFor="concise" className="font-normal cursor-pointer">
+                  <span className="font-medium">Concise</span> - Quick bullet points and actionable items
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="balanced" id="balanced" />
+                <Label htmlFor="balanced" className="font-normal cursor-pointer">
+                  <span className="font-medium">Balanced</span> - Mix of context and action items
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="detailed" id="detailed" />
+                <Label htmlFor="detailed" className="font-normal cursor-pointer">
+                  <span className="font-medium">Detailed</span> - Comprehensive explanations and background
+                </Label>
+              </div>
+            </RadioGroup>
+          </div>
+
+          <div className="space-y-3">
+            <Label>Focus Areas</Label>
+            <p className="text-sm text-muted-foreground">
+              Select areas you focus on to get more relevant suggestions
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {FOCUS_AREA_OPTIONS.map((area) => (
+                <Badge
+                  key={area}
+                  variant={focusAreas.includes(area) ? "default" : "outline"}
+                  className="cursor-pointer hover:opacity-80"
+                  onClick={() => toggleFocusArea(area)}
+                >
+                  {area}
+                </Badge>
+              ))}
+            </div>
+          </div>
+
+          <Button onClick={handleSaveProfessionalDetails} disabled={isSaving}>
+            {isSaving ? "Saving..." : "Save Professional Details"}
+          </Button>
         </div>
       </div>
 

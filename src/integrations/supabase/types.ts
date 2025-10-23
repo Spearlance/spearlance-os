@@ -2054,6 +2054,7 @@ export type Database = {
         Row: {
           associated_client_ids: string[] | null
           avatar_url: string | null
+          bio: string | null
           cal_access_token: string | null
           cal_availability_view_only: boolean | null
           cal_booking_enabled: boolean | null
@@ -2064,15 +2065,21 @@ export type Database = {
           cal_token_expires_at: string | null
           cal_username: string | null
           created_at: string | null
+          department: string | null
           email: string
+          expertise_level: string | null
+          focus_areas: string[] | null
           ical_feed_token: string | null
           id: string
+          job_title: string | null
           name: string
+          preferred_communication_style: string | null
           role: Database["public"]["Enums"]["app_role"]
         }
         Insert: {
           associated_client_ids?: string[] | null
           avatar_url?: string | null
+          bio?: string | null
           cal_access_token?: string | null
           cal_availability_view_only?: boolean | null
           cal_booking_enabled?: boolean | null
@@ -2083,15 +2090,21 @@ export type Database = {
           cal_token_expires_at?: string | null
           cal_username?: string | null
           created_at?: string | null
+          department?: string | null
           email: string
+          expertise_level?: string | null
+          focus_areas?: string[] | null
           ical_feed_token?: string | null
           id: string
+          job_title?: string | null
           name: string
+          preferred_communication_style?: string | null
           role: Database["public"]["Enums"]["app_role"]
         }
         Update: {
           associated_client_ids?: string[] | null
           avatar_url?: string | null
+          bio?: string | null
           cal_access_token?: string | null
           cal_availability_view_only?: boolean | null
           cal_booking_enabled?: boolean | null
@@ -2102,10 +2115,15 @@ export type Database = {
           cal_token_expires_at?: string | null
           cal_username?: string | null
           created_at?: string | null
+          department?: string | null
           email?: string
+          expertise_level?: string | null
+          focus_areas?: string[] | null
           ical_feed_token?: string | null
           id?: string
+          job_title?: string | null
           name?: string
+          preferred_communication_style?: string | null
           role?: Database["public"]["Enums"]["app_role"]
         }
         Relationships: []
