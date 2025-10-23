@@ -52,6 +52,7 @@ import {
   BookOpen,
   Palette,
   Share2,
+  Globe,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -93,6 +94,12 @@ const communicationsSubItems = [
   { title: "Logs", url: "/communications/logs", icon: MessageSquare },
 ];
 
+const websiteSubItems = [
+  { title: "Editor", url: "#", icon: FileText, comingSoon: true },
+  { title: "Analytics", url: "#", icon: TrendingUp, comingSoon: true },
+  { title: "Form Responses", url: "#", icon: MessageSquare, comingSoon: true },
+];
+
 export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
@@ -105,6 +112,7 @@ export function AppSidebar() {
   const [marketingOpen, setMarketingOpen] = useState(true);
   const [communicationsOpen, setCommunicationsOpen] = useState(false);
   const [supportOpen, setSupportOpen] = useState(false);
+  const [websiteOpen, setWebsiteOpen] = useState(false);
   const { isComplete } = useLaunchPadStatus();
   const { isSelfService } = useAccountType();
 
@@ -326,6 +334,48 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+
+              <Collapsible open={websiteOpen} onOpenChange={setWebsiteOpen}>
+                <SidebarMenuItem>
+                  <CollapsibleTrigger asChild>
+                    <SidebarMenuButton>
+                      <Globe className="h-4 w-4" />
+                      {!collapsed && (
+                        <>
+                          <span>Website</span>
+                          <ChevronDown 
+                            className={`ml-auto h-4 w-4 transition-transform ${
+                              websiteOpen ? "rotate-180" : ""
+                            }`}
+                          />
+                        </>
+                      )}
+                    </SidebarMenuButton>
+                  </CollapsibleTrigger>
+                  {!collapsed && (
+                    <CollapsibleContent>
+                      <SidebarMenuSub>
+                        {websiteSubItems.map((subItem) => (
+                          <SidebarMenuSubItem key={subItem.title}>
+                            <SidebarMenuSubButton asChild>
+                              <div className="flex items-center gap-2 w-full opacity-50 cursor-not-allowed">
+                                <subItem.icon className="h-4 w-4" />
+                                <span>{subItem.title}</span>
+                                <Badge 
+                                  variant="secondary" 
+                                  className="ml-auto text-xs"
+                                >
+                                  Coming Soon
+                                </Badge>
+                              </div>
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
+                        ))}
+                      </SidebarMenuSub>
+                    </CollapsibleContent>
+                  )}
+                </SidebarMenuItem>
+              </Collapsible>
 
               <Collapsible open={marketingOpen} onOpenChange={setMarketingOpen}>
                 <SidebarMenuItem>
