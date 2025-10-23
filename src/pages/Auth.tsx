@@ -433,10 +433,10 @@ const Auth = () => {
         </div>
       </div>
 
-      {/* Right Column - Animated AI Features Carousel */}
-      <div className="hidden lg:flex relative bg-gradient-to-br from-purple-600 via-purple-700 to-purple-900 overflow-hidden">
-        <AnimatedCarousel />
-      </div>
+        {/* Right Column - Animated AI Features Carousel */}
+        <div className="hidden lg:flex relative bg-gradient-to-br from-gray-900 via-black to-gray-950 overflow-hidden">
+          <AnimatedCarousel />
+        </div>
 
       {/* Forgot Password Dialog */}
       <Dialog open={showForgotPassword} onOpenChange={setShowForgotPassword}>
