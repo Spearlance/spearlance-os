@@ -254,21 +254,6 @@ export const AnimatedCarousel = () => {
         ))}
       </div>
 
-      {/* Navigation dots */}
-      <div className="hidden sm:flex absolute bottom-8 left-1/2 -translate-x-1/2 gap-2 z-20">
-        {contentRows.map((_, index) => (
-          <button
-            key={index}
-            onClick={() => setCurrentSlide(index)}
-            className={`rounded-full transition-all duration-300 ${
-              index === currentSlide 
-                ? 'bg-white w-8 h-2' 
-                : 'bg-white/30 hover:bg-white/50 w-2 h-2'
-            }`}
-            aria-label={`Go to slide ${index + 1}`}
-          />
-        ))}
-      </div>
     </div>
   );
 };
