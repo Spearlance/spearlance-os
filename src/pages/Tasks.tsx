@@ -233,6 +233,7 @@ export default function Tasks() {
           open={!!selectedTask}
           onOpenChange={(open) => !open && setSelectedTask(null)}
           onUpdate={loadTasks}
+          isAdminOrFMM={isAdminOrFMM}
         />
       )}
         </TabsContent>

@@ -12,7 +12,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { FileText, Image, Link as LinkIcon, FileVideo, FileAudio, ExternalLink, X, Plus } from "lucide-react";
+import { FileText, Image, Link as LinkIcon, FileVideo, FileAudio, ExternalLink, X, Plus, Trash2 } from "lucide-react";
+import { DeleteTaskDialog } from "./DeleteTaskDialog";
 import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
@@ -21,9 +22,10 @@ interface TaskDrawerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onUpdate: () => void;
+  isAdminOrFMM?: boolean;
 }
 
-export function TaskDrawer({ task, open, onOpenChange, onUpdate }: TaskDrawerProps) {
+export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = false }: TaskDrawerProps) {
   const [title, setTitle] = useState(task.title);
   const [description, setDescription] = useState(task.description || "");
   const [status, setStatus] = useState(task.status);
@@ -361,6 +363,50 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate }: TaskDrawerPro
 
     setNewComment("");
     loadComments();
+  };
+
+  const handleDeleteTask = async () => {
+    try {
+      // First delete all task comments
+      const { error: commentsError } = await supabase
+        .from("task_comments")
+        .delete()
+        .eq("task_id", task.id);
+
+      if (commentsError) throw commentsError;
+
+      // Then delete all channel links
+      const { error: linksError } = await supabase
+        .from("marketing_flow_task_links")
+        .delete()
+        .eq("task_id", task.id);
+
+      if (linksError) throw linksError;
+
+      // Finally delete the task itself
+      const { error: taskError } = await supabase
+        .from("tasks")
+        .delete()
+        .eq("id", task.id);
+
+      if (taskError) throw taskError;
+
+      toast({
+        title: "Success",
+        description: "Task deleted successfully",
+      });
+      
+      onOpenChange(false);
+      onUpdate();
+    } catch (error) {
+      console.error("Error deleting task:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete task",
+        variant: "destructive",
+      });
+      throw error;
+    }
   };
 
   return (
@@ -755,6 +801,22 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate }: TaskDrawerPro
             </ScrollArea>
           </TabsContent>
         </Tabs>
+
+        {isAdminOrFMM && (
+          <div className="flex justify-end mt-6 pt-6 border-t">
+            <DeleteTaskDialog
+              taskTitle={task.title}
+              taskId={task.id}
+              onConfirm={handleDeleteTask}
+              trigger={
+                <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive hover:bg-destructive/10">
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete Task
+                </Button>
+              }
+            />
+          </div>
+        )}
       </SheetContent>
     </Sheet>
   );
