@@ -434,8 +434,16 @@ const Auth = () => {
       </div>
 
         {/* Right Column - Animated AI Features Carousel */}
-        <div className="hidden lg:flex relative bg-gradient-to-br from-gray-900 via-black to-gray-950 overflow-hidden h-screen">
-          <AnimatedCarousel />
+        <div className="hidden lg:flex flex-col relative bg-gradient-to-br from-gray-900 via-black to-gray-950 overflow-hidden h-screen">
+          {/* Top section - Future hero content area */}
+          <div className="flex-1 flex items-center justify-center">
+            {/* Placeholder for future images/content */}
+          </div>
+          
+          {/* Bottom section - Carousel */}
+          <div className="h-[35vh] relative">
+            <AnimatedCarousel />
+          </div>
         </div>
 
       {/* Forgot Password Dialog */}

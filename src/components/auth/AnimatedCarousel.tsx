@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Sparkles, TrendingUp, Users, Target, Calendar, Palette, MessageSquare, BarChart3, FolderOpen, Link2, Mail } from 'lucide-react';
 
 interface CarouselItem {
@@ -88,9 +88,9 @@ const ContentRow = ({ heading, subheading, items, direction, speed, tiltDirectio
   
   return (
     <div 
-      className="flex-1 flex flex-col items-center justify-center relative"
+      className="flex flex-col items-center justify-center relative h-full"
       style={{ 
-        transform: `perspective(1200px) rotateY(${tiltDirection === 'left' ? '-2deg' : '2deg'})`,
+        transform: `perspective(1200px) rotateY(${tiltDirection === 'left' ? '-1deg' : '1deg'})`,
         transformOrigin: 'center center'
       }}
     >
@@ -140,15 +140,13 @@ const ContentRow = ({ heading, subheading, items, direction, speed, tiltDirectio
         {/* Right fade gradient */}
         <div className="absolute right-0 top-0 bottom-0 w-48 bg-gradient-to-l from-gray-950 via-gray-950/80 to-transparent z-10 pointer-events-none" />
       </div>
-
-      {/* Row divider */}
-      <div className="absolute bottom-0 left-0 right-0 h-px bg-white/10" />
     </div>
   );
 };
 
 export const AnimatedCarousel = () => {
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const [currentSlide, setCurrentSlide] = useState(0);
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -157,6 +155,15 @@ export const AnimatedCarousel = () => {
       y: e.clientY - rect.top,
     });
   };
+
+  // Auto-advance slides every 9 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % contentRows.length);
+    }, 9000);
+    
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <div 
@@ -178,10 +185,33 @@ export const AnimatedCarousel = () => {
         }}
       />
 
-      {/* Content rows */}
-      <div className="relative z-10 flex flex-col h-full">
+      {/* Single slide with fade transition */}
+      <div className="relative z-10 h-full">
         {contentRows.map((row, index) => (
-          <ContentRow key={index} {...row} />
+          <div
+            key={index}
+            className={`absolute inset-0 transition-opacity duration-500 ${
+              index === currentSlide ? 'opacity-100' : 'opacity-0 pointer-events-none'
+            }`}
+          >
+            <ContentRow {...row} />
+          </div>
+        ))}
+      </div>
+
+      {/* Navigation dots */}
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2 z-20">
+        {contentRows.map((_, index) => (
+          <button
+            key={index}
+            onClick={() => setCurrentSlide(index)}
+            className={`rounded-full transition-all duration-300 ${
+              index === currentSlide 
+                ? 'bg-white w-8 h-2' 
+                : 'bg-white/30 hover:bg-white/50 w-2 h-2'
+            }`}
+            aria-label={`Go to slide ${index + 1}`}
+          />
         ))}
       </div>
     </div>
