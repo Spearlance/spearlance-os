@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
-import { MessageSquare, Archive, ChevronDown } from 'lucide-react';
+import { MessageSquare, Archive, ChevronDown, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useClient } from '@/contexts/ClientContext';
 import { useChatbot } from './useChatbot';
@@ -56,7 +56,7 @@ export const ChatbotWidget = () => {
         className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg z-50 bg-primary hover:bg-primary/90"
         title={selectedClient ? "Open SpearlanceAI" : "Select a client first"}
       >
-        <MessageSquare className="h-6 w-6" />
+        <Sparkles className="h-6 w-6" />
       </Button>
 
       <Sheet open={isOpen} onOpenChange={setIsOpen}>
@@ -163,7 +163,7 @@ export const ChatbotWidget = () => {
           <ScrollArea className="flex-1 p-4">
             {messages.length === 0 && !isLoading && (
               <div className="flex flex-col items-center justify-center h-full text-center p-8">
-                <MessageSquare className="h-12 w-12 text-muted-foreground mb-4" />
+                <Sparkles className="h-12 w-12 text-muted-foreground mb-4" />
                 <h3 className="font-semibold mb-2">SpearlanceAI</h3>
                 <p className="text-sm text-muted-foreground mb-4">
                   Your expert co-pilot for {selectedClient?.name}
