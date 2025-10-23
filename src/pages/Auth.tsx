@@ -223,7 +223,7 @@ const Auth = () => {
         <img 
           src="/spearlance-logo.png"
           alt="Spearlance Logo" 
-          className="h-12 w-12 object-contain"
+          className="h-[200px] w-[200px] object-contain"
         />
       </div>
 
