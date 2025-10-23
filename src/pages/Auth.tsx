@@ -436,7 +436,7 @@ const Auth = () => {
         {/* Right Column - Animated AI Features Carousel */}
         <div className="hidden lg:block relative bg-gradient-to-br from-gray-900 via-black to-gray-950 overflow-hidden h-screen">
           {/* Carousel pinned to bottom, expands upward */}
-          <div className="absolute bottom-0 left-0 right-0 h-auto max-h-[50vh] overflow-visible">
+          <div className="absolute bottom-0 left-0 right-0 w-full pb-8">
             <AnimatedCarousel />
           </div>
         </div>

@@ -134,7 +134,7 @@ const ContentRow = ({ heading, subheading, items, direction, speed, tiltDirectio
   
   return (
     <div 
-      className="flex flex-col items-center justify-end relative h-full pt-8 pb-6"
+      className="flex flex-col items-center justify-start relative w-full py-6 gap-4"
       style={{ 
         transform: `perspective(1200px) rotateY(${tiltDirection === 'left' ? '-1deg' : '1deg'})`,
         transformOrigin: 'center center'
@@ -151,7 +151,7 @@ const ContentRow = ({ heading, subheading, items, direction, speed, tiltDirectio
       </div>
       
       {/* Scrolling Pills */}
-      <div className="relative w-full overflow-hidden py-2 max-h-[15vh]">
+      <div className="relative w-full overflow-hidden py-2 h-20">
         {/* Left fade gradient */}
         <div className="absolute left-0 top-0 bottom-0 w-48 bg-gradient-to-r from-gray-950 via-gray-950/80 to-transparent z-10 pointer-events-none" />
         
@@ -222,7 +222,7 @@ export const AnimatedCarousel = () => {
 
   return (
     <div 
-      className="relative w-full h-full flex flex-col p-0 overflow-visible"
+      className="relative w-full flex flex-col p-0 overflow-visible"
       onMouseMove={handleMouseMove}
     >
       {/* Interactive gradient overlay */}
