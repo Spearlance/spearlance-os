@@ -5,6 +5,7 @@ interface CarouselItem {
   icon: React.ReactNode;
   text: string;
   subtext?: string;
+  imageUrl?: string;
 }
 
 interface ContentRow {
@@ -44,14 +45,48 @@ const platformFeatures: CarouselItem[] = [
 
 // Row 3: Client Results
 const clientResults: CarouselItem[] = [
-  { icon: "⭐", text: "Increased client retention by 40%", subtext: "Sarah M., Agency Owner" },
-  { icon: "💼", text: "Case Study: 10x Social Engagement" },
-  { icon: "🎨", text: "Portfolio: SaaS Rebrand Success" },
-  { icon: "⭐", text: "Saved 15 hours per week on planning", subtext: "Marcus R., Freelancer" },
-  { icon: "📈", text: "Case Study: $2M Revenue Growth" },
-  { icon: "🎨", text: "Portfolio: E-commerce Design System" },
-  { icon: "⭐", text: "Finally, a tool that gets brand strategy", subtext: "Emily K., CMO" },
-  { icon: "💼", text: "Case Study: Complete Brand Transformation" },
+  { 
+    imageUrl: "https://agencyapp-assets.upcity.com/user/150773/avatar/37549160058ddf7f181779382b9c15aa.jpeg",
+    icon: "⭐",
+    text: "Garrett is able to take our feedback and create a solid marketing strategy that shows results", 
+    subtext: "Teresa H." 
+  },
+  { 
+    imageUrl: "https://files.elfsightcdn.com/eafe4a4d-3436-495d-b748-5bdce62d911d/4f4633ba-f4ec-44f1-a135-9c6e522cd245/23ca0462e6872db5789072c6711c6186-1-.jpg",
+    icon: "⭐",
+    text: "His expertise was instrumental in scaling Wishwell and developing an intentional strategic marketing approach", 
+    subtext: "Verenice H." 
+  },
+  { 
+    imageUrl: "https://m.media-amazon.com/images/S/amzn-author-media-prod/5hn740nl9nh58fn8hja8t3027g.jpg",
+    icon: "⭐",
+    text: "Garrett took existing direction and suggested impactful improvements in marketing and website design", 
+    subtext: "Gary H." 
+  },
+  { 
+    imageUrl: "https://agencyapp-assets.upcity.com/user/38838/avatar/cde9de7f0bbe551d23cd3c2f64df272b.jpeg",
+    icon: "⭐",
+    text: "Garrett has given great recommendations on digital solutions. I look forward to a long working partnership", 
+    subtext: "Tabor L." 
+  },
+  { 
+    imageUrl: "https://agencyapp-assets.upcity.com/user/38616/avatar/7e9de59ec5d07dd504a41467aaa8c607.jpg",
+    icon: "⭐",
+    text: "Spearlance made it easy, took my fears away, and I actually enjoyed seeing it transform to reality", 
+    subtext: "Debra P." 
+  },
+  { 
+    imageUrl: "https://agencyapp-assets.upcity.com/user/41703/avatar/b585bb935a28fee75cf1450829da6eae.jpeg",
+    icon: "⭐",
+    text: "Their ability to problem-solve and combine design elements that enhance engagement is impressive", 
+    subtext: "Patrick M." 
+  },
+  {
+    imageUrl: "https://lirp.cdn-website.com/eb7a64e0/dms3rep/multi/opt/64da7339c9e310aeb8ec6b85_Inc.+5000+Color+Medallion+Logo-240w.webp",
+    icon: "🏆",
+    text: "Clients Featured on Inc. 5000",
+    subtext: "8x Achievement"
+  }
 ];
 
 const contentRows: ContentRow[] = [
@@ -117,24 +152,33 @@ const ContentRow = ({ heading, subheading, items, direction, speed, tiltDirectio
             willChange: 'transform'
           }}
         >
-          {duplicatedItems.map((item, index) => (
-            <div
-              key={index}
-              className="flex items-center gap-3 px-6 py-3 rounded-full bg-white/15 border border-white/30 backdrop-blur-md hover:bg-white/20 transition-all duration-300 whitespace-nowrap flex-shrink-0"
-            >
-              {typeof item.icon === 'string' ? (
-                <span className="text-2xl">{item.icon}</span>
-              ) : (
-                <div className="text-white">{item.icon}</div>
+        {duplicatedItems.map((item, index) => (
+          <div
+            key={index}
+            className="flex items-center gap-3 px-6 py-3 rounded-full bg-white/15 border border-white/30 backdrop-blur-md hover:bg-white/20 transition-all duration-300 whitespace-nowrap flex-shrink-0"
+          >
+            {item.imageUrl ? (
+              <img 
+                src={item.imageUrl} 
+                alt={item.subtext || "Customer"} 
+                className="w-10 h-10 rounded-full object-cover border-2 border-white/20 bg-white/10"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                }}
+              />
+            ) : typeof item.icon === 'string' ? (
+              <span className="text-2xl">{item.icon}</span>
+            ) : (
+              <div className="text-white">{item.icon}</div>
+            )}
+            <div className="flex flex-col items-start">
+              <span className="text-base font-medium text-white">{item.text}</span>
+              {item.subtext && (
+                <span className="text-sm text-white/60">{item.subtext}</span>
               )}
-              <div className="flex flex-col items-start">
-                <span className="text-base font-medium text-white">{item.text}</span>
-                {item.subtext && (
-                  <span className="text-sm text-white/60">{item.subtext}</span>
-                )}
-              </div>
             </div>
-          ))}
+          </div>
+        ))}
         </div>
         
         {/* Right fade gradient */}
