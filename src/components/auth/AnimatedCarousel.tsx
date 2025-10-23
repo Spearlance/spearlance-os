@@ -134,18 +134,18 @@ const ContentRow = ({ heading, subheading, items, direction, speed, tiltDirectio
   
   return (
     <div 
-      className="flex flex-col items-center justify-center relative h-full"
+      className="flex flex-col items-center justify-center relative h-auto min-h-full py-4"
       style={{ 
         transform: `perspective(1200px) rotateY(${tiltDirection === 'left' ? '-1deg' : '1deg'})`,
         transformOrigin: 'center center'
       }}
     >
       {/* Header - Fixed */}
-      <div className="text-center px-8 mb-6 z-20 relative">
-        <h2 className="text-4xl font-bold text-white mb-3">
+      <div className="text-center px-4 md:px-8 mb-4 md:mb-6 z-20 relative">
+        <h2 className="text-3xl lg:text-4xl font-bold text-white mb-2 md:mb-3">
           {heading}
         </h2>
-        <p className="text-lg text-white/70 max-w-2xl mx-auto">
+        <p className="text-sm md:text-base lg:text-lg text-white/70 max-w-2xl mx-auto line-clamp-3">
           {subheading}
         </p>
       </div>

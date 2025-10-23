@@ -441,7 +441,7 @@ const Auth = () => {
           </div>
           
           {/* Bottom section - Carousel */}
-          <div className="h-[35vh] relative">
+          <div className="min-h-[30vh] max-h-[45vh] flex-shrink-0 relative overflow-hidden">
             <AnimatedCarousel />
           </div>
         </div>
