@@ -130,6 +130,24 @@ export const useNotifications = () => {
           });
         }
       )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "notifications",
+        },
+        (payload) => {
+          const updatedNotification = payload.new as Notification;
+          
+          // Refetch notifications to ensure consistency across all instances
+          supabase.auth.getUser().then(({ data }) => {
+            if (data.user && updatedNotification.user_id === data.user.id) {
+              fetchNotifications();
+            }
+          });
+        }
+      )
       .subscribe();
 
     return () => {
