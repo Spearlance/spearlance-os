@@ -56,24 +56,24 @@ const clientResults: CarouselItem[] = [
 
 const contentRows: ContentRow[] = [
   {
-    heading: "Turn Chaos into Clarity",
-    subheading: "Our AI analyzes your business and creates personalized action plans that drive results",
+    heading: "Turn Every Day Into a Clear Marketing Plan",
+    subheading: "Our AI learns your business and gives your team simple, personalized tasks each day so marketing finally feels focused, not random.",
     items: aiPlanItems,
     direction: 'left',
     speed: 40,
     tiltDirection: 'left'
   },
   {
-    heading: "Built for Marketing Teams",
-    subheading: "Everything you need to manage clients, campaigns, and creativity in one platform",
+    heading: "One Platform to Run Every Part of Your Marketing",
+    subheading: "From planning to publishing, SpearlanceOS keeps your website, content, ads, and analytics organized in one place your whole team can actually use.",
     items: platformFeatures,
     direction: 'right',
     speed: 35,
     tiltDirection: 'right'
   },
   {
-    heading: "Trusted by Marketing Professionals",
-    subheading: "See how agencies and freelancers are scaling their impact with Spearlance",
+    heading: "Proven by Real Teams, Not Agencies",
+    subheading: "See how businesses of all sizes are using Spearlance to stay consistent, grow faster, and save hours every week.",
     items: clientResults,
     direction: 'left',
     speed: 38,
@@ -105,21 +105,22 @@ const ContentRow = ({ heading, subheading, items, direction, speed, tiltDirectio
       </div>
       
       {/* Scrolling Pills */}
-      <div className="relative w-full overflow-hidden">
+      <div className="relative w-full overflow-hidden py-2">
         {/* Left fade gradient */}
-        <div className="absolute left-0 top-0 bottom-0 w-32 bg-gradient-to-r from-gray-950 to-transparent z-10 pointer-events-none" />
+        <div className="absolute left-0 top-0 bottom-0 w-48 bg-gradient-to-r from-gray-950 via-gray-950/80 to-transparent z-10 pointer-events-none" />
         
         <div 
-          className={`flex gap-4 px-12 -ml-[200px] ${direction === 'left' ? 'animate-scroll-left' : 'animate-scroll-right'}`}
+          className={`flex gap-4 ${direction === 'left' ? 'animate-scroll-left' : 'animate-scroll-right'}`}
           style={{ 
             animationDuration: `${speed}s`,
-            transform: 'translateZ(0)'
+            transform: 'translateZ(0)',
+            willChange: 'transform'
           }}
         >
           {duplicatedItems.map((item, index) => (
             <div
               key={index}
-              className="flex items-center gap-3 px-6 py-3 rounded-full bg-white/15 border border-white/30 backdrop-blur-md hover:bg-white/20 transition-all duration-300 whitespace-nowrap"
+              className="flex items-center gap-3 px-6 py-3 rounded-full bg-white/15 border border-white/30 backdrop-blur-md hover:bg-white/20 transition-all duration-300 whitespace-nowrap flex-shrink-0"
             >
               {typeof item.icon === 'string' ? (
                 <span className="text-2xl">{item.icon}</span>
@@ -137,7 +138,7 @@ const ContentRow = ({ heading, subheading, items, direction, speed, tiltDirectio
         </div>
         
         {/* Right fade gradient */}
-        <div className="absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-l from-gray-950 to-transparent z-10 pointer-events-none" />
+        <div className="absolute right-0 top-0 bottom-0 w-48 bg-gradient-to-l from-gray-950 via-gray-950/80 to-transparent z-10 pointer-events-none" />
       </div>
 
       {/* Row divider */}
