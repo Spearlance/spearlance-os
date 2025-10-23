@@ -151,7 +151,7 @@ const ContentRow = ({ heading, subheading, items, direction, speed, tiltDirectio
       </div>
       
       {/* Scrolling Pills */}
-      <div className="relative w-full overflow-hidden py-2">
+      <div className="relative w-full overflow-hidden py-2 max-h-[15vh]">
         {/* Left fade gradient */}
         <div className="absolute left-0 top-0 bottom-0 w-48 bg-gradient-to-r from-gray-950 via-gray-950/80 to-transparent z-10 pointer-events-none" />
         
@@ -222,7 +222,7 @@ export const AnimatedCarousel = () => {
 
   return (
     <div 
-      className="relative w-full h-full flex flex-col p-0 overflow-hidden"
+      className="relative w-full h-full flex flex-col p-0 overflow-visible"
       onMouseMove={handleMouseMove}
     >
       {/* Interactive gradient overlay */}
