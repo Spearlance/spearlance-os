@@ -2017,30 +2017,52 @@ export type Database = {
       }
       notifications: {
         Row: {
+          action_url: string | null
+          client_id: string | null
           created_at: string | null
+          description: string | null
           id: string
           payload_json: Json | null
+          priority: string | null
           read_flag: boolean | null
+          title: string | null
           type: string
           user_id: string
         }
         Insert: {
+          action_url?: string | null
+          client_id?: string | null
           created_at?: string | null
+          description?: string | null
           id?: string
           payload_json?: Json | null
+          priority?: string | null
           read_flag?: boolean | null
+          title?: string | null
           type: string
           user_id: string
         }
         Update: {
+          action_url?: string | null
+          client_id?: string | null
           created_at?: string | null
+          description?: string | null
           id?: string
           payload_json?: Json | null
+          priority?: string | null
           read_flag?: boolean | null
+          title?: string | null
           type?: string
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "notifications_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "notifications_user_id_fkey"
             columns: ["user_id"]

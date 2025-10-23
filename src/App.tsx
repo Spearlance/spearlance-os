@@ -33,6 +33,7 @@ import SupportDocsArticle from "./pages/SupportDocsArticle";
 import AdminSupportDocs from "./pages/AdminSupportDocs";
 import Settings from "./pages/Settings";
 import Admin from "./pages/Admin";
+import Notifications from "./pages/Notifications";
 import Admin2FASetup from "./pages/Admin2FASetup";
 import CalendarCallback from "./pages/CalendarCallback";
 import ResetPassword from "./pages/ResetPassword";
@@ -85,6 +86,7 @@ const App = () => (
             <Route path="/support/docs/:category/:slug" element={<MainLayout><SupportDocsArticle /></MainLayout>} />
             <Route path="/admin/support-docs" element={<MainLayout><AdminSupportDocs /></MainLayout>} />
             <Route path="/settings" element={<MainLayout><Settings /></MainLayout>} />
+            <Route path="/notifications" element={<MainLayout><Notifications /></MainLayout>} />
             <Route path="/admin" element={<MainLayout><Admin /></MainLayout>} />
             <Route path="/admin/2fa-setup" element={<MainLayout><Admin2FASetup /></MainLayout>} />
             <Route path="/backfill-images" element={<MainLayout><BackfillImages /></MainLayout>} />

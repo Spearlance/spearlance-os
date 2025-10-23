@@ -16,6 +16,7 @@ import { CreateTicketDialog } from "@/components/support/CreateTicketDialog";
 import { ChatbotWidget } from "@/components/chatbot/ChatbotWidget";
 import { TrialStatusBanner } from "@/components/TrialStatusBanner";
 import { PricingModal } from "@/components/billing/PricingModal";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -153,6 +154,7 @@ function MainLayoutContent({ children }: MainLayoutProps) {
               <h1 className="text-lg font-semibold">SpearlanceOS</h1>
             </div>
             <div className="flex items-center gap-2">
+              <NotificationBell />
               {meetingButton.show && (
                 <Button variant="ghost" size="sm" onClick={handleMeetingButtonClick}>
                   <Calendar className="h-4 w-4 mr-2" />
