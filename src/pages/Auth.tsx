@@ -9,7 +9,6 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import { z } from "zod";
-import spearlanceLogo from "@/assets/spearlance-logo.png";
 
 const signupSchema = z.object({
   email: z.string().trim().email("Please enter a valid email address"),
@@ -222,7 +221,7 @@ const Auth = () => {
       {/* Logo - Fixed top-left */}
       <div className="absolute top-8 left-8 z-10">
         <img 
-          src={spearlanceLogo}
+          src="/spearlance-logo.png"
           alt="Spearlance Logo" 
           className="h-12 w-12 object-contain"
         />
