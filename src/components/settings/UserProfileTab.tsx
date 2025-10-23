@@ -355,7 +355,7 @@ export function UserProfileTab({ profile, onProfileUpdated }: UserProfileTabProp
               id="jobTitle"
               value={jobTitle}
               onChange={(e) => setJobTitle(e.target.value)}
-              placeholder="e.g., Marketing Director, CMO, Social Media Manager"
+              placeholder="e.g., Owner, Admin Assistant, Operations Manager, Office Manager"
             />
           </div>
 
@@ -365,7 +365,7 @@ export function UserProfileTab({ profile, onProfileUpdated }: UserProfileTabProp
               id="department"
               value={department}
               onChange={(e) => setDepartment(e.target.value)}
-              placeholder="e.g., Marketing, Sales, Operations"
+              placeholder="e.g., Leadership, Operations, Administration"
             />
           </div>
 
