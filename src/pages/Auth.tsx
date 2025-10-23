@@ -218,7 +218,7 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen grid grid-cols-1 lg:grid-cols-2">
-      {/* Logo - Fixed top-left */}
+      {/* Logo - Fixed top-left, 200x200px */}
       <div className="absolute top-4 left-4 z-10">
         <img 
           src="/spearlance-logo.png"
