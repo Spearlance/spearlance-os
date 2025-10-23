@@ -1073,7 +1073,7 @@ export type Database = {
           last_message_at: string | null
           message_thread: Json
           participants: Json
-          search_vector: unknown | null
+          search_vector: unknown
           source: string
           subject_line: string
           tags: string[] | null
@@ -1093,7 +1093,7 @@ export type Database = {
           last_message_at?: string | null
           message_thread?: Json
           participants?: Json
-          search_vector?: unknown | null
+          search_vector?: unknown
           source?: string
           subject_line: string
           tags?: string[] | null
@@ -1113,7 +1113,7 @@ export type Database = {
           last_message_at?: string | null
           message_thread?: Json
           participants?: Json
-          search_vector?: unknown | null
+          search_vector?: unknown
           source?: string
           subject_line?: string
           tags?: string[] | null
