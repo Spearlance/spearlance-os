@@ -49,15 +49,31 @@ export const ChatbotWidget = () => {
 
   return (
     <>
-      <Button
-        onClick={handleOpen}
-        disabled={!selectedClient}
-        size="icon"
-        className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg z-50 bg-primary hover:bg-primary/90"
-        title={selectedClient ? "Open SpearlanceAI" : "Select a client first"}
-      >
-        <Sparkles className="h-6 w-6" />
-      </Button>
+      <div className="fixed bottom-6 right-6 z-50">
+        <button
+          onClick={handleOpen}
+          disabled={!selectedClient}
+          className="ai-bubble group relative h-16 w-16 rounded-full transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+          title={selectedClient ? "Open SpearlanceAI" : "Select a client first"}
+        >
+          {/* Logo */}
+          <img 
+            src="/src/assets/spearlance-logo.png" 
+            alt="Spearlance AI"
+            className="ai-logo relative z-10 h-8 w-8 m-auto"
+          />
+          
+          {/* Sparkle particles */}
+          <span className="sparkle sparkle-1">✨</span>
+          <span className="sparkle sparkle-2">✨</span>
+          <span className="sparkle sparkle-3">✨</span>
+          <span className="sparkle sparkle-4">✨</span>
+          <span className="sparkle sparkle-5">✨</span>
+          
+          {/* Shine overlay */}
+          <div className="shine-overlay" />
+        </button>
+      </div>
 
       <Sheet open={isOpen} onOpenChange={setIsOpen}>
         <SheetContent 
