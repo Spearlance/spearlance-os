@@ -10,6 +10,7 @@ import { ChatInput } from './ChatInput';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import spearlanceLogo from '@/assets/spearlance-logo-white.png';
 
 export const ChatbotWidget = () => {
   const { selectedClient } = useClient();
@@ -58,7 +59,7 @@ export const ChatbotWidget = () => {
         >
           {/* Logo */}
           <img 
-            src="/src/assets/spearlance-logo.png" 
+            src={spearlanceLogo} 
             alt="Spearlance AI"
             className="ai-logo relative z-10 h-8 w-8 m-auto"
           />
