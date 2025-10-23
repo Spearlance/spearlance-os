@@ -210,7 +210,7 @@ const Auth = () => {
             <img 
               src={spearlanceLogo}
               alt="Spearlance Logo" 
-              className="h-20 w-20 object-contain"
+              className="h-[70px] w-[70px] object-contain"
             />
           </div>
           <CardTitle className="text-2xl text-center">SpearlanceOS</CardTitle>
