@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import { z } from "zod";
+import spearlanceLogo from "@/assets/spearlance-logo.png";
 
 const signupSchema = z.object({
   email: z.string().trim().email("Please enter a valid email address"),
@@ -207,9 +208,9 @@ const Auth = () => {
         <CardHeader className="space-y-1">
           <div className="flex items-center justify-center mb-4">
             <img 
-              src="/spearlance-logo.png" 
+              src={spearlanceLogo}
               alt="Spearlance Logo" 
-              className="h-16 w-16 object-contain"
+              className="h-20 w-20 object-contain"
             />
           </div>
           <CardTitle className="text-2xl text-center">SpearlanceOS</CardTitle>
