@@ -62,6 +62,7 @@ export default function Tasks() {
 
   useEffect(() => {
     if (selectedClient && currentUserId) {
+      console.log('Filters changed:', { assignmentFilter, channelFilter });
       loadTasks();
     }
   }, [assignmentFilter, channelFilter]);
@@ -87,22 +88,47 @@ export default function Tasks() {
   const loadMarketingChannels = async () => {
     if (!selectedClient) return;
 
+    // First get the flow IDs for this client
+    const { data: flows } = await supabase
+      .from('marketing_flows')
+      .select('id')
+      .eq('client_id', selectedClient.id);
+
+    if (!flows || flows.length === 0) {
+      setMarketingChannels([]);
+      return;
+    }
+
+    const flowIds = flows.map(f => f.id);
+
+    // Then get stages for those flows
+    const { data: stages } = await supabase
+      .from('marketing_flow_stages')
+      .select('id')
+      .in('flow_id', flowIds);
+
+    if (!stages || stages.length === 0) {
+      setMarketingChannels([]);
+      return;
+    }
+
+    const stageIds = stages.map(s => s.id);
+
+    // Finally get channels for those stages
     const { data, error } = await supabase
       .from('marketing_flow_channels')
-      .select(`
-        id,
-        name,
-        marketing_flow_stages!inner(
-          marketing_flows!inner(
-            client_id
-          )
-        )
-      `)
-      .eq('marketing_flow_stages.marketing_flows.client_id', selectedClient.id)
+      .select('id, name')
+      .in('stage_id', stageIds)
       .order('name');
 
-    if (!error && data) {
+    if (error) {
+      console.error('Error loading marketing channels:', error);
+      return;
+    }
+
+    if (data) {
       setMarketingChannels(data);
+      console.log('Loaded channels:', data);
     }
   };
 
@@ -124,6 +150,7 @@ export default function Tasks() {
 
     // Apply channel filter
     if (channelFilter !== 'all') {
+      console.log('Filtering by channel:', channelFilter);
       query = query.eq('linked_channel_id', channelFilter);
     }
 
