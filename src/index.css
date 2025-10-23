@@ -114,13 +114,13 @@ All colors MUST be HSL.
     transform: translateX(0);
   }
   to {
-    transform: translateX(-50%);
+    transform: translateX(-33.33%);
   }
 }
 
 @keyframes scroll-right {
   from {
-    transform: translateX(-50%);
+    transform: translateX(-33.33%);
   }
   to {
     transform: translateX(0);

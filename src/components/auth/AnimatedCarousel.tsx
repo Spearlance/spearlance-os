@@ -84,7 +84,7 @@ const contentRows: ContentRow[] = [
 interface ContentRowProps extends ContentRow {}
 
 const ContentRow = ({ heading, subheading, items, direction, speed, tiltDirection }: ContentRowProps) => {
-  const duplicatedItems = [...items, ...items];
+  const duplicatedItems = [...items, ...items, ...items];
   
   return (
     <div 
@@ -106,8 +106,11 @@ const ContentRow = ({ heading, subheading, items, direction, speed, tiltDirectio
       
       {/* Scrolling Pills */}
       <div className="relative w-full overflow-hidden">
+        {/* Left fade gradient */}
+        <div className="absolute left-0 top-0 bottom-0 w-32 bg-gradient-to-r from-gray-950 to-transparent z-10 pointer-events-none" />
+        
         <div 
-          className={`flex gap-4 ${direction === 'left' ? 'animate-scroll-left' : 'animate-scroll-right'}`}
+          className={`flex gap-4 px-12 -ml-[200px] ${direction === 'left' ? 'animate-scroll-left' : 'animate-scroll-right'}`}
           style={{ 
             animationDuration: `${speed}s`,
             transform: 'translateZ(0)'
@@ -132,6 +135,9 @@ const ContentRow = ({ heading, subheading, items, direction, speed, tiltDirectio
             </div>
           ))}
         </div>
+        
+        {/* Right fade gradient */}
+        <div className="absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-l from-gray-950 to-transparent z-10 pointer-events-none" />
       </div>
 
       {/* Row divider */}
