@@ -119,7 +119,18 @@ const contentRows: ContentRow[] = [
 interface ContentRowProps extends ContentRow {}
 
 const ContentRow = ({ heading, subheading, items, direction, speed, tiltDirection }: ContentRowProps) => {
-  const duplicatedItems = [...items, ...items, ...items];
+  // Shuffle utility function
+  const shuffleArray = <T,>(array: T[]): T[] => {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  };
+
+  const [shuffledItems] = useState(() => shuffleArray(items));
+  const duplicatedItems = [...shuffledItems, ...shuffledItems, ...shuffledItems];
   
   return (
     <div 
@@ -244,7 +255,7 @@ export const AnimatedCarousel = () => {
       </div>
 
       {/* Navigation dots */}
-      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2 z-20">
+      <div className="hidden sm:flex absolute bottom-8 left-1/2 -translate-x-1/2 gap-2 z-20">
         {contentRows.map((_, index) => (
           <button
             key={index}
