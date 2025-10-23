@@ -138,7 +138,7 @@ export default function Settings() {
           <TabsContent value="general" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Client Logo</CardTitle>
+              <CardTitle>Company Logo</CardTitle>
             </CardHeader>
             <CardContent>
               <ClientLogoUploader
@@ -155,11 +155,11 @@ export default function Settings() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Client Information</CardTitle>
+              <CardTitle>Company Information</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label>Client Name</Label>
+                <Label>Company Name</Label>
                 <Input value={client.name} disabled />
               </div>
               <div className="space-y-2">
