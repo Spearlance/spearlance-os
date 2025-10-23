@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import { z } from "zod";
+import { AnimatedCarousel } from "@/components/auth/AnimatedCarousel";
 
 const signupSchema = z.object({
   email: z.string().trim().email("Please enter a valid email address"),
@@ -229,7 +230,7 @@ const Auth = () => {
 
       {/* Left Column - Login/Signup Form */}
       <div className="flex items-center justify-center p-8 lg:p-16 bg-background">
-        <div className="w-full max-w-md">
+        <div className="w-full max-w-md pt-56">
           {!isSignUp ? (
             // Sign In Form
             <>
@@ -432,11 +433,9 @@ const Auth = () => {
         </div>
       </div>
 
-      {/* Right Column - Future AI Recommendations */}
-      <div className="hidden lg:flex items-center justify-center bg-gradient-to-br from-purple-500 to-purple-700 p-16">
-        <div className="text-center text-white">
-          <p className="text-lg opacity-80">AI-powered insights coming soon</p>
-        </div>
+      {/* Right Column - Animated AI Features Carousel */}
+      <div className="hidden lg:flex relative bg-gradient-to-br from-purple-600 via-purple-700 to-purple-900 overflow-hidden">
+        <AnimatedCarousel />
       </div>
 
       {/* Forgot Password Dialog */}
