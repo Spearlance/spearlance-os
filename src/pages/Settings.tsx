@@ -136,38 +136,42 @@ export default function Settings() {
           </TabsContent>
 
           <TabsContent value="general" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Company Logo</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ClientLogoUploader
-                clientId={client.id}
-                clientName={client.name}
-                currentLogoUrl={client.logo_url}
-                onLogoUpdated={(newUrl) => {
-                  setClient({ ...client, logo_url: newUrl });
-                  refreshClients();
-                }}
-              />
-            </CardContent>
-          </Card>
+          {client && (
+            <>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Company Logo</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ClientLogoUploader
+                    clientId={client.id}
+                    clientName={client.name}
+                    currentLogoUrl={client.logo_url}
+                    onLogoUpdated={(newUrl) => {
+                      setClient({ ...client, logo_url: newUrl });
+                      refreshClients();
+                    }}
+                  />
+                </CardContent>
+              </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Company Information</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label>Company Name</Label>
-                <Input value={client.name} disabled />
-              </div>
-              <div className="space-y-2">
-                <Label>Status</Label>
-                <Input value={client.status} disabled />
-              </div>
-            </CardContent>
-          </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Company Information</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Company Name</Label>
+                    <Input value={client.name} disabled />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Status</Label>
+                    <Input value={client.status} disabled />
+                  </div>
+                </CardContent>
+              </Card>
+            </>
+          )}
         </TabsContent>
 
         <TabsContent value="calendar" className="space-y-4">
@@ -369,29 +373,31 @@ export default function Settings() {
         </TabsContent>
 
         <TabsContent value="team" className="space-y-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Team Members</CardTitle>
-              <InviteTeamMemberDialog 
-                clientId={client.id}
-                canManageTeam={canManageTeam}
-                onInviteSuccess={() => setTeamRefresh(prev => prev + 1)}
-              />
-            </CardHeader>
-            <CardContent>
-              <TeamMembersList 
-                clientId={client.id}
-                canManageTeam={canManageTeam}
-                refreshTrigger={teamRefresh}
-                userProfile={userProfile}
-              />
-            </CardContent>
-          </Card>
+          {client && (
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle>Team Members</CardTitle>
+                <InviteTeamMemberDialog 
+                  clientId={client.id}
+                  canManageTeam={canManageTeam}
+                  onInviteSuccess={() => setTeamRefresh(prev => prev + 1)}
+                />
+              </CardHeader>
+              <CardContent>
+                <TeamMembersList 
+                  clientId={client.id}
+                  canManageTeam={canManageTeam}
+                  refreshTrigger={teamRefresh}
+                  userProfile={userProfile}
+                />
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         {canViewBilling && (
           <TabsContent value="billing" className="space-y-4">
-            <BillingTab client={client} />
+            {client && <BillingTab client={client} />}
           </TabsContent>
         )}
         </Tabs>
