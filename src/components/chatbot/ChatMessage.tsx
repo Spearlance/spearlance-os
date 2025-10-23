@@ -5,12 +5,13 @@ import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { SaveOfferDialog } from '@/components/marketing/SaveOfferDialog';
 import ReactMarkdown from 'react-markdown';
 import spearlanceLogo from '@/assets/spearlance-logo.png';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { useClient } from '@/contexts/ClientContext';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ChatMessageProps {
   message: ChatMessageType;
@@ -28,6 +29,41 @@ export const ChatMessage = ({ message }: ChatMessageProps) => {
   const navigate = useNavigate();
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const { selectedClient } = useClient();
+  
+  const [userProfile, setUserProfile] = useState<{
+    name: string | null;
+    avatar_url: string | null;
+  } | null>(null);
+
+  // Fetch current user's profile
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data } = await supabase
+          .from('profiles')
+          .select('name, avatar_url')
+          .eq('id', user.id)
+          .single();
+        
+        if (data) {
+          setUserProfile(data);
+        }
+      }
+    };
+    
+    fetchUserProfile();
+  }, []);
+
+  // Get user initials helper
+  const getUserInitials = () => {
+    if (!userProfile?.name) return 'U';
+    const parts = userProfile.name.split(' ');
+    if (parts.length >= 2) {
+      return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+    }
+    return userProfile.name.substring(0, 2).toUpperCase();
+  };
 
   // Detect Complete Offer content
   const isCompleteOfferContent = !isUser && (
@@ -227,15 +263,15 @@ export const ChatMessage = ({ message }: ChatMessageProps) => {
 
       {isUser && (
         <Avatar className="w-8 h-8 flex-shrink-0">
-          {selectedClient?.logo_url ? (
+          {userProfile?.avatar_url ? (
             <AvatarImage 
-              src={selectedClient.logo_url} 
-              alt={selectedClient.name}
+              src={userProfile.avatar_url} 
+              alt={userProfile.name || 'User'}
               className="object-cover"
             />
           ) : (
-            <AvatarFallback className="bg-secondary text-xs">
-              {selectedClient?.name?.slice(0, 2).toUpperCase() || 'U'}
+            <AvatarFallback className="bg-primary/10 text-primary text-xs">
+              {getUserInitials()}
             </AvatarFallback>
           )}
         </Avatar>
