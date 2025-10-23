@@ -134,7 +134,7 @@ const ContentRow = ({ heading, subheading, items, direction, speed, tiltDirectio
   
   return (
     <div 
-      className="flex flex-col items-center justify-center relative h-full py-6"
+      className="flex flex-col items-center justify-end relative h-full pt-8 pb-6"
       style={{ 
         transform: `perspective(1200px) rotateY(${tiltDirection === 'left' ? '-1deg' : '1deg'})`,
         transformOrigin: 'center center'

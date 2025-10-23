@@ -434,14 +434,9 @@ const Auth = () => {
       </div>
 
         {/* Right Column - Animated AI Features Carousel */}
-        <div className="hidden lg:flex flex-col relative bg-gradient-to-br from-gray-900 via-black to-gray-950 overflow-hidden h-screen min-h-0">
-          {/* Top section - Future hero content area */}
-          <div className="flex-1 min-h-0 flex-shrink flex items-center justify-center">
-            {/* Placeholder for future images/content */}
-          </div>
-          
-          {/* Bottom section - Carousel */}
-          <div className="h-auto max-h-[40vh] min-h-[30vh] flex-shrink-0 relative overflow-visible">
+        <div className="hidden lg:block relative bg-gradient-to-br from-gray-900 via-black to-gray-950 overflow-hidden h-screen">
+          {/* Carousel pinned to bottom, expands upward */}
+          <div className="absolute bottom-0 left-0 right-0 h-auto max-h-[50vh] overflow-visible">
             <AnimatedCarousel />
           </div>
         </div>
