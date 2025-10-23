@@ -138,14 +138,19 @@ serve(async (req) => {
     console.log('Inviting team member:', { email, name, role, client_id });
 
     // Check if user already exists
-    const { data: existingUsers, error: lookupError } = await supabaseAdmin.auth.admin.listUsers();
-
-    if (lookupError) {
-      console.error('Error looking up existing users:', lookupError);
-      throw new Error('Failed to verify user existence');
+    let existingUser = null;
+    try {
+      const { data: userData, error: lookupError } = await supabaseAdmin.auth.admin.getUserByEmail(email);
+      if (lookupError && lookupError.message !== 'User not found') {
+        throw lookupError;
+      }
+      existingUser = userData?.user || null;
+    } catch (err: any) {
+      if (!err.message?.includes('User not found')) {
+        console.error('Error looking up existing user:', err);
+        throw new Error('Failed to verify user existence');
+      }
     }
-
-    const existingUser = existingUsers.users.find(u => u.email === email);
 
     let invitedUserId: string;
     let isNewUser: boolean;
@@ -193,7 +198,7 @@ serve(async (req) => {
       
       const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
         email,
-        email_confirm: true, // Confirm email immediately to prevent auto-login on recovery link
+        email_confirm: false, // Force password setup on first login
         user_metadata: {
           name,
           role,
@@ -251,9 +256,9 @@ serve(async (req) => {
     let emailHtml: string;
 
     if (isNewUser) {
-      // Generate password reset link for new users
+      // Generate invitation link for new users
       const { data: resetData, error: resetError } = await supabaseAdmin.auth.admin.generateLink({
-        type: 'recovery',
+        type: 'invite',
         email: email,
         options: {
           redirectTo: `${appUrl}/set-password`
