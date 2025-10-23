@@ -206,11 +206,13 @@ const Auth = () => {
       <Card className="w-full max-w-md shadow-elegant">
         <CardHeader className="space-y-1">
           <div className="flex items-center justify-center mb-4">
-            <div className="h-12 w-12 rounded-lg bg-gradient-primary flex items-center justify-center">
-              <span className="text-2xl font-bold text-white">S</span>
-            </div>
+            <img 
+              src="/spearlance-logo.png" 
+              alt="Spearlance Logo" 
+              className="h-16 w-16 object-contain"
+            />
           </div>
-          <CardTitle className="text-2xl text-center">Spearlance Marketing OS</CardTitle>
+          <CardTitle className="text-2xl text-center">SpearlanceOS</CardTitle>
           <CardDescription className="text-center">
             Sign in to your account or create a new one
           </CardDescription>
