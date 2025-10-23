@@ -27,6 +27,7 @@ interface ScrollingRowProps {
   type: 'standard' | 'design' | 'testimonial';
   direction: 'left' | 'right';
   speed?: number;
+  tiltDirection?: 'left' | 'right';
 }
 
 const aiSuggestions: CarouselItem[] = [
@@ -112,11 +113,17 @@ const testimonials: TestimonialItem[] = [
   }
 ];
 
-const ScrollingRow = ({ items, type, direction, speed = 30 }: ScrollingRowProps) => {
+const ScrollingRow = ({ items, type, direction, speed = 30, tiltDirection = 'left' }: ScrollingRowProps) => {
   const duplicatedItems = [...items, ...items];
   
   return (
-    <div className="relative h-24 overflow-hidden">
+    <div 
+      className="relative flex-1 overflow-hidden transition-transform duration-500 ease-out"
+      style={{ 
+        transform: `perspective(1200px) rotateY(${tiltDirection === 'left' ? '-2deg' : '2deg'})`,
+        transformOrigin: 'center center'
+      }}
+    >
       <div 
         className={`flex gap-4 ${direction === 'left' ? 'animate-scroll-left' : 'animate-scroll-right'}`}
         style={{ 
@@ -260,7 +267,7 @@ export const AnimatedCarousel = () => {
 
   return (
     <div 
-      className="relative w-full h-full flex flex-col justify-center p-12 space-y-5 overflow-hidden"
+      className="relative w-full h-full flex flex-col p-0 overflow-hidden"
       onMouseMove={handleMouseMove}
     >
       {/* Interactive gradient overlay */}
@@ -279,13 +286,13 @@ export const AnimatedCarousel = () => {
       />
 
       {/* Content rows */}
-      <div className="relative z-10 space-y-5">
-        <ScrollingRow items={aiSuggestions} type="standard" direction="right" speed={35} />
-        <ScrollingRow items={designExamples} type="design" direction="left" speed={30} />
-        <ScrollingRow items={actionPlanItems} type="standard" direction="right" speed={28} />
-        <ScrollingRow items={testimonials} type="testimonial" direction="left" speed={32} />
-        <ScrollingRow items={featureHighlights} type="standard" direction="right" speed={36} />
-        <ScrollingRow items={aiSuggestions} type="standard" direction="left" speed={40} />
+      <div className="relative z-10 flex flex-col h-full">
+        <ScrollingRow items={aiSuggestions} type="standard" direction="right" speed={35} tiltDirection="left" />
+        <ScrollingRow items={designExamples} type="design" direction="left" speed={30} tiltDirection="right" />
+        <ScrollingRow items={actionPlanItems} type="standard" direction="right" speed={28} tiltDirection="left" />
+        <ScrollingRow items={testimonials} type="testimonial" direction="left" speed={32} tiltDirection="right" />
+        <ScrollingRow items={featureHighlights} type="standard" direction="right" speed={36} tiltDirection="left" />
+        <ScrollingRow items={aiSuggestions} type="standard" direction="left" speed={40} tiltDirection="right" />
       </div>
     </div>
   );

@@ -218,18 +218,18 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen grid grid-cols-1 lg:grid-cols-2">
-      {/* Logo - Fixed top-left, 200x200px */}
-      <div className="absolute top-4 left-4 z-10">
-        <img 
-          src="/spearlance-logo.png"
-          alt="Spearlance Logo" 
-          className="h-[200px] w-[200px] object-contain"
-        />
-      </div>
-
-      {/* Left Column - Login/Signup Form */}
-      <div className="flex items-center justify-center p-8 lg:p-16 bg-background">
+      <div className="min-h-screen grid grid-cols-1 lg:grid-cols-[auto_1fr]">
+        {/* Logo - Fixed top-left, 200x200px */}
+        <div className="absolute top-4 left-4 z-10">
+          <img 
+            src="/spearlance-logo.png"
+            alt="Spearlance Logo" 
+            className="h-[200px] w-[200px] object-contain"
+          />
+        </div>
+  
+        {/* Left Column - Login/Signup Form */}
+        <div className="flex items-center justify-center p-8 lg:pl-16 lg:pr-8 bg-background">
         <div className="w-full max-w-md pt-56">
           {!isSignUp ? (
             // Sign In Form
@@ -434,7 +434,7 @@ const Auth = () => {
       </div>
 
         {/* Right Column - Animated AI Features Carousel */}
-        <div className="hidden lg:flex relative bg-gradient-to-br from-gray-900 via-black to-gray-950 overflow-hidden">
+        <div className="hidden lg:flex relative bg-gradient-to-br from-gray-900 via-black to-gray-950 overflow-hidden h-screen">
           <AnimatedCarousel />
         </div>
 
