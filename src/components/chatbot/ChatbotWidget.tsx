@@ -61,7 +61,7 @@ export const ChatbotWidget = () => {
           <img 
             src={spearlanceLogo} 
             alt="Spearlance AI"
-            className="ai-logo relative z-10 h-8 w-8 m-auto"
+            className="ai-logo relative z-10 h-12 w-12 m-auto"
           />
           
           {/* Sparkle particles */}

@@ -166,6 +166,9 @@ All colors MUST be HSL.
 .ai-logo {
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
   transition: transform 0.3s ease;
+  object-fit: contain;
+  max-width: 100%;
+  max-height: 100%;
 }
 
 .ai-bubble:hover .ai-logo {
