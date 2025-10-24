@@ -54,6 +54,17 @@ export interface AssetsData {
 
 export interface MarketingData {
   services_completed: boolean;
+  social_strategy?: {
+    posting_frequency: 'daily' | 'weekdays' | 'custom';
+    selected_days: number[];
+    topic_distribution: {
+      educational: number;
+      behind_the_scenes: number;
+      customer_stories: number;
+      promotional: number;
+      quick_tips: number;
+    };
+  };
 }
 
 export interface ResponsesJson {

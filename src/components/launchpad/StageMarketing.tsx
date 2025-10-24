@@ -8,8 +8,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Toggle } from "@/components/ui/toggle";
+import { Slider } from "@/components/ui/slider";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
-import { Plus } from "lucide-react";
+import { Plus, Info } from "lucide-react";
 
 interface Service {
   id: string;
@@ -33,6 +37,17 @@ export function StageMarketing({ submissionId, onContinue, onBack, onSaveExit }:
   const [selectedServiceId, setSelectedServiceId] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [newBenefit, setNewBenefit] = useState("");
+  
+  // Social strategy state
+  const [postingFrequency, setPostingFrequency] = useState<'daily' | 'weekdays' | 'custom'>('weekdays');
+  const [selectedDays, setSelectedDays] = useState<number[]>([1, 2, 3, 4, 5]);
+  const [topicDistribution, setTopicDistribution] = useState({
+    educational: 25,
+    behind_the_scenes: 25,
+    customer_stories: 20,
+    promotional: 15,
+    quick_tips: 15,
+  });
 
   useEffect(() => {
     loadServices();
@@ -86,6 +101,17 @@ export function StageMarketing({ submissionId, onContinue, onBack, onSaveExit }:
   };
 
   const handleContinue = async () => {
+    // Validate topic distribution
+    const totalPercentage = Object.values(topicDistribution).reduce((sum, val) => sum + val, 0);
+    if (totalPercentage !== 100) {
+      toast({
+        title: "Error",
+        description: "Content mix must total 100%",
+        variant: "destructive",
+      });
+      return;
+    }
+
     // Get existing responses_json to preserve other stage data
     const { data: submissionData } = await supabase
       .from("launchpad_submissions")
@@ -102,16 +128,25 @@ export function StageMarketing({ submissionId, onContinue, onBack, onSaveExit }:
       return;
     }
 
+    const socialStrategy = {
+      posting_frequency: postingFrequency,
+      selected_days: selectedDays,
+      topic_distribution: topicDistribution,
+    };
+
     // Merge with existing data instead of overwriting
     const updatedResponses = {
       ...((submissionData.responses_json as Record<string, any>) || {}),
-      marketing: { services_completed: true },
+      marketing: { 
+        services_completed: true,
+        social_strategy: socialStrategy,
+      },
     };
 
     const { error } = await supabase
       .from("launchpad_submissions")
       .update({ 
-        stage: "assets",
+        stage: "avatar",
         responses_json: updatedResponses as any,
       })
       .eq("id", submissionId);
@@ -125,6 +160,26 @@ export function StageMarketing({ submissionId, onContinue, onBack, onSaveExit }:
       return;
     }
 
+    // Also save to social_media_strategy table for immediate use
+    if (selectedClient?.id) {
+      const { error: strategyError } = await supabase
+        .from("social_media_strategy")
+        .upsert({
+          client_id: selectedClient.id,
+          is_global: true,
+          posting_frequency: postingFrequency,
+          selected_days: selectedDays,
+          topic_distribution: topicDistribution,
+        }, {
+          onConflict: 'client_id,is_global,month,year',
+        });
+
+      if (strategyError) {
+        console.error("Error saving social strategy:", strategyError);
+        // Don't block progression if this fails
+      }
+    }
+
     onContinue();
   };
 
@@ -133,6 +188,8 @@ export function StageMarketing({ submissionId, onContinue, onBack, onSaveExit }:
   }
 
   const selectedService = services.find(s => s.id === selectedServiceId);
+  const totalPercentage = Object.values(topicDistribution).reduce((sum, val) => sum + val, 0);
+  const postsPerMonth = Math.round((selectedDays.length * 4.33));
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
@@ -140,7 +197,7 @@ export function StageMarketing({ submissionId, onContinue, onBack, onSaveExit }:
         <div>
           <h2 className="text-3xl font-bold">Marketing Details</h2>
           <p className="text-muted-foreground mt-1">
-            Provide detailed information about your services
+            Provide detailed information about your services and social media strategy
           </p>
         </div>
       </div>
@@ -246,18 +303,115 @@ export function StageMarketing({ submissionId, onContinue, onBack, onSaveExit }:
         </CardContent>
       </Card>
 
-      <div className="flex justify-between">
+      <Card>
+        <CardHeader>
+          <CardTitle>Social Media Strategy</CardTitle>
+          <CardDescription>
+            Set up your default posting schedule and content mix
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="space-y-4">
+            <Label>Posting Schedule</Label>
+            <RadioGroup value={postingFrequency} onValueChange={(value: any) => {
+              setPostingFrequency(value);
+              if (value === 'daily') {
+                setSelectedDays([0, 1, 2, 3, 4, 5, 6]);
+              } else if (value === 'weekdays') {
+                setSelectedDays([1, 2, 3, 4, 5]);
+              }
+            }}>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="daily" id="daily" />
+                <Label htmlFor="daily" className="font-normal cursor-pointer">Daily (7 days/week)</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="weekdays" id="weekdays" />
+                <Label htmlFor="weekdays" className="font-normal cursor-pointer">Weekdays (Mon-Fri)</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="custom" id="custom" />
+                <Label htmlFor="custom" className="font-normal cursor-pointer">Custom days</Label>
+              </div>
+            </RadioGroup>
+
+            {postingFrequency === 'custom' && (
+              <div className="flex gap-2 flex-wrap">
+                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, index) => (
+                  <Toggle
+                    key={index}
+                    pressed={selectedDays.includes(index)}
+                    onPressedChange={(pressed) => {
+                      if (pressed) {
+                        setSelectedDays([...selectedDays, index].sort());
+                      } else {
+                        setSelectedDays(selectedDays.filter(d => d !== index));
+                      }
+                    }}
+                  >
+                    {day}
+                  </Toggle>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-4">
+            <Label>Content Mix</Label>
+            <div className="space-y-4">
+              {Object.entries(topicDistribution).map(([topic, value]) => (
+                <div key={topic} className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm font-normal capitalize">
+                      {topic.replace(/_/g, ' ')}
+                    </Label>
+                    <span className="text-sm text-muted-foreground">{value}%</span>
+                  </div>
+                  <Slider
+                    value={[value]}
+                    onValueChange={([newValue]) => {
+                      setTopicDistribution(prev => ({
+                        ...prev,
+                        [topic]: newValue,
+                      }));
+                    }}
+                    max={100}
+                    step={5}
+                  />
+                </div>
+              ))}
+            </div>
+
+            <div className="space-y-2">
+              <Alert>
+                <Info className="h-4 w-4" />
+                <AlertDescription>
+                  Approximately {postsPerMonth} posts per month
+                </AlertDescription>
+              </Alert>
+              
+              {totalPercentage !== 100 && (
+                <Alert variant="destructive">
+                  <AlertDescription>
+                    Content mix must total 100% (currently {totalPercentage}%)
+                  </AlertDescription>
+                </Alert>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="flex justify-start gap-2 pt-4 border-t">
         <Button variant="outline" onClick={onBack}>
           Back
         </Button>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={onSaveExit}>
-            Save & Exit
-          </Button>
-          <Button onClick={handleContinue}>
-            Continue to Assets
-          </Button>
-        </div>
+        <Button variant="outline" onClick={onSaveExit}>
+          Save & Exit
+        </Button>
+        <Button onClick={handleContinue}>
+          Continue
+        </Button>
       </div>
     </div>
   );
