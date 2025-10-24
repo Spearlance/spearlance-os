@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { SocialMediaCallout } from "@/components/social/SocialMediaCallout";
 import { MonthlyPlannerWizard } from "@/components/social/MonthlyPlannerWizard";
@@ -7,11 +7,13 @@ import { MonthlyCalendarGrid } from "@/components/social/MonthlyCalendarGrid";
 import { WeeklyCalendarView } from "@/components/social/WeeklyCalendarView";
 import { CalendarViewSelector } from "@/components/social/CalendarViewSelector";
 import { PostCreatorSheet } from "@/components/social/PostCreatorSheet";
+import { StrategyForm } from "@/components/social/StrategyForm";
 import { useClient } from "@/contexts/ClientContext";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, ChevronDown, Sparkles, PlusCircle, FileText } from "lucide-react";
+import { AlertCircle, ChevronDown, Sparkles, PlusCircle, FileText, Info } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,6 +22,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
 
 const SocialMedia = () => {
   const { selectedClient, loading: clientLoading } = useClient();
@@ -27,6 +30,7 @@ const SocialMedia = () => {
   const [showPostCreator, setShowPostCreator] = useState(false);
   const [generationType, setGenerationType] = useState<'all' | 'missing'>('all');
   const [viewType, setViewType] = useState<'table' | 'monthly' | 'weekly'>('table');
+  const [activeTab, setActiveTab] = useState<'planner' | 'strategy'>('planner');
 
   const currentMonth = new Date().getMonth() + 1;
   const currentYear = new Date().getFullYear();
@@ -38,10 +42,8 @@ const SocialMedia = () => {
     queryKey: ['monthly-posts', selectedClient?.id, selectedMonth, selectedYear],
     queryFn: async () => {
       if (!selectedClient) return [];
-      
       const startDate = new Date(selectedYear, selectedMonth - 1, 1);
       const endDate = new Date(selectedYear, selectedMonth, 0);
-
       const { data, error } = await supabase
         .from('social_media_posts')
         .select('*')
@@ -49,9 +51,25 @@ const SocialMedia = () => {
         .gte('scheduled_date', startDate.toISOString())
         .lte('scheduled_date', endDate.toISOString())
         .order('scheduled_date', { ascending: true });
-
       if (error) throw error;
       return data || [];
+    },
+    enabled: !!selectedClient,
+  });
+
+  const { data: activeStrategy } = useQuery({
+    queryKey: ['active-strategy', selectedClient?.id, selectedMonth, selectedYear],
+    queryFn: async () => {
+      if (!selectedClient) return null;
+      const { data } = await supabase
+        .from('social_media_strategy')
+        .select('*')
+        .eq('client_id', selectedClient.id)
+        .or(`and(is_global.eq.false,month.eq.${selectedMonth},year.eq.${selectedYear}),is_global.eq.true`)
+        .order('is_global', { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      return data;
     },
     enabled: !!selectedClient,
   });
@@ -88,7 +106,9 @@ const SocialMedia = () => {
 
       <SocialMediaCallout />
 
-      <div className="space-y-6">
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
+        <TabsList><TabsTrigger value="planner">Planner</TabsTrigger><TabsTrigger value="strategy">Strategy</TabsTrigger></TabsList>
+        <TabsContent value="planner"><div className="space-y-6">
         <div className="flex items-center gap-4 flex-wrap">
           <div className="flex items-center gap-2">
             <select
@@ -117,7 +137,7 @@ const SocialMedia = () => {
           <div className="ml-auto flex items-center gap-2">
             {monthlyPosts && monthlyPosts.length > 0 && (
               <Badge variant="secondary">
-                {monthlyPosts.length}/30 days planned
+                {monthlyPosts.length}/{activeStrategy?.selected_days?.length ? activeStrategy.selected_days.length * 4 : 30} planned
               </Badge>
             )}
             <DropdownMenu>
@@ -177,8 +197,12 @@ const SocialMedia = () => {
             onRefresh={refetch}
             selectedMonth={selectedMonth}
             selectedYear={selectedYear}
+            activeStrategy={activeStrategy}
           />
         )}
+        </div></TabsContent>
+        <TabsContent value="strategy"><StrategyForm clientId={selectedClient.id} isGlobal onSaved={() => toast.success("Strategy saved!")} /></TabsContent>
+      </Tabs>
         
         {viewType === 'weekly' && (
           <WeeklyCalendarView 

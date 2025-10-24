@@ -24,13 +24,15 @@ interface MonthlyCalendarGridProps {
   onRefresh: () => void;
   selectedMonth: number;
   selectedYear: number;
+  activeStrategy?: any;
 }
 
 export const MonthlyCalendarGrid = ({ 
   posts, 
   onRefresh, 
   selectedMonth, 
-  selectedYear 
+  selectedYear,
+  activeStrategy
 }: MonthlyCalendarGridProps) => {
   const { selectedClient } = useClient();
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
@@ -61,6 +63,13 @@ export const MonthlyCalendarGrid = ({
     }
   };
 
+  const isActiveDayOfWeek = (day: number) => {
+    const date = new Date(selectedYear, selectedMonth - 1, day);
+    const dayOfWeek = date.getDay();
+    const isoDayOfWeek = dayOfWeek === 0 ? 7 : dayOfWeek;
+    return activeStrategy?.selected_days?.includes(isoDayOfWeek) ?? true;
+  };
+
   const handleAddPost = (day: number) => {
     toast('Add post functionality coming soon');
   };
@@ -76,11 +85,12 @@ export const MonthlyCalendarGrid = ({
   // Add cells for each day of the month
   for (let day = 1; day <= daysInMonth; day++) {
     const dayPosts = postsByDate[day] || [];
+    const isActive = isActiveDayOfWeek(day);
     
     calendarDays.push(
       <div 
         key={day} 
-        className="min-h-32 border border-border/50 p-2 bg-background hover:bg-accent/5 transition-colors"
+        className={`min-h-32 border border-border/50 p-2 transition-colors ${isActive ? 'bg-background hover:bg-accent/5' : 'bg-muted/30 opacity-50'}`}
       >
         <div className="flex justify-between items-start mb-2">
           <span className="text-sm font-medium text-muted-foreground">{day}</span>

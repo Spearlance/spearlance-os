@@ -50,10 +50,33 @@ serve(async (req) => {
       throw new Error('Cannot generate posts for months in the past');
     }
 
-    // Check for existing posts
+    // Fetch strategy (month-specific first, fallback to global)
+    const { data: strategy } = await supabase
+      .from('social_media_strategy')
+      .select('*')
+      .eq('client_id', client_id)
+      .or(`and(is_global.eq.false,month.eq.${month},year.eq.${year}),is_global.eq.true`)
+      .order('is_global', { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
+    const selectedDays = strategy?.selected_days || [1, 2, 3, 4, 5, 6, 7];
+    const topicDistribution = strategy?.topic_distribution || {
+      educational: 25, behind_the_scenes: 25, customer_stories: 20, promotional: 15, quick_tips: 15
+    };
+
+    // Calculate which days match selected weekdays
+    const daysInMonth = new Date(year, month, 0).getDate();
+    const daysToGenerate: number[] = [];
+    for (let day = 1; day <= daysInMonth; day++) {
+      const date = new Date(year, month - 1, day);
+      const dayOfWeek = date.getDay();
+      const isoDayOfWeek = dayOfWeek === 0 ? 7 : dayOfWeek;
+      if (selectedDays.includes(isoDayOfWeek)) daysToGenerate.push(day);
+    }
+
     const startDate = new Date(year, month - 1, 1).toISOString();
     const endDate = new Date(year, month, 1).toISOString();
-    
     const { data: existingPosts } = await supabase
       .from('social_media_posts')
       .select('id, scheduled_date')
@@ -61,52 +84,17 @@ serve(async (req) => {
       .gte('scheduled_date', startDate)
       .lt('scheduled_date', endDate);
 
-    let daysToGenerate: number[] = [];
-    let postsToGenerate = 30;
-
-    if (generation_type === 'all') {
-      // Delete all existing posts for this month
-      if (existingPosts && existingPosts.length > 0) {
-        console.log('Deleting', existingPosts.length, 'existing posts for regeneration...');
-        const { error: deleteError } = await supabase
-          .from('social_media_posts')
-          .delete()
-          .in('id', existingPosts.map(p => p.id));
-          
-        if (deleteError) {
-          console.error('Error deleting existing posts:', deleteError);
-          throw deleteError;
-        }
-      }
-      
-      // Delete existing batch record
-      await supabase
-        .from('social_media_generation_batches')
-        .delete()
-        .eq('client_id', client_id)
-        .eq('month', month)
-        .eq('year', year);
-      
-      // Generate all 30 days
-      daysToGenerate = Array.from({ length: 30 }, (_, i) => i + 1);
+    let finalDays = daysToGenerate;
+    if (generation_type === 'all' && existingPosts?.length) {
+      await supabase.from('social_media_posts').delete().in('id', existingPosts.map(p => p.id));
+      await supabase.from('social_media_generation_batches').delete().eq('client_id', client_id).eq('month', month).eq('year', year);
     } else if (generation_type === 'missing') {
-      // Find which days already have posts
-      const existingDays = new Set(
-        existingPosts?.map(p => new Date(p.scheduled_date).getDate()) || []
-      );
-      
-      // Generate only for missing days
-      daysToGenerate = Array.from({ length: 30 }, (_, i) => i + 1)
-        .filter(day => !existingDays.has(day));
-      
-      postsToGenerate = daysToGenerate.length;
-      
-      if (postsToGenerate === 0) {
-        throw new Error('All days already have posts scheduled. Use "Generate All" to replace them.');
-      }
-      
-      console.log(`Generating posts for ${postsToGenerate} missing days:`, daysToGenerate);
+      const existingDays = new Set(existingPosts?.map(p => new Date(p.scheduled_date).getDate()) || []);
+      finalDays = daysToGenerate.filter(day => !existingDays.has(day));
     }
+
+    const postsToGenerate = finalDays.length;
+    if (postsToGenerate === 0) throw new Error('No posts to generate');
 
     console.log('Generating monthly topics for client:', client_id, 'month:', month, 'year:', year);
 
@@ -133,18 +121,18 @@ serve(async (req) => {
       .limit(1)
       .maybeSingle();
 
-    // Calculate topic distribution based on posts to generate
-    const ratio = postsToGenerate / 30;
-    const topicDistribution = {
-      educational: Math.round(8 * ratio),
-      behind_the_scenes: Math.round(8 * ratio),
-      customer_stories: Math.round(6 * ratio),
-      promotional: Math.round(4 * ratio),
-      quick_tips: Math.round(4 * ratio),
-    };
+    // Calculate topic counts from percentages
+    const topicCounts: any = {};
+    let remaining = postsToGenerate;
+    const sorted = Object.entries(topicDistribution).sort((a: any, b: any) => b[1] - a[1]);
+    sorted.forEach(([cat, pct]: any, idx) => {
+      topicCounts[cat] = idx === sorted.length - 1 ? remaining : Math.round((pct / 100) * postsToGenerate);
+      remaining -= topicCounts[cat];
+    });
 
-    const systemPrompt = `You are a social media strategist creating a monthly content calendar. Generate exactly ${postsToGenerate} post ideas for ${new Date(year, month - 1).toLocaleString('default', { month: 'long' })} ${year}.
-${generation_type === 'missing' ? `\nNote: Generate posts for these specific days only: ${daysToGenerate.join(', ')}` : ''}
+    const systemPrompt = `Generate ${postsToGenerate} social media post ideas for ${new Date(year, month - 1).toLocaleString('default', { month: 'long' })} ${year}.
+Days: ${finalDays.join(', ')}
+Topic counts: ${Object.entries(topicCounts).map(([c, n]) => `${n} ${c}`).join(', ')}
 
 Client Context:
 - Business: ${client?.name || 'Unknown'}

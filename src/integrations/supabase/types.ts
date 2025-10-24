@@ -2684,6 +2684,53 @@ export type Database = {
           },
         ]
       }
+      social_media_strategy: {
+        Row: {
+          client_id: string
+          created_at: string | null
+          id: string
+          is_global: boolean | null
+          month: number | null
+          posting_frequency: string
+          selected_days: number[] | null
+          topic_distribution: Json | null
+          updated_at: string | null
+          year: number | null
+        }
+        Insert: {
+          client_id: string
+          created_at?: string | null
+          id?: string
+          is_global?: boolean | null
+          month?: number | null
+          posting_frequency?: string
+          selected_days?: number[] | null
+          topic_distribution?: Json | null
+          updated_at?: string | null
+          year?: number | null
+        }
+        Update: {
+          client_id?: string
+          created_at?: string | null
+          id?: string
+          is_global?: boolean | null
+          month?: number | null
+          posting_frequency?: string
+          selected_days?: number[] | null
+          topic_distribution?: Json | null
+          updated_at?: string | null
+          year?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "social_media_strategy_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       social_post_comments: {
         Row: {
           comment_text: string
