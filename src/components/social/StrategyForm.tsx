@@ -59,6 +59,19 @@ export function StrategyForm({
     quick_tips: 15,
   });
 
+  // Reset form to defaults when clientId changes
+  useEffect(() => {
+    setPostingFrequency('daily');
+    setSelectedDays([1, 2, 3, 4, 5, 6, 7]);
+    setTopicDistribution({
+      educational: 25,
+      behind_the_scenes: 25,
+      customer_stories: 20,
+      promotional: 15,
+      quick_tips: 15,
+    });
+  }, [clientId]);
+
   // Load strategy data when fetched
   useEffect(() => {
     if (strategy) {
