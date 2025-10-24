@@ -111,7 +111,7 @@ export const ConnectSocialPopup = ({
     },
   });
 
-  const icon = platform === 'facebook' ? Facebook : Instagram;
+  const Icon = platform === 'facebook' ? Facebook : Instagram;
   const label = platform === 'facebook' ? 'Connect Facebook' : 'Connect Instagram';
 
   return (
@@ -128,7 +128,7 @@ export const ConnectSocialPopup = ({
         </>
       ) : (
         <>
-          {icon({ className: "mr-2 h-5 w-5" })}
+          <Icon className="mr-2 h-5 w-5" />
           {label}
         </>
       )}
