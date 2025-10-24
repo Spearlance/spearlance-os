@@ -1,13 +1,14 @@
 import { useState, useEffect, useMemo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Calendar, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import { Calendar, CheckCircle2, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useClient } from "@/contexts/ClientContext";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import spearlanceLogo from '@/assets/spearlance-logo.png';
 
 interface MonthlyPlannerWizardProps {
   open: boolean;
@@ -280,7 +281,13 @@ export const MonthlyPlannerWizard = ({
               {isComplete ? (
                 <CheckCircle2 className="h-16 w-16 text-green-500 animate-in zoom-in duration-300" />
               ) : (
-                <Loader2 className="h-16 w-16 animate-spin text-primary" />
+                <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center animate-pulse">
+                  <img 
+                    src={spearlanceLogo} 
+                    alt="Generating posts"
+                    className="h-10 w-10"
+                  />
+                </div>
               )}
               <p className="text-sm text-center text-muted-foreground animate-pulse">
                 {progress}
