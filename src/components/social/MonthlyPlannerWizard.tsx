@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Calendar, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
@@ -17,7 +17,7 @@ interface MonthlyPlannerWizardProps {
   year?: number;
   generationType: 'all' | 'missing';
   existingPostDates?: string[];
-  expectedPostCount: number;
+  expectedPostCount?: number;
   activeStrategy?: any;
 }
 
@@ -81,6 +81,18 @@ export const MonthlyPlannerWizard = ({
   const [selectedMonth, setSelectedMonth] = useState<number>(propMonth || currentMonth);
   const [selectedYear, setSelectedYear] = useState<number>(propYear || currentYear);
 
+  // Sync selected month/year when dialog opens or props change
+  useEffect(() => {
+    if (open) {
+      setSelectedMonth(propMonth || currentMonth);
+      setSelectedYear(propYear || currentYear);
+    }
+  }, [open, propMonth, propYear, currentMonth, currentYear]);
+
+  // Calculate effective post count with fallback
+  const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate();
+  const effectivePostCount = expectedPostCount || daysInMonth;
+
   const today = new Date();
   const currentDay = today.getDate();
   const isSelectingCurrentMonth = selectedMonth === currentMonth && selectedYear === currentYear;
@@ -95,13 +107,13 @@ export const MonthlyPlannerWizard = ({
     setIsGenerating(true);
     
     if (generationType === 'all') {
-      setProgress(`Regenerating all ${expectedPostCount} posts...`);
+      setProgress(`Regenerating all ${effectivePostCount} posts...`);
     } else {
       const existingCount = existingPostDates.filter(date => {
         const d = new Date(date);
         return d.getMonth() + 1 === selectedMonth && d.getFullYear() === selectedYear;
       }).length;
-      const missingCount = expectedPostCount - existingCount;
+      const missingCount = effectivePostCount - existingCount;
       setProgress(`Generating ${missingCount} posts for missing days...`);
     }
 
@@ -154,7 +166,7 @@ export const MonthlyPlannerWizard = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Calendar className="h-5 w-5" />
-            {generationType === 'all' ? `Generate All Posts (${expectedPostCount})` : 'Fill Missing Days'}
+            {generationType === 'all' ? `Generate All Posts (${effectivePostCount})` : 'Fill Missing Days'}
           </DialogTitle>
         </DialogHeader>
 
@@ -176,10 +188,10 @@ export const MonthlyPlannerWizard = ({
                   <AlertDescription>
                     {(() => {
                       const existingCount = existingPostDates.filter(date => {
-                        const d = new Date(date);
+                      const d = new Date(date);
                         return d.getMonth() + 1 === selectedMonth && d.getFullYear() === selectedYear;
                       }).length;
-                      const missingCount = expectedPostCount - existingCount;
+                      const missingCount = effectivePostCount - existingCount;
                       return `${missingCount} posts will be generated for days without content. Existing posts will be kept.`;
                     })()}
                   </AlertDescription>
@@ -228,7 +240,7 @@ export const MonthlyPlannerWizard = ({
               <ul className="text-sm space-y-2 text-muted-foreground">
                 <li className="flex items-start gap-2">
                   <span className="text-primary mt-0.5">✓</span>
-                  <span><strong>{expectedPostCount} post topics</strong> tailored to your brand and audience</span>
+                  <span><strong>{effectivePostCount} post topics</strong> tailored to your brand and audience</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-primary mt-0.5">✓</span>
