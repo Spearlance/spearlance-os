@@ -1291,6 +1291,148 @@ export type Database = {
           },
         ]
       }
+      late_connection_invites: {
+        Row: {
+          created_at: string | null
+          expires_at: string
+          id: string
+          invite_token: string
+          invite_url: string
+          inviter_user_id: string | null
+          is_used: boolean | null
+          late_invite_id: string
+          late_profile_id: string
+          platform: string
+        }
+        Insert: {
+          created_at?: string | null
+          expires_at: string
+          id?: string
+          invite_token: string
+          invite_url: string
+          inviter_user_id?: string | null
+          is_used?: boolean | null
+          late_invite_id: string
+          late_profile_id: string
+          platform: string
+        }
+        Update: {
+          created_at?: string | null
+          expires_at?: string
+          id?: string
+          invite_token?: string
+          invite_url?: string
+          inviter_user_id?: string | null
+          is_used?: boolean | null
+          late_invite_id?: string
+          late_profile_id?: string
+          platform?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "late_connection_invites_inviter_user_id_fkey"
+            columns: ["inviter_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "late_connection_invites_late_profile_id_fkey"
+            columns: ["late_profile_id"]
+            isOneToOne: false
+            referencedRelation: "late_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      late_profiles: {
+        Row: {
+          client_id: string
+          created_at: string | null
+          id: string
+          late_profile_id: string
+          late_profile_name: string
+          updated_at: string | null
+        }
+        Insert: {
+          client_id: string
+          created_at?: string | null
+          id?: string
+          late_profile_id: string
+          late_profile_name: string
+          updated_at?: string | null
+        }
+        Update: {
+          client_id?: string
+          created_at?: string | null
+          id?: string
+          late_profile_id?: string
+          late_profile_name?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "late_profiles_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      late_social_accounts: {
+        Row: {
+          created_at: string | null
+          display_name: string | null
+          id: string
+          is_active: boolean | null
+          late_account_id: string
+          late_profile_id: string
+          platform: string
+          platform_specific_data: Json | null
+          profile_picture_url: string | null
+          token_expires_at: string | null
+          updated_at: string | null
+          username: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          display_name?: string | null
+          id?: string
+          is_active?: boolean | null
+          late_account_id: string
+          late_profile_id: string
+          platform: string
+          platform_specific_data?: Json | null
+          profile_picture_url?: string | null
+          token_expires_at?: string | null
+          updated_at?: string | null
+          username?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          display_name?: string | null
+          id?: string
+          is_active?: boolean | null
+          late_account_id?: string
+          late_profile_id?: string
+          platform?: string
+          platform_specific_data?: Json | null
+          profile_picture_url?: string | null
+          token_expires_at?: string | null
+          updated_at?: string | null
+          username?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "late_social_accounts_late_profile_id_fkey"
+            columns: ["late_profile_id"]
+            isOneToOne: false
+            referencedRelation: "late_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       launchpad_submissions: {
         Row: {
           avatar_completeness: number | null
@@ -2431,6 +2573,10 @@ export type Database = {
           id: string
           image_source: string | null
           image_url: string | null
+          late_error_message: string | null
+          late_post_id: string | null
+          late_published_urls: Json | null
+          late_status: string | null
           logo_used: boolean | null
           mood_board_reference: string | null
           nano_banana_prompt: string | null
@@ -2439,6 +2585,7 @@ export type Database = {
           posted_at: string | null
           scheduled_date: string | null
           status: string
+          synced_to_late_at: string | null
           topic_category: string
           updated_at: string | null
         }
@@ -2458,6 +2605,10 @@ export type Database = {
           id?: string
           image_source?: string | null
           image_url?: string | null
+          late_error_message?: string | null
+          late_post_id?: string | null
+          late_published_urls?: Json | null
+          late_status?: string | null
           logo_used?: boolean | null
           mood_board_reference?: string | null
           nano_banana_prompt?: string | null
@@ -2466,6 +2617,7 @@ export type Database = {
           posted_at?: string | null
           scheduled_date?: string | null
           status?: string
+          synced_to_late_at?: string | null
           topic_category: string
           updated_at?: string | null
         }
@@ -2485,6 +2637,10 @@ export type Database = {
           id?: string
           image_source?: string | null
           image_url?: string | null
+          late_error_message?: string | null
+          late_post_id?: string | null
+          late_published_urls?: Json | null
+          late_status?: string | null
           logo_used?: boolean | null
           mood_board_reference?: string | null
           nano_banana_prompt?: string | null
@@ -2493,6 +2649,7 @@ export type Database = {
           posted_at?: string | null
           scheduled_date?: string | null
           status?: string
+          synced_to_late_at?: string | null
           topic_category?: string
           updated_at?: string | null
         }

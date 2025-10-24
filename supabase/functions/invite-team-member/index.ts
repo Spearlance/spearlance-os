@@ -140,16 +140,14 @@ serve(async (req) => {
     // Check if user already exists
     let existingUser = null;
     try {
-      const { data: userData, error: lookupError } = await supabaseAdmin.auth.admin.getUserByEmail(email);
-      if (lookupError && lookupError.message !== 'User not found') {
+      const { data: usersData, error: lookupError } = await supabaseAdmin.auth.admin.listUsers();
+      if (lookupError) {
         throw lookupError;
       }
-      existingUser = userData?.user || null;
+      existingUser = usersData.users.find(u => u.email === email) || null;
     } catch (err: any) {
-      if (!err.message?.includes('User not found')) {
-        console.error('Error looking up existing user:', err);
-        throw new Error('Failed to verify user existence');
-      }
+      console.error('Error looking up existing user:', err);
+      throw new Error('Failed to verify user existence');
     }
 
     let invitedUserId: string;

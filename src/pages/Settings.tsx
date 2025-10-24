@@ -18,6 +18,7 @@ import { UserProfileTab } from "@/components/settings/UserProfileTab";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Clock, Copy, Info } from "lucide-react";
+import { SocialAccountsManager } from "@/components/social/SocialAccountsManager";
 
 export default function Settings() {
   const { selectedClient, refreshClients } = useClient();
@@ -117,6 +118,7 @@ export default function Settings() {
           <TabsList>
             <TabsTrigger value="profile">Profile</TabsTrigger>
             {client && <TabsTrigger value="general">General</TabsTrigger>}
+            {client && <TabsTrigger value="social">Social Media</TabsTrigger>}
             {client && showCalendarTab && <TabsTrigger value="calendar">Calendar</TabsTrigger>}
             {client && <TabsTrigger value="team">Team</TabsTrigger>}
             {client && canViewBilling && <TabsTrigger value="billing">Billing</TabsTrigger>}
@@ -172,6 +174,10 @@ export default function Settings() {
               </Card>
             </>
           )}
+        </TabsContent>
+
+        <TabsContent value="social" className="space-y-4">
+          <SocialAccountsManager />
         </TabsContent>
 
         <TabsContent value="calendar" className="space-y-4">
