@@ -15,6 +15,8 @@ interface MonthlyPlannerWizardProps {
   onComplete: () => void;
   month?: number;
   year?: number;
+  generationType: 'all' | 'missing';
+  existingPostDates?: string[];
 }
 
 const getDefaultMonth = () => {
@@ -56,14 +58,22 @@ const getAvailableMonths = () => {
   return months;
 };
 
-export const MonthlyPlannerWizard = ({ open, onOpenChange, onComplete, month, year }: MonthlyPlannerWizardProps) => {
+export const MonthlyPlannerWizard = ({ 
+  open, 
+  onOpenChange, 
+  onComplete,
+  month: propMonth,
+  year: propYear,
+  generationType,
+  existingPostDates = [],
+}: MonthlyPlannerWizardProps) => {
   const { selectedClient } = useClient();
   const { toast } = useToast();
   const [isGenerating, setIsGenerating] = useState(false);
   const [progress, setProgress] = useState<string>("");
   const [isComplete, setIsComplete] = useState(false);
-  const [selectedMonth, setSelectedMonth] = useState<number>(month || getDefaultMonth());
-  const [selectedYear, setSelectedYear] = useState<number>(year || getDefaultYear());
+  const [selectedMonth, setSelectedMonth] = useState<number>(propMonth || getDefaultMonth());
+  const [selectedYear, setSelectedYear] = useState<number>(propYear || getDefaultYear());
 
   const today = new Date();
   const currentDay = today.getDate();
@@ -78,17 +88,25 @@ export const MonthlyPlannerWizard = ({ open, onOpenChange, onComplete, month, ye
     if (!selectedClient) return;
 
     setIsGenerating(true);
-    setProgress("Analyzing your brand and audience...");
+    
+    if (generationType === 'all') {
+      setProgress('Regenerating all 30 posts...');
+    } else {
+      const existingCount = existingPostDates.filter(date => {
+        const d = new Date(date);
+        return d.getMonth() + 1 === selectedMonth && d.getFullYear() === selectedYear;
+      }).length;
+      const missingCount = 30 - existingCount;
+      setProgress(`Generating ${missingCount} posts for missing days...`);
+    }
 
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setProgress("Generating 30 creative post ideas...");
-
       const { data, error } = await supabase.functions.invoke('social-generate-monthly-topics', {
-        body: {
+        body: { 
           client_id: selectedClient.id,
           month: selectedMonth,
           year: selectedYear,
+          generation_type: generationType,
         },
       });
 
@@ -131,13 +149,38 @@ export const MonthlyPlannerWizard = ({ open, onOpenChange, onComplete, month, ye
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Calendar className="h-5 w-5" />
-            Generate Monthly Plan
+            {generationType === 'all' ? 'Generate All Posts (30)' : 'Fill Missing Days'}
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
           {!isGenerating && !isComplete && (
             <>
+              {generationType === 'all' && existingPostDates.length > 0 && (
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    This will replace all existing posts for {selectedMonthName}. This action cannot be undone.
+                  </AlertDescription>
+                </Alert>
+              )}
+              
+              {generationType === 'missing' && (
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    {(() => {
+                      const existingCount = existingPostDates.filter(date => {
+                        const d = new Date(date);
+                        return d.getMonth() + 1 === selectedMonth && d.getFullYear() === selectedYear;
+                      }).length;
+                      const missingCount = 30 - existingCount;
+                      return `${missingCount} posts will be generated for days without content. Existing posts will be kept.`;
+                    })()}
+                  </AlertDescription>
+                </Alert>
+              )}
+
               {/* Month/Year Selector */}
               <div className="space-y-2">
                 <Label>Select Month to Plan</Label>
@@ -172,9 +215,11 @@ export const MonthlyPlannerWizard = ({ open, onOpenChange, onComplete, month, ye
                 </Alert>
               )}
 
-              <p className="text-sm text-muted-foreground">
-                Create your entire social media calendar for {selectedMonthName} in seconds! We'll generate:
-              </p>
+            <p className="text-sm text-muted-foreground">
+              {generationType === 'all' 
+                ? `Create your entire social media calendar for ${selectedMonthName} in seconds! We'll generate:`
+                : `Fill in the gaps in your ${selectedMonthName} calendar! We'll generate:`}
+            </p>
               <ul className="text-sm space-y-2 text-muted-foreground">
                 <li className="flex items-start gap-2">
                   <span className="text-primary mt-0.5">✓</span>

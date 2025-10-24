@@ -24,7 +24,7 @@ serve(async (req) => {
       throw new Error('Unauthorized');
     }
 
-    const { client_id, month, year } = await req.json();
+    const { client_id, month, year, generation_type = 'all' } = await req.json();
 
     if (!client_id || !month || !year) {
       throw new Error('Missing required parameters');
@@ -50,42 +50,62 @@ serve(async (req) => {
       throw new Error('Cannot generate posts for months in the past');
     }
 
-    // Check for existing batch and handle orphaned batches
-    const { data: existingBatch } = await supabase
-      .from('social_media_generation_batches')
-      .select('id')
+    // Check for existing posts
+    const startDate = new Date(year, month - 1, 1).toISOString();
+    const endDate = new Date(year, month, 1).toISOString();
+    
+    const { data: existingPosts } = await supabase
+      .from('social_media_posts')
+      .select('id, scheduled_date')
       .eq('client_id', client_id)
-      .eq('month', month)
-      .eq('year', year)
-      .maybeSingle();
+      .gte('scheduled_date', startDate)
+      .lt('scheduled_date', endDate);
 
-    if (existingBatch) {
-      // Check if posts actually exist for this month
-      const startDate = new Date(year, month - 1, 1).toISOString();
-      const endDate = new Date(year, month, 1).toISOString();
-      
-      const { count } = await supabase
-        .from('social_media_posts')
-        .select('*', { count: 'exact', head: true })
-        .eq('client_id', client_id)
-        .gte('scheduled_date', startDate)
-        .lt('scheduled_date', endDate);
+    let daysToGenerate: number[] = [];
+    let postsToGenerate = 30;
 
-      if (count && count > 0) {
-        throw new Error(`You already have ${count} posts scheduled for ${new Date(year, month - 1).toLocaleString('default', { month: 'long' })} ${year}. Delete them first to regenerate.`);
+    if (generation_type === 'all') {
+      // Delete all existing posts for this month
+      if (existingPosts && existingPosts.length > 0) {
+        console.log('Deleting', existingPosts.length, 'existing posts for regeneration...');
+        const { error: deleteError } = await supabase
+          .from('social_media_posts')
+          .delete()
+          .in('id', existingPosts.map(p => p.id));
+          
+        if (deleteError) {
+          console.error('Error deleting existing posts:', deleteError);
+          throw deleteError;
+        }
       }
-
-      // Orphaned batch found - delete it
-      console.log('Found orphaned batch record, deleting...');
-      const { error: deleteError } = await supabase
+      
+      // Delete existing batch record
+      await supabase
         .from('social_media_generation_batches')
         .delete()
-        .eq('id', existingBatch.id);
-        
-      if (deleteError) {
-        console.error('Error deleting orphaned batch:', deleteError);
+        .eq('client_id', client_id)
+        .eq('month', month)
+        .eq('year', year);
+      
+      // Generate all 30 days
+      daysToGenerate = Array.from({ length: 30 }, (_, i) => i + 1);
+    } else if (generation_type === 'missing') {
+      // Find which days already have posts
+      const existingDays = new Set(
+        existingPosts?.map(p => new Date(p.scheduled_date).getDate()) || []
+      );
+      
+      // Generate only for missing days
+      daysToGenerate = Array.from({ length: 30 }, (_, i) => i + 1)
+        .filter(day => !existingDays.has(day));
+      
+      postsToGenerate = daysToGenerate.length;
+      
+      if (postsToGenerate === 0) {
+        throw new Error('All days already have posts scheduled. Use "Generate All" to replace them.');
       }
-      console.log('Orphaned batch deleted, proceeding with fresh generation');
+      
+      console.log(`Generating posts for ${postsToGenerate} missing days:`, daysToGenerate);
     }
 
     console.log('Generating monthly topics for client:', client_id, 'month:', month, 'year:', year);
@@ -113,16 +133,18 @@ serve(async (req) => {
       .limit(1)
       .maybeSingle();
 
-    // Generate diverse topic categories
+    // Calculate topic distribution based on posts to generate
+    const ratio = postsToGenerate / 30;
     const topicDistribution = {
-      educational: 8,
-      behind_the_scenes: 8,
-      customer_stories: 6,
-      promotional: 4,
-      quick_tips: 4,
+      educational: Math.round(8 * ratio),
+      behind_the_scenes: Math.round(8 * ratio),
+      customer_stories: Math.round(6 * ratio),
+      promotional: Math.round(4 * ratio),
+      quick_tips: Math.round(4 * ratio),
     };
 
-    const systemPrompt = `You are a social media strategist creating a monthly content calendar. Generate exactly 30 post ideas for ${new Date(year, month - 1).toLocaleString('default', { month: 'long' })} ${year}.
+    const systemPrompt = `You are a social media strategist creating a monthly content calendar. Generate exactly ${postsToGenerate} post ideas for ${new Date(year, month - 1).toLocaleString('default', { month: 'long' })} ${year}.
+${generation_type === 'missing' ? `\nNote: Generate posts for these specific days only: ${daysToGenerate.join(', ')}` : ''}
 
 Client Context:
 - Business: ${client?.name || 'Unknown'}
@@ -132,15 +154,15 @@ ${brandVoice?.tone ? `- Brand Tone: ${brandVoice.tone}` : ''}
 ${avatar?.avatar_name ? `- Target Audience: ${avatar.avatar_name}` : ''}
 
 Topic Distribution:
-- 8 Educational posts (teach something valuable)
-- 8 Behind-the-scenes posts (show your process, team, culture)
-- 6 Customer stories (testimonials, case studies, wins)
-- 4 Promotional posts (offers, services, products)
-- 4 Quick tips (actionable bite-sized advice)
+- ${topicDistribution.educational} Educational posts (teach something valuable)
+- ${topicDistribution.behind_the_scenes} Behind-the-scenes posts (show your process, team, culture)
+- ${topicDistribution.customer_stories} Customer stories (testimonials, case studies, wins)
+- ${topicDistribution.promotional} Promotional posts (offers, services, products)
+- ${topicDistribution.quick_tips} Quick tips (actionable bite-sized advice)
 
-Return a JSON array of exactly 30 objects with this structure:
+Return a JSON array of exactly ${postsToGenerate} objects with this structure:
 {
-  "day": 1-30,
+  "day": ${generation_type === 'missing' ? `one of [${daysToGenerate.join(', ')}]` : '1-30'},
   "category": "educational|behind_the_scenes|customer_stories|promotional|quick_tips",
   "topic_title": "Short catchy title",
   "topic_description": "Brief description of what this post should cover",
@@ -148,7 +170,7 @@ Return a JSON array of exactly 30 objects with this structure:
   "ideal_for": "Why this topic works well for this day/timing"
 }
 
-Spread the topics naturally across the month. Mix up the categories so there's variety week-to-week. Make topics specific and actionable.`;
+${generation_type === 'missing' ? 'Assign each post to one of the available days. ' : 'Spread the topics naturally across the month. '}Mix up the categories so there's variety week-to-week. Make topics specific and actionable.`;
 
     const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
@@ -161,7 +183,7 @@ Spread the topics naturally across the month. Mix up the categories so there's v
         model: 'google/gemini-2.5-flash',
         messages: [
           { role: 'system', content: systemPrompt },
-          { role: 'user', content: `Generate 30 diverse social media post topics for ${new Date(year, month - 1).toLocaleString('default', { month: 'long' })} ${year}. Return ONLY valid JSON array, no markdown formatting.` }
+          { role: 'user', content: `Generate ${postsToGenerate} diverse social media post topics for ${new Date(year, month - 1).toLocaleString('default', { month: 'long' })} ${year}. Return ONLY valid JSON array, no markdown formatting.` }
         ],
       }),
     });
@@ -180,12 +202,12 @@ Spread the topics naturally across the month. Mix up the categories so there's v
     
     const topics = JSON.parse(topicsText);
 
-    if (!Array.isArray(topics) || topics.length !== 30) {
+    if (!Array.isArray(topics) || topics.length !== postsToGenerate) {
       console.error('Invalid topics response:', topics);
-      throw new Error('AI did not generate exactly 30 topics');
+      throw new Error(`AI did not generate exactly ${postsToGenerate} topics`);
     }
 
-    console.log('Generated 30 topics successfully');
+    console.log(`Generated ${postsToGenerate} topics successfully`);
 
     // Insert all posts as drafts FIRST (before creating batch record)
     const postsToInsert = topics.map((topic: any) => {

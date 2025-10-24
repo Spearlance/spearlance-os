@@ -7,16 +7,28 @@ import { PostsList } from "@/components/social/PostsList";
 import { SocialMediaCallout } from "@/components/social/SocialMediaCallout";
 import { MonthlyPlannerWizard } from "@/components/social/MonthlyPlannerWizard";
 import { MonthlyCalendarTable } from "@/components/social/MonthlyCalendarTable";
+import { MonthlyCalendarGrid } from "@/components/social/MonthlyCalendarGrid";
+import { WeeklyCalendarView } from "@/components/social/WeeklyCalendarView";
+import { CalendarViewSelector } from "@/components/social/CalendarViewSelector";
 import { useClient } from "@/contexts/ClientContext";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, Calendar } from "lucide-react";
+import { AlertCircle, Calendar, ChevronDown, Sparkles, PlusCircle } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Badge } from "@/components/ui/badge";
 
 const SocialMedia = () => {
   const { selectedClient, loading: clientLoading } = useClient();
   const [activeTab, setActiveTab] = useState("planner");
   const [showMonthlyWizard, setShowMonthlyWizard] = useState(false);
+  const [generationType, setGenerationType] = useState<'all' | 'missing'>('all');
+  const [viewType, setViewType] = useState<'table' | 'monthly' | 'weekly'>('table');
 
   const currentMonth = new Date().getMonth() + 1;
   const currentYear = new Date().getFullYear();
@@ -87,58 +99,99 @@ const SocialMedia = () => {
           </TabsList>
           
           {activeTab === "planner" && (
-            <div className="flex items-center gap-2">
-              <select
-                value={selectedMonth}
-                onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
-                className="px-3 py-2 border rounded-md bg-background"
-              >
-                {Array.from({ length: 12 }, (_, i) => i + 1).map(month => (
-                  <option key={month} value={month}>
-                    {new Date(2025, month - 1).toLocaleString('default', { month: 'long' })}
-                  </option>
-                ))}
-              </select>
-              <select
-                value={selectedYear}
-                onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-                className="px-3 py-2 border rounded-md bg-background"
-              >
-                <option value={currentYear}>{currentYear}</option>
-                <option value={currentYear + 1}>{currentYear + 1}</option>
-              </select>
-              {(!monthlyPosts || monthlyPosts.length === 0) && (
-                <Button onClick={() => setShowMonthlyWizard(true)} size="lg">
-                  <Calendar className="h-4 w-4 mr-2" />
-                  Generate Plan
-                </Button>
-              )}
+            <div className="flex items-center gap-4 flex-wrap">
+              <div className="flex items-center gap-2">
+                <select
+                  value={selectedMonth}
+                  onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+                  className="px-3 py-2 border rounded-md bg-background"
+                >
+                  {Array.from({ length: 12 }, (_, i) => i + 1).map(month => (
+                    <option key={month} value={month}>
+                      {new Date(2025, month - 1).toLocaleString('default', { month: 'long' })}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  value={selectedYear}
+                  onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                  className="px-3 py-2 border rounded-md bg-background"
+                >
+                  <option value={currentYear}>{currentYear}</option>
+                  <option value={currentYear + 1}>{currentYear + 1}</option>
+                </select>
+              </div>
+
+              <CalendarViewSelector value={viewType} onChange={setViewType} />
+
+              <div className="ml-auto flex items-center gap-2">
+                {monthlyPosts && monthlyPosts.length > 0 && (
+                  <Badge variant="secondary">
+                    {monthlyPosts.length}/30 days planned
+                  </Badge>
+                )}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button size="lg">
+                      <Calendar className="h-4 w-4 mr-2" />
+                      Generate Posts
+                      <ChevronDown className="h-4 w-4 ml-2" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-64">
+                    <DropdownMenuItem onClick={() => {
+                      setGenerationType('all');
+                      setShowMonthlyWizard(true);
+                    }}>
+                      <Sparkles className="h-4 w-4 mr-2" />
+                      <div className="flex-1">
+                        <div>Generate All (30 posts)</div>
+                        <div className="text-xs text-muted-foreground">Replace existing</div>
+                      </div>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => {
+                      setGenerationType('missing');
+                      setShowMonthlyWizard(true);
+                    }}>
+                      <PlusCircle className="h-4 w-4 mr-2" />
+                      <div className="flex-1">
+                        <div>Fill Missing Days</div>
+                        <div className="text-xs text-muted-foreground">Keep existing</div>
+                      </div>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </div>
           )}
         </div>
 
         <TabsContent value="planner" className="space-y-6">
-          {monthlyPosts && monthlyPosts.length > 0 ? (
+          {viewType === 'table' && (
             <MonthlyCalendarTable 
-              posts={monthlyPosts} 
+              posts={monthlyPosts || []} 
               onRefresh={refetch}
               selectedMonth={selectedMonth}
               selectedYear={selectedYear}
             />
-          ) : (
-            <div className="text-center py-12 space-y-4">
-              <Calendar className="h-16 w-16 mx-auto text-muted-foreground" />
-              <div>
-                <h3 className="text-lg font-semibold mb-2">No Monthly Plan Yet</h3>
-                <p className="text-muted-foreground mb-4">
-                  Generate 30 posts for this month in seconds with AI
-                </p>
-                <Button onClick={() => setShowMonthlyWizard(true)} size="lg">
-                  <Calendar className="h-4 w-4 mr-2" />
-                  Generate Monthly Plan
-                </Button>
-              </div>
-            </div>
+          )}
+          
+          {viewType === 'monthly' && (
+            <MonthlyCalendarGrid 
+              posts={monthlyPosts || []} 
+              onRefresh={refetch}
+              selectedMonth={selectedMonth}
+              selectedYear={selectedYear}
+            />
+          )}
+          
+          {viewType === 'weekly' && (
+            <WeeklyCalendarView 
+              posts={monthlyPosts || []} 
+              onRefresh={refetch}
+              selectedMonth={selectedMonth}
+              selectedYear={selectedYear}
+            />
           )}
         </TabsContent>
 
@@ -160,6 +213,8 @@ const SocialMedia = () => {
         }}
         month={selectedMonth}
         year={selectedYear}
+        generationType={generationType}
+        existingPostDates={monthlyPosts?.map(p => p.scheduled_date) || []}
       />
     </div>
   );
