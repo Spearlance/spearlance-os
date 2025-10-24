@@ -71,7 +71,8 @@ serve(async (req) => {
       throw new Error(`Failed to create invite: ${errorText}`);
     }
 
-    const lateInvite = await lateResponse.json();
+    const responseData = await lateResponse.json();
+    const lateInvite = responseData.invite;
     console.log('Late invite created:', lateInvite);
 
     // Store invite in database
