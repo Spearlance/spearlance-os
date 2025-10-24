@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Calendar, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
@@ -89,9 +89,27 @@ export const MonthlyPlannerWizard = ({
     }
   }, [open, propMonth, propYear, currentMonth, currentYear]);
 
-  // Calculate effective post count with fallback
-  const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate();
-  const effectivePostCount = expectedPostCount || daysInMonth;
+  // Calculate effective post count based on local month selection and strategy
+  const effectivePostCount = useMemo(() => {
+    const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate();
+    
+    // If no strategy exists, return total days in month
+    if (!activeStrategy?.selected_days) return daysInMonth;
+    
+    // Calculate based on strategy's selected days for the WIZARD's selected month
+    let count = 0;
+    for (let day = 1; day <= daysInMonth; day++) {
+      const date = new Date(selectedYear, selectedMonth - 1, day);
+      const dayOfWeek = date.getDay();
+      const isoDayOfWeek = dayOfWeek === 0 ? 7 : dayOfWeek;
+      
+      if (activeStrategy.selected_days.includes(isoDayOfWeek)) {
+        count++;
+      }
+    }
+    
+    return count;
+  }, [activeStrategy, selectedMonth, selectedYear]);
 
   const today = new Date();
   const currentDay = today.getDate();
