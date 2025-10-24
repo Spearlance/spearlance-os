@@ -271,6 +271,8 @@ const SocialMedia = () => {
         year={selectedYear}
         generationType={generationType}
         existingPostDates={monthlyPosts?.map(p => p.scheduled_date) || []}
+        expectedPostCount={strategyPostCount}
+        activeStrategy={activeStrategy}
       />
 
       <PostCreatorSheet

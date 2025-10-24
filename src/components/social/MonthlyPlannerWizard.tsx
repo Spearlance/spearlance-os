@@ -17,6 +17,8 @@ interface MonthlyPlannerWizardProps {
   year?: number;
   generationType: 'all' | 'missing';
   existingPostDates?: string[];
+  expectedPostCount: number;
+  activeStrategy?: any;
 }
 
 const getDefaultMonth = () => {
@@ -66,19 +68,22 @@ export const MonthlyPlannerWizard = ({
   year: propYear,
   generationType,
   existingPostDates = [],
+  expectedPostCount,
+  activeStrategy,
 }: MonthlyPlannerWizardProps) => {
   const { selectedClient } = useClient();
   const { toast } = useToast();
   const [isGenerating, setIsGenerating] = useState(false);
   const [progress, setProgress] = useState<string>("");
   const [isComplete, setIsComplete] = useState(false);
-  const [selectedMonth, setSelectedMonth] = useState<number>(propMonth || getDefaultMonth());
-  const [selectedYear, setSelectedYear] = useState<number>(propYear || getDefaultYear());
+  const currentMonth = new Date().getMonth() + 1;
+  const currentYear = new Date().getFullYear();
+  const [selectedMonth, setSelectedMonth] = useState<number>(propMonth || currentMonth);
+  const [selectedYear, setSelectedYear] = useState<number>(propYear || currentYear);
 
   const today = new Date();
   const currentDay = today.getDate();
-  const currentMonth = today.getMonth() + 1;
-  const isSelectingCurrentMonth = selectedMonth === currentMonth && selectedYear === today.getFullYear();
+  const isSelectingCurrentMonth = selectedMonth === currentMonth && selectedYear === currentYear;
   const showWarning = isSelectingCurrentMonth && currentDay > 15;
   
   const selectedMonthName = new Date(selectedYear, selectedMonth - 1).toLocaleString('default', { month: 'long' });
@@ -90,13 +95,13 @@ export const MonthlyPlannerWizard = ({
     setIsGenerating(true);
     
     if (generationType === 'all') {
-      setProgress('Regenerating all 30 posts...');
+      setProgress(`Regenerating all ${expectedPostCount} posts...`);
     } else {
       const existingCount = existingPostDates.filter(date => {
         const d = new Date(date);
         return d.getMonth() + 1 === selectedMonth && d.getFullYear() === selectedYear;
       }).length;
-      const missingCount = 30 - existingCount;
+      const missingCount = expectedPostCount - existingCount;
       setProgress(`Generating ${missingCount} posts for missing days...`);
     }
 
@@ -149,7 +154,7 @@ export const MonthlyPlannerWizard = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Calendar className="h-5 w-5" />
-            {generationType === 'all' ? 'Generate All Posts (30)' : 'Fill Missing Days'}
+            {generationType === 'all' ? `Generate All Posts (${expectedPostCount})` : 'Fill Missing Days'}
           </DialogTitle>
         </DialogHeader>
 
@@ -174,7 +179,7 @@ export const MonthlyPlannerWizard = ({
                         const d = new Date(date);
                         return d.getMonth() + 1 === selectedMonth && d.getFullYear() === selectedYear;
                       }).length;
-                      const missingCount = 30 - existingCount;
+                      const missingCount = expectedPostCount - existingCount;
                       return `${missingCount} posts will be generated for days without content. Existing posts will be kept.`;
                     })()}
                   </AlertDescription>
@@ -223,7 +228,7 @@ export const MonthlyPlannerWizard = ({
               <ul className="text-sm space-y-2 text-muted-foreground">
                 <li className="flex items-start gap-2">
                   <span className="text-primary mt-0.5">✓</span>
-                  <span><strong>30 post topics</strong> tailored to your brand and audience</span>
+                  <span><strong>{expectedPostCount} post topics</strong> tailored to your brand and audience</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-primary mt-0.5">✓</span>
@@ -231,7 +236,7 @@ export const MonthlyPlannerWizard = ({
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-primary mt-0.5">✓</span>
-                  <span><strong>Optimal scheduling</strong> spread throughout the month</span>
+                  <span><strong>{activeStrategy ? 'Strategy-based scheduling' : 'Optimal scheduling'}</strong> {activeStrategy ? 'based on your posting strategy' : 'spread throughout the month'}</span>
                 </li>
               </ul>
               <p className="text-sm text-muted-foreground">
