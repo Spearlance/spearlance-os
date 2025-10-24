@@ -53,13 +53,14 @@ serve(async (req) => {
     }
 
     // Create platform invite in Late API
-    const lateResponse = await fetch(`https://getlate.dev/api/v1/profiles/${lateProfile.late_profile_id}/invites`, {
+    const lateResponse = await fetch('https://getlate.dev/api/v1/platform-invites', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${lateApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
+        profileId: lateProfile.late_profile_id,
         platform,
       }),
     });
@@ -79,11 +80,11 @@ serve(async (req) => {
       .insert({
         late_profile_id: lateProfile.id,
         platform,
-        late_invite_id: lateInvite.id,
+        late_invite_id: lateInvite._id,
         invite_token: lateInvite.token,
-        invite_url: lateInvite.url,
+        invite_url: lateInvite.inviteUrl,
         inviter_user_id: userId,
-        expires_at: lateInvite.expires_at,
+        expires_at: lateInvite.expiresAt,
       })
       .select()
       .single();
@@ -97,7 +98,7 @@ serve(async (req) => {
       JSON.stringify({ 
         success: true, 
         invite: dbInvite,
-        invite_url: lateInvite.url 
+        invite_url: lateInvite.inviteUrl 
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

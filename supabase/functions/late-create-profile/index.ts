@@ -91,7 +91,7 @@ serve(async (req) => {
       .from('late_profiles')
       .insert({
         client_id,
-        late_profile_id: lateProfile.id,
+        late_profile_id: lateProfile._id,
         late_profile_name: lateProfile.name,
       })
       .select()
