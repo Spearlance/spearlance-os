@@ -49,6 +49,7 @@ export function StrategyForm({
   });
 
   // Form state
+  const [isSaving, setIsSaving] = useState(false);
   const [postingFrequency, setPostingFrequency] = useState<'daily' | 'weekdays' | 'custom'>('daily');
   const [selectedDays, setSelectedDays] = useState<number[]>([1, 2, 3, 4, 5, 6, 7]);
   const [topicDistribution, setTopicDistribution] = useState({
@@ -72,14 +73,14 @@ export function StrategyForm({
     });
   }, [clientId]);
 
-  // Load strategy data when fetched
+  // Load strategy data when fetched (but not during save)
   useEffect(() => {
-    if (strategy) {
+    if (strategy && !isSaving) {
       setPostingFrequency(strategy.posting_frequency as any);
       setSelectedDays(strategy.selected_days || [1, 2, 3, 4, 5, 6, 7]);
       setTopicDistribution(strategy.topic_distribution as any);
     }
-  }, [strategy]);
+  }, [strategy, isSaving]);
 
   // Calculate posts per month based on selected days
   const postsPerMonth = useMemo(() => {
@@ -94,6 +95,7 @@ export function StrategyForm({
 
   const saveMutation = useMutation({
     mutationFn: async () => {
+      setIsSaving(true);
       const strategyData = {
         client_id: clientId,
         is_global: isGlobal,
@@ -123,9 +125,12 @@ export function StrategyForm({
       queryClient.invalidateQueries({ queryKey: ['social-strategy'] });
       toast.success('Strategy saved successfully');
       onSaved?.();
+      // Reset isSaving after a brief delay to allow query to update
+      setTimeout(() => setIsSaving(false), 100);
     },
     onError: (error: any) => {
       toast.error('Failed to save strategy: ' + error.message);
+      setIsSaving(false);
     }
   });
 
