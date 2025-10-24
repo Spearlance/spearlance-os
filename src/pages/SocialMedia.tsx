@@ -93,7 +93,7 @@ const SocialMedia = () => {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <div className="space-y-4">
           <TabsList className="grid w-full max-w-2xl grid-cols-3">
-            <TabsTrigger value="planner">Monthly Planner</TabsTrigger>
+            <TabsTrigger value="planner">Planner</TabsTrigger>
             <TabsTrigger value="posts">Posts</TabsTrigger>
             <TabsTrigger value="creator">Single Post</TabsTrigger>
           </TabsList>
