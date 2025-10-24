@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { lateFetch } from "../_shared/lateClient.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -19,17 +20,6 @@ serve(async (req) => {
   }
 
   try {
-    const lateApiKey = Deno.env.get('LATE_API_KEY')?.trim();
-    if (!lateApiKey) {
-      throw new Error('LATE_API_KEY not configured');
-    }
-
-    console.log('API Key diagnostics:', {
-      length: lateApiKey.length,
-      starts_with: lateApiKey.substring(0, 4),
-      ends_with: lateApiKey.substring(lateApiKey.length - 4),
-    });
-
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
@@ -41,13 +31,13 @@ serve(async (req) => {
     }
 
     // Get client details
-    const { data: client, error: clientError } = await supabase
+    const { data: clientData, error: clientError } = await supabase
       .from('clients')
       .select('name')
       .eq('id', client_id)
       .single();
 
-    if (clientError || !client) {
+    if (clientError || !clientData) {
       throw new Error('Client not found');
     }
 
@@ -70,39 +60,21 @@ serve(async (req) => {
     }
 
     // Create profile in Late API
-    const lateResponse = await fetch('https://getlate.dev/api/v1/profiles', {
+    const lateProfile = await lateFetch('/profiles', {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${lateApiKey}`,
-        'Content-Type': 'application/json',
-      },
       body: JSON.stringify({
-        name: profile_name || client.name,
-        description: profile_description || `Social media profile for ${client.name}`,
+        name: profile_name || clientData.name || 'Client Profile',
+        description: profile_description || `Social media profile for ${clientData.name}`,
         color: color || '#13cf48',
       }),
     });
-
-    if (!lateResponse.ok) {
-      const errorText = await lateResponse.text();
-      console.error('Late API error status:', lateResponse.status);
-      console.error('Late API error response:', errorText);
-      console.error('Request URL:', 'https://getlate.dev/api/v1/profiles');
-      console.error('Request body:', JSON.stringify({
-        name: profile_name || client.name,
-        description: profile_description || `Social media profile for ${client.name}`,
-        color: color || '#13cf48',
-      }));
-      throw new Error(`Failed to create profile in Late: ${errorText}`);
-    }
-
-    const lateProfile = await lateResponse.json();
     console.log('Late profile created:', lateProfile);
 
     // Store profile in database
     const { data: dbProfile, error: dbError } = await supabase
       .from('late_profiles')
       .insert({
+        id: crypto.randomUUID(),
         client_id,
         late_profile_id: lateProfile._id,
         late_profile_name: lateProfile.name,

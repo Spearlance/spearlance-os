@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { lateFetch } from "../_shared/lateClient.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -16,11 +17,6 @@ serve(async (req) => {
   }
 
   try {
-    const lateApiKey = Deno.env.get('LATE_API_KEY');
-    if (!lateApiKey) {
-      throw new Error('LATE_API_KEY not configured');
-    }
-
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
@@ -42,23 +38,9 @@ serve(async (req) => {
       throw new Error('Late profile not found');
     }
 
-    // Fetch accounts from Late API
-    const lateResponse = await fetch(`https://getlate.dev/api/v1/profiles/${lateProfile.late_profile_id}/accounts`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${lateApiKey}`,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!lateResponse.ok) {
-      const errorText = await lateResponse.text();
-      console.error('Late API error:', errorText);
-      throw new Error(`Failed to fetch accounts: ${errorText}`);
-    }
-
-    const lateAccounts = await lateResponse.json();
-    console.log('Fetched accounts from Late:', lateAccounts);
+    // Fetch accounts from Late API using correct endpoint
+    const data = await lateFetch(`/accounts?profileId=${encodeURIComponent(lateProfile.late_profile_id)}`);
+    console.log('Fetched accounts from Late:', data);
 
     // Get existing accounts from database
     const { data: existingAccounts } = await supabase
@@ -67,48 +49,60 @@ serve(async (req) => {
       .eq('late_profile_id', lateProfile.id);
 
     const existingIds = new Set(existingAccounts?.map(a => a.late_account_id) || []);
-    const synced = [];
-    const added = [];
+    const accounts = Array.isArray(data?.accounts) ? data.accounts : [];
+    let addedCount = 0;
+    let syncedCount = 0;
 
-    // Upsert accounts
-    for (const account of lateAccounts.data || []) {
-      const accountData = {
-        late_profile_id: lateProfile.id,
-        late_account_id: account.id,
-        platform: account.platform,
-        username: account.username || account.name,
-        display_name: account.name,
-        profile_picture_url: account.profile_picture_url,
-        is_active: account.is_active !== false,
-        token_expires_at: account.token_expires_at,
-        platform_specific_data: account,
-      };
-
-      const { data: upserted, error: upsertError } = await supabase
+    // Upsert accounts with correct Late API field names
+    for (const a of accounts) {
+      const { data: existing } = await supabase
         .from('late_social_accounts')
-        .upsert(accountData, { 
-          onConflict: 'late_account_id',
-          ignoreDuplicates: false 
-        })
-        .select()
-        .single();
+        .select('*')
+        .eq('late_account_id', a._id)
+        .maybeSingle();
 
-      if (upsertError) {
-        console.error('Error upserting account:', upsertError);
+      if (existing) {
+        // Update existing account
+        await supabase
+          .from('late_social_accounts')
+          .update({
+            username: a.username ?? null,
+            display_name: a.displayName ?? null,
+            profile_picture_url: a.profilePicture ?? null,
+            is_active: a.isActive ?? true,
+            token_expires_at: a.tokenExpiresAt ?? null,
+            platform: a.platform ?? existing.platform,
+            platform_specific_data: a,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', existing.id);
+        syncedCount++;
       } else {
-        synced.push(upserted);
-        if (!existingIds.has(account.id)) {
-          added.push(upserted);
-        }
+        // Insert new account
+        await supabase
+          .from('late_social_accounts')
+          .insert({
+            id: crypto.randomUUID(),
+            late_profile_id: lateProfile.id,
+            late_account_id: a._id,
+            platform: a.platform,
+            username: a.username ?? null,
+            display_name: a.displayName ?? null,
+            profile_picture_url: a.profilePicture ?? null,
+            is_active: a.isActive ?? true,
+            token_expires_at: a.tokenExpiresAt ?? null,
+            platform_specific_data: a,
+          });
+        addedCount++;
       }
     }
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        synced_count: synced.length,
-        added_count: added.length,
-        accounts: synced 
+        synced_count: syncedCount,
+        added_count: addedCount,
+        total_accounts: accounts.length
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

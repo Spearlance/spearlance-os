@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { lateFetch } from "../_shared/lateClient.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -17,17 +18,6 @@ serve(async (req) => {
   }
 
   try {
-    const lateApiKey = Deno.env.get('LATE_API_KEY')?.trim();
-    if (!lateApiKey) {
-      throw new Error('LATE_API_KEY not configured');
-    }
-
-    console.log('API Key diagnostics:', {
-      length: lateApiKey.length,
-      starts_with: lateApiKey.substring(0, 4),
-      ends_with: lateApiKey.substring(lateApiKey.length - 4),
-    });
-
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
@@ -59,45 +49,32 @@ serve(async (req) => {
     }
 
     // Create platform invite in Late API
-    const lateResponse = await fetch('https://getlate.dev/api/v1/platform-invites', {
+    const responseData = await lateFetch('/platform-invites', {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${lateApiKey}`,
-        'Content-Type': 'application/json',
-      },
       body: JSON.stringify({
         profileId: lateProfile.late_profile_id,
         platform,
       }),
     });
-
-    if (!lateResponse.ok) {
-      const errorText = await lateResponse.text();
-      console.error('Late API error status:', lateResponse.status);
-      console.error('Late API error response:', errorText);
-      console.error('Request URL:', 'https://getlate.dev/api/v1/platform-invites');
-      console.error('Request body:', JSON.stringify({
-        profileId: lateProfile.late_profile_id,
-        platform,
-      }));
-      throw new Error(`Failed to create invite: ${errorText}`);
+    
+    const invite = responseData.invite;
+    if (!invite) {
+      throw new Error('Late returned no invite object');
     }
-
-    const responseData = await lateResponse.json();
-    const lateInvite = responseData.invite;
-    console.log('Late invite created:', lateInvite);
+    console.log('Late invite created:', invite);
 
     // Store invite in database
     const { data: dbInvite, error: dbError } = await supabase
       .from('late_connection_invites')
       .insert({
+        id: crypto.randomUUID(),
         late_profile_id: lateProfile.id,
         platform,
-        late_invite_id: lateInvite._id,
-        invite_token: lateInvite.token,
-        invite_url: lateInvite.inviteUrl,
-        inviter_user_id: userId,
-        expires_at: lateInvite.expiresAt,
+        late_invite_id: invite._id,
+        invite_token: invite.token,
+        invite_url: invite.inviteUrl,
+        inviter_user_id: userId || null,
+        expires_at: invite.expiresAt,
       })
       .select()
       .single();
@@ -111,7 +88,7 @@ serve(async (req) => {
       JSON.stringify({ 
         success: true, 
         invite: dbInvite,
-        invite_url: lateInvite.inviteUrl 
+        invite_url: invite.inviteUrl 
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
