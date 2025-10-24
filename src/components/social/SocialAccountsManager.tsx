@@ -1,21 +1,16 @@
-import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2, RefreshCw, Facebook, Instagram, AlertCircle } from "lucide-react";
-import { toast } from "sonner";
+import { Loader2, Facebook, Instagram } from "lucide-react";
 import { useClient } from "@/contexts/ClientContext";
-import { ConnectSocialAccountDialog } from "./ConnectSocialAccountDialog";
+import { ConnectSocialPopup } from "./ConnectSocialPopup";
 import { LateSyncButton } from "./LateSyncButton";
 
 export const SocialAccountsManager = () => {
   const { selectedClient } = useClient();
-  const queryClient = useQueryClient();
-  const [showConnectDialog, setShowConnectDialog] = useState(false);
 
   // Fetch Late profile
   const { data: lateProfile, isLoading: profileLoading } = useQuery({
@@ -53,24 +48,6 @@ export const SocialAccountsManager = () => {
     enabled: !!lateProfile?.id,
   });
 
-  // Create Late profile mutation
-  const createProfileMutation = useMutation({
-    mutationFn: async () => {
-      const { data, error } = await supabase.functions.invoke('late-create-profile', {
-        body: { client_id: selectedClient?.id },
-      });
-
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['late-profile'] });
-      toast.success('Profile created successfully');
-    },
-    onError: (error: any) => {
-      toast.error(error.message || 'Failed to create profile');
-    },
-  });
 
   const getPlatformIcon = (platform: string) => {
     switch (platform) {
@@ -113,83 +90,80 @@ export const SocialAccountsManager = () => {
             {lateProfile && <LateSyncButton clientId={selectedClient?.id} />}
           </div>
         </CardHeader>
-        <CardContent className="space-y-4">
-          {!lateProfile && !isLoading && (
-            <Alert>
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                Before connecting social accounts, you need to create a profile for this client.
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {!lateProfile && !isLoading && (
-            <Button
-              onClick={() => createProfileMutation.mutate()}
-              disabled={createProfileMutation.isPending}
-            >
-              {createProfileMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Create Profile
-            </Button>
-          )}
-
-          {lateProfile && (
-            <>
-              {accounts && accounts.length > 0 ? (
-                <div className="space-y-3">
-                  {accounts.map((account) => (
-                    <Card key={account.id}>
-                      <CardContent className="flex items-center justify-between p-4">
-                        <div className="flex items-center gap-3">
-                          {account.profile_picture_url ? (
-                            <Avatar>
-                              <AvatarImage src={account.profile_picture_url} />
-                              <AvatarFallback>{account.username?.[0] || '?'}</AvatarFallback>
-                            </Avatar>
-                          ) : (
-                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
-                              {getPlatformIcon(account.platform)}
-                            </div>
-                          )}
-                          <div>
-                            <p className="font-medium">{account.display_name || account.username}</p>
-                            <p className="text-sm text-muted-foreground capitalize">{account.platform}</p>
-                          </div>
-                        </div>
-                        {getStatusBadge(account.is_active, account.token_expires_at || undefined)}
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              ) : !isLoading ? (
-                <Alert>
-                  <AlertDescription>
-                    No social media accounts connected yet. Click the button below to get started.
-                  </AlertDescription>
-                </Alert>
-              ) : null}
-
-              <Button onClick={() => setShowConnectDialog(true)}>
-                Connect Social Account
-              </Button>
-            </>
-          )}
-
-          {isLoading && (
+        <CardContent className="space-y-6">
+          {isLoading ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : accounts && accounts.length > 0 ? (
+            <>
+              <div className="space-y-3">
+                {accounts.map((account) => (
+                  <Card key={account.id}>
+                    <CardContent className="flex items-center justify-between p-4">
+                      <div className="flex items-center gap-3">
+                        {account.profile_picture_url ? (
+                          <Avatar>
+                            <AvatarImage src={account.profile_picture_url} />
+                            <AvatarFallback>{account.username?.[0] || '?'}</AvatarFallback>
+                          </Avatar>
+                        ) : (
+                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
+                            {getPlatformIcon(account.platform)}
+                          </div>
+                        )}
+                        <div>
+                          <p className="font-medium">{account.display_name || account.username}</p>
+                          <p className="text-sm text-muted-foreground capitalize">{account.platform}</p>
+                        </div>
+                      </div>
+                      {getStatusBadge(account.is_active, account.token_expires_at || undefined)}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+
+              <div className="space-y-3 pt-4 border-t">
+                <p className="text-sm text-muted-foreground">Connect another account:</p>
+                <div className="grid gap-3">
+                  <ConnectSocialPopup 
+                    platform="facebook" 
+                    clientId={selectedClient?.id}
+                    lateProfileId={lateProfile?.id}
+                  />
+                  <ConnectSocialPopup 
+                    platform="instagram" 
+                    clientId={selectedClient?.id}
+                    lateProfileId={lateProfile?.id}
+                  />
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="space-y-4">
+              <Alert>
+                <AlertDescription>
+                  Connect your Facebook and Instagram accounts to start scheduling posts.
+                </AlertDescription>
+              </Alert>
+              
+              <div className="grid gap-3">
+                <ConnectSocialPopup 
+                  platform="facebook" 
+                  clientId={selectedClient?.id}
+                  lateProfileId={lateProfile?.id}
+                />
+                <ConnectSocialPopup 
+                  platform="instagram" 
+                  clientId={selectedClient?.id}
+                  lateProfileId={lateProfile?.id}
+                />
+              </div>
             </div>
           )}
         </CardContent>
       </Card>
 
-      {lateProfile && (
-        <ConnectSocialAccountDialog
-          open={showConnectDialog}
-          onOpenChange={setShowConnectDialog}
-          clientId={selectedClient?.id}
-        />
-      )}
     </div>
   );
 };
