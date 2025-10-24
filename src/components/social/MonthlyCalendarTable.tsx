@@ -3,6 +3,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
 import { Loader2, Plus, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
@@ -46,6 +47,8 @@ export const MonthlyCalendarTable = ({ posts, onRefresh, selectedMonth, selected
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [deletingPostId, setDeletingPostId] = useState<string | null>(null);
+  const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
+  const [deleteConfirmationText, setDeleteConfirmationText] = useState("");
 
   // Sync selectedPost with posts array when data refreshes
   useEffect(() => {
@@ -255,6 +258,42 @@ export const MonthlyCalendarTable = ({ posts, onRefresh, selectedMonth, selected
     }
   };
 
+  const handleBulkDelete = async () => {
+    if (deleteConfirmationText !== "DELETE") {
+      toast({
+        title: "Invalid Confirmation",
+        description: "Please type DELETE to confirm deletion.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('social_media_posts')
+        .delete()
+        .in('id', selectedPosts);
+
+      if (error) throw error;
+
+      toast({
+        title: "Posts Deleted",
+        description: `Successfully deleted ${selectedPosts.length} posts.`,
+      });
+
+      setSelectedPosts([]);
+      setShowBulkDeleteDialog(false);
+      setDeleteConfirmationText("");
+      onRefresh();
+    } catch (error: any) {
+      toast({
+        title: "Delete Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   const getPostStatus = (post: Post) => {
     const hasCaption = !!post.caption_text;
     const hasImage = !!post.image_url;
@@ -342,10 +381,18 @@ export const MonthlyCalendarTable = ({ posts, onRefresh, selectedMonth, selected
           </Button>
           <Button
             size="sm"
+            variant="destructive"
+            onClick={() => setShowBulkDeleteDialog(true)}
+          >
+            <Trash2 className="h-4 w-4 mr-2" />
+            Delete ({selectedPosts.length})
+          </Button>
+          <Button
+            size="sm"
             variant="ghost"
             onClick={() => setSelectedPosts([])}
           >
-            Clear
+            Clear Selection
           </Button>
         </div>
       )}
@@ -562,6 +609,39 @@ export const MonthlyCalendarTable = ({ posts, onRefresh, selectedMonth, selected
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={showBulkDeleteDialog} onOpenChange={(open) => {
+        setShowBulkDeleteDialog(open);
+        if (!open) setDeleteConfirmationText("");
+      }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {selectedPosts.length} Posts?</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3">
+              <p>This will permanently delete {selectedPosts.length} selected posts. This action cannot be undone.</p>
+              <p className="font-semibold">Type <span className="text-destructive">DELETE</span> to confirm:</p>
+              <Input
+                value={deleteConfirmationText}
+                onChange={(e) => setDeleteConfirmationText(e.target.value)}
+                placeholder="Type DELETE"
+                className="font-mono"
+              />
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setDeleteConfirmationText("")}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleBulkDelete}
+              disabled={deleteConfirmationText !== "DELETE"}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50"
+            >
+              Delete {selectedPosts.length} Posts
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
