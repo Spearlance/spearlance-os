@@ -18,9 +18,10 @@ import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 interface PostSaverProps {
   postData: any;
   onBack: () => void;
+  onComplete?: () => void;
 }
 
-export const PostSaver = ({ postData, onBack }: PostSaverProps) => {
+export const PostSaver = ({ postData, onBack, onComplete }: PostSaverProps) => {
   const { selectedClient } = useClient();
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
@@ -51,10 +52,16 @@ export const PostSaver = ({ postData, onBack }: PostSaverProps) => {
         description: `Your post has been ${status === 'draft' ? 'saved as a draft' : status === 'scheduled' ? 'scheduled' : 'marked as posted'}`,
       });
 
-      // Reset form or navigate
-      setTimeout(() => {
-        window.location.reload();
-      }, 1500);
+      // Call onComplete callback if provided, otherwise reload
+      if (onComplete) {
+        setTimeout(() => {
+          onComplete();
+        }, 1500);
+      } else {
+        setTimeout(() => {
+          window.location.reload();
+        }, 1500);
+      }
     } catch (error: any) {
       console.error('Error saving post:', error);
       toast({

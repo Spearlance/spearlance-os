@@ -9,7 +9,11 @@ import { PostSaver } from "./PostSaver";
 
 type CreatorStep = 'topic' | 'caption' | 'image' | 'save';
 
-export const PostCreator = () => {
+interface PostCreatorProps {
+  onComplete?: () => void;
+}
+
+export const PostCreator = ({ onComplete }: PostCreatorProps = {}) => {
   const [step, setStep] = useState<CreatorStep>('topic');
   const [postData, setPostData] = useState({
     topic_category: '',
@@ -108,6 +112,7 @@ export const PostCreator = () => {
           <PostSaver
             postData={postData}
             onBack={handleBack}
+            onComplete={onComplete}
           />
         )}
       </div>
