@@ -75,11 +75,13 @@ const SocialMedia = () => {
   });
 
   const strategyPostCount = useMemo(() => {
-    if (!activeStrategy?.selected_days) return 30;
-    
     const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate();
-    let count = 0;
     
+    // If no strategy exists, return total days in month
+    if (!activeStrategy?.selected_days) return daysInMonth;
+    
+    // Calculate based on strategy's selected days
+    let count = 0;
     for (let day = 1; day <= daysInMonth; day++) {
       const date = new Date(selectedYear, selectedMonth - 1, day);
       const dayOfWeek = date.getDay();
