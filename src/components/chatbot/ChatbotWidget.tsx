@@ -210,7 +210,7 @@ export const ChatbotWidget = () => {
               <ChatMessage key={index} message={message} />
             ))}
 
-            {isLoading && messages[messages.length - 1]?.role === 'assistant' && (
+            {isLoading && messages.length > 0 && messages[messages.length - 1]?.role === 'user' && (
               <TypingIndicator />
             )}
 
