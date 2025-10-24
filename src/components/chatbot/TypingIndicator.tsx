@@ -1,15 +1,15 @@
-import spearlanceLogo from '@/assets/spearlance-logo-white.png';
+import spearlanceLogo from '@/assets/spearlance-logo.png';
 
 export const TypingIndicator = () => {
   return (
     <div className="flex gap-3 items-start mb-4 animate-fade-in">
       {/* Avatar with sparkles */}
       <div className="relative flex-shrink-0">
-        <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary/20 to-primary/40 backdrop-blur-sm flex items-center justify-center border border-primary/30 shadow-lg shadow-primary/20 animate-pulse">
+        <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center animate-pulse">
           <img 
             src={spearlanceLogo} 
             alt="AI"
-            className="h-4 w-4 opacity-90"
+            className="h-5 w-5"
           />
         </div>
         
