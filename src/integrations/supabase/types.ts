@@ -956,6 +956,7 @@ export type Database = {
           hq_city: string | null
           id: string
           industry: string | null
+          last_front_sync_at: string | null
           legal_name: string | null
           logo_url: string | null
           name: string
@@ -991,6 +992,7 @@ export type Database = {
           hq_city?: string | null
           id?: string
           industry?: string | null
+          last_front_sync_at?: string | null
           legal_name?: string | null
           logo_url?: string | null
           name: string
@@ -1026,6 +1028,7 @@ export type Database = {
           hq_city?: string | null
           id?: string
           industry?: string | null
+          last_front_sync_at?: string | null
           legal_name?: string | null
           logo_url?: string | null
           name?: string

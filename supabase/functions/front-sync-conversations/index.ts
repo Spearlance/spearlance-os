@@ -138,7 +138,11 @@ async function getTagId(tagName: string, apiToken: string): Promise<string | nul
   }
 }
 
-async function fetchConversationsByTag(tag: string, apiToken: string): Promise<FrontConversation[]> {
+async function fetchConversationsByTag(
+  tag: string, 
+  apiToken: string,
+  updatedAfter?: string | null
+): Promise<FrontConversation[]> {
   try {
     // First, get the tag ID from the tag name
     const tagId = await getTagId(tag, apiToken);
@@ -148,21 +152,42 @@ async function fetchConversationsByTag(tag: string, apiToken: string): Promise<F
       return [];
     }
 
-    // Use the correct endpoint with the tag ID
-    const response = await fetch(`https://api2.frontapp.com/tags/${tagId}/conversations`, {
-      headers: {
-        'Authorization': `Bearer ${apiToken}`,
-        'Accept': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      console.error(`Failed to fetch conversations for tag ${tag}: ${response.status}`);
-      return [];
+    const allConversations: FrontConversation[] = [];
+    let baseUrl = `https://api2.frontapp.com/tags/${tagId}/conversations?limit=100`;
+    
+    // Add date filter if provided
+    if (updatedAfter) {
+      const timestamp = Math.floor(new Date(updatedAfter).getTime() / 1000);
+      baseUrl += `&q[updated_after]=${timestamp}`;
     }
 
-    const data = await response.json();
-    return data._results || [];
+    let nextPageUrl: string | null = baseUrl;
+
+    while (nextPageUrl) {
+      const response: Response = await fetch(nextPageUrl, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${apiToken}`,
+          'Accept': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Front API error: ${response.statusText}`);
+      }
+
+      const data: any = await response.json();
+      const conversations = data._results || [];
+      allConversations.push(...conversations);
+
+      console.log(`Fetched ${conversations.length} conversations (total: ${allConversations.length})`);
+
+      // Check for next page
+      nextPageUrl = data._links?.next || null;
+    }
+
+    console.log(`Total conversations fetched for tag "${tag}": ${allConversations.length}`);
+    return allConversations;
   } catch (error) {
     console.error(`Error fetching conversations for tag ${tag}:`, error);
     return [];
@@ -271,7 +296,7 @@ Deno.serve(async (req) => {
     // Get clients to sync
     let clientsQuery = supabase
       .from('clients')
-      .select('id, name, front_tag')
+      .select('id, name, front_tag, last_front_sync_at')
       .not('front_tag', 'is', null);
 
     if (client_id) {
@@ -308,8 +333,13 @@ Deno.serve(async (req) => {
       }
 
       console.log(`Fetching conversations for client ${client.name} (tag: ${client.front_tag})`);
+      console.log(`Last sync at: ${client.last_front_sync_at || 'Never'}`);
       
-      const conversations = await fetchConversationsByTag(client.front_tag, frontApiToken);
+      const conversations = await fetchConversationsByTag(
+        client.front_tag, 
+        frontApiToken,
+        client.last_front_sync_at
+      );
       
       console.log(`Found ${conversations.length} conversation(s) for ${client.name}`);
 
@@ -391,6 +421,18 @@ Deno.serve(async (req) => {
           console.error(`Error processing conversation ${conversation.id}:`, convError);
           errors.push(`Error processing conversation ${conversation.id}`);
         }
+      }
+      
+      // Update last sync timestamp for this client after processing all conversations
+      const { error: syncUpdateError } = await supabase
+        .from('clients')
+        .update({ last_front_sync_at: new Date().toISOString() })
+        .eq('id', client.id);
+      
+      if (syncUpdateError) {
+        console.error(`Error updating last_front_sync_at for client ${client.name}:`, syncUpdateError);
+      } else {
+        console.log(`Updated last_front_sync_at for client ${client.name}`);
       }
     }
 
