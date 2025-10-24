@@ -39,7 +39,7 @@ export const ChatbotWidget = () => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [messages]);
+  }, [messages, isLoading]);
 
   const handleOpen = () => {
     if (selectedClient) {
