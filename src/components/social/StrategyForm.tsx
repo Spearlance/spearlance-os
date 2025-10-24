@@ -122,11 +122,26 @@ export function StrategyForm({
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['social-strategy'] });
+      // Directly update the cache with the saved values instead of invalidating
+      queryClient.setQueryData(
+        ['social-strategy', clientId, isGlobal, month, year],
+        {
+          id: strategy?.id || null,
+          client_id: clientId,
+          is_global: isGlobal,
+          month: isGlobal ? null : month,
+          year: isGlobal ? null : year,
+          posting_frequency: postingFrequency,
+          selected_days: selectedDays,
+          topic_distribution: topicDistribution,
+          created_at: strategy?.created_at || new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }
+      );
+      
       toast.success('Strategy saved successfully');
       onSaved?.();
-      // Reset isSaving after a brief delay to allow query to update
-      setTimeout(() => setIsSaving(false), 100);
+      setIsSaving(false);
     },
     onError: (error: any) => {
       toast.error('Failed to save strategy: ' + error.message);
