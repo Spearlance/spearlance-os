@@ -19,10 +19,16 @@ serve(async (req) => {
   }
 
   try {
-    const lateApiKey = Deno.env.get('LATE_API_KEY');
+    const lateApiKey = Deno.env.get('LATE_API_KEY')?.trim();
     if (!lateApiKey) {
       throw new Error('LATE_API_KEY not configured');
     }
+
+    console.log('API Key diagnostics:', {
+      length: lateApiKey.length,
+      starts_with: lateApiKey.substring(0, 4),
+      ends_with: lateApiKey.substring(lateApiKey.length - 4),
+    });
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -79,7 +85,14 @@ serve(async (req) => {
 
     if (!lateResponse.ok) {
       const errorText = await lateResponse.text();
-      console.error('Late API error:', errorText);
+      console.error('Late API error status:', lateResponse.status);
+      console.error('Late API error response:', errorText);
+      console.error('Request URL:', 'https://getlate.dev/api/v1/profiles');
+      console.error('Request body:', JSON.stringify({
+        name: profile_name || client.name,
+        description: profile_description || `Social media profile for ${client.name}`,
+        color: color || '#13cf48',
+      }));
       throw new Error(`Failed to create profile in Late: ${errorText}`);
     }
 
