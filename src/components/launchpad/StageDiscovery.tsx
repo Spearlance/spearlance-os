@@ -729,7 +729,7 @@ export function StageDiscovery({ submissionId, initialData, onContinue, onSaveEx
         </div>
       </div>
 
-      <div className="flex justify-between pt-4 border-t">
+      <div className="flex justify-start gap-2 pt-4 border-t">
         <Button variant="outline" onClick={handleSaveExit}>
           Save & Exit
         </Button>
