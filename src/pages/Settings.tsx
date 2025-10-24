@@ -17,8 +17,9 @@ import { BillingTab } from "@/components/settings/BillingTab";
 import { UserProfileTab } from "@/components/settings/UserProfileTab";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { Clock, Copy, Info } from "lucide-react";
+import { Clock, Copy, Info, Globe } from "lucide-react";
 import { SocialAccountsManager } from "@/components/social/SocialAccountsManager";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function Settings() {
   const { selectedClient, refreshClients } = useClient();
@@ -42,7 +43,7 @@ export default function Settings() {
     if (user) {
       const { data: profile } = await supabase
         .from("profiles")
-        .select("id, name, email, role, avatar_url, job_title, department, bio, expertise_level, preferred_communication_style, focus_areas")
+        .select("id, name, email, role, avatar_url, job_title, department, bio, expertise_level, preferred_communication_style, focus_areas, timezone")
         .eq("id", user.id)
         .single();
       setUserProfile(profile);
@@ -126,14 +127,69 @@ export default function Settings() {
 
           <TabsContent value="profile" className="space-y-4">
             {userProfile && (
-              <Card>
-                <CardContent className="pt-6">
-                  <UserProfileTab
-                    profile={userProfile}
-                    onProfileUpdated={() => setProfileRefresh(prev => prev + 1)}
-                  />
-                </CardContent>
-              </Card>
+              <>
+                <Card>
+                  <CardContent className="pt-6">
+                    <UserProfileTab
+                      profile={userProfile}
+                      onProfileUpdated={() => setProfileRefresh(prev => prev + 1)}
+                    />
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Globe className="h-5 w-5" />
+                      Timezone Settings
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="timezone">Preferred Timezone</Label>
+                      <Select
+                        value={userProfile.timezone || 'UTC'}
+                        onValueChange={async (value) => {
+                          const { data: { user } } = await supabase.auth.getUser();
+                          if (user) {
+                            const { error } = await supabase
+                              .from("profiles")
+                              .update({ timezone: value })
+                              .eq("id", user.id);
+                            
+                            if (error) {
+                              toast({ title: "Error updating timezone", variant: "destructive" });
+                            } else {
+                              toast({ title: "Timezone updated successfully" });
+                              setUserProfile({ ...userProfile, timezone: value });
+                            }
+                          }
+                        }}
+                      >
+                        <SelectTrigger id="timezone">
+                          <SelectValue placeholder="Select timezone" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="UTC">UTC (Coordinated Universal Time)</SelectItem>
+                          <SelectItem value="America/New_York">Eastern Time (EST/EDT)</SelectItem>
+                          <SelectItem value="America/Chicago">Central Time (CST/CDT)</SelectItem>
+                          <SelectItem value="America/Denver">Mountain Time (MST/MDT)</SelectItem>
+                          <SelectItem value="America/Los_Angeles">Pacific Time (PST/PDT)</SelectItem>
+                          <SelectItem value="America/Anchorage">Alaska Time (AKST/AKDT)</SelectItem>
+                          <SelectItem value="Pacific/Honolulu">Hawaii Time (HST)</SelectItem>
+                          <SelectItem value="Europe/London">London (GMT/BST)</SelectItem>
+                          <SelectItem value="Europe/Paris">Central European (CET/CEST)</SelectItem>
+                          <SelectItem value="Asia/Tokyo">Tokyo (JST)</SelectItem>
+                          <SelectItem value="Australia/Sydney">Sydney (AEST/AEDT)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-sm text-muted-foreground">
+                        Your timezone preference is saved for future features. Currently, social media posts are displayed in UTC to ensure consistency across all users.
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </>
             )}
           </TabsContent>
 

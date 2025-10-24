@@ -281,7 +281,7 @@ export const MonthlyPlannerWizard = ({
               {isComplete ? (
                 <CheckCircle2 className="h-16 w-16 text-green-500 animate-in zoom-in duration-300" />
               ) : (
-                <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center animate-pulse">
+                <div className="h-16 w-16 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center animate-pulse">
                   <img 
                     src={spearlanceLogo} 
                     alt="Generating posts"

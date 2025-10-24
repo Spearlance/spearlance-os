@@ -9,6 +9,7 @@ import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { PostManagementDrawer } from "./PostManagementDrawer";
+import { parseUTCDate } from "@/lib/utils";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -77,7 +78,7 @@ export const MonthlyCalendarTable = ({ posts, onRefresh, selectedMonth, selected
 
   // Group posts by their scheduled date (YYYY-MM-DD format)
   const postsByDate = posts.reduce((acc, post) => {
-    const dateKey = format(new Date(post.scheduled_date), 'yyyy-MM-dd');
+    const dateKey = format(parseUTCDate(post.scheduled_date), 'yyyy-MM-dd');
     if (!acc[dateKey]) acc[dateKey] = [];
     acc[dateKey].push(post);
     return acc;

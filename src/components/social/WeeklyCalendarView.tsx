@@ -7,6 +7,7 @@ import { PostManagementDrawer } from "./PostManagementDrawer";
 import { supabase } from "@/integrations/supabase/client";
 import { useClient } from "@/contexts/ClientContext";
 import { toast } from "sonner";
+import { parseUTCDate } from "@/lib/utils";
 
 interface Post {
   id: string;
@@ -61,7 +62,7 @@ export const WeeklyCalendarView = ({
   const currentWeekDays = weeks[currentWeek] || [];
   
   const postsByDate = posts.reduce((acc, post) => {
-    const date = new Date(post.scheduled_date);
+    const date = parseUTCDate(post.scheduled_date);
     const dateKey = date.toISOString().split('T')[0];
     if (!acc[dateKey]) acc[dateKey] = [];
     acc[dateKey].push(post);

@@ -7,6 +7,7 @@ import { PostManagementDrawer } from "./PostManagementDrawer";
 import { supabase } from "@/integrations/supabase/client";
 import { useClient } from "@/contexts/ClientContext";
 import { toast } from "sonner";
+import { parseUTCDate } from "@/lib/utils";
 
 interface Post {
   id: string;
@@ -46,7 +47,7 @@ export const MonthlyCalendarGrid = ({
   const { daysInMonth, firstDay } = getDaysInMonth(selectedMonth, selectedYear);
   
   const postsByDate = posts.reduce((acc, post) => {
-    const date = new Date(post.scheduled_date);
+    const date = parseUTCDate(post.scheduled_date);
     const day = date.getDate();
     if (!acc[day]) acc[day] = [];
     acc[day].push(post);

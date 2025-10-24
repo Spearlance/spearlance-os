@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths } from "date-fns";
 import { SchedulePostDialog } from "./SchedulePostDialog";
 import { EditPostDialog } from "./EditPostDialog";
+import { parseUTCDate } from "@/lib/utils";
 
 interface PostSchedulerProps {
   onCreateWithAI?: () => void;
@@ -43,7 +44,7 @@ export const PostScheduler = ({ onCreateWithAI }: PostSchedulerProps) => {
   const getPostsForDay = (day: Date) => {
     return posts.filter(post => {
       if (!post.scheduled_date) return false;
-      return isSameDay(new Date(post.scheduled_date), day);
+      return isSameDay(parseUTCDate(post.scheduled_date), day);
     });
   };
 
