@@ -43,7 +43,7 @@ export default function Settings() {
     if (user) {
       const { data: profile } = await supabase
         .from("profiles")
-        .select("id, name, email, role, avatar_url, job_title, department, bio, expertise_level, preferred_communication_style, focus_areas, timezone")
+        .select("id, name, email, role, avatar_url, job_title, department, bio, expertise_level, preferred_communication_style, focus_areas")
         .eq("id", user.id)
         .single();
       setUserProfile(profile);
