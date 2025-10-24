@@ -107,112 +107,129 @@ const SocialMedia = () => {
       <SocialMediaCallout />
 
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
-        <TabsList><TabsTrigger value="planner">Planner</TabsTrigger><TabsTrigger value="strategy">Strategy</TabsTrigger></TabsList>
-        <TabsContent value="planner"><div className="space-y-6">
-        <div className="flex items-center gap-4 flex-wrap">
-          <div className="flex items-center gap-2">
-            <select
-              value={selectedMonth}
-              onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
-              className="px-3 py-2 border rounded-md bg-background"
-            >
-              {Array.from({ length: 12 }, (_, i) => i + 1).map(month => (
-                <option key={month} value={month}>
-                  {new Date(2025, month - 1).toLocaleString('default', { month: 'long' })}
-                </option>
-              ))}
-            </select>
-            <select
-              value={selectedYear}
-              onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-              className="px-3 py-2 border rounded-md bg-background"
-            >
-              <option value={currentYear}>{currentYear}</option>
-              <option value={currentYear + 1}>{currentYear + 1}</option>
-            </select>
-          </div>
-
-          <CalendarViewSelector value={viewType} onChange={setViewType} />
-
-          <div className="ml-auto flex items-center gap-2">
-            {monthlyPosts && monthlyPosts.length > 0 && (
-              <Badge variant="secondary">
-                {monthlyPosts.length}/{activeStrategy?.selected_days?.length ? activeStrategy.selected_days.length * 4 : 30} planned
-              </Badge>
-            )}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button size="lg">
-                  <PlusCircle className="h-4 w-4 mr-2" />
-                  Create Posts
-                  <ChevronDown className="h-4 w-4 ml-2" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-64">
-                <DropdownMenuItem onClick={() => setShowPostCreator(true)}>
-                  <FileText className="h-4 w-4 mr-2" />
-                  <div className="flex-1">
-                    <div>Create Single Post</div>
-                    <div className="text-xs text-muted-foreground">Step-by-step wizard</div>
-                  </div>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => {
-                  setGenerationType('all');
-                  setShowMonthlyWizard(true);
-                }}>
-                  <Sparkles className="h-4 w-4 mr-2" />
-                  <div className="flex-1">
-                    <div>Generate All (30 posts)</div>
-                    <div className="text-xs text-muted-foreground">Replace existing</div>
-                  </div>
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => {
-                  setGenerationType('missing');
-                  setShowMonthlyWizard(true);
-                }}>
-                  <PlusCircle className="h-4 w-4 mr-2" />
-                  <div className="flex-1">
-                    <div>Fill Missing Days</div>
-                    <div className="text-xs text-muted-foreground">Keep existing</div>
-                  </div>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
-
-        {viewType === 'table' && (
-          <MonthlyCalendarTable 
-            posts={monthlyPosts || []} 
-            onRefresh={refetch}
-            selectedMonth={selectedMonth}
-            selectedYear={selectedYear}
-          />
-        )}
+        <TabsList>
+          <TabsTrigger value="planner">Planner</TabsTrigger>
+          <TabsTrigger value="strategy">Strategy</TabsTrigger>
+        </TabsList>
         
-        {viewType === 'monthly' && (
-          <MonthlyCalendarGrid 
-            posts={monthlyPosts || []} 
-            onRefresh={refetch}
-            selectedMonth={selectedMonth}
-            selectedYear={selectedYear}
-            activeStrategy={activeStrategy}
+        <TabsContent value="planner" className="space-y-6">
+          <div className="flex items-center gap-4 flex-wrap">
+            <div className="flex items-center gap-2">
+              <select
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+                className="px-3 py-2 border rounded-md bg-background"
+              >
+                {Array.from({ length: 12 }, (_, i) => i + 1).map(month => (
+                  <option key={month} value={month}>
+                    {new Date(2025, month - 1).toLocaleString('default', { month: 'long' })}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                className="px-3 py-2 border rounded-md bg-background"
+              >
+                <option value={currentYear}>{currentYear}</option>
+                <option value={currentYear + 1}>{currentYear + 1}</option>
+              </select>
+            </div>
+
+            <CalendarViewSelector value={viewType} onChange={setViewType} />
+
+            <div className="ml-auto flex items-center gap-2">
+              {monthlyPosts && monthlyPosts.length > 0 && (
+                <Badge variant="secondary">
+                  {monthlyPosts.length}/{activeStrategy?.selected_days?.length ? activeStrategy.selected_days.length * 4 : 30} planned
+                </Badge>
+              )}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button size="lg">
+                    <PlusCircle className="h-4 w-4 mr-2" />
+                    Create Posts
+                    <ChevronDown className="h-4 w-4 ml-2" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-64">
+                  <DropdownMenuItem onClick={() => setShowPostCreator(true)}>
+                    <FileText className="h-4 w-4 mr-2" />
+                    <div className="flex-1">
+                      <div>Create Single Post</div>
+                      <div className="text-xs text-muted-foreground">Step-by-step wizard</div>
+                    </div>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => {
+                    setGenerationType('all');
+                    setShowMonthlyWizard(true);
+                  }}>
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    <div className="flex-1">
+                      <div>Generate All (30 posts)</div>
+                      <div className="text-xs text-muted-foreground">Replace existing</div>
+                    </div>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => {
+                    setGenerationType('missing');
+                    setShowMonthlyWizard(true);
+                  }}>
+                    <PlusCircle className="h-4 w-4 mr-2" />
+                    <div className="flex-1">
+                      <div>Fill Missing Days</div>
+                      <div className="text-xs text-muted-foreground">Keep existing</div>
+                    </div>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
+
+          {viewType === 'table' && (
+            <MonthlyCalendarTable 
+              posts={monthlyPosts || []} 
+              onRefresh={refetch}
+              selectedMonth={selectedMonth}
+              selectedYear={selectedYear}
+            />
+          )}
+          
+          {viewType === 'monthly' && (
+            <MonthlyCalendarGrid 
+              posts={monthlyPosts || []} 
+              onRefresh={refetch}
+              selectedMonth={selectedMonth}
+              selectedYear={selectedYear}
+              activeStrategy={activeStrategy}
+            />
+          )}
+          
+          {viewType === 'weekly' && (
+            <WeeklyCalendarView 
+              posts={monthlyPosts || []} 
+              onRefresh={refetch}
+              selectedMonth={selectedMonth}
+              selectedYear={selectedYear}
+            />
+          )}
+        </TabsContent>
+        
+        <TabsContent value="strategy" className="space-y-6">
+          <Alert>
+            <Info className="h-4 w-4" />
+            <AlertDescription>
+              Set your default posting strategy here. The AI will use these settings when generating posts.
+            </AlertDescription>
+          </Alert>
+          
+          <StrategyForm 
+            clientId={selectedClient.id} 
+            isGlobal 
+            onSaved={() => toast.success("Strategy saved!")} 
           />
-        )}
-        </div></TabsContent>
-        <TabsContent value="strategy"><StrategyForm clientId={selectedClient.id} isGlobal onSaved={() => toast.success("Strategy saved!")} /></TabsContent>
+        </TabsContent>
       </Tabs>
-        
-        {viewType === 'weekly' && (
-          <WeeklyCalendarView 
-            posts={monthlyPosts || []} 
-            onRefresh={refetch}
-            selectedMonth={selectedMonth}
-            selectedYear={selectedYear}
-          />
-        )}
-      </div>
 
       <MonthlyPlannerWizard 
         open={showMonthlyWizard}
