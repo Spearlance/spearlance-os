@@ -20,6 +20,26 @@ serve(async (req) => {
   }
 
   try {
+    // DIAGNOSTIC: Verify API key hash
+    const raw = Deno.env.get("LATE_API_KEY") ?? "";
+    const key = raw.trim();
+    const data = new TextEncoder().encode(key);
+    const digest = await crypto.subtle.digest("SHA-256", data);
+    const hex = Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2,"0")).join("");
+    console.log("late_api_key_sha256:", hex);
+    console.log("late_api_key_length:", key.length);
+
+    // DIAGNOSTIC: Test authentication with usage-stats endpoint
+    const testRes = await fetch("https://getlate.dev/api/v1/usage-stats", {
+      headers: { Authorization: `Bearer ${key}` }
+    });
+    const testBody = await testRes.text();
+    console.log("usage_stats_status:", testRes.status, testRes.statusText, "body:", testBody.slice(0,500));
+
+    if (testRes.status === 401) {
+      throw new Error(`API key authentication failed. Status: ${testRes.status}. The API key is not valid for Late API.`);
+    }
+
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
