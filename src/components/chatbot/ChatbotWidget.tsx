@@ -7,6 +7,7 @@ import { useClient } from '@/contexts/ClientContext';
 import { useChatbot } from './useChatbot';
 import { ChatMessage } from './ChatMessage';
 import { ChatInput } from './ChatInput';
+import { TypingIndicator } from './TypingIndicator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -210,11 +211,7 @@ export const ChatbotWidget = () => {
             ))}
 
             {isLoading && messages[messages.length - 1]?.role === 'assistant' && (
-              <div className="flex gap-1 items-center text-muted-foreground text-sm mb-4">
-                <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-              </div>
+              <TypingIndicator />
             )}
 
             <div ref={messagesEndRef} />

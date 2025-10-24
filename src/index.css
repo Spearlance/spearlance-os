@@ -214,6 +214,28 @@ All colors MUST be HSL.
   animation-delay: 1.6s;
 }
 
+/* Typing indicator sparkles */
+.sparkle-typing-1 {
+  top: -5px;
+  right: -8px;
+  animation-delay: 0s;
+  font-size: 10px;
+}
+
+.sparkle-typing-2 {
+  top: 50%;
+  left: -10px;
+  animation-delay: 0.5s;
+  font-size: 10px;
+}
+
+.sparkle-typing-3 {
+  bottom: -5px;
+  right: -5px;
+  animation-delay: 1s;
+  font-size: 10px;
+}
+
 .ai-bubble:hover .sparkle {
   animation: sparkle 1s ease-out infinite;
 }
