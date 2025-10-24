@@ -12,11 +12,6 @@ export const TypingIndicator = () => {
             className="h-5 w-5"
           />
         </div>
-        
-        {/* Floating sparkles */}
-        <span className="sparkle sparkle-typing-1">✨</span>
-        <span className="sparkle sparkle-typing-2">✨</span>
-        <span className="sparkle sparkle-typing-3">✨</span>
       </div>
 
       {/* Typing text with animated dots */}
