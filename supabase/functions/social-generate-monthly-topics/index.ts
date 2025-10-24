@@ -69,11 +69,19 @@ serve(async (req) => {
     const daysInMonth = new Date(year, month, 0).getDate();
     const daysToGenerate: number[] = [];
     for (let day = 1; day <= daysInMonth; day++) {
-      const date = new Date(year, month - 1, day);
-      const dayOfWeek = date.getDay();
+      const date = new Date(Date.UTC(year, month - 1, day, 0, 0, 0));
+      const dayOfWeek = date.getUTCDay();
       const isoDayOfWeek = dayOfWeek === 0 ? 7 : dayOfWeek;
       if (selectedDays.includes(isoDayOfWeek)) daysToGenerate.push(day);
     }
+
+    // Log day calculation for debugging
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    console.log('Strategy selected_days (ISO):', selectedDays.map((d: number) => `${d}=${d === 7 ? 'Sun' : dayNames[d]}`).join(', '));
+    console.log('Days to generate:', daysToGenerate.map((d: number) => {
+      const date = new Date(Date.UTC(year, month - 1, d));
+      return `${d} (${dayNames[date.getUTCDay()]})`;
+    }).join(', '));
 
     const startDate = new Date(year, month - 1, 1).toISOString();
     const endDate = new Date(year, month, 1).toISOString();
@@ -199,7 +207,7 @@ ${generation_type === 'missing' ? 'Assign each post to one of the available days
 
     // Insert all posts as drafts FIRST (before creating batch record)
     const postsToInsert = topics.map((topic: any) => {
-      const scheduledDate = new Date(year, month - 1, topic.day);
+      const scheduledDate = new Date(Date.UTC(year, month - 1, topic.day, 0, 0, 0));
       
       return {
         client_id,
