@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { SocialMediaCallout } from "@/components/social/SocialMediaCallout";
 import { MonthlyPlannerWizard } from "@/components/social/MonthlyPlannerWizard";
@@ -74,6 +74,25 @@ const SocialMedia = () => {
     enabled: !!selectedClient,
   });
 
+  const strategyPostCount = useMemo(() => {
+    if (!activeStrategy?.selected_days) return 30;
+    
+    const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate();
+    let count = 0;
+    
+    for (let day = 1; day <= daysInMonth; day++) {
+      const date = new Date(selectedYear, selectedMonth - 1, day);
+      const dayOfWeek = date.getDay();
+      const isoDayOfWeek = dayOfWeek === 0 ? 7 : dayOfWeek;
+      
+      if (activeStrategy.selected_days.includes(isoDayOfWeek)) {
+        count++;
+      }
+    }
+    
+    return count;
+  }, [activeStrategy, selectedMonth, selectedYear]);
+
   if (clientLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -141,7 +160,7 @@ const SocialMedia = () => {
             <div className="ml-auto flex items-center gap-2">
               {monthlyPosts && monthlyPosts.length > 0 && (
                 <Badge variant="secondary">
-                  {monthlyPosts.length}/{activeStrategy?.selected_days?.length ? activeStrategy.selected_days.length * 4 : 30} planned
+                  {monthlyPosts.length}/{strategyPostCount} planned
                 </Badge>
               )}
               <DropdownMenu>
@@ -167,8 +186,16 @@ const SocialMedia = () => {
                   }}>
                     <Sparkles className="h-4 w-4 mr-2" />
                     <div className="flex-1">
-                      <div>Generate All (30 posts)</div>
-                      <div className="text-xs text-muted-foreground">Replace existing</div>
+                      <div>Generate All ({strategyPostCount} posts)</div>
+                      <div className="text-xs text-muted-foreground">
+                        {activeStrategy?.posting_frequency === 'weekdays' 
+                          ? 'Mon-Fri only' 
+                          : activeStrategy?.posting_frequency === 'daily'
+                          ? 'Every day'
+                          : activeStrategy?.posting_frequency === 'custom'
+                          ? `${activeStrategy.selected_days.length} days/week`
+                          : 'Based on strategy'}
+                      </div>
                     </div>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => {
@@ -178,7 +205,7 @@ const SocialMedia = () => {
                     <PlusCircle className="h-4 w-4 mr-2" />
                     <div className="flex-1">
                       <div>Fill Missing Days</div>
-                      <div className="text-xs text-muted-foreground">Keep existing</div>
+                      <div className="text-xs text-muted-foreground">Strategy days only</div>
                     </div>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
