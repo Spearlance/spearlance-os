@@ -968,6 +968,7 @@ export type Database = {
           stripe_customer_id: string | null
           stripe_subscription_id: string | null
           subscription_status: string | null
+          timezone: string | null
           trial_end_date: string | null
           trial_start_date: string | null
           updated_at: string | null
@@ -1002,6 +1003,7 @@ export type Database = {
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
           subscription_status?: string | null
+          timezone?: string | null
           trial_end_date?: string | null
           trial_start_date?: string | null
           updated_at?: string | null
@@ -1036,6 +1038,7 @@ export type Database = {
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
           subscription_status?: string | null
+          timezone?: string | null
           trial_end_date?: string | null
           trial_start_date?: string | null
           updated_at?: string | null
@@ -2239,7 +2242,6 @@ export type Database = {
           name: string
           preferred_communication_style: string | null
           role: Database["public"]["Enums"]["app_role"]
-          timezone: string | null
         }
         Insert: {
           associated_client_ids?: string[] | null
@@ -2265,7 +2267,6 @@ export type Database = {
           name: string
           preferred_communication_style?: string | null
           role: Database["public"]["Enums"]["app_role"]
-          timezone?: string | null
         }
         Update: {
           associated_client_ids?: string[] | null
@@ -2291,7 +2292,6 @@ export type Database = {
           name?: string
           preferred_communication_style?: string | null
           role?: Database["public"]["Enums"]["app_role"]
-          timezone?: string | null
         }
         Relationships: []
       }

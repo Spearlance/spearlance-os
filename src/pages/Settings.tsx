@@ -141,27 +141,29 @@ export default function Settings() {
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <Globe className="h-5 w-5" />
-                      Timezone Settings
+                      Business Timezone
                     </CardTitle>
+                    <p className="text-sm text-muted-foreground">
+                      This timezone is used for scheduling social media posts and other time-based activities
+                    </p>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="timezone">Preferred Timezone</Label>
+                      <Label htmlFor="timezone">Timezone</Label>
                       <Select
-                        value={userProfile.timezone || 'UTC'}
+                        value={client?.timezone || 'America/New_York'}
                         onValueChange={async (value) => {
-                          const { data: { user } } = await supabase.auth.getUser();
-                          if (user) {
+                          if (client) {
                             const { error } = await supabase
-                              .from("profiles")
+                              .from("clients")
                               .update({ timezone: value })
-                              .eq("id", user.id);
+                              .eq("id", client.id);
                             
                             if (error) {
                               toast({ title: "Error updating timezone", variant: "destructive" });
                             } else {
                               toast({ title: "Timezone updated successfully" });
-                              setUserProfile({ ...userProfile, timezone: value });
+                              refreshClients();
                             }
                           }
                         }}
@@ -170,22 +172,14 @@ export default function Settings() {
                           <SelectValue placeholder="Select timezone" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="UTC">UTC (Coordinated Universal Time)</SelectItem>
-                          <SelectItem value="America/New_York">Eastern Time (EST/EDT)</SelectItem>
-                          <SelectItem value="America/Chicago">Central Time (CST/CDT)</SelectItem>
-                          <SelectItem value="America/Denver">Mountain Time (MST/MDT)</SelectItem>
-                          <SelectItem value="America/Los_Angeles">Pacific Time (PST/PDT)</SelectItem>
-                          <SelectItem value="America/Anchorage">Alaska Time (AKST/AKDT)</SelectItem>
-                          <SelectItem value="Pacific/Honolulu">Hawaii Time (HST)</SelectItem>
-                          <SelectItem value="Europe/London">London (GMT/BST)</SelectItem>
-                          <SelectItem value="Europe/Paris">Central European (CET/CEST)</SelectItem>
-                          <SelectItem value="Asia/Tokyo">Tokyo (JST)</SelectItem>
-                          <SelectItem value="Australia/Sydney">Sydney (AEST/AEDT)</SelectItem>
+                          <SelectItem value="America/New_York">Eastern (ET)</SelectItem>
+                          <SelectItem value="America/Chicago">Central (CT)</SelectItem>
+                          <SelectItem value="America/Denver">Mountain (MT)</SelectItem>
+                          <SelectItem value="America/Los_Angeles">Pacific (PT)</SelectItem>
+                          <SelectItem value="America/Anchorage">Alaska (AKT)</SelectItem>
+                          <SelectItem value="Pacific/Honolulu">Hawaii (HST)</SelectItem>
                         </SelectContent>
                       </Select>
-                      <p className="text-sm text-muted-foreground">
-                        Your timezone preference is saved for future features. Currently, social media posts are displayed in UTC to ensure consistency across all users.
-                      </p>
                     </div>
                   </CardContent>
                 </Card>

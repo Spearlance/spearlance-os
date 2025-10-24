@@ -10,6 +10,7 @@ export interface DiscoveryData {
     hq_city?: string;
     service_areas?: string[];
     industry: string;
+    timezone?: string;
   };
   contacts: {
     primary_name: string;

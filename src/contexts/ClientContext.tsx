@@ -19,6 +19,7 @@ interface Client {
   stripe_customer_id?: string;
   stripe_subscription_id?: string;
   billing_plan_id?: string;
+  timezone?: string;
   billing_plans?: {
     name: string;
     price_monthly: number;

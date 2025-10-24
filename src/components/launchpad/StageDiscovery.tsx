@@ -37,6 +37,7 @@ const discoverySchema = z.object({
     hq_city: z.string().optional(),
     service_areas: z.array(z.string()).optional(),
     industry: z.string().optional(),
+    timezone: z.string().optional(),
   }),
   contacts: z.object({
     primary_name: z.string().min(1, "Required"),
@@ -107,6 +108,7 @@ export function StageDiscovery({ submissionId, initialData, onContinue, onSaveEx
         industry: initialData?.company?.industry || "", 
         service_areas: initialData?.company?.service_areas || [],
         hq_city: initialData?.company?.hq_city || "",
+        timezone: initialData?.company?.timezone || selectedClient?.timezone || "America/New_York",
       },
       contacts: initialData?.contacts || { primary_name: "", primary_email: "", decision_makers: [] },
       model: initialData?.model || { services: [], aov: null, ltv: null },
@@ -133,6 +135,7 @@ export function StageDiscovery({ submissionId, initialData, onContinue, onSaveEx
           hq_city: data.company.hq_city,
           service_areas: data.company.service_areas,
           industry: data.company.industry,
+          timezone: data.company.timezone || 'America/New_York',
           primary_contact_name: data.contacts.primary_name,
           primary_contact_email: data.contacts.primary_email,
           decision_makers: data.contacts.decision_makers,
@@ -464,6 +467,25 @@ export function StageDiscovery({ submissionId, initialData, onContinue, onSaveEx
                 </Select>
                 {form.formState.errors.company?.industry && (
                   <p className="text-xs text-destructive mt-1">{form.formState.errors.company.industry.message}</p>
+                )}
+              </div>
+              <div>
+                <Label htmlFor="timezone">Business Timezone</Label>
+                <Select value={form.watch("company.timezone") || "America/New_York"} onValueChange={(value) => form.setValue("company.timezone", value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select timezone" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="America/New_York">Eastern (ET)</SelectItem>
+                    <SelectItem value="America/Chicago">Central (CT)</SelectItem>
+                    <SelectItem value="America/Denver">Mountain (MT)</SelectItem>
+                    <SelectItem value="America/Los_Angeles">Pacific (PT)</SelectItem>
+                    <SelectItem value="America/Anchorage">Alaska (AKT)</SelectItem>
+                    <SelectItem value="Pacific/Honolulu">Hawaii (HST)</SelectItem>
+                  </SelectContent>
+                </Select>
+                {form.formState.errors.company?.timezone && (
+                  <p className="text-xs text-destructive mt-1">{form.formState.errors.company.timezone.message}</p>
                 )}
               </div>
             </div>
