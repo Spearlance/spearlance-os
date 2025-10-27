@@ -115,11 +115,6 @@ export const MonthlyCalendarGrid = ({
               <div className="text-xs font-medium truncate">
                 {post.post_idea_json?.topic_title || 'Untitled'}
               </div>
-              {post.post_idea_json?.category && (
-                <Badge variant="outline" className="text-[10px] mt-1">
-                  {post.post_idea_json.category.replace(/_/g, ' ')}
-                </Badge>
-              )}
             </Card>
           ))}
           

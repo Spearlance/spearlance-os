@@ -417,7 +417,6 @@ export const MonthlyCalendarTable = ({ posts, onRefresh, selectedMonth, selected
               </TableHead>
               <TableHead>Date</TableHead>
               <TableHead>Topic</TableHead>
-              <TableHead>Category</TableHead>
               <TableHead>Caption</TableHead>
               <TableHead>Image</TableHead>
               <TableHead className="text-right">Actions</TableHead>
@@ -442,7 +441,7 @@ export const MonthlyCalendarTable = ({ posts, onRefresh, selectedMonth, selected
                         <div className="text-xs text-muted-foreground">{format(day, 'EEEE')}</div>
                       </div>
                     </TableCell>
-                    <TableCell colSpan={4} className="text-center text-muted-foreground">
+                    <TableCell colSpan={3} className="text-center text-muted-foreground">
                       No posts scheduled
                     </TableCell>
                     <TableCell className="text-right">
@@ -526,11 +525,6 @@ export const MonthlyCalendarTable = ({ posts, onRefresh, selectedMonth, selected
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline" className="text-xs">
-                          {idea.category?.replace(/_/g, ' ') || 'N/A'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
                         {post.caption_text ? (
                           <Badge className="bg-green-500/10 text-green-700 dark:text-green-400">
                             ✓ Has Caption
@@ -570,7 +564,7 @@ export const MonthlyCalendarTable = ({ posts, onRefresh, selectedMonth, selected
                     {/* Add "Add Another Post" button after last post of the day */}
                     {isLastPostOfDay && (
                       <TableRow key={`${dateKey}-add`} className="border-t-2 border-dashed hover:bg-muted/20">
-                        <TableCell colSpan={7} className="text-center py-2">
+                        <TableCell colSpan={6} className="text-center py-2">
                           <Button
                             size="sm"
                             variant="ghost"

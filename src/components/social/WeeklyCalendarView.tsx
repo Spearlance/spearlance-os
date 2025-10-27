@@ -153,12 +153,6 @@ export const WeeklyCalendarView = ({
                             </Badge>
                           </div>
                           
-                          {post.post_idea_json?.category && (
-                            <Badge variant="secondary" className="text-[10px]">
-                              {post.post_idea_json.category.replace(/_/g, ' ')}
-                            </Badge>
-                          )}
-                          
                           <div className="flex gap-1 text-xs text-muted-foreground">
                             {post.caption_text && <span>✍️</span>}
                             {post.image_url && <span>🖼️</span>}
