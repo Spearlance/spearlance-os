@@ -165,6 +165,39 @@ Deno.serve(async (req) => {
 
     console.log('Deleting user:', targetProfile);
 
+    // Clean up database references before deleting user from auth
+    
+    // 1. Remove user as primary contact from any clients
+    const { error: clientUpdateError } = await supabaseServiceRole
+      .from('clients')
+      .update({ primary_contact: null })
+      .eq('primary_contact', userId);
+
+    if (clientUpdateError) {
+      console.error('Error updating client primary contacts:', clientUpdateError);
+    }
+
+    // 2. Delete services created by this user
+    const { error: servicesDeleteError } = await supabaseServiceRole
+      .from('services')
+      .delete()
+      .eq('created_by', userId);
+
+    if (servicesDeleteError) {
+      console.error('Error deleting user services:', servicesDeleteError);
+    }
+
+    // 3. Delete user roles
+    const { error: rolesDeleteError } = await supabaseServiceRole
+      .from('user_roles')
+      .delete()
+      .eq('user_id', userId);
+
+    if (rolesDeleteError) {
+      console.error('Error deleting user roles:', rolesDeleteError);
+    }
+
+    // Log the deletion action
     await supabaseServiceRole.from('admin_audit_logs').insert({
       admin_user_id: user.id,
       target_user_id: userId,
@@ -173,6 +206,7 @@ Deno.serve(async (req) => {
       new_value: null,
     });
 
+    // Now delete the user from auth
     const { error: deleteError } = await supabaseServiceRole.auth.admin.deleteUser(userId);
 
     if (deleteError) {
