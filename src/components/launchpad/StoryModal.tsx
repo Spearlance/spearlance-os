@@ -350,7 +350,7 @@ export function StoryModal({ open, onOpenChange, submissionId, clientId, initial
           <Accordion type="single" collapsible className="w-full">
             <AccordionItem value="questions">
               <AccordionTrigger className="hover:text-[#13cf48] hover:no-underline">
-                💡 Need inspiration? View sample questions
+                📋 Answer these questions for the best results
               </AccordionTrigger>
               <AccordionContent>
                 <Accordion type="multiple" className="w-full">
