@@ -52,6 +52,8 @@ import {
   BookOpen,
   Palette,
   Share2,
+  Globe,
+  ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -93,6 +95,12 @@ const helpSupportSubItems = [
   { title: "Support Tickets", url: "/support", icon: HelpCircle },
 ];
 
+const websiteSubItems = [
+  { title: "Editor", icon: ExternalLink, external: true },
+  { title: "Analytics", icon: TrendingUp, comingSoon: true },
+  { title: "Form Submissions", icon: FileText, comingSoon: true },
+];
+
 export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
@@ -105,6 +113,7 @@ export function AppSidebar() {
   const [marketingOpen, setMarketingOpen] = useState(true);
   const [clientCommunicationOpen, setClientCommunicationOpen] = useState(false);
   const [helpSupportOpen, setHelpSupportOpen] = useState(false);
+  const [websiteOpen, setWebsiteOpen] = useState(false);
   const { isComplete } = useLaunchPadStatus();
   const { isSelfService } = useAccountType();
 
@@ -304,6 +313,60 @@ export function AppSidebar() {
                   )}
                 </SidebarMenuItem>
               </Collapsible>
+
+              {selectedClient?.website_unlocked && (
+                <Collapsible open={websiteOpen} onOpenChange={setWebsiteOpen}>
+                  <SidebarMenuItem>
+                    <CollapsibleTrigger asChild>
+                      <SidebarMenuButton>
+                        <Globe className="h-4 w-4" />
+                        {!collapsed && (
+                          <>
+                            <span>Website</span>
+                            <ChevronDown 
+                              className={`ml-auto h-4 w-4 transition-transform ${
+                                websiteOpen ? "rotate-180" : ""
+                              }`}
+                            />
+                          </>
+                        )}
+                      </SidebarMenuButton>
+                    </CollapsibleTrigger>
+                    {!collapsed && (
+                      <CollapsibleContent>
+                        <SidebarMenuSub>
+                          {websiteSubItems.map((subItem) => (
+                            <SidebarMenuSubItem key={subItem.title}>
+                              {subItem.external && !subItem.comingSoon && selectedClient?.site_id ? (
+                                <SidebarMenuSubButton asChild>
+                                  <a
+                                    href={`https://www.mywebsitemanager.co/home/site/${selectedClient.site_id}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                  >
+                                    <subItem.icon className="h-4 w-4" />
+                                    <span>{subItem.title}</span>
+                                  </a>
+                                </SidebarMenuSubButton>
+                              ) : (
+                                <SidebarMenuSubButton className={subItem.comingSoon ? "opacity-50 cursor-not-allowed" : ""}>
+                                  <subItem.icon className="h-4 w-4" />
+                                  <span>{subItem.title}</span>
+                                  {subItem.comingSoon && (
+                                    <Badge variant="secondary" className="ml-auto text-[10px]">
+                                      Soon
+                                    </Badge>
+                                  )}
+                                </SidebarMenuSubButton>
+                              )}
+                            </SidebarMenuSubItem>
+                          ))}
+                        </SidebarMenuSub>
+                      </CollapsibleContent>
+                    )}
+                  </SidebarMenuItem>
+                </Collapsible>
+              )}
 
               {!isLoading && (
                 <Collapsible open={clientCommunicationOpen} onOpenChange={setClientCommunicationOpen}>

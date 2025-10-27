@@ -965,6 +965,7 @@ export type Database = {
           primary_contact_name: string | null
           primary_contact_user_id: string | null
           service_areas: string[] | null
+          site_id: string | null
           status: Database["public"]["Enums"]["client_status"] | null
           stripe_customer_id: string | null
           stripe_subscription_id: string | null
@@ -973,6 +974,7 @@ export type Database = {
           trial_end_date: string | null
           trial_start_date: string | null
           updated_at: string | null
+          website_unlocked: boolean | null
           website_url: string | null
         }
         Insert: {
@@ -1001,6 +1003,7 @@ export type Database = {
           primary_contact_name?: string | null
           primary_contact_user_id?: string | null
           service_areas?: string[] | null
+          site_id?: string | null
           status?: Database["public"]["Enums"]["client_status"] | null
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
@@ -1009,6 +1012,7 @@ export type Database = {
           trial_end_date?: string | null
           trial_start_date?: string | null
           updated_at?: string | null
+          website_unlocked?: boolean | null
           website_url?: string | null
         }
         Update: {
@@ -1037,6 +1041,7 @@ export type Database = {
           primary_contact_name?: string | null
           primary_contact_user_id?: string | null
           service_areas?: string[] | null
+          site_id?: string | null
           status?: Database["public"]["Enums"]["client_status"] | null
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
@@ -1045,6 +1050,7 @@ export type Database = {
           trial_end_date?: string | null
           trial_start_date?: string | null
           updated_at?: string | null
+          website_unlocked?: boolean | null
           website_url?: string | null
         }
         Relationships: [

@@ -50,6 +50,8 @@ const clientEditSchema = z.object({
   canva_folder_url: z.string().url("Invalid URL").optional().or(z.literal('')),
   domain: z.string().optional(),
   logo_url: z.string().optional(),
+  site_id: z.string().optional(),
+  website_unlocked: z.boolean().optional(),
 }).refine((data) => {
   // Validate domain matches website URL hostname
   if (data.website_url && data.domain) {
@@ -88,6 +90,9 @@ interface EditClientDialogProps {
     trial_end_date?: string;
     created_at?: string;
     updated_at?: string;
+    site_id?: string;
+    website_unlocked?: boolean;
+    account_type?: string;
   };
   assignedUsers: Array<{ id: string; name: string }>;
   onClientUpdated: () => void;
@@ -116,6 +121,8 @@ export function EditClientDialog({ client, assignedUsers, onClientUpdated }: Edi
       canva_folder_url: client.canva_folder_url || "",
       domain: client.domain || "",
       logo_url: client.logo_url || "",
+      site_id: client.site_id || "",
+      website_unlocked: client.website_unlocked || false,
     },
   });
 
@@ -171,6 +178,8 @@ export function EditClientDialog({ client, assignedUsers, onClientUpdated }: Edi
         canva_folder_url: data.canva_folder_url || null,
         domain: data.domain || null,
         logo_url: data.logo_url || null,
+        site_id: data.site_id || null,
+        website_unlocked: data.website_unlocked || false,
       };
 
       // For direct/free billing, set subscription_status to active
@@ -564,6 +573,80 @@ export function EditClientDialog({ client, assignedUsers, onClientUpdated }: Edi
                 </FormItem>
               )}
             />
+
+            <Separator />
+
+            {/* Website Management Section */}
+            <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
+              <div>
+                <h3 className="text-sm font-semibold flex items-center gap-2">
+                  <Globe className="h-4 w-4" />
+                  Website Management
+                </h3>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Control access to the MyWebsiteManager editor
+                </p>
+              </div>
+
+              <FormField
+                control={form.control}
+                name="site_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Site ID</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter MyWebsiteManager site ID" {...field} />
+                    </FormControl>
+                    <FormDescription className="text-xs">
+                      The unique site identifier from MyWebsiteManager
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="website_unlocked"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 bg-background">
+                    <div className="space-y-0.5">
+                      <FormLabel className="text-base">Website Access</FormLabel>
+                      <FormDescription className="text-xs">
+                        Allow client to access the website editor
+                      </FormDescription>
+                    </div>
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+
+              <div className="space-y-2 p-3 border rounded-md bg-muted/50">
+                <div className="text-xs font-medium text-muted-foreground">Unlock Requirements</div>
+                <div className="space-y-1 text-xs text-muted-foreground">
+                  <div className="flex items-start gap-2">
+                    <span className="font-semibold text-foreground">Starter Plan:</span>
+                    <span>$750 one-time payment required</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="font-semibold text-foreground">Unlimited Plan:</span>
+                    <span>Included free, unlock when site is ready</span>
+                  </div>
+                </div>
+                {client.account_type && (
+                  <Badge variant="outline" className="mt-2">
+                    Current: {client.account_type}
+                  </Badge>
+                )}
+              </div>
+            </div>
+
+            <Separator />
 
             <div className="space-y-2">
               <FormLabel>Assigned Users (Admins & FMMs)</FormLabel>

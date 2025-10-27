@@ -20,6 +20,8 @@ interface Client {
   stripe_subscription_id?: string;
   billing_plan_id?: string;
   timezone?: string;
+  site_id?: string;
+  website_unlocked?: boolean;
   billing_plans?: {
     name: string;
     price_monthly: number;
