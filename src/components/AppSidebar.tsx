@@ -348,17 +348,22 @@ export function AppSidebar() {
                                     <span>{subItem.title}</span>
                                   </a>
                                 </SidebarMenuSubButton>
-                              ) : (
-                                <SidebarMenuSubButton className={subItem.comingSoon ? "opacity-50 cursor-not-allowed" : ""}>
+                              ) : subItem.comingSoon ? (
+                                <SidebarMenuSubButton className="opacity-50 cursor-not-allowed">
                                   <subItem.icon className="h-4 w-4" />
                                   <span>{subItem.title}</span>
-                                  {subItem.comingSoon && (
-                                    <Badge variant="secondary" className="ml-auto text-[10px]">
-                                      Soon
-                                    </Badge>
-                                  )}
+                                  <Badge variant="secondary" className="ml-auto text-[10px]">
+                                    Soon
+                                  </Badge>
                                 </SidebarMenuSubButton>
-                              )}
+                              ) : subItem.url ? (
+                                <SidebarMenuSubButton asChild>
+                                  <NavLink to={subItem.url} end className={getNavClass}>
+                                    <subItem.icon className="h-4 w-4" />
+                                    <span>{subItem.title}</span>
+                                  </NavLink>
+                                </SidebarMenuSubButton>
+                              ) : null}
                             </SidebarMenuSubItem>
                           ))}
                         </SidebarMenuSub>
