@@ -4,7 +4,7 @@ import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import type { Json } from "@/integrations/supabase/types";
 import { MainLayout } from "@/components/MainLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,7 +13,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Search, FileText, Calendar, User, ExternalLink } from "lucide-react";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Search, FileText, Calendar, User, ExternalLink, Mail, Phone, CheckSquare, LayoutGrid, LayoutList, Clock, TrendingUp } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 interface FormSubmission {
@@ -41,6 +42,10 @@ export default function WebsiteFormSubmissions() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [selectedSubmission, setSelectedSubmission] = useState<FormSubmission | null>(null);
   const [notes, setNotes] = useState("");
+  const [viewMode, setViewMode] = useState<'cards' | 'table'>(() => {
+    const saved = localStorage.getItem('form-submissions-view');
+    return (saved as 'cards' | 'table') || 'cards';
+  });
 
   // Auto-select client from URL parameter
   useEffect(() => {
@@ -243,9 +248,14 @@ export default function WebsiteFormSubmissions() {
     if (!formData || typeof formData !== 'object') return {};
     
     const data = formData as Record<string, any>;
+    
+    // Get fields we're already displaying in header
+    const submitterName = getSubmitterName(formData);
+    const submitterEmail = getSubmitterEmail(formData);
+    const submitterPhone = getSubmitterPhone(formData);
+    
     const fieldsToExclude = [
-      'id', 'form_title', 'date', 'site_name', 'fields',
-      'name', 'email', 'phone' // Already shown in header
+      'id', 'form_title', 'date', 'site_name', 'fields'
     ];
     
     const cleanFields: Record<string, string> = {};
@@ -254,13 +264,15 @@ export default function WebsiteFormSubmissions() {
       // Skip excluded system fields (case-insensitive)
       if (fieldsToExclude.some(field => field.toLowerCase() === key.toLowerCase())) continue;
       
-      // Skip empty values
-      if (!value || value === '') continue;
+      // Skip fields already shown in header
+      const valueStr = String(value).trim();
+      if (!valueStr) continue;
+      if (valueStr === submitterName || valueStr === submitterEmail || valueStr === submitterPhone) continue;
       
       // Skip complex objects/arrays
       if (typeof value === 'object') continue;
       
-      cleanFields[key] = String(value);
+      cleanFields[key] = valueStr;
     }
     
     return cleanFields;
@@ -287,6 +299,62 @@ export default function WebsiteFormSubmissions() {
     
     return formDataString.includes(searchLower) || formName.includes(searchLower);
   });
+
+  const handleViewModeChange = (mode: 'cards' | 'table') => {
+    if (mode) {
+      setViewMode(mode);
+      localStorage.setItem('form-submissions-view', mode);
+    }
+  };
+
+  const handleCreateTask = () => {
+    if (!selectedSubmission) return;
+    toast({
+      title: "Coming Soon",
+      description: "Task creation integration will be available soon",
+    });
+  };
+
+  const handleConvertToLead = async () => {
+    if (!selectedSubmission) return;
+    
+    try {
+      // Check if already converted
+      const { data: existing } = await supabase
+        .from('leads')
+        .select('id')
+        .eq('client_id', selectedSubmission.client_id)
+        .eq('email', getSubmitterEmail(selectedSubmission.form_data))
+        .maybeSingle();
+      
+      if (existing) {
+        toast({
+          title: "Already Converted",
+          description: "This submission has already been converted to a lead",
+        });
+        return;
+      }
+
+      // Trigger analyze-lead function
+      const { error } = await supabase.functions.invoke('analyze-lead', {
+        body: { submission_id: selectedSubmission.id }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Submission converted to lead and AI analysis in progress",
+      });
+    } catch (error) {
+      console.error('Error converting to lead:', error);
+      toast({
+        title: "Error",
+        description: "Failed to convert to lead",
+        variant: "destructive",
+      });
+    }
+  };
 
   if (!selectedClient?.website_unlocked) {
     return (
@@ -334,7 +402,7 @@ export default function WebsiteFormSubmissions() {
           <CardHeader className="pb-3">
             <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
               <CardTitle>All Submissions</CardTitle>
-              <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+              <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto items-stretch sm:items-center">
                 <div className="relative flex-1 sm:w-64">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
@@ -356,6 +424,14 @@ export default function WebsiteFormSubmissions() {
                     <SelectItem value="archived">Archived</SelectItem>
                   </SelectContent>
                 </Select>
+                <ToggleGroup type="single" value={viewMode} onValueChange={handleViewModeChange}>
+                  <ToggleGroupItem value="cards" aria-label="Card view">
+                    <LayoutGrid className="h-4 w-4" />
+                  </ToggleGroupItem>
+                  <ToggleGroupItem value="table" aria-label="Table view">
+                    <LayoutList className="h-4 w-4" />
+                  </ToggleGroupItem>
+                </ToggleGroup>
               </div>
             </div>
           </CardHeader>
@@ -365,6 +441,61 @@ export default function WebsiteFormSubmissions() {
             ) : filteredSubmissions.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 No form submissions yet
+              </div>
+            ) : viewMode === 'cards' ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filteredSubmissions.map((submission) => {
+                  const submitterName = getSubmitterName(submission.form_data);
+                  const submitterEmail = getSubmitterEmail(submission.form_data);
+                  const submitterPhone = getSubmitterPhone(submission.form_data);
+                  
+                  return (
+                    <Card 
+                      key={submission.id} 
+                      className="cursor-pointer hover:shadow-md transition-shadow"
+                      onClick={() => openSubmissionSheet(submission)}
+                    >
+                      <CardHeader className="pb-3">
+                        <div className="flex justify-between items-start gap-2">
+                          {getStatusBadge(submission.status)}
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <Clock className="h-3 w-3" />
+                            {formatDistanceToNow(new Date(submission.submitted_at), { addSuffix: true })}
+                          </div>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <div>
+                          <h3 className="font-semibold text-base mb-1">{submitterName}</h3>
+                          {submitterEmail && (
+                            <a 
+                              href={`mailto:${submitterEmail}`}
+                              className="text-sm text-muted-foreground hover:text-primary flex items-center gap-1"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <Mail className="h-3 w-3" />
+                              {submitterEmail}
+                            </a>
+                          )}
+                          {submitterPhone && (
+                            <a 
+                              href={`tel:${submitterPhone}`}
+                              className="text-sm text-muted-foreground hover:text-primary flex items-center gap-1"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <Phone className="h-3 w-3" />
+                              {submitterPhone}
+                            </a>
+                          )}
+                        </div>
+                        <Badge variant="outline" className="font-normal">
+                          <FileText className="h-3 w-3 mr-1" />
+                          {submission.form_name || 'Contact Form'}
+                        </Badge>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
             ) : (
               <div className="rounded-md border">
@@ -470,6 +601,38 @@ export default function WebsiteFormSubmissions() {
               </SheetHeader>
 
               <div className="mt-6 space-y-6">
+                <div className="space-y-3">
+                  <label className="text-sm font-medium">Quick Actions</label>
+                  <div className="flex flex-wrap gap-2">
+                    {getSubmitterEmail(selectedSubmission.form_data) && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => window.location.href = `mailto:${getSubmitterEmail(selectedSubmission.form_data)}`}
+                      >
+                        <Mail className="h-4 w-4 mr-2" />
+                        Send Email
+                      </Button>
+                    )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleCreateTask}
+                    >
+                      <CheckSquare className="h-4 w-4 mr-2" />
+                      Create Task
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleConvertToLead}
+                    >
+                      <TrendingUp className="h-4 w-4 mr-2" />
+                      Convert to Lead
+                    </Button>
+                  </div>
+                </div>
+
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Update Status</label>
                   <Select

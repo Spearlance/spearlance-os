@@ -533,7 +533,19 @@ export default function Admin() {
                               size="sm"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                navigate(`/website/form-submissions?client=${client.id}`);
+                                console.log('Navigating to form submissions for client:', client.id);
+                                try {
+                                  navigate(`/website/form-submissions?client=${client.id}`);
+                                } catch (error) {
+                                  console.error('Navigation error:', error);
+                                  toast({
+                                    title: "Navigation Error",
+                                    description: "Failed to navigate to form submissions",
+                                    variant: "destructive",
+                                  });
+                                  // Fallback to window.location
+                                  window.location.href = `/website/form-submissions?client=${client.id}`;
+                                }
                               }}
                               className="flex items-center gap-2 hover:bg-accent"
                             >
