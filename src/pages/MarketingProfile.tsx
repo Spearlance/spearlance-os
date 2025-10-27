@@ -648,13 +648,42 @@ export default function MarketingProfile() {
     }
   };
 
-  const handleStoryUpdate = () => {
-    loadProfileData();
-    setStoryModalOpen(false);
-    toast({
-      title: "Story Updated",
-      description: "Your brand story has been updated successfully",
-    });
+  const handleStoryUpdate = async (storyData: any) => {
+    if (!selectedClient) return;
+    
+    try {
+      // Save the story data to client_brand_voice table
+      const { error } = await supabase
+        .from("client_brand_voice")
+        .upsert({
+          client_id: selectedClient.id,
+          story_recording_url: storyData.recording_url,
+          story_recording_asset_id: storyData.recording_asset_id,
+          story_transcript: storyData.transcript,
+          story_summary: storyData.summary,
+          story_completed: storyData.completed,
+        }, {
+          onConflict: 'client_id'
+        });
+
+      if (error) throw error;
+
+      // Now reload the profile data
+      await loadProfileData();
+      setStoryModalOpen(false);
+      
+      toast({
+        title: "Story Updated",
+        description: "Your brand story has been updated successfully",
+      });
+    } catch (error: any) {
+      console.error("Error saving story:", error);
+      toast({
+        title: "Error",
+        description: "Failed to save story data",
+        variant: "destructive",
+      });
+    }
   };
 
   if (clientLoading) {
