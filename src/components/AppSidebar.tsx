@@ -97,8 +97,8 @@ const helpSupportSubItems = [
 
 const websiteSubItems = [
   { title: "Editor", icon: ExternalLink, external: true },
+  { title: "Form Submissions", url: "/website/form-submissions", icon: FileText },
   { title: "Analytics", icon: TrendingUp, comingSoon: true },
-  { title: "Form Submissions", icon: FileText, comingSoon: true },
 ];
 
 export function AppSidebar() {

@@ -3280,6 +3280,75 @@ export type Database = {
         }
         Relationships: []
       }
+      website_form_submissions: {
+        Row: {
+          assigned_to: string | null
+          client_id: string | null
+          created_at: string | null
+          form_data: Json
+          form_name: string | null
+          id: string
+          ip_address: string | null
+          notes: string | null
+          page_url: string | null
+          site_id: string
+          status: string | null
+          submission_source: string | null
+          submitted_at: string
+          updated_at: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          assigned_to?: string | null
+          client_id?: string | null
+          created_at?: string | null
+          form_data: Json
+          form_name?: string | null
+          id?: string
+          ip_address?: string | null
+          notes?: string | null
+          page_url?: string | null
+          site_id: string
+          status?: string | null
+          submission_source?: string | null
+          submitted_at: string
+          updated_at?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          assigned_to?: string | null
+          client_id?: string | null
+          created_at?: string | null
+          form_data?: Json
+          form_name?: string | null
+          id?: string
+          ip_address?: string | null
+          notes?: string | null
+          page_url?: string | null
+          site_id?: string
+          status?: string | null
+          submission_source?: string | null
+          submitted_at?: string
+          updated_at?: string | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "website_form_submissions_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "website_form_submissions_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
