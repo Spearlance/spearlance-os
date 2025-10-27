@@ -178,6 +178,17 @@ Deno.serve(async (req) => {
     }
 
     // 2. Delete services created by this user
+    const { data: servicesToDelete, error: servicesQueryError } = await supabaseServiceRole
+      .from('services')
+      .select('id')
+      .eq('created_by', userId);
+
+    if (servicesQueryError) {
+      console.error('Error querying user services:', servicesQueryError);
+    } else {
+      console.log(`Found ${servicesToDelete?.length || 0} services to delete for user ${userId}`);
+    }
+
     const { error: servicesDeleteError } = await supabaseServiceRole
       .from('services')
       .delete()
@@ -185,6 +196,15 @@ Deno.serve(async (req) => {
 
     if (servicesDeleteError) {
       console.error('Error deleting user services:', servicesDeleteError);
+      return new Response(
+        JSON.stringify({ error: 'Failed to delete user services', details: servicesDeleteError.message }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    } else {
+      console.log('Successfully deleted user services');
     }
 
     // 3. Delete user roles
