@@ -99,6 +99,19 @@ Deno.serve(async (req) => {
 
     console.log('Form submission saved successfully:', submission.id);
 
+    // Trigger AI lead analysis asynchronously (don't block webhook response)
+    supabase.functions.invoke('analyze-lead', {
+      body: { submission_id: submission.id }
+    }).then(({ data, error }) => {
+      if (error) {
+        console.error('AI analysis error:', error);
+      } else {
+        console.log('AI analysis completed:', data);
+      }
+    }).catch(err => {
+      console.error('Failed to trigger AI analysis:', err);
+    });
+
     return new Response(
       JSON.stringify({ 
         success: true, 

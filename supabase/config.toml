@@ -1,5 +1,8 @@
 project_id = "hrmhqybdsdngsvhjqwma"
 
+[functions.analyze-lead]
+verify_jwt = true
+
 [functions.forgot-password]
 verify_jwt = false
 

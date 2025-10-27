@@ -165,14 +165,24 @@ export default function WebsiteFormSubmissions() {
     // Try various name field combinations
     const nameFields = ['NAME', 'name', 'full_name', 'Full Name', 'fullName', 'fullname'];
     for (const field of nameFields) {
-      if (data[field]) return String(data[field]);
+      const value = data[field];
+      if (value) {
+        const trimmed = String(value).trim();
+        if (trimmed) return trimmed;
+      }
     }
     
     // Try first + last name combination
     const firstName = data['first_name'] || data['First Name'] || data['firstName'];
     const lastName = data['last_name'] || data['Last Name'] || data['lastName'];
-    if (firstName && lastName) return `${firstName} ${lastName}`;
-    if (firstName) return String(firstName);
+    if (firstName && lastName) {
+      const combined = `${String(firstName).trim()} ${String(lastName).trim()}`;
+      if (combined.trim()) return combined;
+    }
+    if (firstName) {
+      const trimmed = String(firstName).trim();
+      if (trimmed) return trimmed;
+    }
     
     // Fallback to email or anonymous
     const email = getSubmitterEmail(formData);
@@ -186,7 +196,11 @@ export default function WebsiteFormSubmissions() {
     const emailFields = ['EMAIL', 'email', 'Email', 'email_address', 'emailAddress'];
     
     for (const field of emailFields) {
-      if (data[field]) return String(data[field]);
+      const value = data[field];
+      if (value) {
+        const trimmed = String(value).trim();
+        if (trimmed) return trimmed;
+      }
     }
     
     return null;
@@ -199,7 +213,11 @@ export default function WebsiteFormSubmissions() {
     const phoneFields = ['PHONE', 'phone', 'Phone', 'phone_number', 'phoneNumber', 'tel'];
     
     for (const field of phoneFields) {
-      if (data[field]) return String(data[field]);
+      const value = data[field];
+      if (value) {
+        const trimmed = String(value).trim();
+        if (trimmed) return trimmed;
+      }
     }
     
     return null;

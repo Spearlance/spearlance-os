@@ -40,6 +40,7 @@ import ResetPassword from "./pages/ResetPassword";
 import SetPassword from "./pages/SetPassword";
 import BackfillImages from "./pages/BackfillImages";
 import WebsiteFormSubmissions from "./pages/WebsiteFormSubmissions";
+import Leads from "./pages/Leads";
 
 const queryClient = new QueryClient();
 
@@ -92,6 +93,7 @@ const App = () => (
             <Route path="/admin/2fa-setup" element={<MainLayout><Admin2FASetup /></MainLayout>} />
             <Route path="/backfill-images" element={<MainLayout><BackfillImages /></MainLayout>} />
             <Route path="/website/form-submissions" element={<MainLayout><WebsiteFormSubmissions /></MainLayout>} />
+            <Route path="/leads" element={<MainLayout><Leads /></MainLayout>} />
             <Route path="/calendar/callback" element={<CalendarCallback />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<MainLayout><NotFound /></MainLayout>} />

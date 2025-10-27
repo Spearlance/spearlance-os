@@ -1517,6 +1517,100 @@ export type Database = {
           },
         ]
       }
+      leads: {
+        Row: {
+          additional_notes: string | null
+          ai_score: number | null
+          ai_summary: string | null
+          assigned_to: string | null
+          budget: string | null
+          business_type: string | null
+          client_id: string
+          company: string | null
+          created_at: string
+          email: string
+          id: string
+          industry: string | null
+          name: string
+          next_action: string | null
+          pain_points: string[] | null
+          phone: string | null
+          status: string
+          submission_id: string | null
+          timeline: string | null
+          updated_at: string
+          urgency: string | null
+        }
+        Insert: {
+          additional_notes?: string | null
+          ai_score?: number | null
+          ai_summary?: string | null
+          assigned_to?: string | null
+          budget?: string | null
+          business_type?: string | null
+          client_id: string
+          company?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          industry?: string | null
+          name: string
+          next_action?: string | null
+          pain_points?: string[] | null
+          phone?: string | null
+          status?: string
+          submission_id?: string | null
+          timeline?: string | null
+          updated_at?: string
+          urgency?: string | null
+        }
+        Update: {
+          additional_notes?: string | null
+          ai_score?: number | null
+          ai_summary?: string | null
+          assigned_to?: string | null
+          budget?: string | null
+          business_type?: string | null
+          client_id?: string
+          company?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          industry?: string | null
+          name?: string
+          next_action?: string | null
+          pain_points?: string[] | null
+          phone?: string | null
+          status?: string
+          submission_id?: string | null
+          timeline?: string | null
+          updated_at?: string
+          urgency?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leads_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leads_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leads_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "website_form_submissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       marketing_flow_channel_notes: {
         Row: {
           body: string
