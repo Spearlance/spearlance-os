@@ -192,6 +192,62 @@ export default function WebsiteFormSubmissions() {
     return null;
   };
 
+  const getSubmitterPhone = (formData: Json): string | null => {
+    if (!formData || typeof formData !== 'object') return null;
+    
+    const data = formData as Record<string, any>;
+    const phoneFields = ['PHONE', 'phone', 'Phone', 'phone_number', 'phoneNumber', 'tel'];
+    
+    for (const field of phoneFields) {
+      if (data[field]) return String(data[field]);
+    }
+    
+    return null;
+  };
+
+  const formatFieldLabel = (key: string): string => {
+    // If already has spaces and is all caps, convert to title case
+    if (key.includes(' ') && key === key.toUpperCase()) {
+      return key.charAt(0) + key.slice(1).toLowerCase()
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+    }
+    
+    // Handle snake_case or regular formatting
+    return key.replace(/_/g, ' ')
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
+  };
+
+  const getCleanFormFields = (formData: Json): Record<string, string> => {
+    if (!formData || typeof formData !== 'object') return {};
+    
+    const data = formData as Record<string, any>;
+    const fieldsToExclude = [
+      'id', 'form_title', 'date', 'site_name', 'fields',
+      'name', 'email', 'phone' // Already shown in header
+    ];
+    
+    const cleanFields: Record<string, string> = {};
+    
+    for (const [key, value] of Object.entries(data)) {
+      // Skip excluded system fields (case-insensitive)
+      if (fieldsToExclude.some(field => field.toLowerCase() === key.toLowerCase())) continue;
+      
+      // Skip empty values
+      if (!value || value === '') continue;
+      
+      // Skip complex objects/arrays
+      if (typeof value === 'object') continue;
+      
+      cleanFields[key] = String(value);
+    }
+    
+    return cleanFields;
+  };
+
   const getStatusBadge = (status: string) => {
     const variants: Record<string, { variant: any, label: string }> = {
       unread: { variant: "destructive", label: "Unread" },
@@ -364,14 +420,24 @@ export default function WebsiteFormSubmissions() {
                     <SheetTitle className="text-2xl">
                       {getSubmitterName(selectedSubmission.form_data)}
                     </SheetTitle>
-                    {getSubmitterEmail(selectedSubmission.form_data) && (
-                      <a 
-                        href={`mailto:${getSubmitterEmail(selectedSubmission.form_data)}`}
-                        className="text-sm text-muted-foreground hover:underline"
-                      >
-                        {getSubmitterEmail(selectedSubmission.form_data)}
-                      </a>
-                    )}
+                    <div className="flex flex-col gap-1">
+                      {getSubmitterEmail(selectedSubmission.form_data) && (
+                        <a 
+                          href={`mailto:${getSubmitterEmail(selectedSubmission.form_data)}`}
+                          className="text-sm text-muted-foreground hover:underline"
+                        >
+                          {getSubmitterEmail(selectedSubmission.form_data)}
+                        </a>
+                      )}
+                      {getSubmitterPhone(selectedSubmission.form_data) && (
+                        <a 
+                          href={`tel:${getSubmitterPhone(selectedSubmission.form_data)}`}
+                          className="text-sm text-muted-foreground hover:underline"
+                        >
+                          {getSubmitterPhone(selectedSubmission.form_data)}
+                        </a>
+                      )}
+                    </div>
                   </div>
                   {getStatusBadge(selectedSubmission.status)}
                 </div>
@@ -423,40 +489,50 @@ export default function WebsiteFormSubmissions() {
                     <CardTitle className="text-base">Form Details</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    {selectedSubmission.form_data && typeof selectedSubmission.form_data === 'object' && 
-                      Object.entries(selectedSubmission.form_data as Record<string, any>).map(([key, value]) => {
-                        const displayValue = String(value);
+                    {(() => {
+                      const cleanFields = getCleanFormFields(selectedSubmission.form_data);
+                      const entries = Object.entries(cleanFields);
+                      
+                      if (entries.length === 0) {
+                        return (
+                          <p className="text-sm text-muted-foreground">
+                            No additional form data available
+                          </p>
+                        );
+                      }
+                      
+                      return entries.map(([key, value]) => {
                         const isEmail = key.toLowerCase().includes('email');
                         const isPhone = key.toLowerCase().includes('phone');
                         
                         return (
                           <div key={key} className="space-y-1">
-                            <label className="text-sm font-medium capitalize">
-                              {key.replace(/_/g, ' ')}
+                            <label className="text-sm font-medium">
+                              {formatFieldLabel(key)}
                             </label>
                             {isEmail ? (
                               <a 
-                                href={`mailto:${displayValue}`}
-                                className="block text-sm text-primary hover:underline"
+                                href={`mailto:${value}`}
+                                className="block text-sm text-primary hover:underline break-words"
                               >
-                                {displayValue}
+                                {value}
                               </a>
                             ) : isPhone ? (
                               <a 
-                                href={`tel:${displayValue}`}
+                                href={`tel:${value}`}
                                 className="block text-sm text-primary hover:underline"
                               >
-                                {displayValue}
+                                {value}
                               </a>
                             ) : (
-                              <p className="text-sm text-muted-foreground break-words">
-                                {displayValue}
+                              <p className="text-sm text-muted-foreground break-words whitespace-pre-wrap">
+                                {value}
                               </p>
                             )}
                           </div>
                         );
-                      })
-                    }
+                      });
+                    })()}
                   </CardContent>
                 </Card>
 
