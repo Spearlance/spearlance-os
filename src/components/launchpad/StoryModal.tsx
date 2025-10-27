@@ -373,7 +373,30 @@ export function StoryModal({ open, onOpenChange, submissionId, clientId, initial
 
         <div className="border-t pt-4 mt-4 space-y-4">
           <div>
-            <Label className="font-semibold mb-1.5 block text-sm">Upload Your Recording</Label>
+            <div className="mb-1.5">
+              <Label className="font-semibold text-sm">Upload Your Recording</Label>
+              <p className="text-xs text-muted-foreground mt-1">
+                Need to record? Try{" "}
+                <a 
+                  href="https://vocaroo.com" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-[#13cf48] hover:underline"
+                >
+                  Vocaroo
+                </a>
+                {" "}or{" "}
+                <a 
+                  href="https://www.loom.com" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-[#13cf48] hover:underline"
+                >
+                  Loom
+                </a>
+                {" "}(both free)
+              </p>
+            </div>
             <div className="border-2 border-dashed hover:border-[#13cf48] rounded-lg p-3 text-center transition-colors">
               <input
                 type="file"
