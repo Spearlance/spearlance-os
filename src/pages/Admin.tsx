@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Users, Building2, BarChart3, Loader2, Globe, KeyRound, Mail } from "lucide-react";
+import { Users, Building2, BarChart3, Loader2, Globe, KeyRound, Mail, FileText } from "lucide-react";
 import { AddUserDialog } from "@/components/admin/AddUserDialog";
 import { UserInfoDialog } from "@/components/admin/UserInfoDialog";
 import { EditClientDialog } from "@/components/admin/EditClientDialog";
@@ -27,6 +27,7 @@ export default function Admin() {
   const [clients, setClients] = useState<any[]>([]);
   const [stats, setStats] = useState<any>({});
   const [newClientName, setNewClientName] = useState("");
+  const [submissionCounts, setSubmissionCounts] = useState<Record<string, { unread: number; total: number }>>({});
 
   useEffect(() => {
     checkAdminAccess();
@@ -75,6 +76,23 @@ export default function Admin() {
         .select("*")
         .order("name");
       setClients(clientsData || []);
+
+      // Load form submission counts
+      const { data: submissionsData } = await supabase
+        .from("website_form_submissions")
+        .select("client_id, status");
+
+      const counts: Record<string, { unread: number; total: number }> = {};
+      submissionsData?.forEach((sub) => {
+        if (!counts[sub.client_id]) {
+          counts[sub.client_id] = { unread: 0, total: 0 };
+        }
+        counts[sub.client_id].total++;
+        if (sub.status === 'unread') {
+          counts[sub.client_id].unread++;
+        }
+      });
+      setSubmissionCounts(counts);
 
       // Calculate stats
       const roleCount = usersData?.reduce((acc: any, user) => {
@@ -433,6 +451,7 @@ export default function Admin() {
                     <TableHead>Billing Method</TableHead>
                     <TableHead>Booking Permissions</TableHead>
                     <TableHead>Assigned Users</TableHead>
+                    <TableHead>Form Submissions</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -505,6 +524,32 @@ export default function Admin() {
                               <span className="text-xs text-muted-foreground">None</span>
                             )}
                           </div>
+                        </TableCell>
+                        <TableCell>
+                          {client.site_id ? (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => navigate(`/website/form-submissions?client=${client.id}`)}
+                              className="flex items-center gap-2"
+                            >
+                              <FileText className="h-4 w-4" />
+                              {submissionCounts[client.id] ? (
+                                <div className="flex items-center gap-1">
+                                  <span>{submissionCounts[client.id].total}</span>
+                                  {submissionCounts[client.id].unread > 0 && (
+                                    <Badge variant="destructive" className="h-5 px-1.5">
+                                      {submissionCounts[client.id].unread}
+                                    </Badge>
+                                  )}
+                                </div>
+                              ) : (
+                                <span className="text-muted-foreground">0</span>
+                              )}
+                            </Button>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">No site ID</span>
+                          )}
                         </TableCell>
                         <TableCell>
                           <EditClientDialog

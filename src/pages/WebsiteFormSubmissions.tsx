@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useClient } from "@/contexts/ClientContext";
+import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import type { Json } from "@/integrations/supabase/types";
 import { MainLayout } from "@/components/MainLayout";
@@ -31,8 +32,9 @@ interface FormSubmission {
 }
 
 export default function WebsiteFormSubmissions() {
-  const { selectedClient } = useClient();
+  const { selectedClient, clients, setSelectedClient } = useClient();
   const { toast } = useToast();
+  const [searchParams] = useSearchParams();
   const [submissions, setSubmissions] = useState<FormSubmission[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -40,6 +42,17 @@ export default function WebsiteFormSubmissions() {
   const [selectedSubmission, setSelectedSubmission] = useState<FormSubmission | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [notes, setNotes] = useState("");
+
+  // Auto-select client from URL parameter
+  useEffect(() => {
+    const clientId = searchParams.get('client');
+    if (clientId && clients.length > 0) {
+      const client = clients.find(c => c.id === clientId);
+      if (client && client.id !== selectedClient?.id) {
+        setSelectedClient(client);
+      }
+    }
+  }, [searchParams, clients]);
 
   useEffect(() => {
     if (selectedClient?.site_id) {
