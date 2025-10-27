@@ -301,6 +301,8 @@ export function StoryModal({ open, onOpenChange, submissionId, clientId, initial
         recording_url: fileUrl || undefined,
         recording_asset_id: assetId || undefined,
         completed: true,
+        transcript,
+        summary,
       };
 
       setUploadProgress(100);
