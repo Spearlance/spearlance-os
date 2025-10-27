@@ -313,7 +313,7 @@ export function AppSidebar() {
                         <MessageSquare className="h-4 w-4" />
                         {!collapsed && (
                           <>
-                            <span>Client Communication</span>
+                            <span>Communication</span>
                             <ChevronDown 
                               className={`ml-auto h-4 w-4 transition-transform ${
                                 clientCommunicationOpen ? "rotate-180" : ""
