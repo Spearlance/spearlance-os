@@ -347,33 +347,42 @@ export function StoryModal({ open, onOpenChange, submissionId, clientId, initial
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto pr-2 space-y-4">
-          <Accordion type="multiple" className="w-full">
-            {questionSections.map((section) => (
-              <AccordionItem key={section.id} value={section.id}>
-                <AccordionTrigger className="hover:text-[#13cf48] hover:no-underline">
-                  <div className="text-left">
-                    <div className="font-semibold">{section.title}</div>
-                    <div className="text-sm text-muted-foreground font-normal">{section.description}</div>
-                  </div>
-                </AccordionTrigger>
-                <AccordionContent>
-                  <ul className="space-y-2 text-muted-foreground">
-                    {section.questions.map((question, idx) => (
-                      <li key={idx} className="flex gap-2">
-                        <span className="text-[#13cf48] font-semibold">•</span>
-                        <span>{question}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </AccordionContent>
-              </AccordionItem>
-            ))}
+          <Accordion type="single" collapsible className="w-full">
+            <AccordionItem value="questions">
+              <AccordionTrigger className="hover:text-[#13cf48] hover:no-underline">
+                💡 Need inspiration? View sample questions
+              </AccordionTrigger>
+              <AccordionContent>
+                <Accordion type="multiple" className="w-full">
+                  {questionSections.map((section) => (
+                    <AccordionItem key={section.id} value={section.id}>
+                      <AccordionTrigger className="hover:text-[#13cf48] hover:no-underline">
+                        <div className="text-left">
+                          <div className="font-semibold">{section.title}</div>
+                          <div className="text-sm text-muted-foreground font-normal">{section.description}</div>
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent>
+                        <ul className="space-y-2 text-muted-foreground">
+                          {section.questions.map((question, idx) => (
+                            <li key={idx} className="flex gap-2">
+                              <span className="text-[#13cf48] font-semibold">•</span>
+                              <span>{question}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </AccordionContent>
+                    </AccordionItem>
+                  ))}
+                </Accordion>
+              </AccordionContent>
+            </AccordionItem>
           </Accordion>
         </div>
 
         <div className="border-t pt-4 mt-4 space-y-4">
           <div>
-            <div className="mb-1.5">
+            <div className="mb-2">
               <Label className="font-semibold text-sm">Upload Your Recording</Label>
               <p className="text-xs text-muted-foreground mt-1">
                 Need to record? Try{" "}
@@ -397,7 +406,7 @@ export function StoryModal({ open, onOpenChange, submissionId, clientId, initial
                 {" "}(both free)
               </p>
             </div>
-            <div className="border-2 border-dashed hover:border-[#13cf48] rounded-lg p-3 text-center transition-colors">
+            <div className="border-2 border-dashed hover:border-[#13cf48] rounded-lg p-2 transition-colors">
               <input
                 type="file"
                 accept=".mp3,.m4a,.wav,.mp4,.mov"
@@ -405,14 +414,12 @@ export function StoryModal({ open, onOpenChange, submissionId, clientId, initial
                 className="hidden"
                 id="story-file-upload"
               />
-              <label htmlFor="story-file-upload" className="cursor-pointer">
-                <Upload className="h-5 w-5 mx-auto mb-1.5 text-muted-foreground" />
-                <p className="text-sm text-foreground">
-                  Click to upload
-                </p>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  .mp3, .m4a, .wav, .mp4, .mov (max 25MB)
-                </p>
+              <label htmlFor="story-file-upload" className="cursor-pointer flex items-center gap-2 text-sm">
+                <Upload className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                <div className="flex-1">
+                  <span className="text-foreground">Click to upload</span>
+                  <span className="text-muted-foreground ml-2">(.mp3, .m4a, .wav, .mp4, .mov - max 25MB)</span>
+                </div>
               </label>
               {selectedFile && (
                 <div className="mt-2 p-2 bg-muted rounded-lg">
@@ -425,21 +432,25 @@ export function StoryModal({ open, onOpenChange, submissionId, clientId, initial
             </div>
           </div>
 
-          <div className="border-t pt-3">
-            <Label htmlFor="transcript-paste" className="font-semibold mb-1.5 block text-sm">
-              Or Paste Your Transcript
-            </Label>
-            <Textarea
-              id="transcript-paste"
-              value={pastedTranscript}
-              onChange={(e) => setPastedTranscript(e.target.value)}
-              placeholder="Paste your transcript here from Loom, Otter.ai, or any transcription tool..."
-              className="min-h-[120px] bg-background"
-            />
-            <p className="text-xs text-muted-foreground mt-1">
-              Already have a transcript? Paste it here and we'll optimize it for marketing insights.
-            </p>
-          </div>
+          <Accordion type="single" collapsible className="w-full">
+            <AccordionItem value="transcript">
+              <AccordionTrigger className="hover:text-[#13cf48] hover:no-underline py-2">
+                Or paste your transcript instead
+              </AccordionTrigger>
+              <AccordionContent>
+                <Textarea
+                  id="transcript-paste"
+                  value={pastedTranscript}
+                  onChange={(e) => setPastedTranscript(e.target.value)}
+                  placeholder="Paste your transcript here from Loom, Otter.ai, or any transcription tool..."
+                  className="min-h-[120px] bg-background"
+                />
+                <p className="text-xs text-muted-foreground mt-2">
+                  Already have a transcript? Paste it here and we'll optimize it for marketing insights.
+                </p>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
 
           {uploadProgress > 0 && uploadProgress < 100 && (
             <div>
