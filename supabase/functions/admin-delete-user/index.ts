@@ -165,57 +165,8 @@ Deno.serve(async (req) => {
 
     console.log('Deleting user:', targetProfile);
 
-    // Clean up database references before deleting user from auth
-    
-    // 1. Remove user as primary contact from any clients
-    const { error: clientUpdateError } = await supabaseServiceRole
-      .from('clients')
-      .update({ primary_contact: null })
-      .eq('primary_contact', userId);
-
-    if (clientUpdateError) {
-      console.error('Error updating client primary contacts:', clientUpdateError);
-    }
-
-    // 2. Delete services created by this user
-    const { data: servicesToDelete, error: servicesQueryError } = await supabaseServiceRole
-      .from('services')
-      .select('id')
-      .eq('created_by', userId);
-
-    if (servicesQueryError) {
-      console.error('Error querying user services:', servicesQueryError);
-    } else {
-      console.log(`Found ${servicesToDelete?.length || 0} services to delete for user ${userId}`);
-    }
-
-    const { error: servicesDeleteError } = await supabaseServiceRole
-      .from('services')
-      .delete()
-      .eq('created_by', userId);
-
-    if (servicesDeleteError) {
-      console.error('Error deleting user services:', servicesDeleteError);
-      return new Response(
-        JSON.stringify({ error: 'Failed to delete user services', details: servicesDeleteError.message }),
-        {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      );
-    } else {
-      console.log('Successfully deleted user services');
-    }
-
-    // 3. Delete user roles
-    const { error: rolesDeleteError } = await supabaseServiceRole
-      .from('user_roles')
-      .delete()
-      .eq('user_id', userId);
-
-    if (rolesDeleteError) {
-      console.error('Error deleting user roles:', rolesDeleteError);
-    }
+    // Database will handle all cleanup automatically via ON DELETE CASCADE/SET NULL constraints
+    console.log('Proceeding to delete user from auth:', userId);
 
     // Log the deletion action
     await supabaseServiceRole.from('admin_audit_logs').insert({
