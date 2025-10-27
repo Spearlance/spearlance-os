@@ -3,7 +3,7 @@ import { useClient } from "@/contexts/ClientContext";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import type { Json } from "@/integrations/supabase/types";
-import { MainLayout } from "@/components/MainLayout";
+
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -358,38 +358,34 @@ export default function WebsiteFormSubmissions() {
 
   if (!selectedClient?.website_unlocked) {
     return (
-      <MainLayout>
-        <div className="p-8">
-          <Card>
-            <CardContent className="pt-6">
-              <p className="text-muted-foreground">
-                Website features are not enabled for this client.
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-      </MainLayout>
+      <div className="p-8">
+        <Card>
+          <CardContent className="pt-6">
+            <p className="text-muted-foreground">
+              Website features are not enabled for this client.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
   if (!selectedClient?.site_id) {
     return (
-      <MainLayout>
-        <div className="p-8">
-          <Card>
-            <CardContent className="pt-6">
-              <p className="text-muted-foreground">
-                No site ID configured for this client. Please contact support.
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-      </MainLayout>
+      <div className="p-8">
+        <Card>
+          <CardContent className="pt-6">
+            <p className="text-muted-foreground">
+              No site ID configured for this client. Please contact support.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
   return (
-    <MainLayout>
+    <>
       <div className="p-6 space-y-4">
         <div>
           <h1 className="text-3xl font-bold">Form Submissions</h1>
@@ -735,6 +731,6 @@ export default function WebsiteFormSubmissions() {
           )}
         </SheetContent>
       </Sheet>
-    </MainLayout>
+    </>
   );
 }
