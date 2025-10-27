@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Search, FileText, Calendar, User, ExternalLink } from "lucide-react";
@@ -40,7 +40,6 @@ export default function WebsiteFormSubmissions() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [selectedSubmission, setSelectedSubmission] = useState<FormSubmission | null>(null);
-  const [drawerOpen, setDrawerOpen] = useState(false);
   const [notes, setNotes] = useState("");
 
   // Auto-select client from URL parameter
@@ -148,15 +147,49 @@ export default function WebsiteFormSubmissions() {
     }
   };
 
-  const openSubmissionDrawer = (submission: FormSubmission) => {
+  const openSubmissionSheet = (submission: FormSubmission) => {
     setSelectedSubmission(submission);
     setNotes(submission.notes || "");
-    setDrawerOpen(true);
 
     // Mark as read when opened
     if (submission.status === 'unread') {
       updateSubmissionStatus(submission.id, 'read');
     }
+  };
+
+  const getSubmitterName = (formData: Json): string => {
+    if (!formData || typeof formData !== 'object') return 'Anonymous';
+    
+    const data = formData as Record<string, any>;
+    
+    // Try various name field combinations
+    const nameFields = ['NAME', 'name', 'full_name', 'Full Name', 'fullName', 'fullname'];
+    for (const field of nameFields) {
+      if (data[field]) return String(data[field]);
+    }
+    
+    // Try first + last name combination
+    const firstName = data['first_name'] || data['First Name'] || data['firstName'];
+    const lastName = data['last_name'] || data['Last Name'] || data['lastName'];
+    if (firstName && lastName) return `${firstName} ${lastName}`;
+    if (firstName) return String(firstName);
+    
+    // Fallback to email or anonymous
+    const email = getSubmitterEmail(formData);
+    return email || 'Anonymous Submission';
+  };
+
+  const getSubmitterEmail = (formData: Json): string | null => {
+    if (!formData || typeof formData !== 'object') return null;
+    
+    const data = formData as Record<string, any>;
+    const emailFields = ['EMAIL', 'email', 'Email', 'email_address', 'emailAddress'];
+    
+    for (const field of emailFields) {
+      if (data[field]) return String(data[field]);
+    }
+    
+    return null;
   };
 
   const getStatusBadge = (status: string) => {
@@ -215,17 +248,17 @@ export default function WebsiteFormSubmissions() {
 
   return (
     <MainLayout>
-      <div className="p-8 space-y-6">
+      <div className="p-6 space-y-4">
         <div>
           <h1 className="text-3xl font-bold">Form Submissions</h1>
-          <p className="text-muted-foreground mt-2">
+          <p className="text-muted-foreground mt-1">
             Manage form submissions from your website
           </p>
         </div>
 
         <Card>
-          <CardHeader>
-            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+          <CardHeader className="pb-3">
+            <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
               <CardTitle>All Submissions</CardTitle>
               <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                 <div className="relative flex-1 sm:w-64">
@@ -252,7 +285,7 @@ export default function WebsiteFormSubmissions() {
               </div>
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-0">
             {loading ? (
               <div className="text-center py-8 text-muted-foreground">Loading submissions...</div>
             ) : filteredSubmissions.length === 0 ? (
@@ -264,41 +297,55 @@ export default function WebsiteFormSubmissions() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Form Name</TableHead>
-                      <TableHead>Submitted</TableHead>
-                      <TableHead>Preview</TableHead>
-                      <TableHead>Actions</TableHead>
+                      <TableHead className="w-[100px]">Status</TableHead>
+                      <TableHead>Submitter</TableHead>
+                      <TableHead>Form Type</TableHead>
+                      <TableHead>Date</TableHead>
+                      <TableHead className="w-[100px]">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredSubmissions.map((submission) => (
-                      <TableRow key={submission.id} className="cursor-pointer hover:bg-muted/50">
-                        <TableCell>{getStatusBadge(submission.status)}</TableCell>
-                        <TableCell className="font-medium">
-                          {submission.form_name || 'Contact Form'}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {formatDistanceToNow(new Date(submission.submitted_at), { addSuffix: true })}
-                        </TableCell>
-                        <TableCell className="max-w-xs truncate text-muted-foreground">
-                          {submission.form_data && typeof submission.form_data === 'object' && 
-                            Object.entries(submission.form_data as Record<string, any>).slice(0, 2).map(([key, value]) => (
-                              <span key={key}>{key}: {String(value)}; </span>
-                            ))
-                          }
-                        </TableCell>
-                        <TableCell>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => openSubmissionDrawer(submission)}
-                          >
-                            View Details
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                    {filteredSubmissions.map((submission) => {
+                      const submitterName = getSubmitterName(submission.form_data);
+                      const submitterEmail = getSubmitterEmail(submission.form_data);
+                      
+                      return (
+                        <TableRow key={submission.id} className="hover:bg-muted/50">
+                          <TableCell>{getStatusBadge(submission.status)}</TableCell>
+                          <TableCell>
+                            <div className="flex flex-col">
+                              <span className="font-medium">{submitterName}</span>
+                              {submitterEmail && (
+                                <a 
+                                  href={`mailto:${submitterEmail}`}
+                                  className="text-sm text-muted-foreground hover:underline"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  {submitterEmail}
+                                </a>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="secondary" className="font-normal">
+                              {submission.form_name || 'Contact Form'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-muted-foreground text-sm">
+                            {formatDistanceToNow(new Date(submission.submitted_at), { addSuffix: true })}
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => openSubmissionSheet(submission)}
+                            >
+                              View
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </div>
@@ -307,86 +354,130 @@ export default function WebsiteFormSubmissions() {
         </Card>
       </div>
 
-      <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
-        <DrawerContent className="max-h-[90vh]">
-          <DrawerHeader>
-            <DrawerTitle>Form Submission Details</DrawerTitle>
-          </DrawerHeader>
+      <Sheet open={!!selectedSubmission} onOpenChange={(open) => !open && setSelectedSubmission(null)}>
+        <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
           {selectedSubmission && (
-            <div className="p-6 space-y-6 overflow-y-auto">
-              <div className="flex items-center justify-between">
-                {getStatusBadge(selectedSubmission.status)}
-                <Select
-                  value={selectedSubmission.status}
-                  onValueChange={(value) => updateSubmissionStatus(selectedSubmission.id, value)}
-                >
-                  <SelectTrigger className="w-40">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="unread">Unread</SelectItem>
-                    <SelectItem value="read">Read</SelectItem>
-                    <SelectItem value="responded">Responded</SelectItem>
-                    <SelectItem value="archived">Archived</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            <>
+              <SheetHeader className="space-y-3">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1">
+                    <SheetTitle className="text-2xl">
+                      {getSubmitterName(selectedSubmission.form_data)}
+                    </SheetTitle>
+                    {getSubmitterEmail(selectedSubmission.form_data) && (
+                      <a 
+                        href={`mailto:${getSubmitterEmail(selectedSubmission.form_data)}`}
+                        className="text-sm text-muted-foreground hover:underline"
+                      >
+                        {getSubmitterEmail(selectedSubmission.form_data)}
+                      </a>
+                    )}
+                  </div>
+                  {getStatusBadge(selectedSubmission.status)}
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="font-normal">
+                    {selectedSubmission.form_name || 'Contact Form'}
+                  </Badge>
+                  <span className="text-sm text-muted-foreground">
+                    {new Date(selectedSubmission.submitted_at).toLocaleString()}
+                  </span>
+                </div>
+              </SheetHeader>
 
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <FileText className="h-4 w-4" />
-                  <span>{selectedSubmission.form_name || 'Contact Form'}</span>
+              <div className="mt-6 space-y-6">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Update Status</label>
+                  <Select
+                    value={selectedSubmission.status}
+                    onValueChange={(value) => updateSubmissionStatus(selectedSubmission.id, value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="unread">Unread</SelectItem>
+                      <SelectItem value="read">Read</SelectItem>
+                      <SelectItem value="responded">Responded</SelectItem>
+                      <SelectItem value="archived">Archived</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Calendar className="h-4 w-4" />
-                  <span>{new Date(selectedSubmission.submitted_at).toLocaleString()}</span>
-                </div>
+
                 {selectedSubmission.page_url && (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <ExternalLink className="h-4 w-4" />
-                    <a href={selectedSubmission.page_url} target="_blank" rel="noopener noreferrer" className="hover:underline">
-                      {selectedSubmission.page_url}
+                  <div className="flex items-center gap-2 text-sm">
+                    <ExternalLink className="h-4 w-4 text-muted-foreground" />
+                    <a 
+                      href={selectedSubmission.page_url} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="text-primary hover:underline"
+                    >
+                      View submission page
                     </a>
                   </div>
                 )}
-              </div>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Form Data</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {selectedSubmission.form_data && typeof selectedSubmission.form_data === 'object' && 
-                    Object.entries(selectedSubmission.form_data as Record<string, any>).map(([key, value]) => (
-                      <div key={key}>
-                        <label className="text-sm font-medium capitalize">
-                          {key.replace(/_/g, ' ')}
-                        </label>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          {String(value)}
-                        </p>
-                      </div>
-                    ))
-                  }
-                </CardContent>
-              </Card>
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base">Form Details</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {selectedSubmission.form_data && typeof selectedSubmission.form_data === 'object' && 
+                      Object.entries(selectedSubmission.form_data as Record<string, any>).map(([key, value]) => {
+                        const displayValue = String(value);
+                        const isEmail = key.toLowerCase().includes('email');
+                        const isPhone = key.toLowerCase().includes('phone');
+                        
+                        return (
+                          <div key={key} className="space-y-1">
+                            <label className="text-sm font-medium capitalize">
+                              {key.replace(/_/g, ' ')}
+                            </label>
+                            {isEmail ? (
+                              <a 
+                                href={`mailto:${displayValue}`}
+                                className="block text-sm text-primary hover:underline"
+                              >
+                                {displayValue}
+                              </a>
+                            ) : isPhone ? (
+                              <a 
+                                href={`tel:${displayValue}`}
+                                className="block text-sm text-primary hover:underline"
+                              >
+                                {displayValue}
+                              </a>
+                            ) : (
+                              <p className="text-sm text-muted-foreground break-words">
+                                {displayValue}
+                              </p>
+                            )}
+                          </div>
+                        );
+                      })
+                    }
+                  </CardContent>
+                </Card>
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Internal Notes</label>
-                <Textarea
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Add internal notes about this submission..."
-                  rows={4}
-                />
-                <Button onClick={saveNotes} className="w-full">
-                  Save Notes
-                </Button>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Internal Notes</label>
+                  <Textarea
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    placeholder="Add internal notes about this submission..."
+                    rows={6}
+                    className="resize-none"
+                  />
+                  <Button onClick={saveNotes} className="w-full">
+                    Save Notes
+                  </Button>
+                </div>
               </div>
-            </div>
+            </>
           )}
-        </DrawerContent>
-      </Drawer>
+        </SheetContent>
+      </Sheet>
     </MainLayout>
   );
 }

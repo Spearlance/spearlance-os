@@ -528,10 +528,14 @@ export default function Admin() {
                         <TableCell>
                           {client.site_id ? (
                             <Button
-                              variant="ghost"
+                              type="button"
+                              variant="outline"
                               size="sm"
-                              onClick={() => navigate(`/website/form-submissions?client=${client.id}`)}
-                              className="flex items-center gap-2"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/website/form-submissions?client=${client.id}`);
+                              }}
+                              className="flex items-center gap-2 hover:bg-accent"
                             >
                               <FileText className="h-4 w-4" />
                               {submissionCounts[client.id] ? (
