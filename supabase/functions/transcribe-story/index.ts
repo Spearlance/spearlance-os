@@ -39,9 +39,15 @@ serve(async (req) => {
       throw new Error('Audio file too large (max 25MB)');
     }
 
+    // Extract file extension from URL
+    const urlPath = new URL(audioUrl).pathname;
+    const extension = urlPath.split('.').pop()?.toLowerCase() || 'mp3';
+    const filename = `audio.${extension}`;
+    console.log('Using filename:', filename);
+
     // Prepare form data for Whisper API
     const formData = new FormData();
-    formData.append('file', audioBlob, 'audio.file');
+    formData.append('file', audioBlob, filename);
     formData.append('model', 'whisper-1');
 
     // Call OpenAI Whisper API directly

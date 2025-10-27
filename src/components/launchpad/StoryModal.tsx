@@ -371,8 +371,8 @@ export function StoryModal({ open, onOpenChange, submissionId, clientId, initial
 
         <div className="border-t pt-4 mt-4 space-y-4">
           <div>
-            <Label className="font-semibold mb-2 block">Upload Your Recording</Label>
-            <div className="border-2 border-dashed hover:border-[#13cf48] rounded-lg p-6 text-center transition-colors">
+            <Label className="font-semibold mb-1.5 block text-sm">Upload Your Recording</Label>
+            <div className="border-2 border-dashed hover:border-[#13cf48] rounded-lg p-3 text-center transition-colors">
               <input
                 type="file"
                 accept=".mp3,.m4a,.wav,.mp4,.mov"
@@ -381,18 +381,18 @@ export function StoryModal({ open, onOpenChange, submissionId, clientId, initial
                 id="story-file-upload"
               />
               <label htmlFor="story-file-upload" className="cursor-pointer">
-                <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                <Upload className="h-5 w-5 mx-auto mb-1.5 text-muted-foreground" />
                 <p className="text-sm text-foreground">
-                  Click to upload or drag and drop
+                  Click to upload
                 </p>
-                <p className="text-xs text-muted-foreground mt-1">
+                <p className="text-xs text-muted-foreground mt-0.5">
                   .mp3, .m4a, .wav, .mp4, .mov (max 25MB)
                 </p>
               </label>
               {selectedFile && (
-                <div className="mt-3 p-3 bg-muted rounded-lg">
+                <div className="mt-2 p-2 bg-muted rounded-lg">
                   <p className="text-sm font-medium">{selectedFile.name}</p>
-                  <p className="text-xs text-muted-foreground mt-1">
+                  <p className="text-xs text-muted-foreground mt-0.5">
                     {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
                   </p>
                 </div>
@@ -400,8 +400,8 @@ export function StoryModal({ open, onOpenChange, submissionId, clientId, initial
             </div>
           </div>
 
-          <div className="border-t pt-4">
-            <Label htmlFor="transcript-paste" className="font-semibold mb-2 block">
+          <div className="border-t pt-3">
+            <Label htmlFor="transcript-paste" className="font-semibold mb-1.5 block text-sm">
               Or Paste Your Transcript
             </Label>
             <Textarea
@@ -409,7 +409,7 @@ export function StoryModal({ open, onOpenChange, submissionId, clientId, initial
               value={pastedTranscript}
               onChange={(e) => setPastedTranscript(e.target.value)}
               placeholder="Paste your transcript here from Loom, Otter.ai, or any transcription tool..."
-              className="min-h-[200px] bg-background"
+              className="min-h-[120px] bg-background"
             />
             <p className="text-xs text-muted-foreground mt-1">
               Already have a transcript? Paste it here and we'll optimize it for marketing insights.
