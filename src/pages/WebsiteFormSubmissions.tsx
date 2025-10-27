@@ -83,6 +83,11 @@ export default function WebsiteFormSubmissions() {
 
       if (error) throw error;
 
+      console.log("📥 Fetched submissions:", data);
+      console.log("📥 First submission:", data?.[0]);
+      console.log("📥 First submission form_data:", data?.[0]?.form_data);
+      console.log("📥 form_data type:", typeof data?.[0]?.form_data);
+
       setSubmissions(data || []);
     } catch (error) {
       console.error('Error fetching submissions:', error);
@@ -163,9 +168,17 @@ export default function WebsiteFormSubmissions() {
   };
 
   const getSubmitterName = (formData: Json): string => {
-    if (!formData || typeof formData !== 'object') return 'Anonymous';
+    console.log("🔍 getSubmitterName called with:", formData);
+    console.log("🔍 formData type:", typeof formData);
+    
+    if (!formData || typeof formData !== 'object') {
+      console.log("❌ formData is null or not an object");
+      return 'Anonymous';
+    }
     
     const data = formData as Record<string, any>;
+    console.log("🔍 Parsed data keys:", Object.keys(data));
+    console.log("🔍 Data values:", data);
     
     // Try various name field combinations
     const nameFields = ['NAME', 'name', 'full_name', 'Full Name', 'fullName', 'fullname'];
@@ -173,7 +186,10 @@ export default function WebsiteFormSubmissions() {
       const value = data[field];
       if (value) {
         const trimmed = String(value).trim();
-        if (trimmed) return trimmed;
+        if (trimmed) {
+          console.log(`✅ Found name in field '${field}':`, trimmed);
+          return trimmed;
+        }
       }
     }
     
@@ -182,20 +198,32 @@ export default function WebsiteFormSubmissions() {
     const lastName = data['last_name'] || data['Last Name'] || data['lastName'];
     if (firstName && lastName) {
       const combined = `${String(firstName).trim()} ${String(lastName).trim()}`;
-      if (combined.trim()) return combined;
+      if (combined.trim()) {
+        console.log("✅ Found combined name:", combined);
+        return combined;
+      }
     }
     if (firstName) {
       const trimmed = String(firstName).trim();
-      if (trimmed) return trimmed;
+      if (trimmed) {
+        console.log("✅ Found first name:", trimmed);
+        return trimmed;
+      }
     }
     
+    console.log("❌ No name found in formData");
     // Fallback to email or anonymous
     const email = getSubmitterEmail(formData);
     return email || 'Anonymous Submission';
   };
 
   const getSubmitterEmail = (formData: Json): string | null => {
-    if (!formData || typeof formData !== 'object') return null;
+    console.log("📧 getSubmitterEmail called with:", formData);
+    
+    if (!formData || typeof formData !== 'object') {
+      console.log("❌ formData is null or not an object");
+      return null;
+    }
     
     const data = formData as Record<string, any>;
     const emailFields = ['EMAIL', 'email', 'Email', 'email_address', 'emailAddress'];
@@ -204,15 +232,24 @@ export default function WebsiteFormSubmissions() {
       const value = data[field];
       if (value) {
         const trimmed = String(value).trim();
-        if (trimmed) return trimmed;
+        if (trimmed) {
+          console.log(`✅ Found email in field '${field}':`, trimmed);
+          return trimmed;
+        }
       }
     }
     
+    console.log("❌ No email found in formData");
     return null;
   };
 
   const getSubmitterPhone = (formData: Json): string | null => {
-    if (!formData || typeof formData !== 'object') return null;
+    console.log("📞 getSubmitterPhone called with:", formData);
+    
+    if (!formData || typeof formData !== 'object') {
+      console.log("❌ formData is null or not an object");
+      return null;
+    }
     
     const data = formData as Record<string, any>;
     const phoneFields = ['PHONE', 'phone', 'Phone', 'phone_number', 'phoneNumber', 'tel'];
@@ -221,10 +258,14 @@ export default function WebsiteFormSubmissions() {
       const value = data[field];
       if (value) {
         const trimmed = String(value).trim();
-        if (trimmed) return trimmed;
+        if (trimmed) {
+          console.log(`✅ Found phone in field '${field}':`, trimmed);
+          return trimmed;
+        }
       }
     }
     
+    console.log("❌ No phone found in formData");
     return null;
   };
 
