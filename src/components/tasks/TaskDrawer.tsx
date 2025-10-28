@@ -593,7 +593,7 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
                         <div
                           key={channel.id}
                           className="relative group flex items-center justify-between p-3 bg-muted rounded-lg cursor-pointer hover:bg-muted/80"
-                          onClick={() => navigate("/marketing/flowchart")}
+                          onClick={() => navigate("/marketing/flow")}
                         >
                           <Button
                             variant="destructive"

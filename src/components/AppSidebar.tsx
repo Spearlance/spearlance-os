@@ -81,7 +81,7 @@ const marketingSubItems = [
   { title: "Services", url: "/marketing/services", icon: TrendingUp },
   { title: "Ideas", url: "/marketing/ideas", icon: Lightbulb },
   { title: "Tools", url: "/marketing/tools", icon: Wrench },
-  { title: "Flowchart", url: "/marketing/flowchart", icon: GitBranch },
+  { title: "Flow", url: "/marketing/flow", icon: GitBranch },
   { title: "Reports", url: "/marketing/reports", icon: FileText },
 ];
 

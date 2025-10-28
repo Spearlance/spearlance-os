@@ -119,7 +119,7 @@ serve(async (req) => {
             <li>✅ Task Management - Stay organized</li>
             <li>✅ Asset Library - Store all your marketing materials</li>
             <li>✅ Avatar Builder - Define your ideal customer</li>
-            <li>✅ Marketing Flowchart & Ideas - Plan campaigns</li>
+            <li>✅ Marketing Flow & Ideas - Plan campaigns</li>
             <li>✅ Team Collaboration - Invite your team</li>
             <li>✅ Reports & Analytics - Track your progress</li>
           </ul>

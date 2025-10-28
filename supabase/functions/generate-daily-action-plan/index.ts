@@ -164,7 +164,7 @@ These MUST be completed before effective marketing execution:
 
 **TIER 3 - EXECUTION (Marketing Channels)**
 After profile is >80% complete, focus on execution:
-- Setting up channels in Marketing Flowchart
+- Setting up channels in Marketing Flow
 - Completing channel tasks
 - Executing approved marketing ideas
 - Creating social media content
@@ -217,7 +217,7 @@ ${meetings.length > 0 ? meetings.map(m => {
   return `- ${m.title} in ${daysUntil} days (${meetingDate.toLocaleDateString()})`;
 }).join('\n') : '- No upcoming meetings scheduled'}
 
-MARKETING FLOWCHART STATUS:
+MARKETING FLOW STATUS:
 ${channels.length > 0 ? channels.slice(0, 5).map(c => `- ${c.name}: ${c.status} (${c.progress || 0}% complete)`).join('\n') : '- No marketing channels defined'}
 
 CUSTOMER AVATARS:
@@ -268,7 +268,7 @@ Important:
   * /tasks - For task-related actions
   * /meetings - For meeting prep or scheduling
   * /marketing/ideas - For marketing campaigns and ideas
-  * /marketing/flowchart - For channel setup and marketing flow (ONLY after profile >80% complete)
+  * /marketing/flow - For channel setup and marketing flow (ONLY after profile >80% complete)
   * /marketing/tools - For marketing tools
   * /brand/guide - For brand guide, colors, fonts
   * /avatar - ONLY for creating a NEW avatar OR updating specific missing fields in existing avatar (do not suggest if avatars already exist)

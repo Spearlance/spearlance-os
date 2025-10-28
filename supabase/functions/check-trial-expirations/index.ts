@@ -44,7 +44,7 @@ serve(async (req) => {
             <p>To continue accessing:</p>
             <ul>
               <li>Your LaunchPad data</li>
-              <li>Marketing flowcharts and ideas</li>
+              <li>Marketing flows and ideas</li>
               <li>Tasks and assets</li>
               <li>Team collaboration</li>
             </ul>

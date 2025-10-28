@@ -149,7 +149,7 @@ const MarketingFlowchart = () => {
       console.error("Error loading flow data:", error);
       toast({
         title: "Error",
-        description: "Failed to load marketing flowchart",
+        description: "Failed to load marketing flow",
         variant: "destructive",
       });
     } finally {
@@ -297,7 +297,7 @@ const MarketingFlowchart = () => {
       {/* Header */}
       <div className="bg-card border-b px-6 py-4">
         <div>
-          <h1 className="text-2xl font-semibold">Marketing Flowchart</h1>
+          <h1 className="text-2xl font-semibold">Marketing Flow</h1>
           <p className="text-sm text-muted-foreground mt-1">
             A visual roadmap of your marketing system and progress
           </p>

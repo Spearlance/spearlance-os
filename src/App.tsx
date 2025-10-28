@@ -78,7 +78,7 @@ const App = () => (
             <Route path="/marketing/tools" element={<MainLayout><MarketingTools /></MainLayout>} />
             <Route path="/avatar" element={<MainLayout><Avatar /></MainLayout>} />
             <Route path="/launchpad" element={<MainLayout><LaunchPad /></MainLayout>} />
-            <Route path="/marketing/flowchart" element={<MainLayout><MarketingFlowchart /></MainLayout>} />
+            <Route path="/marketing/flow" element={<MainLayout><MarketingFlowchart /></MainLayout>} />
             <Route path="/marketing/reports" element={<MainLayout><Reports /></MainLayout>} />
             <Route path="/social-media" element={<MainLayout><SocialMedia /></MainLayout>} />
             <Route path="/support" element={<MainLayout><Support /></MainLayout>} />
