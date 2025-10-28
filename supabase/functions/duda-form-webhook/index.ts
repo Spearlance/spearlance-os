@@ -117,9 +117,22 @@ Deno.serve(async (req) => {
 
       // Extract submitter info for notification description
       const formData = submission.form_data;
-      const submitterName = formData.NAME || formData.name || formData.Name || formData.first_name || formData.firstName;
-      const submitterEmail = formData.EMAIL || formData.email || formData.Email;
-      const submitterInfo = submitterName || submitterEmail || 'Unknown';
+      
+      // Try to find name - check various field naming patterns
+      const firstName = formData['First Name'] || formData['first_name'] || formData['firstName'] || 
+                       formData['Parent Name'] || formData["Parent's Name"] || formData['Contact Name'] ||
+                       formData["Child's First Name"] || formData['Child First Name'] || formData['NAME'];
+                       
+      const lastName = formData['Last Name'] || formData['last_name'] || formData['lastName'] ||
+                      formData["Child's Last Name"] || formData['Child Last Name'];
+
+      const fullName = firstName && lastName ? `${firstName} ${lastName}` : (firstName || lastName);
+
+      // Try to find email
+      const submitterEmail = formData['Email'] || formData['EMAIL'] || formData['email'] || 
+                            formData['Parent Email'] || formData['Contact Email'];
+
+      const submitterInfo = fullName || submitterEmail || 'Unknown';
 
       // Create notifications for each user
       if (userIds.size > 0) {
@@ -129,13 +142,13 @@ Deno.serve(async (req) => {
           title: 'New Form Submission',
           description: `New contact form submission from ${submitterInfo}`,
           client_id: clientId,
-          action_url: '/website-forms',
+          action_url: `/website/form-submissions?client=${clientId}`,
           priority: 'normal',
           read_flag: false,
           payload_json: {
             submission_id: submission.id,
             form_name: submission.form_name,
-            submitter_name: submitterName,
+            submitter_name: fullName,
             submitter_email: submitterEmail,
             submitted_at: submission.submitted_at
           }
