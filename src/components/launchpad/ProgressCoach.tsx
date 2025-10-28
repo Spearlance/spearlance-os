@@ -68,7 +68,7 @@ export function ProgressCoach({ stage, completeness, stageLabel }: ProgressCoach
   if (dismissed || !message) return null;
 
   return (
-    <Card className="fixed bottom-6 right-6 max-w-sm p-4 shadow-lg border-primary/20 bg-gradient-to-br from-primary/5 to-background z-50 animate-in slide-in-from-bottom-5">
+    <Card className="fixed bottom-6 left-6 max-w-sm p-4 shadow-lg border-primary/20 bg-gradient-to-br from-primary/5 to-background z-50 animate-in slide-in-from-left-5">
       <div className="flex items-start gap-3">
         <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
           <Lightbulb className="h-4 w-4 text-primary" />
