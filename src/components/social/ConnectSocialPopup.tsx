@@ -25,25 +25,25 @@ export const ConnectSocialPopup = ({
     mutationFn: async () => {
       setIsConnecting(true);
       
-      // Create team invite for the client
+      // Create platform invite for direct OAuth connection
       const { data: inviteData, error: inviteError } = await supabase.functions.invoke(
-        'late-create-team-invite',
-        { body: { client_id: clientId } }
+        'late-create-connection-invite',
+        { body: { client_id: clientId, platform: platform } }
       );
 
       if (inviteError) throw inviteError;
       return inviteData;
     },
     onSuccess: async (data) => {
-      // Open Late signup/dashboard in popup
+      // Open OAuth connection in popup
       const width = 800;
       const height = 700;
       const left = (screen.width - width) / 2;
       const top = (screen.height - height) / 2;
       
       const popup = window.open(
-        data.inviteUrl,
-        'Late Onboarding',
+        data.invite_url,
+        `Connect ${platform.charAt(0).toUpperCase() + platform.slice(1)}`,
         `width=${width},height=${height},left=${left},top=${top},popup=1`
       );
 
