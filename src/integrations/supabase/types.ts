@@ -1364,6 +1364,10 @@ export type Database = {
           id: string
           late_profile_id: string
           late_profile_name: string
+          team_invite_created_at: string | null
+          team_invite_expires_at: string | null
+          team_invite_token: string | null
+          team_invite_url: string | null
           updated_at: string | null
         }
         Insert: {
@@ -1372,6 +1376,10 @@ export type Database = {
           id?: string
           late_profile_id: string
           late_profile_name: string
+          team_invite_created_at?: string | null
+          team_invite_expires_at?: string | null
+          team_invite_token?: string | null
+          team_invite_url?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -1380,6 +1388,10 @@ export type Database = {
           id?: string
           late_profile_id?: string
           late_profile_name?: string
+          team_invite_created_at?: string | null
+          team_invite_expires_at?: string | null
+          team_invite_token?: string | null
+          team_invite_url?: string | null
           updated_at?: string | null
         }
         Relationships: [
