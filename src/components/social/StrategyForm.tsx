@@ -139,6 +139,11 @@ export function StrategyForm({
         }
       );
       
+      // Invalidate the active-strategy query to force refetch in SocialMedia page
+      queryClient.invalidateQueries({
+        queryKey: ['active-strategy', clientId]
+      });
+      
       toast.success('Strategy saved successfully');
       onSaved?.();
       setIsSaving(false);
