@@ -167,16 +167,48 @@ export default function WebsiteFormSubmissions() {
     }
   };
 
+  const parseFormData = (formData: Json): Record<string, any> | null => {
+    console.log('🔧 parseFormData called with:', formData);
+    console.log('🔧 Type:', typeof formData);
+    
+    // If it's null or undefined, return null
+    if (!formData) {
+      console.log('❌ formData is null/undefined');
+      return null;
+    }
+    
+    // If it's already an object (not a string), return it
+    if (typeof formData === 'object' && !Array.isArray(formData)) {
+      console.log('✅ formData is already an object');
+      return formData as Record<string, any>;
+    }
+    
+    // If it's a string, try to parse it
+    if (typeof formData === 'string') {
+      try {
+        console.log('🔄 Attempting to parse JSON string...');
+        const parsed = JSON.parse(formData);
+        console.log('✅ Successfully parsed:', parsed);
+        return parsed;
+      } catch (error) {
+        console.error('❌ Failed to parse JSON string:', error);
+        return null;
+      }
+    }
+    
+    console.log('❌ Unexpected formData type:', typeof formData);
+    return null;
+  };
+
   const getSubmitterName = (formData: Json): string => {
     console.log("🔍 getSubmitterName called with:", formData);
-    console.log("🔍 formData type:", typeof formData);
     
-    if (!formData || typeof formData !== 'object') {
-      console.log("❌ formData is null or not an object");
+    const data = parseFormData(formData);
+    if (!data) {
+      console.log("❌ No valid data to extract name from");
       return 'Anonymous';
     }
     
-    const data = formData as Record<string, any>;
     console.log("🔍 Parsed data keys:", Object.keys(data));
     console.log("🔍 Data values:", data);
     
@@ -220,12 +252,11 @@ export default function WebsiteFormSubmissions() {
   const getSubmitterEmail = (formData: Json): string | null => {
     console.log("📧 getSubmitterEmail called with:", formData);
     
-    if (!formData || typeof formData !== 'object') {
-      console.log("❌ formData is null or not an object");
+    const data = parseFormData(formData);
+    if (!data) {
+      console.log("❌ No valid data to extract email from");
       return null;
     }
-    
-    const data = formData as Record<string, any>;
     const emailFields = ['EMAIL', 'email', 'Email', 'email_address', 'emailAddress'];
     
     for (const field of emailFields) {
@@ -246,12 +277,11 @@ export default function WebsiteFormSubmissions() {
   const getSubmitterPhone = (formData: Json): string | null => {
     console.log("📞 getSubmitterPhone called with:", formData);
     
-    if (!formData || typeof formData !== 'object') {
-      console.log("❌ formData is null or not an object");
+    const data = parseFormData(formData);
+    if (!data) {
+      console.log("❌ No valid data to extract phone from");
       return null;
     }
-    
-    const data = formData as Record<string, any>;
     const phoneFields = ['PHONE', 'phone', 'Phone', 'phone_number', 'phoneNumber', 'tel'];
     
     for (const field of phoneFields) {
@@ -286,9 +316,8 @@ export default function WebsiteFormSubmissions() {
   };
 
   const getCleanFormFields = (formData: Json): Record<string, string> => {
-    if (!formData || typeof formData !== 'object') return {};
-    
-    const data = formData as Record<string, any>;
+    const data = parseFormData(formData);
+    if (!data) return {};
     
     // Get fields we're already displaying in header
     const submitterName = getSubmitterName(formData);
