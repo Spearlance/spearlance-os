@@ -99,6 +99,65 @@ Deno.serve(async (req) => {
 
     console.log('Form submission saved successfully:', submission.id);
 
+    // Create notifications for relevant users
+    console.log('Creating notifications for form submission...');
+    
+    // Query for admin and FMM users
+    const { data: adminFmmUsers } = await supabase
+      .from('user_roles')
+      .select('user_id')
+      .in('role', ['admin', 'fmm']);
+
+    // Query for client primary contacts
+    const { data: clientUsers } = await supabase
+      .from('client_primary_contacts')
+      .select('user_id')
+      .eq('client_id', client.id);
+
+    // Combine and deduplicate user IDs
+    const userIds = new Set([
+      ...(adminFmmUsers?.map(u => u.user_id) || []),
+      ...(clientUsers?.map(u => u.user_id) || [])
+    ]);
+
+    // Extract submitter info for notification description
+    const formData = submission.form_data;
+    const submitterName = formData.NAME || formData.name || formData.Name || formData.first_name || formData.firstName;
+    const submitterEmail = formData.EMAIL || formData.email || formData.Email;
+    const submitterInfo = submitterName || submitterEmail || 'Unknown';
+
+    // Create notifications for each user
+    if (userIds.size > 0) {
+      const notifications = Array.from(userIds).map(userId => ({
+        user_id: userId,
+        type: 'form_submission',
+        title: 'New Form Submission',
+        description: `New contact form submission from ${submitterInfo}`,
+        client_id: client.id,
+        action_url: '/website-forms',
+        priority: 'normal',
+        read_flag: false,
+        payload_json: {
+          submission_id: submission.id,
+          form_name: submission.form_name,
+          submitter_name: submitterName,
+          submitter_email: submitterEmail,
+          submitted_at: submission.submitted_at
+        }
+      }));
+
+      const { error: notifError } = await supabase
+        .from('notifications')
+        .insert(notifications);
+      
+      if (notifError) {
+        console.error('Error creating notifications:', notifError);
+        // Don't fail the webhook if notifications fail
+      } else {
+        console.log(`Created ${notifications.length} notifications`);
+      }
+    }
+
     // Trigger AI lead analysis asynchronously (don't block webhook response)
     supabase.functions.invoke('analyze-lead', {
       body: { submission_id: submission.id }
