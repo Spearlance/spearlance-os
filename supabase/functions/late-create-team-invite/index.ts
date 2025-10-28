@@ -66,14 +66,27 @@ serve(async (req) => {
         })
       });
 
-      console.log('Late profile created:', lateProfileData._id);
+      console.log('Late API response:', JSON.stringify(lateProfileData, null, 2));
+
+      // Try different possible field names for the profile ID
+      const profileId = lateProfileData._id 
+        || lateProfileData.id 
+        || lateProfileData.profile?._id 
+        || lateProfileData.profile?.id;
+
+      if (!profileId) {
+        console.error('Could not extract profile ID from response:', lateProfileData);
+        throw new Error('Late API did not return a profile ID');
+      }
+
+      console.log('Extracted profile ID:', profileId);
 
       const { data: newProfile, error: insertError } = await supabase
         .from('late_profiles')
         .insert({
           client_id,
-          late_profile_id: lateProfileData._id,
-          late_profile_name: lateProfileData.name
+          late_profile_id: profileId,
+          late_profile_name: lateProfileData.name || profileName
         })
         .select()
         .single();
