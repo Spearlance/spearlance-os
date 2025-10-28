@@ -39,7 +39,7 @@ export default function WebsiteFormSubmissions() {
   const [submissions, setSubmissions] = useState<FormSubmission[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("active");
   const [selectedSubmission, setSelectedSubmission] = useState<FormSubmission | null>(null);
   const [notes, setNotes] = useState("");
   const [viewMode, setViewMode] = useState<'cards' | 'table'>(() => {
@@ -75,9 +75,14 @@ export default function WebsiteFormSubmissions() {
         .eq('site_id', selectedClient.site_id)
         .order('submitted_at', { ascending: false });
 
-      if (statusFilter !== 'all') {
+      if (statusFilter === 'active') {
+        // Default view: show everything except archived
+        query = query.neq('status', 'archived');
+      } else if (statusFilter !== 'all') {
+        // Specific status filter
         query = query.eq('status', statusFilter);
       }
+      // If statusFilter === 'all', no additional filter (show everything)
 
       const { data, error } = await query;
 
@@ -385,46 +390,6 @@ export default function WebsiteFormSubmissions() {
     });
   };
 
-  const handleConvertToLead = async () => {
-    if (!selectedSubmission) return;
-    
-    try {
-      // Check if already converted
-      const { data: existing } = await supabase
-        .from('leads')
-        .select('id')
-        .eq('client_id', selectedSubmission.client_id)
-        .eq('email', getSubmitterEmail(selectedSubmission.form_data))
-        .maybeSingle();
-      
-      if (existing) {
-        toast({
-          title: "Already Converted",
-          description: "This submission has already been converted to a lead",
-        });
-        return;
-      }
-
-      // Trigger analyze-lead function
-      const { error } = await supabase.functions.invoke('analyze-lead', {
-        body: { submission_id: selectedSubmission.id }
-      });
-
-      if (error) throw error;
-
-      toast({
-        title: "Success",
-        description: "Submission converted to lead and AI analysis in progress",
-      });
-    } catch (error) {
-      console.error('Error converting to lead:', error);
-      toast({
-        title: "Error",
-        description: "Failed to convert to lead",
-        variant: "destructive",
-      });
-    }
-  };
 
   if (!selectedClient?.website_unlocked) {
     return (
@@ -483,11 +448,12 @@ export default function WebsiteFormSubmissions() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="all">All (including archived)</SelectItem>
                     <SelectItem value="unread">Unread</SelectItem>
                     <SelectItem value="read">Read</SelectItem>
                     <SelectItem value="responded">Responded</SelectItem>
-                    <SelectItem value="archived">Archived</SelectItem>
+                    <SelectItem value="archived">Archived Only</SelectItem>
                   </SelectContent>
                 </Select>
                 <ToggleGroup type="single" value={viewMode} onValueChange={handleViewModeChange}>
@@ -687,14 +653,6 @@ export default function WebsiteFormSubmissions() {
                     >
                       <CheckSquare className="h-4 w-4 mr-2" />
                       Create Task
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleConvertToLead}
-                    >
-                      <TrendingUp className="h-4 w-4 mr-2" />
-                      Convert to Lead
                     </Button>
                   </div>
                 </div>
