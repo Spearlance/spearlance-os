@@ -1,19 +1,27 @@
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { MessageSquare, FileText } from "lucide-react";
+import { StageWelcome } from "./StageWelcome";
+import { useState } from "react";
 
 interface LaunchPadModeSelectorProps {
   onSelectMode: (mode: 'chat' | 'form') => void;
 }
 
 export function LaunchPadModeSelector({ onSelectMode }: LaunchPadModeSelectorProps) {
+  const [welcomeComplete, setWelcomeComplete] = useState(false);
+
+  if (!welcomeComplete) {
+    return <StageWelcome onStart={() => setWelcomeComplete(true)} />;
+  }
+
   return (
     <div className="container mx-auto px-4 py-16 max-w-4xl">
       <div className="text-center mb-12">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Launchpad!</h1>
+        <h1 className="text-4xl font-bold mb-4">Choose Your Setup Experience</h1>
         <p className="text-lg text-muted-foreground">
-          Let's get your marketing operation set up. Choose how you'd like to get started:
+          Select how you'd like to set up your marketing foundation
         </p>
       </div>
 

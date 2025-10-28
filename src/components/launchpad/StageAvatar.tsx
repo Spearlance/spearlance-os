@@ -187,9 +187,12 @@ export function StageAvatar({ submissionId, onFinish, onBack, onSaveExit }: Stag
       <div className="grid md:grid-cols-[300px_1fr] gap-6">
         <div className="space-y-4">
           <div>
-            <h2 className="text-xl font-semibold mb-2">Avatar Stage</h2>
+            <h2 className="text-xl font-semibold mb-2">Meet Your Ideal Customer</h2>
             <p className="text-sm text-muted-foreground">
-              Run AI analysis to generate your customer avatar and marketing insights based on your business data.
+              {isAnalyzing ? "Analyzing your business data..." : "Your AI-generated customer avatar and marketing insights."}
+            </p>
+            <p className="text-xs text-muted-foreground mt-2">
+              💡 These insights power your marketing plan, content, and campaigns throughout the app.
             </p>
           </div>
         </div>

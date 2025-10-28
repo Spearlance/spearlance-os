@@ -50,13 +50,16 @@ export function LaunchPadWizard() {
           completed_at: data.completed_at || {}
         } as LaunchPadSubmission);
         
-        // If no mode is set, show mode selector
-        if (!data.onboarding_mode) {
-          setShowModeSelector(true);
+        // Check if welcome was completed
+        const completedAt = data.completed_at as Record<string, any> || {};
+        if (!completedAt.welcome) {
+          setShowModeSelector(true); // Show welcome screen
+        } else if (!data.onboarding_mode) {
+          setShowModeSelector(true); // Show mode selector if no mode chosen
         }
       } else {
-        console.log('[LaunchPad] No submission found, showing mode selector');
-        // Show mode selector for new submissions
+        console.log('[LaunchPad] No submission found, showing welcome screen');
+        // Show welcome screen for new submissions
         setShowModeSelector(true);
       }
     } catch (error) {
@@ -128,14 +131,22 @@ export function LaunchPadWizard() {
     if (!selectedClient) return;
 
     try {
-      // Create or update submission with selected mode
+      // Create or update submission with selected mode and welcome completion
       if (submission) {
+        const completedAt = (submission.completed_at as Record<string, any>) || {};
         await supabase
           .from("launchpad_submissions")
-          .update({ onboarding_mode: mode })
+          .update({ 
+            onboarding_mode: mode,
+            completed_at: { ...completedAt, welcome: new Date().toISOString() } as any,
+          })
           .eq("id", submission.id);
         
-        setSubmission({ ...submission, onboarding_mode: mode } as any);
+        setSubmission({ 
+          ...submission, 
+          onboarding_mode: mode,
+          completed_at: { ...completedAt, welcome: new Date().toISOString() } as any,
+        } as any);
       } else {
         const { data: newSubmission, error } = await supabase
           .from("launchpad_submissions")
@@ -143,7 +154,7 @@ export function LaunchPadWizard() {
             client_id: selectedClient.id,
             stage: "discovery",
             responses_json: {},
-            completed_at: {},
+            completed_at: { welcome: new Date().toISOString() } as any,
             onboarding_mode: mode,
           })
           .select()

@@ -195,9 +195,9 @@ export function StageMarketing({ submissionId, onContinue, onBack, onSaveExit }:
     <div className="max-w-6xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold">Marketing Details</h2>
+          <h2 className="text-3xl font-bold">How You Serve Your Customers</h2>
           <p className="text-muted-foreground mt-1">
-            Provide detailed information about your services and social media strategy
+            Help your AI understand what makes your services valuable so it can create compelling content.
           </p>
         </div>
       </div>

@@ -405,9 +405,9 @@ export function StageDiscovery({ submissionId, initialData, onContinue, onSaveEx
       <div className="grid md:grid-cols-[300px_1fr] gap-6">
         <div className="space-y-4">
           <div>
-            <h2 className="text-xl font-semibold mb-2">Discovery Stage</h2>
+            <h2 className="text-xl font-semibold mb-2">Tell Us About Your Business</h2>
             <p className="text-sm text-muted-foreground">
-              Tell us about your business, target market, and marketing goals. This information will seed your customer avatar and messaging.
+              Don't overthink it—you can always edit later. We just need enough to get your AI started.
             </p>
           </div>
           {saveStatus !== "idle" && (
