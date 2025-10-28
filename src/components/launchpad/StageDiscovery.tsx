@@ -721,7 +721,7 @@ export function StageDiscovery({ submissionId, initialData, onContinue, onSaveEx
               type="button"
               onClick={() => setStoryModalOpen(true)}
               variant="outline"
-              className="w-full border-[#13cf48] text-[#13cf48] hover:bg-[#13cf48]/10"
+              className="w-full border-[#13cf48] text-[#13cf48] hover:bg-[#13cf48]/10 hover:text-[#13cf48]"
             >
               {form.watch("story.completed") ? "View/Edit Story" : "Record or Upload Story"}
             </Button>
