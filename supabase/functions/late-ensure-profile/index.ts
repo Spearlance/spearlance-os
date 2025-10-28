@@ -77,7 +77,7 @@ serve(async (req) => {
       })
     });
 
-    const lateProfileId = lateProfile.id;
+    const lateProfileId = lateProfile._id;
     console.log('Late profile created:', lateProfileId);
 
     // Store profile in our database
