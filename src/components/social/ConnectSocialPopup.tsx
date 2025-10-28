@@ -25,14 +25,14 @@ export const ConnectSocialPopup = ({
     mutationFn: async () => {
       setIsConnecting(true);
       
-      // Create platform invite for direct OAuth connection
-      const { data: inviteData, error: inviteError } = await supabase.functions.invoke(
-        'late-create-connection-invite',
+      // Get OAuth URL for direct platform connection
+      const { data: oauthData, error: oauthError } = await supabase.functions.invoke(
+        'late-initiate-oauth',
         { body: { client_id: clientId, platform: platform } }
       );
 
-      if (inviteError) throw inviteError;
-      return inviteData;
+      if (oauthError) throw oauthError;
+      return oauthData;
     },
     onSuccess: async (data) => {
       // Open OAuth connection in popup
@@ -42,7 +42,7 @@ export const ConnectSocialPopup = ({
       const top = (screen.height - height) / 2;
       
       const popup = window.open(
-        data.invite_url,
+        data.oauth_url,
         `Connect ${platform.charAt(0).toUpperCase() + platform.slice(1)}`,
         `width=${width},height=${height},left=${left},top=${top},popup=1`
       );

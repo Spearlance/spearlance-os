@@ -105,11 +105,14 @@ verify_jwt = true
 [functions.duda-form-webhook]
 verify_jwt = false
 
-[functions.late-create-team-invite]
+[functions.late-ensure-profile]
 verify_jwt = true
 
-[functions.late-create-connection-invite]
+[functions.late-initiate-oauth]
 verify_jwt = true
+
+[functions.late-oauth-callback]
+verify_jwt = false
 
 [functions.late-sync-accounts]
 verify_jwt = true
