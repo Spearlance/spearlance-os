@@ -41,6 +41,7 @@ import SetPassword from "./pages/SetPassword";
 import BackfillImages from "./pages/BackfillImages";
 import WebsiteFormSubmissions from "./pages/WebsiteFormSubmissions";
 import Leads from "./pages/Leads";
+import VideoGallery from "./pages/VideoGallery";
 
 const queryClient = new QueryClient();
 
@@ -55,6 +56,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/set-password" element={<SetPassword />} />
+            <Route path="/video-gallery" element={<VideoGallery />} />
             <Route
               path="/"
               element={
