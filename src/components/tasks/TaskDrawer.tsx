@@ -469,7 +469,7 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
           </TabsList>
 
           <TabsContent value="details" className="mt-4">
-            <ScrollArea className="h-[calc(100vh-200px)] pr-4">
+            <ScrollArea className="h-[calc(100vh-280px)] pr-4">
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label>Title</Label>
@@ -566,7 +566,7 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
                   </div>
                 </div>
 
-                <div className="flex gap-2 pt-4">
+                <div className="flex gap-2 pt-4 pb-2">
                   <Button onClick={handleSave} className="flex-1">Save Changes</Button>
                   <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
                   {isAdminOrFMM && (

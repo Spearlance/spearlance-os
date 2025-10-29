@@ -313,7 +313,7 @@ export default function Tasks() {
         assignees: assignees?.map((a: any) => ({
           id: a.profiles?.id || a.user_id,
           name: a.profiles?.name || 'Unknown User',
-          avatar_url: a.profiles?.avatar_url
+          avatar_url: a.profiles?.avatar_url || null
         })).filter((p: any) => p.id) || [],
           subtask_count: subtasks?.length || 0,
           completed_subtasks: subtasks?.filter(st => st.status === "done").length || 0,
