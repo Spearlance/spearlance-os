@@ -50,15 +50,40 @@ serve(async (req) => {
 
     console.log('Using Late profile:', lateProfileId);
 
-    // Build OAuth URL
+    // Get OAuth URL from Late API
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const callbackUrl = `${supabaseUrl}/functions/v1/late-oauth-callback`;
-    
-    const oauthUrl = `https://getlate.dev/api/v1/connect/${platform}?` +
+
+    const lateEndpoint = `https://getlate.dev/api/v1/connect/${platform}?` +
       `profileId=${lateProfileId}&` +
       `redirect_url=${encodeURIComponent(callbackUrl)}`;
 
-    console.log('OAuth URL generated:', oauthUrl);
+    console.log('Calling Late API endpoint:', lateEndpoint);
+
+    // Fetch the authUrl from Late
+    const response = await fetch(lateEndpoint, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Late API error:', errorText);
+      throw new Error(`Failed to get OAuth URL from Late: ${response.status}`);
+    }
+
+    const lateResponse = await response.json();
+    console.log('Late API response:', lateResponse);
+
+    const oauthUrl = lateResponse.authUrl;
+
+    if (!oauthUrl) {
+      throw new Error('Late API did not return an authUrl');
+    }
+
+    console.log('Facebook OAuth URL:', oauthUrl);
 
     return new Response(
       JSON.stringify({ 
