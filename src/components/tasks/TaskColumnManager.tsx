@@ -28,6 +28,7 @@ export function TaskColumnManager() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [editColor, setEditColor] = useState("");
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
   const [showAddNew, setShowAddNew] = useState(false);
   const [newColumnName, setNewColumnName] = useState("");
   const [newColumnColor, setNewColumnColor] = useState("#6B7280");
@@ -142,24 +143,55 @@ export function TaskColumnManager() {
     setEditColor(column.color || "#6B7280");
   };
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (!editingId || !editName.trim()) return;
 
-    setPendingChanges(prev => {
-      const updated = new Map(prev.updated);
-      updated.set(editingId, { name: editName.trim(), color: editColor });
-      return { ...prev, updated };
-    });
+    setIsSavingEdit(true);
+    try {
+      // Save directly to database
+      const { error } = await supabase
+        .from("task_columns")
+        .update({ 
+          name: editName.trim(), 
+          color: editColor 
+        })
+        .eq("id", editingId);
 
-    // Update local columns display
-    setColumns(prev => prev.map(col => 
-      col.id === editingId 
-        ? { ...col, name: editName.trim(), color: editColor }
-        : col
-    ));
+      if (error) throw error;
 
-    setHasUnsavedChanges(true);
-    setEditingId(null);
+      // Update local columns display
+      setColumns(prev => prev.map(col => 
+        col.id === editingId 
+          ? { ...col, name: editName.trim(), color: editColor }
+          : col
+      ));
+
+      // Update original columns to reflect saved state
+      setOriginalColumns(prev => prev.map(col => 
+        col.id === editingId 
+          ? { ...col, name: editName.trim(), color: editColor }
+          : col
+      ));
+
+      toast({
+        title: "Column updated",
+        description: "Changes saved successfully",
+      });
+
+      setEditingId(null);
+      
+      // Trigger update event for Tasks.tsx
+      window.dispatchEvent(new CustomEvent('taskColumnsUpdated'));
+    } catch (error: any) {
+      console.error("Error updating column:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update column",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSavingEdit(false);
+    }
   };
 
   const handleDelete = async (column: TaskColumn) => {
@@ -251,19 +283,7 @@ export function TaskColumnManager() {
         }
       }
 
-      // 2. Update columns
-      for (const [columnId, updates] of pendingChanges.updated.entries()) {
-        if (!columnId.startsWith('temp-')) {
-          const { error } = await supabase
-            .from("task_columns")
-            .update(updates)
-            .eq("id", columnId);
-
-          if (error) throw error;
-        }
-      }
-
-      // 3. Add new columns
+      // 2. Add new columns (edits are saved immediately, so skip updated Map)
       for (const newColumn of pendingChanges.added) {
         const { error } = await supabase
           .from("task_columns")
@@ -279,7 +299,7 @@ export function TaskColumnManager() {
         if (error) throw error;
       }
 
-      // 4. Update display order if reordered (two-phase update to avoid UNIQUE constraint conflicts)
+      // 3. Update display order if reordered (two-phase update to avoid UNIQUE constraint conflicts)
       if (pendingChanges.reordered) {
         console.log("Reordering columns - Phase 1: Moving to temporary positions");
         
@@ -345,6 +365,7 @@ export function TaskColumnManager() {
     const confirmed = window.confirm("Discard all unsaved changes?");
     if (!confirmed) return;
 
+    // Only discard add/delete/reorder changes (edits are saved immediately)
     setColumns(originalColumns);
     setPendingChanges({
       added: [],
@@ -361,9 +382,7 @@ export function TaskColumnManager() {
     if (column.id.startsWith('temp-')) {
       return <Badge variant="secondary" className="bg-yellow-500/20 text-yellow-700 dark:text-yellow-300">Unsaved</Badge>;
     }
-    if (pendingChanges.updated.has(column.id)) {
-      return <Badge variant="secondary" className="bg-blue-500/20 text-blue-700 dark:text-blue-300">Modified</Badge>;
-    }
+    // Remove "Modified" badge since edits are saved immediately
     if (column.is_default) {
       return <Badge variant="secondary">Default</Badge>;
     }
@@ -389,13 +408,19 @@ export function TaskColumnManager() {
     { value: "#14B8A6", label: "Teal" },
   ];
 
+  // Only show unsaved changes for add/delete/reorder (not edits)
+  const hasRealUnsavedChanges = 
+    pendingChanges.added.length > 0 || 
+    pendingChanges.deleted.length > 0 || 
+    pendingChanges.reordered;
+
   return (
     <div className="space-y-6">
-      {hasUnsavedChanges && (
+      {hasRealUnsavedChanges && (
         <Alert>
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            You have unsaved changes. Click "Save Settings" to persist your changes.
+            You have unsaved changes (added/deleted/reordered columns). Click "Save Settings" to persist your changes.
           </AlertDescription>
         </Alert>
       )}
@@ -447,9 +472,13 @@ export function TaskColumnManager() {
                                       </option>
                                     ))}
                                   </select>
-                                  <Button size="sm" onClick={handleSaveEdit}>
-                                    <Check className="h-4 w-4" />
-                                  </Button>
+                                   <Button 
+                                     size="sm" 
+                                     onClick={handleSaveEdit}
+                                     disabled={isSavingEdit}
+                                   >
+                                     <Check className="h-4 w-4" />
+                                   </Button>
                                   <Button
                                     size="sm"
                                     variant="ghost"
@@ -533,9 +562,9 @@ export function TaskColumnManager() {
                 </Button>
               )}
 
-              {hasUnsavedChanges && (
+              {hasRealUnsavedChanges && (
                 <div className="flex gap-3 pt-4 border-t">
-                  <Button 
+                  <Button
                     onClick={handleSaveSettings} 
                     disabled={isSaving}
                     className="flex-1"
