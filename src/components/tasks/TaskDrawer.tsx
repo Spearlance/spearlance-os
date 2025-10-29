@@ -19,6 +19,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { AssigneeSelector } from "./AssigneeSelector";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Palette } from "lucide-react";
+import { SubtaskList } from "./SubtaskList";
 
 interface TaskDrawerProps {
   task: any;
@@ -48,6 +49,7 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
   const [availableMeetings, setAvailableMeetings] = useState<any[]>([]);
   const [showLinkChannelDialog, setShowLinkChannelDialog] = useState(false);
   const [availableChannels, setAvailableChannels] = useState<any[]>([]);
+  const [subtasks, setSubtasks] = useState<any[]>([]);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -56,6 +58,7 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
     loadUsers();
     loadRelatedItems();
     loadCurrentAssignees();
+    loadSubtasks();
   }, [task.id]);
 
   const loadCurrentAssignees = async () => {
@@ -141,6 +144,16 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
     } else {
       setRelatedChannels([]);
     }
+  };
+
+  const loadSubtasks = async () => {
+    const { data } = await supabase
+      .from("tasks")
+      .select("id, title, status, subtask_order")
+      .eq("parent_task_id", task.id)
+      .order("subtask_order", { ascending: true });
+    
+    setSubtasks(data || []);
   };
 
   const loadAvailableAssets = async () => {
@@ -564,6 +577,18 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
                       </PopoverContent>
                     </Popover>
                   </div>
+                </div>
+
+                {/* Subtasks Section */}
+                <div className="border-t pt-4 mt-4">
+                  <SubtaskList 
+                    parentTaskId={task.id}
+                    subtasks={subtasks}
+                    onUpdate={() => {
+                      loadSubtasks();
+                      onUpdate();
+                    }}
+                  />
                 </div>
               </div>
             </ScrollArea>
