@@ -30,18 +30,22 @@ serve(async (req) => {
 
     console.log('Initiating OAuth for platform:', platform, 'client:', client_id);
 
-    // Ensure profile exists
-    const { data: ensureResult, error: ensureError } = await supabase.functions.invoke(
-      'late-ensure-profile',
-      { body: { client_id } }
-    );
+    // Fetch existing profile from database
+    const { data: profile, error: profileError } = await supabase
+      .from('late_profiles')
+      .select('*')
+      .eq('client_id', client_id)
+      .maybeSingle();
 
-    if (ensureError) {
-      console.error('Error ensuring profile:', ensureError);
-      throw ensureError;
+    if (profileError) {
+      console.error('Error fetching profile:', profileError);
+      throw profileError;
     }
 
-    const profile = ensureResult.profile;
+    if (!profile) {
+      throw new Error('Late profile not initialized. Please set up social media first.');
+    }
+
     const lateProfileId = profile.late_profile_id;
 
     console.log('Using Late profile:', lateProfileId);

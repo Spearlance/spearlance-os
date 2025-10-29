@@ -8,6 +8,7 @@ import { Loader2, Facebook, Instagram } from "lucide-react";
 import { useClient } from "@/contexts/ClientContext";
 import { ConnectSocialPopup } from "./ConnectSocialPopup";
 import { LateSyncButton } from "./LateSyncButton";
+import { InitializeLateButton } from "./InitializeLateButton";
 
 export const SocialAccountsManager = () => {
   const { selectedClient } = useClient();
@@ -94,6 +95,16 @@ export const SocialAccountsManager = () => {
           {isLoading ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : !lateProfile ? (
+            <div className="space-y-4">
+              <Alert>
+                <AlertDescription>
+                  First, initialize your social media setup. Then you'll be able to connect your Facebook and Instagram accounts.
+                </AlertDescription>
+              </Alert>
+              
+              <InitializeLateButton clientId={selectedClient?.id} />
             </div>
           ) : accounts && accounts.length > 0 ? (
             <>
