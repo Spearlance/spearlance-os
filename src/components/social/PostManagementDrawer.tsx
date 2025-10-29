@@ -477,19 +477,38 @@ export const PostManagementDrawer = ({
       const scheduledFor = new Date(scheduledDate);
       scheduledFor.setHours(parseInt(hours), parseInt(minutes), 0, 0);
 
+      // Only schedule to connected platforms
+      const connectedSelected = selectedPlatforms.filter(p => connectedPlatforms.has(p));
+      
+      if (connectedSelected.length === 0) {
+        toast({
+          title: "No Connected Platforms",
+          description: "Please connect at least one platform or schedule manually.",
+          variant: "default",
+        });
+        setIsScheduling(false);
+        return;
+      }
+
       const { data, error } = await supabase.functions.invoke('late-schedule-post', {
         body: {
           post_id: post.id,
           scheduled_for: scheduledFor.toISOString(),
           timezone: selectedClient.timezone || 'America/New_York',
+          platforms: connectedSelected,
         },
       });
 
       if (error) throw error;
 
+      const manualPlatforms = selectedPlatforms.filter(p => !connectedPlatforms.has(p));
+      const message = manualPlatforms.length > 0
+        ? `Scheduled to ${connectedSelected.join(', ')}! Don't forget to manually schedule on ${manualPlatforms.join(', ')}.`
+        : `Your post will publish on ${format(scheduledFor, 'MMMM d, yyyy')} at ${scheduledTime}`;
+
       toast({
         title: "Post Scheduled!",
-        description: `Your post will publish on ${format(scheduledFor, 'MMMM d, yyyy')} at ${scheduledTime}`,
+        description: message,
       });
       
       onRefresh();
@@ -508,53 +527,35 @@ export const PostManagementDrawer = ({
   const getConnectionStatus = (platformId: string): {
     label: string;
     variant: 'default' | 'secondary' | 'outline';
-    isAvailable: boolean;
     isConnected: boolean;
+    requiresManualScheduling: boolean;
   } => {
-    // Coming soon platforms (not yet implemented)
     const comingSoonPlatforms = ['linkedin', 'twitter', 'tiktok'];
     
     if (comingSoonPlatforms.includes(platformId)) {
       return {
-        label: 'Coming Soon',
+        label: 'Manual Scheduling',
         variant: 'secondary',
-        isAvailable: false,
-        isConnected: false
+        isConnected: false,
+        requiresManualScheduling: true
       };
     }
     
-    // Check if platform is connected
     const isConnected = connectedPlatforms.has(platformId);
     
     return {
-      label: isConnected ? 'Connected' : 'Need to Connect',
+      label: isConnected ? 'Connected' : 'Manual Scheduling',
       variant: isConnected ? 'default' : 'outline',
-      isAvailable: true,
-      isConnected
+      isConnected,
+      requiresManualScheduling: !isConnected
     };
   };
 
   // Toggle platform
   const handlePlatformToggle = (platformId: string, checked: boolean) => {
-    const connectionStatus = getConnectionStatus(platformId);
-    
-    // Prevent toggling unavailable or disconnected platforms
-    if (!connectionStatus.isAvailable || !connectionStatus.isConnected) {
-      toast({
-        title: "Platform Not Available",
-        description: connectionStatus.label === 'Coming Soon' 
-          ? `${platformId} integration is coming soon!`
-          : `Please connect your ${platformId} account first.`,
-        variant: "default",
-      });
-      return;
-    }
-    
-    if (checked) {
-      setSelectedPlatforms(prev => [...prev, platformId]);
-    } else {
-      setSelectedPlatforms(prev => prev.filter(p => p !== platformId));
-    }
+    setSelectedPlatforms((prev) =>
+      checked ? [...prev, platformId] : prev.filter((p) => p !== platformId)
+    );
   };
 
   if (!post) return null;
@@ -899,24 +900,45 @@ export const PostManagementDrawer = ({
 
               {/* Schedule Button - only show when post is ready and not yet scheduled */}
               {post.caption_text && post.image_url && selectedPlatforms.length > 0 && !(post as any).late_post_id && (
-                <Button
-                  onClick={handleSchedule}
-                  disabled={isScheduling}
-                  className="w-full"
-                  variant="default"
-                >
-                  {isScheduling ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Scheduling...
-                    </>
-                  ) : (
-                    <>
-                      <Send className="h-4 w-4 mr-2" />
-                      Schedule Post
-                    </>
-                  )}
-                </Button>
+                <>
+                  {(() => {
+                    const connectedSelected = selectedPlatforms.filter(p => connectedPlatforms.has(p));
+                    const manualSelected = selectedPlatforms.filter(p => !connectedPlatforms.has(p));
+                    
+                    return (
+                      <>
+                        {connectedSelected.length > 0 && (
+                          <Button
+                            onClick={handleSchedule}
+                            disabled={isScheduling}
+                            className="w-full"
+                            variant="default"
+                          >
+                            {isScheduling ? (
+                              <>
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                Scheduling...
+                              </>
+                            ) : (
+                              <>
+                                <Send className="h-4 w-4 mr-2" />
+                                Schedule to {connectedSelected.join(', ')}
+                              </>
+                            )}
+                          </Button>
+                        )}
+                        
+                        {manualSelected.length > 0 && (
+                          <div className="text-center p-3 bg-blue-500/10 rounded-lg border border-blue-300">
+                            <p className="text-sm text-blue-700 dark:text-blue-400">
+                              📝 Remember to manually schedule on: {manualSelected.join(', ')}
+                            </p>
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
+                </>
               )}
 
               {/* Show status if already scheduled */}
@@ -987,10 +1009,9 @@ export const PostManagementDrawer = ({
                 {SOCIAL_PLATFORMS.map((platform) => {
                   const PlatformIcon = platform.icon;
                   const connectionStatus = getConnectionStatus(platform.id);
-                  const isDisabled = !connectionStatus.isAvailable || !connectionStatus.isConnected;
                   
                   return (
-                    <Card key={platform.id} className={`p-4 ${isDisabled ? 'opacity-60' : ''}`}>
+                    <Card key={platform.id} className="p-4">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                           <Checkbox
@@ -998,25 +1019,29 @@ export const PostManagementDrawer = ({
                             onCheckedChange={(checked) => 
                               handlePlatformToggle(platform.id, checked as boolean)
                             }
-                            disabled={isDisabled}
                           />
                           <PlatformIcon className="h-5 w-5" />
-                          <div className="flex items-center gap-2">
-                            <Label className={`cursor-pointer ${isDisabled ? 'cursor-not-allowed' : ''}`}>
-                              {platform.label}
-                            </Label>
-                            <Badge 
-                              variant={connectionStatus.variant}
-                              className={
-                                connectionStatus.label === 'Connected' 
-                                  ? 'bg-green-500/10 text-green-700 dark:text-green-400 border-green-300'
-                                  : connectionStatus.label === 'Need to Connect'
-                                  ? 'bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-300'
-                                  : 'bg-gray-500/10 text-gray-600 dark:text-gray-400'
-                              }
-                            >
-                              {connectionStatus.label}
-                            </Badge>
+                          <div className="flex flex-col gap-1">
+                            <div className="flex items-center gap-2">
+                              <Label className="cursor-pointer">
+                                {platform.label}
+                              </Label>
+                              <Badge 
+                                variant={connectionStatus.variant}
+                                className={
+                                  connectionStatus.isConnected
+                                    ? 'bg-green-500/10 text-green-700 dark:text-green-400 border-green-300'
+                                    : 'bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-300'
+                                }
+                              >
+                                {connectionStatus.label}
+                              </Badge>
+                            </div>
+                            {connectionStatus.requiresManualScheduling && (
+                              <p className="text-xs text-muted-foreground">
+                                You'll need to schedule this manually on {platform.label}
+                              </p>
+                            )}
                           </div>
                         </div>
                         <Badge variant="outline" className="text-xs">
