@@ -469,20 +469,20 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="sm:max-w-[600px] w-full">
+      <SheetContent className="sm:max-w-[600px] w-full flex flex-col">
         <SheetHeader>
           <SheetTitle>Task Details</SheetTitle>
         </SheetHeader>
 
-        <Tabs defaultValue="details" className="mt-6 flex-1 flex flex-col">
+        <Tabs defaultValue="details" className="mt-6 flex-1 flex flex-col overflow-hidden">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="details">Details</TabsTrigger>
             <TabsTrigger value="comments">Comments</TabsTrigger>
             <TabsTrigger value="related">Related</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="details" className="mt-4 flex-1 flex flex-col">
-            <ScrollArea className="flex-1 pr-4">
+          <TabsContent value="details" className="mt-4 flex-1 flex flex-col overflow-hidden">
+            <ScrollArea className="flex-1 h-full pr-4">
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label>Title</Label>
