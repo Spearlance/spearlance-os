@@ -78,7 +78,7 @@ serve(async (req) => {
     });
 
     console.log('Late profile response:', JSON.stringify(lateProfile, null, 2));
-    const lateProfileId = lateProfile._id;
+    const lateProfileId = lateProfile.profile._id;
     console.log('Late profile ID extracted:', lateProfileId);
 
     // Store profile in our database
