@@ -82,17 +82,43 @@ export default function Tasks() {
 
   // Listen for column updates from Settings tab
   useEffect(() => {
-    const handleColumnsUpdate = () => {
-      console.log("Columns updated, reloading...");
+    const handleColumnsUpdate = async () => {
+      console.log("Columns updated event fired");
       if (selectedClient) {
-        loadTaskColumns();
-        loadTasks();
+        const columns = await loadTaskColumns();
+        console.log("Columns loaded after update:", columns);
+        // Small delay to ensure state has updated before loading tasks
+        setTimeout(() => {
+          loadTasks();
+        }, 100);
       }
     };
 
     window.addEventListener('taskColumnsUpdated', handleColumnsUpdate);
     return () => window.removeEventListener('taskColumnsUpdated', handleColumnsUpdate);
   }, [selectedClient]);
+
+  // Re-group tasks whenever taskColumns changes
+  useEffect(() => {
+    if (taskColumns.length > 0 && allTasks.length > 0) {
+      console.log("Re-grouping tasks for columns:", taskColumns.map(c => c.key));
+      const grouped: Record<string, Task[]> = {};
+      taskColumns.forEach(col => {
+        grouped[col.key] = [];
+      });
+      
+      allTasks.forEach((task: any) => {
+        if (grouped[task.status]) {
+          grouped[task.status].push(task);
+        } else {
+          console.warn(`Task ${task.id} has status "${task.status}" which doesn't match any column`);
+        }
+      });
+      
+      setTasks(grouped);
+      console.log("Tasks grouped:", Object.keys(grouped));
+    }
+  }, [taskColumns, allTasks]);
 
   const loadUserRole = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -108,7 +134,9 @@ export default function Tasks() {
   };
 
   const loadTaskColumns = async () => {
-    if (!selectedClient) return;
+    if (!selectedClient) return [];
+
+    console.log("Loading task columns for client:", selectedClient.id);
 
     const { data, error } = await supabase
       .from("task_columns")
@@ -118,9 +146,10 @@ export default function Tasks() {
 
     if (error) {
       console.error("Error loading task columns:", error);
-      return;
+      return [];
     }
 
+    console.log("Loaded columns:", data?.map(c => c.key));
     setTaskColumns(data || []);
     
     // Initialize tasks state with empty arrays for each column
@@ -129,6 +158,8 @@ export default function Tasks() {
       initialTasks[col.key] = [];
     });
     setTasks(initialTasks);
+    
+    return data || [];
   };
 
   const loadCurrentUser = async () => {
@@ -186,6 +217,8 @@ export default function Tasks() {
   const loadTasks = async () => {
     if (!selectedClient) return;
 
+    console.log("Loading tasks, current columns:", taskColumns.map(c => c.key));
+
     let query = supabase
       .from("tasks")
       .select(`
@@ -206,8 +239,12 @@ export default function Tasks() {
       if (assignedTaskIds && assignedTaskIds.length > 0) {
         query = query.in("id", assignedTaskIds.map(a => a.task_id));
       } else {
-        // No tasks assigned to this user
-        setTasks({ to_do: [], in_progress: [], done: [] });
+        // No tasks assigned to this user - use current columns
+        const emptyTasks: Record<string, Task[]> = {};
+        taskColumns.forEach(col => {
+          emptyTasks[col.key] = [];
+        });
+        setTasks(emptyTasks);
         setAllTasks([]);
         return;
       }
@@ -266,7 +303,10 @@ export default function Tasks() {
       })
     );
 
-    // Initialize grouped tasks structure
+    // Store enriched tasks - the useEffect will handle grouping
+    setAllTasks(enrichedTasks);
+    
+    // Initialize grouped tasks structure with current columns
     const grouped: Record<string, Task[]> = {};
     taskColumns.forEach(col => {
       grouped[col.key] = [];
@@ -275,11 +315,13 @@ export default function Tasks() {
     enrichedTasks.forEach((task: any) => {
       if (grouped[task.status]) {
         grouped[task.status].push(task);
+      } else {
+        console.warn(`Task "${task.title}" has status "${task.status}" which doesn't match any current column`);
       }
     });
 
+    console.log("Tasks loaded and grouped:", Object.entries(grouped).map(([key, tasks]) => `${key}: ${tasks.length}`));
     setTasks(grouped);
-    setAllTasks(enrichedTasks);
   };
 
   const onDragEnd = async (result: DropResult) => {
@@ -318,12 +360,16 @@ export default function Tasks() {
     setSelectedTask(task);
   };
 
-  const handleTabChange = (value: string) => {
+  const handleTabChange = async (value: string) => {
     setActiveTab(value);
     if (value === "board" && selectedClient) {
-      // Reload columns when switching back to board view
-      loadTaskColumns();
-      loadTasks();
+      console.log("Switching to board tab, reloading columns and tasks");
+      // Reload columns first, then tasks
+      const columns = await loadTaskColumns();
+      console.log("Columns reloaded:", columns?.map(c => c.key));
+      setTimeout(() => {
+        loadTasks();
+      }, 100);
     }
   };
 
