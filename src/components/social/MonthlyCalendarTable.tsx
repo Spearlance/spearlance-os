@@ -296,11 +296,19 @@ export const MonthlyCalendarTable = ({ posts, onRefresh, selectedMonth, selected
   };
 
   const getPostStatus = (post: Post) => {
+    // Check Late status first
+    if ((post as any).late_status === 'published') return "published";
+    if ((post as any).late_status === 'scheduled') return "scheduled";
+    if ((post as any).late_status === 'failed') return "failed";
+    if ((post as any).late_status === 'pending_approval') return "approval-needed";
+    if ((post as any).late_status === 'approved') return "approved";
+    
+    // Local readiness check
     const hasCaption = !!post.caption_text;
     const hasImage = !!post.image_url;
     const hasPlatform = post.platform && post.platform.length > 0;
     
-    if (hasCaption && hasImage && hasPlatform) return "ready";
+    if (hasCaption && hasImage && hasPlatform) return "draft";
     if (hasCaption && hasImage && !hasPlatform) return "needs-platform";
     if (hasCaption || hasImage) return "partial";
     return "idea";
@@ -308,26 +316,39 @@ export const MonthlyCalendarTable = ({ posts, onRefresh, selectedMonth, selected
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "ready": return "bg-green-500/10 text-green-700 dark:text-green-400";
-      case "needs-platform": return "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400";
-      case "partial": return "bg-blue-500/10 text-blue-700 dark:text-blue-400";
-      default: return "bg-gray-500/10 text-gray-700 dark:text-gray-400";
+      case "published": return "bg-green-500/10 text-green-700 dark:text-green-400";
+      case "scheduled": return "bg-blue-500/10 text-blue-700 dark:text-blue-400";
+      case "approved": return "bg-purple-500/10 text-purple-700 dark:text-purple-400";
+      case "approval-needed": return "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400";
+      case "failed": return "bg-red-500/10 text-red-700 dark:text-red-400";
+      case "draft": return "bg-indigo-500/10 text-indigo-700 dark:text-indigo-400";
+      case "needs-platform": return "bg-orange-500/10 text-orange-700 dark:text-orange-400";
+      case "partial": return "bg-gray-500/10 text-gray-700 dark:text-gray-400";
+      default: return "bg-muted text-muted-foreground";
     }
   };
 
   const getStatusLabel = (status: string) => {
     switch (status) {
-      case "ready": return "✓ Ready";
+      case "published": return "✓ Published";
+      case "scheduled": return "⏰ Scheduled";
+      case "approved": return "✓ Approved";
+      case "approval-needed": return "⏳ Needs Approval";
+      case "failed": return "✗ Failed";
+      case "draft": return "📝 Draft";
       case "needs-platform": return "Need Platforms";
       case "partial": return "In Progress";
       default: return "Idea Only";
     }
   };
 
-  // Count how many days have at least one "ready" post
+  // Count how many days have at least one "draft" or better post
   const daysWithReadyPosts = Object.keys(postsByDate).filter(dateKey => {
     const dayPosts = postsByDate[dateKey];
-    return dayPosts.some(p => getPostStatus(p) === "ready");
+    return dayPosts.some(p => {
+      const status = getPostStatus(p);
+      return ['draft', 'approved', 'scheduled', 'published'].includes(status);
+    });
   }).length;
 
   const totalDays = allDays.length;

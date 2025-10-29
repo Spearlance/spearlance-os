@@ -1,6 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { SocialMediaCallout } from "@/components/social/SocialMediaCallout";
 import { MonthlyPlannerWizard } from "@/components/social/MonthlyPlannerWizard";
 import { MonthlyCalendarTable } from "@/components/social/MonthlyCalendarTable";
 import { MonthlyCalendarGrid } from "@/components/social/MonthlyCalendarGrid";
@@ -124,8 +123,6 @@ const SocialMedia = () => {
           Create and schedule posts that perfectly match your brand
         </p>
       </div>
-
-      <SocialMediaCallout />
 
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
         <TabsList>

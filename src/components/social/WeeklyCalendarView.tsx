@@ -70,15 +70,34 @@ export const WeeklyCalendarView = ({
   }, {} as Record<string, Post[]>);
 
   const getStatusInfo = (post: Post) => {
+    // Check Late status first
+    if ((post as any).late_status === 'published') {
+      return { label: '✓ Published', color: 'bg-green-500/20 text-green-700 border-green-300' };
+    }
+    if ((post as any).late_status === 'scheduled') {
+      return { label: '⏰ Scheduled', color: 'bg-blue-500/20 text-blue-700 border-blue-300' };
+    }
+    if ((post as any).late_status === 'approved') {
+      return { label: '✓ Approved', color: 'bg-purple-500/20 text-purple-700 border-purple-300' };
+    }
+    if ((post as any).late_status === 'pending_approval') {
+      return { label: '⏳ Needs Approval', color: 'bg-yellow-500/20 text-yellow-700 border-yellow-300' };
+    }
+    if ((post as any).late_status === 'failed') {
+      return { label: '✗ Failed', color: 'bg-red-500/20 text-red-700 border-red-300' };
+    }
+    
+    // Local readiness
     const hasCaption = !!post.caption_text;
     const hasImage = !!post.image_url;
+    const hasPlatform = post.platform && post.platform.length > 0;
     
-    if (hasCaption && hasImage) {
-      return { label: 'Ready', color: 'bg-primary/20 text-primary' };
+    if (hasCaption && hasImage && hasPlatform) {
+      return { label: '📝 Draft', color: 'bg-indigo-500/20 text-indigo-700 border-indigo-300' };
     } else if (hasCaption || hasImage) {
-      return { label: 'Partial', color: 'bg-accent text-accent-foreground' };
+      return { label: 'Partial', color: 'bg-gray-500/20 text-gray-700 border-gray-300' };
     } else {
-      return { label: 'Idea', color: 'bg-muted text-muted-foreground' };
+      return { label: 'Idea', color: 'bg-muted text-muted-foreground border-muted' };
     }
   };
 

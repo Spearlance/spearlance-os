@@ -1415,6 +1415,7 @@ export type Database = {
           platform: string
           platform_specific_data: Json | null
           profile_picture_url: string | null
+          requires_approval: boolean | null
           token_expires_at: string | null
           updated_at: string | null
           username: string | null
@@ -1429,6 +1430,7 @@ export type Database = {
           platform: string
           platform_specific_data?: Json | null
           profile_picture_url?: string | null
+          requires_approval?: boolean | null
           token_expires_at?: string | null
           updated_at?: string | null
           username?: string | null
@@ -1443,6 +1445,7 @@ export type Database = {
           platform?: string
           platform_specific_data?: Json | null
           profile_picture_url?: string | null
+          requires_approval?: boolean | null
           token_expires_at?: string | null
           updated_at?: string | null
           username?: string | null

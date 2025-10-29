@@ -54,14 +54,40 @@ export const MonthlyCalendarGrid = ({
     return acc;
   }, {} as Record<number, Post[]>);
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'idea': return 'bg-muted text-muted-foreground';
-      case 'ready': return 'bg-primary/20 text-primary';
-      case 'scheduled': return 'bg-accent text-accent-foreground';
-      case 'published': return 'bg-secondary text-secondary-foreground';
-      default: return 'bg-muted text-muted-foreground';
+  const getStatusColor = (post: Post) => {
+    // Check Late status first
+    if ((post as any).late_status === 'published') return 'bg-green-500/20 text-green-700 border-green-300';
+    if ((post as any).late_status === 'scheduled') return 'bg-blue-500/20 text-blue-700 border-blue-300';
+    if ((post as any).late_status === 'approved') return 'bg-purple-500/20 text-purple-700 border-purple-300';
+    if ((post as any).late_status === 'pending_approval') return 'bg-yellow-500/20 text-yellow-700 border-yellow-300';
+    if ((post as any).late_status === 'failed') return 'bg-red-500/20 text-red-700 border-red-300';
+    
+    // Check local readiness
+    const hasCaption = !!post.caption_text;
+    const hasImage = !!post.image_url;
+    const hasPlatform = post.platform && post.platform.length > 0;
+    
+    if (hasCaption && hasImage && hasPlatform) {
+      return 'bg-indigo-500/20 text-indigo-700 border-indigo-300'; // Draft
     }
+    
+    return 'bg-muted text-muted-foreground border-muted';
+  };
+
+  const getStatusIcon = (post: Post) => {
+    if ((post as any).late_status === 'published') return '✓';
+    if ((post as any).late_status === 'scheduled') return '⏰';
+    if ((post as any).late_status === 'approved') return '✓';
+    if ((post as any).late_status === 'pending_approval') return '⏳';
+    if ((post as any).late_status === 'failed') return '✗';
+    
+    const hasCaption = !!post.caption_text;
+    const hasImage = !!post.image_url;
+    const hasPlatform = post.platform && post.platform.length > 0;
+    
+    if (hasCaption && hasImage && hasPlatform) return '📝';
+    
+    return '';
   };
 
   const isActiveDayOfWeek = (day: number) => {
@@ -109,11 +135,16 @@ export const MonthlyCalendarGrid = ({
           {dayPosts.map((post) => (
             <Card
               key={post.id}
-              className={`p-2 cursor-pointer hover:shadow-md transition-shadow ${getStatusColor(post.status)}`}
+              className={`p-2 cursor-pointer hover:shadow-md transition-shadow border ${getStatusColor(post)}`}
               onClick={() => setSelectedPost(post)}
             >
-              <div className="text-xs font-medium truncate">
-                {post.post_idea_json?.topic_title || 'Untitled'}
+              <div className="flex items-center justify-between gap-1">
+                <div className="text-xs font-medium truncate flex-1">
+                  {post.post_idea_json?.topic_title || 'Untitled'}
+                </div>
+                {getStatusIcon(post) && (
+                  <span className="text-sm">{getStatusIcon(post)}</span>
+                )}
               </div>
             </Card>
           ))}

@@ -93,9 +93,12 @@ export const PostManagementDrawer = ({
 
   const [caption, setCaption] = useState("");
   const [scheduledDate, setScheduledDate] = useState("");
+  const [scheduledTime, setScheduledTime] = useState("09:00");
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
   const [newComment, setNewComment] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [isScheduling, setIsScheduling] = useState(false);
+  const [requiresApproval, setRequiresApproval] = useState(false);
   const [isGeneratingCaption, setIsGeneratingCaption] = useState(false);
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [editingTopic, setEditingTopic] = useState(false);
@@ -109,6 +112,15 @@ export const PostManagementDrawer = ({
     if (post) {
       setCaption(post.caption_text || "");
       setScheduledDate(post.scheduled_date || "");
+      
+      // Extract time from scheduled_date
+      if (post.scheduled_date) {
+        const date = new Date(post.scheduled_date);
+        const hours = date.getHours().toString().padStart(2, '0');
+        const minutes = date.getMinutes().toString().padStart(2, '0');
+        setScheduledTime(`${hours}:${minutes}`);
+      }
+      
       setSelectedPlatforms(post.platform || []);
       
       // Initialize topic fields
@@ -120,6 +132,36 @@ export const PostManagementDrawer = ({
       setGeneratedTopicIdeas([]);
     }
   }, [post]);
+
+  // Check if any selected platform requires approval
+  useEffect(() => {
+    const checkApprovalRequirement = async () => {
+      if (!selectedClient?.id || selectedPlatforms.length === 0) {
+        setRequiresApproval(false);
+        return;
+      }
+
+      const { data: lateProfile } = await supabase
+        .from('late_profiles')
+        .select('id')
+        .eq('client_id', selectedClient.id)
+        .single();
+
+      if (!lateProfile) return;
+
+      const { data: accounts } = await supabase
+        .from('late_social_accounts')
+        .select('platform, requires_approval')
+        .eq('late_profile_id', lateProfile.id)
+        .eq('is_active', true)
+        .in('platform', selectedPlatforms);
+
+      const needsApproval = accounts?.some(a => a.requires_approval) || false;
+      setRequiresApproval(needsApproval);
+    };
+
+    checkApprovalRequirement();
+  }, [selectedPlatforms, selectedClient]);
 
   // Fetch comments
   const { data: comments = [] } = useQuery({
@@ -144,11 +186,16 @@ export const PostManagementDrawer = ({
     setIsSaving(true);
 
     try {
+      // Combine date and time into ISO string
+      const [hours, minutes] = scheduledTime.split(':');
+      const combinedDateTime = new Date(scheduledDate);
+      combinedDateTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+      
       const { error } = await supabase
         .from('social_media_posts')
         .update({
           caption_text: caption,
-          scheduled_date: scheduledDate,
+          scheduled_date: combinedDateTime.toISOString(),
           platform: selectedPlatforms,
         })
         .eq('id', post.id);
@@ -390,6 +437,44 @@ export const PostManagementDrawer = ({
     }
   };
 
+  // Schedule post to social media
+  const handleSchedule = async () => {
+    if (!post || !selectedClient) return;
+    setIsScheduling(true);
+
+    try {
+      // Combine date and time for scheduling
+      const [hours, minutes] = scheduledTime.split(':');
+      const scheduledFor = new Date(scheduledDate);
+      scheduledFor.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+
+      const { data, error } = await supabase.functions.invoke('late-schedule-post', {
+        body: {
+          post_id: post.id,
+          scheduled_for: scheduledFor.toISOString(),
+          timezone: selectedClient.timezone || 'America/New_York',
+        },
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Post Scheduled!",
+        description: `Your post will publish on ${format(scheduledFor, 'MMMM d, yyyy')} at ${scheduledTime}`,
+      });
+      
+      onRefresh();
+    } catch (error: any) {
+      toast({
+        title: "Scheduling Failed",
+        description: error.message || "Failed to schedule post.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsScheduling(false);
+    }
+  };
+
   // Toggle platform
   const handlePlatformToggle = (platformId: string, checked: boolean) => {
     if (checked) {
@@ -403,15 +488,55 @@ export const PostManagementDrawer = ({
 
   const idea = post.post_idea_json || {};
 
+  const getStatusDisplay = () => {
+    const hasCaption = !!post.caption_text;
+    const hasImage = !!post.image_url;
+    const hasPlatform = post.platform && post.platform.length > 0;
+    const isReady = hasCaption && hasImage && hasPlatform;
+
+    // Check Late status first
+    if ((post as any).late_status === 'published') {
+      return { label: 'Published', variant: 'default' as const };
+    }
+    if ((post as any).late_status === 'scheduled') {
+      return { label: 'Scheduled', variant: 'secondary' as const };
+    }
+    if ((post as any).late_status === 'failed') {
+      return { label: 'Failed', variant: 'destructive' as const };
+    }
+    if ((post as any).late_status === 'pending_approval') {
+      return { label: 'Approval Needed', variant: 'outline' as const };
+    }
+    if ((post as any).late_status === 'approved') {
+      return { label: 'Approved', variant: 'secondary' as const };
+    }
+    
+    // Local status
+    if (isReady) {
+      return { label: 'Draft', variant: 'outline' as const };
+    }
+    
+    return null;
+  };
+
+  const statusDisplay = getStatusDisplay();
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="sm:max-w-2xl w-full overflow-y-auto">
         <SheetHeader>
           <SheetTitle>
-            {idea.topic_title || 'Untitled Post'}
-            <div className="text-sm font-normal text-muted-foreground mt-1">
-              {format(new Date(post.scheduled_date), 'MMMM d, yyyy')}
+            <div className="flex items-center gap-2 flex-wrap">
+              <span>{idea.topic_title || 'Untitled Post'}</span>
+              {statusDisplay && (
+                <Badge variant={statusDisplay.variant}>
+                  {statusDisplay.label}
+                </Badge>
+              )}
             </div>
+            <p className="text-sm font-normal text-muted-foreground mt-1">
+              {format(new Date(post.scheduled_date), 'MMMM d, yyyy')} at {scheduledTime}
+            </p>
           </SheetTitle>
         </SheetHeader>
 
@@ -664,9 +789,28 @@ export const PostManagementDrawer = ({
                 <Input
                   type="date"
                   value={scheduledDate.split('T')[0]}
-                  onChange={(e) => setScheduledDate(e.target.value + 'T12:00:00Z')}
+                  onChange={(e) => {
+                    const newDate = new Date(e.target.value);
+                    const [hours, minutes] = scheduledTime.split(':');
+                    newDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+                    setScheduledDate(newDate.toISOString());
+                  }}
                   className="mt-2"
                 />
+              </div>
+
+              {/* Time Picker */}
+              <div className="space-y-1">
+                <Label>Time</Label>
+                <Input
+                  type="time"
+                  value={scheduledTime}
+                  onChange={(e) => setScheduledTime(e.target.value)}
+                  className="mt-1"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Time zone: {selectedClient?.timezone || 'America/New_York'}
+                </p>
               </div>
 
               <Button onClick={handleSave} disabled={isSaving} className="w-full">
@@ -679,6 +823,41 @@ export const PostManagementDrawer = ({
                   'Save Changes'
                 )}
               </Button>
+
+              {/* Schedule Button - only show when post is ready and not yet scheduled */}
+              {post.caption_text && post.image_url && selectedPlatforms.length > 0 && !(post as any).late_post_id && (
+                <Button
+                  onClick={handleSchedule}
+                  disabled={isScheduling}
+                  className="w-full"
+                  variant="default"
+                >
+                  {isScheduling ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Scheduling...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="h-4 w-4 mr-2" />
+                      Schedule Post
+                    </>
+                  )}
+                </Button>
+              )}
+
+              {/* Show status if already scheduled */}
+              {(post as any).late_post_id && (post as any).late_status && (
+                <div className="text-center p-3 bg-muted rounded-lg">
+                  <p className="text-sm text-muted-foreground">
+                    {(post as any).late_status === 'scheduled' && '⏰ Post is scheduled to publish'}
+                    {(post as any).late_status === 'pending_approval' && '⏳ Waiting for approval'}
+                    {(post as any).late_status === 'approved' && '✓ Approved and will publish soon'}
+                    {(post as any).late_status === 'published' && '✓ Post has been published'}
+                    {(post as any).late_status === 'failed' && '✗ Publishing failed - please try again'}
+                  </p>
+                </div>
+              )}
             </TabsContent>
 
             {/* Comments Tab */}
