@@ -107,6 +107,7 @@ export const PostManagementDrawer = ({
   const [topicCategory, setTopicCategory] = useState("");
   const [isGeneratingTopicIdeas, setIsGeneratingTopicIdeas] = useState(false);
   const [generatedTopicIdeas, setGeneratedTopicIdeas] = useState<any[]>([]);
+  const [connectedPlatforms, setConnectedPlatforms] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (post) {
@@ -162,6 +163,34 @@ export const PostManagementDrawer = ({
 
     checkApprovalRequirement();
   }, [selectedPlatforms, selectedClient]);
+
+  // Fetch connected social accounts
+  useEffect(() => {
+    const fetchConnectedAccounts = async () => {
+      if (!selectedClient?.id) return;
+
+      const { data: lateProfile } = await supabase
+        .from('late_profiles')
+        .select('id')
+        .eq('client_id', selectedClient.id)
+        .single();
+
+      if (!lateProfile) return;
+
+      const { data: accounts } = await supabase
+        .from('late_social_accounts')
+        .select('platform, is_active')
+        .eq('late_profile_id', lateProfile.id)
+        .eq('is_active', true);
+
+      if (accounts) {
+        const platforms = new Set(accounts.map(a => a.platform.toLowerCase()));
+        setConnectedPlatforms(platforms);
+      }
+    };
+
+    fetchConnectedAccounts();
+  }, [selectedClient]);
 
   // Fetch comments
   const { data: comments = [] } = useQuery({
@@ -475,8 +504,52 @@ export const PostManagementDrawer = ({
     }
   };
 
+  // Get connection status for a platform
+  const getConnectionStatus = (platformId: string): {
+    label: string;
+    variant: 'default' | 'secondary' | 'outline';
+    isAvailable: boolean;
+    isConnected: boolean;
+  } => {
+    // Coming soon platforms (not yet implemented)
+    const comingSoonPlatforms = ['linkedin', 'twitter', 'tiktok'];
+    
+    if (comingSoonPlatforms.includes(platformId)) {
+      return {
+        label: 'Coming Soon',
+        variant: 'secondary',
+        isAvailable: false,
+        isConnected: false
+      };
+    }
+    
+    // Check if platform is connected
+    const isConnected = connectedPlatforms.has(platformId);
+    
+    return {
+      label: isConnected ? 'Connected' : 'Need to Connect',
+      variant: isConnected ? 'default' : 'outline',
+      isAvailable: true,
+      isConnected
+    };
+  };
+
   // Toggle platform
   const handlePlatformToggle = (platformId: string, checked: boolean) => {
+    const connectionStatus = getConnectionStatus(platformId);
+    
+    // Prevent toggling unavailable or disconnected platforms
+    if (!connectionStatus.isAvailable || !connectionStatus.isConnected) {
+      toast({
+        title: "Platform Not Available",
+        description: connectionStatus.label === 'Coming Soon' 
+          ? `${platformId} integration is coming soon!`
+          : `Please connect your ${platformId} account first.`,
+        variant: "default",
+      });
+      return;
+    }
+    
     if (checked) {
       setSelectedPlatforms(prev => [...prev, platformId]);
     } else {
@@ -913,8 +986,11 @@ export const PostManagementDrawer = ({
               <div className="space-y-3">
                 {SOCIAL_PLATFORMS.map((platform) => {
                   const PlatformIcon = platform.icon;
+                  const connectionStatus = getConnectionStatus(platform.id);
+                  const isDisabled = !connectionStatus.isAvailable || !connectionStatus.isConnected;
+                  
                   return (
-                    <Card key={platform.id} className="p-4">
+                    <Card key={platform.id} className={`p-4 ${isDisabled ? 'opacity-60' : ''}`}>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                           <Checkbox
@@ -922,9 +998,26 @@ export const PostManagementDrawer = ({
                             onCheckedChange={(checked) => 
                               handlePlatformToggle(platform.id, checked as boolean)
                             }
+                            disabled={isDisabled}
                           />
                           <PlatformIcon className="h-5 w-5" />
-                          <Label className="cursor-pointer">{platform.label}</Label>
+                          <div className="flex items-center gap-2">
+                            <Label className={`cursor-pointer ${isDisabled ? 'cursor-not-allowed' : ''}`}>
+                              {platform.label}
+                            </Label>
+                            <Badge 
+                              variant={connectionStatus.variant}
+                              className={
+                                connectionStatus.label === 'Connected' 
+                                  ? 'bg-green-500/10 text-green-700 dark:text-green-400 border-green-300'
+                                  : connectionStatus.label === 'Need to Connect'
+                                  ? 'bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-300'
+                                  : 'bg-gray-500/10 text-gray-600 dark:text-gray-400'
+                              }
+                            >
+                              {connectionStatus.label}
+                            </Badge>
+                          </div>
                         </div>
                         <Badge variant="outline" className="text-xs">
                           {platform.limit} chars max
