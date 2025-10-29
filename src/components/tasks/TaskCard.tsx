@@ -49,9 +49,11 @@ export const TaskCard = ({ task, onClick, isDragging }: TaskCardProps) => {
           />
           <h4 className="font-medium text-sm">{task.title}</h4>
         </div>
-        <Badge variant="outline" className="text-xs shrink-0">
-          {task.priority}
-        </Badge>
+        {task.priority === 'urgent' && (
+          <Badge variant="destructive" className="text-xs shrink-0">
+            !
+          </Badge>
+        )}
       </div>
 
       {/* Description */}

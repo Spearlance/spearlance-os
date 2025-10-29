@@ -16,6 +16,7 @@ import { FileText, Image, Link as LinkIcon, FileVideo, FileAudio, ExternalLink, 
 import { DeleteTaskDialog } from "./DeleteTaskDialog";
 import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AssigneeSelector } from "./AssigneeSelector";
 
 interface TaskDrawerProps {
   task: any;
@@ -35,7 +36,7 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
   const [comments, setComments] = useState<any[]>([]);
   const [newComment, setNewComment] = useState("");
   const [users, setUsers] = useState<any[]>([]);
-  const [assigneeId, setAssigneeId] = useState(task.assignee_user_id || "");
+  const [selectedAssignees, setSelectedAssignees] = useState<string[]>([]);
   const [relatedAssets, setRelatedAssets] = useState<any[]>([]);
   const [relatedMeetings, setRelatedMeetings] = useState<any[]>([]);
   const [relatedChannels, setRelatedChannels] = useState<any[]>([]);
@@ -52,7 +53,19 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
     loadComments();
     loadUsers();
     loadRelatedItems();
+    loadCurrentAssignees();
   }, [task.id]);
+
+  const loadCurrentAssignees = async () => {
+    const { data } = await supabase
+      .from("task_assignees")
+      .select("user_id")
+      .eq("task_id", task.id);
+    
+    if (data) {
+      setSelectedAssignees(data.map(a => a.user_id));
+    }
+  };
 
   const loadComments = async () => {
     const { data } = await supabase
@@ -321,7 +334,8 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
   };
 
   const handleSave = async () => {
-    const { error } = await supabase
+    // Update task basic info
+    const { error: taskError } = await supabase
       .from("tasks")
       .update({
         title,
@@ -329,14 +343,41 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
         status,
         priority,
         due_date: dueDate || null,
-        assignee_user_id: assigneeId || null,
         color,
       })
       .eq("id", task.id);
 
-    if (error) {
+    if (taskError) {
       toast({ title: "Error updating task", variant: "destructive" });
       return;
+    }
+
+    // Sync assignees - delete existing first
+    const { error: deleteError } = await supabase
+      .from("task_assignees")
+      .delete()
+      .eq("task_id", task.id);
+
+    if (deleteError) {
+      toast({ title: "Error updating assignees", variant: "destructive" });
+      return;
+    }
+
+    // Insert new assignees
+    if (selectedAssignees.length > 0) {
+      const assigneeInserts = selectedAssignees.map(userId => ({
+        task_id: task.id,
+        user_id: userId,
+      }));
+
+      const { error: insertError } = await supabase
+        .from("task_assignees")
+        .insert(assigneeInserts);
+
+      if (insertError) {
+        toast({ title: "Error updating assignees", variant: "destructive" });
+        return;
+      }
     }
 
     toast({ title: "Task updated successfully" });
@@ -471,29 +512,31 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Assignee</Label>
-                <Select value={assigneeId} onValueChange={setAssigneeId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Unassigned" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {users.map((user) => (
-                      <SelectItem key={user.id} value={user.id}>
-                        {user.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="space-y-2">
+              <Label>Assignees</Label>
+              <AssigneeSelector
+                users={users}
+                selectedUserIds={selectedAssignees}
+                onSelectionChange={setSelectedAssignees}
+              />
+            </div>
 
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Due Date</Label>
                 <Input 
                   type="date" 
                   value={dueDate} 
                   onChange={(e) => setDueDate(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Color</Label>
+                <Input 
+                  type="color" 
+                  value={color} 
+                  onChange={(e) => setColor(e.target.value)}
                 />
               </div>
             </div>
