@@ -93,10 +93,10 @@ export default function Tasks() {
 
   useEffect(() => {
     if (selectedClient && currentUserId) {
-      console.log('Filters changed:', { assignmentFilter, channelFilter });
+      console.log('Filters changed:', { assignmentFilter, channelFilter, priorityFilter });
       loadTasks();
     }
-  }, [assignmentFilter, channelFilter]);
+  }, [assignmentFilter, channelFilter, priorityFilter]);
 
   // Listen for column updates from Settings tab
   useEffect(() => {
