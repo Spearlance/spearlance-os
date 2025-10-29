@@ -158,7 +158,7 @@ serve(async (req) => {
       ],
       subscription_data: subscriptionData,
       success_url: `${baseUrl}/?payment=success`,
-      cancel_url: `${baseUrl}/settings?payment=canceled`,
+      cancel_url: `${baseUrl}`,
       metadata: { 
         client_id: clientId,
         user_id: user.id

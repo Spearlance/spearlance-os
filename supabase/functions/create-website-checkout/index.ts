@@ -118,7 +118,7 @@ serve(async (req) => {
           },
         ],
         success_url: `${req.headers.get('origin') || 'https://app.spearlance.com'}/dashboard?website_added=true`,
-        cancel_url: `${req.headers.get('origin') || 'https://app.spearlance.com'}/dashboard`,
+        cancel_url: `${req.headers.get('origin') || 'https://os.spearlance.com'}`,
         metadata: {
           client_id: clientId,
           product_type: 'website',
@@ -202,7 +202,7 @@ serve(async (req) => {
         ],
         subscription_data: subscriptionData,
         success_url: `${req.headers.get('origin') || 'https://app.spearlance.com'}/dashboard?website_added=true&subscription=started`,
-        cancel_url: `${req.headers.get('origin') || 'https://app.spearlance.com'}/dashboard`,
+        cancel_url: `${req.headers.get('origin') || 'https://os.spearlance.com'}`,
         metadata: {
           client_id: clientId,
           product_type: 'website_plus_subscription',
