@@ -539,9 +539,9 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
                     <Label>Color</Label>
                     <Popover>
                       <PopoverTrigger asChild>
-                        <Button variant="outline" className="w-full h-10 p-0">
+                        <Button variant="outline" className="w-full h-10 px-2">
                           <div 
-                            className="h-6 w-6 rounded-full border-2 border-background" 
+                            className="h-6 w-full rounded border-2 border-background" 
                             style={{ backgroundColor: color }}
                           />
                         </Button>
@@ -569,6 +569,18 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
                 <div className="flex gap-2 pt-4">
                   <Button onClick={handleSave} className="flex-1">Save Changes</Button>
                   <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+                  {isAdminOrFMM && (
+                    <DeleteTaskDialog
+                      taskTitle={task.title}
+                      taskId={task.id}
+                      onConfirm={handleDeleteTask}
+                      trigger={
+                        <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive hover:bg-destructive/10">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      }
+                    />
+                  )}
                 </div>
               </div>
             </ScrollArea>
@@ -874,21 +886,6 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
           </TabsContent>
         </Tabs>
 
-        {isAdminOrFMM && (
-          <div className="flex justify-end mt-6 pt-6 border-t">
-            <DeleteTaskDialog
-              taskTitle={task.title}
-              taskId={task.id}
-              onConfirm={handleDeleteTask}
-              trigger={
-                <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive hover:bg-destructive/10">
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Delete Task
-                </Button>
-              }
-            />
-          </div>
-        )}
       </SheetContent>
     </Sheet>
   );
