@@ -17,6 +17,8 @@ import { DeleteTaskDialog } from "./DeleteTaskDialog";
 import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AssigneeSelector } from "./AssigneeSelector";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Palette } from "lucide-react";
 
 interface TaskDrawerProps {
   task: any;
@@ -481,7 +483,7 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-3">
               <div className="space-y-2">
                 <Label>Status</Label>
                 <Select value={status} onValueChange={setStatus}>
@@ -510,6 +512,15 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
                   </SelectContent>
                 </Select>
               </div>
+
+              <div className="space-y-2">
+                <Label>Due Date</Label>
+                <Input 
+                  type="date" 
+                  value={dueDate} 
+                  onChange={(e) => setDueDate(e.target.value)}
+                />
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -521,43 +532,35 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Due Date</Label>
-                <Input 
-                  type="date" 
-                  value={dueDate} 
-                  onChange={(e) => setDueDate(e.target.value)}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Color</Label>
-                <Input 
-                  type="color" 
-                  value={color} 
-                  onChange={(e) => setColor(e.target.value)}
-                />
-              </div>
-            </div>
-
             <div className="space-y-2">
               <Label>Task Color</Label>
-              <div className="flex gap-2 flex-wrap">
-                {["#EF4444", "#F59E0B", "#10B981", "#3B82F6", "#8B5CF6", "#EC4899", "#6B7280"].map((colorOption) => (
-                  <button
-                    key={colorOption}
-                    type="button"
-                    className={`h-8 w-8 rounded-md border-2 transition-all ${
-                      color === colorOption ? "border-primary scale-110" : "border-transparent hover:border-muted-foreground/30"
-                    }`}
-                    style={{ backgroundColor: colorOption }}
-                    onClick={() => setColor(colorOption)}
-                    aria-label={`Select color ${colorOption}`}
-                  />
-                ))}
-              </div>
-              <p className="text-xs text-muted-foreground">This color appears on the task card</p>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="w-full justify-start gap-2">
+                    <div 
+                      className="h-4 w-4 rounded-full border" 
+                      style={{ backgroundColor: color }}
+                    />
+                    <span className="text-sm">Click to change color</span>
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-3" align="start">
+                  <div className="flex gap-2">
+                    {["#EF4444", "#F59E0B", "#10B981", "#3B82F6", "#8B5CF6", "#EC4899", "#6B7280"].map((colorOption) => (
+                      <button
+                        key={colorOption}
+                        type="button"
+                        className={`h-8 w-8 rounded-md border-2 transition-all hover:scale-110 ${
+                          color === colorOption ? "border-primary ring-2 ring-primary/20" : "border-transparent"
+                        }`}
+                        style={{ backgroundColor: colorOption }}
+                        onClick={() => setColor(colorOption)}
+                        aria-label={`Select color ${colorOption}`}
+                      />
+                    ))}
+                  </div>
+                </PopoverContent>
+              </Popover>
             </div>
 
             <div className="flex gap-2 pt-4">
