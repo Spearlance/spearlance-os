@@ -7,16 +7,23 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, GripVertical, Trash2, Edit2, X, Check } from "lucide-react";
+import { Plus, GripVertical, Trash2, Edit2, X, Check, AlertCircle, Save } from "lucide-react";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import type { Database } from "@/integrations/supabase/types";
 
 type TaskColumn = Database["public"]["Tables"]["task_columns"]["Row"];
+
+type PendingColumn = Omit<TaskColumn, 'id' | 'created_at' | 'updated_at'> & { 
+  tempId: string;
+  id?: string;
+};
 
 export function TaskColumnManager() {
   const { selectedClient } = useClient();
   const { toast } = useToast();
   const [columns, setColumns] = useState<TaskColumn[]>([]);
+  const [originalColumns, setOriginalColumns] = useState<TaskColumn[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
@@ -24,6 +31,21 @@ export function TaskColumnManager() {
   const [showAddNew, setShowAddNew] = useState(false);
   const [newColumnName, setNewColumnName] = useState("");
   const [newColumnColor, setNewColumnColor] = useState("#6B7280");
+  
+  // Batch save state
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [pendingChanges, setPendingChanges] = useState<{
+    added: PendingColumn[];
+    updated: Map<string, { name: string; color: string }>;
+    deleted: string[];
+    reordered: boolean;
+  }>({
+    added: [],
+    updated: new Map(),
+    deleted: [],
+    reordered: false,
+  });
 
   useEffect(() => {
     if (selectedClient) {
@@ -44,6 +66,15 @@ export function TaskColumnManager() {
 
       if (error) throw error;
       setColumns(data || []);
+      setOriginalColumns(data || []);
+      // Reset pending changes when loading fresh data
+      setPendingChanges({
+        added: [],
+        updated: new Map(),
+        deleted: [],
+        reordered: false,
+      });
+      setHasUnsavedChanges(false);
     } catch (error) {
       console.error("Error loading columns:", error);
       toast({
@@ -56,59 +87,53 @@ export function TaskColumnManager() {
     }
   };
 
-  const handleAddColumn = async () => {
+  const handleAddColumn = () => {
     if (!selectedClient || !newColumnName.trim()) return;
 
-    try {
-      // Generate a unique key from the name
-      const key = newColumnName.toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, "");
-      const maxOrder = Math.max(...columns.map(c => c.display_order), -1);
-
-      const payload = {
-        client_id: selectedClient.id,
-        name: newColumnName.trim(),
-        key,
-        color: newColumnColor,
-        display_order: maxOrder + 1,
-        is_default: false,
-      };
-
-      console.log("Attempting to insert task column:", payload);
-
-      const { data, error } = await supabase
-        .from("task_columns")
-        .insert(payload)
-        .select();
-
-      if (error) {
-        console.error("Full error details:", error);
-        throw error;
-      }
-
-      console.log("Successfully inserted column:", data);
-
-      toast({
-        title: "Success",
-        description: "Column added successfully",
-      });
-
-      setNewColumnName("");
-      setNewColumnColor("#6B7280");
-      setShowAddNew(false);
-      await loadColumns();
-      
-      // Trigger a custom event that Tasks.tsx can listen to
-      window.dispatchEvent(new CustomEvent('taskColumnsUpdated'));
-    } catch (error: any) {
-      console.error("Error adding column:", error);
+    // Check for duplicate names
+    const key = newColumnName.toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, "");
+    const isDuplicate = columns.some(c => c.key === key) || 
+                        pendingChanges.added.some(c => c.key === key);
+    
+    if (isDuplicate) {
       toast({
         title: "Error",
-        description: error.message?.includes("duplicate") 
-          ? "A column with this name already exists"
-          : error.message || "Failed to add column",
+        description: "A column with this name already exists",
         variant: "destructive",
       });
+      return;
     }
+
+    const maxOrder = Math.max(...columns.map(c => c.display_order), -1);
+    const tempId = `temp-${Date.now()}`;
+
+    const newColumn: PendingColumn = {
+      tempId,
+      client_id: selectedClient.id,
+      name: newColumnName.trim(),
+      key,
+      color: newColumnColor,
+      display_order: maxOrder + 1,
+      is_default: false,
+    };
+
+    setPendingChanges(prev => ({
+      ...prev,
+      added: [...prev.added, newColumn],
+    }));
+
+    // Add to columns for immediate display
+    setColumns(prev => [...prev, {
+      ...newColumn,
+      id: tempId,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    } as TaskColumn]);
+
+    setHasUnsavedChanges(true);
+    setNewColumnName("");
+    setNewColumnColor("#6B7280");
+    setShowAddNew(false);
   };
 
   const handleStartEdit = (column: TaskColumn) => {
@@ -117,38 +142,24 @@ export function TaskColumnManager() {
     setEditColor(column.color || "#6B7280");
   };
 
-  const handleSaveEdit = async () => {
+  const handleSaveEdit = () => {
     if (!editingId || !editName.trim()) return;
 
-    try {
-      const { error } = await supabase
-        .from("task_columns")
-        .update({
-          name: editName.trim(),
-          color: editColor,
-        })
-        .eq("id", editingId);
+    setPendingChanges(prev => {
+      const updated = new Map(prev.updated);
+      updated.set(editingId, { name: editName.trim(), color: editColor });
+      return { ...prev, updated };
+    });
 
-      if (error) throw error;
+    // Update local columns display
+    setColumns(prev => prev.map(col => 
+      col.id === editingId 
+        ? { ...col, name: editName.trim(), color: editColor }
+        : col
+    ));
 
-      toast({
-        title: "Success",
-        description: "Column updated successfully",
-      });
-
-      setEditingId(null);
-      await loadColumns();
-      
-      // Trigger update event
-      window.dispatchEvent(new CustomEvent('taskColumnsUpdated'));
-    } catch (error) {
-      console.error("Error updating column:", error);
-      toast({
-        title: "Error",
-        description: "Failed to update column",
-        variant: "destructive",
-      });
-    }
+    setHasUnsavedChanges(true);
+    setEditingId(null);
   };
 
   const handleDelete = async (column: TaskColumn) => {
@@ -172,53 +183,19 @@ export function TaskColumnManager() {
         `${count} task${count === 1 ? '' : 's'} use this column. Deleting it will move them to "To Do". Continue?`
       );
       if (!confirmed) return;
-
-      // Move tasks to to_do before deleting
-      const { data: toDoColumn } = await supabase
-        .from("task_columns")
-        .select("key")
-        .eq("client_id", selectedClient?.id)
-        .eq("is_default", true)
-        .order("display_order")
-        .limit(1)
-        .single();
-
-      if (toDoColumn) {
-        await supabase
-          .from("tasks")
-          .update({ status: toDoColumn.key as any })
-          .eq("status", column.key as any);
-      }
     }
 
-    try {
-      const { error } = await supabase
-        .from("task_columns")
-        .delete()
-        .eq("id", column.id);
+    setPendingChanges(prev => ({
+      ...prev,
+      deleted: [...prev.deleted, column.id],
+    }));
 
-      if (error) throw error;
-
-      toast({
-        title: "Success",
-        description: "Column deleted successfully",
-      });
-
-      await loadColumns();
-      
-      // Trigger update event
-      window.dispatchEvent(new CustomEvent('taskColumnsUpdated'));
-    } catch (error) {
-      console.error("Error deleting column:", error);
-      toast({
-        title: "Error",
-        description: "Failed to delete column",
-        variant: "destructive",
-      });
-    }
+    // Remove from display
+    setColumns(prev => prev.filter(c => c.id !== column.id));
+    setHasUnsavedChanges(true);
   };
 
-  const onDragEnd = async (result: DropResult) => {
+  const onDragEnd = (result: DropResult) => {
     if (!result.destination) return;
 
     const items = Array.from(columns);
@@ -226,29 +203,143 @@ export function TaskColumnManager() {
     items.splice(result.destination.index, 0, reorderedItem);
 
     // Update display_order for all items
-    const updates = items.map((item, index) => ({
-      id: item.id,
+    const reorderedItems = items.map((item, index) => ({
+      ...item,
       display_order: index,
     }));
 
-    setColumns(items);
+    setColumns(reorderedItems);
+    setPendingChanges(prev => ({ ...prev, reordered: true }));
+    setHasUnsavedChanges(true);
+  };
 
+  const handleSaveSettings = async () => {
+    if (!selectedClient) return;
+
+    setIsSaving(true);
     try {
-      for (const update of updates) {
-        await supabase
-          .from("task_columns")
-          .update({ display_order: update.display_order })
-          .eq("id", update.id);
+      // 1. Delete columns
+      for (const columnId of pendingChanges.deleted) {
+        // Check if it's not a temp column
+        if (!columnId.startsWith('temp-')) {
+          // Move tasks to first default column
+          const originalColumn = originalColumns.find(c => c.id === columnId);
+          if (originalColumn) {
+            const { data: toDoColumn } = await supabase
+              .from("task_columns")
+              .select("key")
+              .eq("client_id", selectedClient.id)
+              .eq("is_default", true)
+              .order("display_order")
+              .limit(1)
+              .single();
+
+            if (toDoColumn) {
+              await supabase
+                .from("tasks")
+                .update({ status: toDoColumn.key as any })
+                .eq("status", originalColumn.key as any);
+            }
+          }
+
+          const { error } = await supabase
+            .from("task_columns")
+            .delete()
+            .eq("id", columnId);
+
+          if (error) throw error;
+        }
       }
-    } catch (error) {
-      console.error("Error reordering columns:", error);
+
+      // 2. Update columns
+      for (const [columnId, updates] of pendingChanges.updated.entries()) {
+        if (!columnId.startsWith('temp-')) {
+          const { error } = await supabase
+            .from("task_columns")
+            .update(updates)
+            .eq("id", columnId);
+
+          if (error) throw error;
+        }
+      }
+
+      // 3. Add new columns
+      for (const newColumn of pendingChanges.added) {
+        const { error } = await supabase
+          .from("task_columns")
+          .insert({
+            client_id: newColumn.client_id,
+            name: newColumn.name,
+            key: newColumn.key,
+            color: newColumn.color,
+            display_order: newColumn.display_order,
+            is_default: newColumn.is_default,
+          });
+
+        if (error) throw error;
+      }
+
+      // 4. Update display order if reordered
+      if (pendingChanges.reordered) {
+        for (const column of columns) {
+          if (!column.id.startsWith('temp-')) {
+            await supabase
+              .from("task_columns")
+              .update({ display_order: column.display_order })
+              .eq("id", column.id);
+          }
+        }
+      }
+
+      toast({
+        title: "Success",
+        description: "Settings saved successfully",
+      });
+
+      // Reload fresh data
+      await loadColumns();
+      
+      // Trigger update event for Tasks.tsx
+      window.dispatchEvent(new CustomEvent('taskColumnsUpdated'));
+    } catch (error: any) {
+      console.error("Error saving settings:", error);
       toast({
         title: "Error",
-        description: "Failed to reorder columns",
+        description: error.message || "Failed to save settings",
         variant: "destructive",
       });
-      loadColumns();
+    } finally {
+      setIsSaving(false);
     }
+  };
+
+  const handleDiscardChanges = () => {
+    const confirmed = window.confirm("Discard all unsaved changes?");
+    if (!confirmed) return;
+
+    setColumns(originalColumns);
+    setPendingChanges({
+      added: [],
+      updated: new Map(),
+      deleted: [],
+      reordered: false,
+    });
+    setHasUnsavedChanges(false);
+    setEditingId(null);
+    setShowAddNew(false);
+  };
+
+  const getColumnBadge = (column: TaskColumn) => {
+    if (column.id.startsWith('temp-')) {
+      return <Badge variant="secondary" className="bg-yellow-500/20 text-yellow-700 dark:text-yellow-300">Unsaved</Badge>;
+    }
+    if (pendingChanges.updated.has(column.id)) {
+      return <Badge variant="secondary" className="bg-blue-500/20 text-blue-700 dark:text-blue-300">Modified</Badge>;
+    }
+    if (column.is_default) {
+      return <Badge variant="secondary">Default</Badge>;
+    }
+    return null;
   };
 
   if (!selectedClient) {
@@ -272,6 +363,15 @@ export function TaskColumnManager() {
 
   return (
     <div className="space-y-6">
+      {hasUnsavedChanges && (
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            You have unsaved changes. Click "Save Settings" to persist your changes.
+          </AlertDescription>
+        </Alert>
+      )}
+      
       <Card>
         <CardHeader>
           <CardTitle>Task Board Columns</CardTitle>
@@ -337,9 +437,7 @@ export function TaskColumnManager() {
                                     style={{ backgroundColor: column.color || "#6B7280" }}
                                   />
                                   <span className="flex-1 font-medium">{column.name}</span>
-                                  {column.is_default && (
-                                    <Badge variant="secondary">Default</Badge>
-                                  )}
+                                  {getColumnBadge(column)}
                                   <Button
                                     size="sm"
                                     variant="ghost"
@@ -405,6 +503,32 @@ export function TaskColumnManager() {
                   <Plus className="h-4 w-4 mr-2" />
                   Add Column
                 </Button>
+              )}
+
+              {hasUnsavedChanges && (
+                <div className="flex gap-3 pt-4 border-t">
+                  <Button 
+                    onClick={handleSaveSettings} 
+                    disabled={isSaving}
+                    className="flex-1"
+                  >
+                    {isSaving ? (
+                      <>Saving...</>
+                    ) : (
+                      <>
+                        <Save className="h-4 w-4 mr-2" />
+                        Save Settings
+                      </>
+                    )}
+                  </Button>
+                  <Button 
+                    onClick={handleDiscardChanges} 
+                    variant="outline"
+                    disabled={isSaving}
+                  >
+                    Discard Changes
+                  </Button>
+                </div>
               )}
             </>
           )}
