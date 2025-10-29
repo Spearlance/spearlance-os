@@ -177,7 +177,7 @@ export default function CreateChannelTaskDialog({
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label htmlFor="status">Status</Label>
               <Select
@@ -212,44 +212,46 @@ export default function CreateChannelTaskDialog({
                 </SelectContent>
               </Select>
             </div>
-          </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="dueDate">Due Date</Label>
-            <Input
-              id="dueDate"
-              type="date"
-              value={formData.dueDate}
-              onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="assignees">Assignees</Label>
-            <AssigneeSelector
-              users={users}
-              selectedUserIds={selectedAssignees}
-              onSelectionChange={setSelectedAssignees}
-              disabled={loading}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="color">Color</Label>
-            <div className="flex gap-2 flex-wrap">
-              {["#EF4444", "#F59E0B", "#10B981", "#3B82F6", "#8B5CF6", "#EC4899", "#6B7280"].map((color) => (
-                <button
-                  key={color}
-                  type="button"
-                  className={`h-8 w-8 rounded-md border-2 transition-all ${
-                    selectedColor === color ? "border-primary scale-110" : "border-transparent"
-                  }`}
-                  style={{ backgroundColor: color }}
-                  onClick={() => setSelectedColor(color)}
-                />
-              ))}
+            <div className="space-y-2">
+              <Label htmlFor="dueDate">Due Date</Label>
+              <Input
+                id="dueDate"
+                type="date"
+                value={formData.dueDate}
+                onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
+              />
             </div>
           </div>
+
+            <div className="grid grid-cols-[1fr,auto] gap-4 items-start">
+              <div className="space-y-2">
+                <Label htmlFor="assignees">Assignees</Label>
+                <AssigneeSelector
+                  users={users}
+                  selectedUserIds={selectedAssignees}
+                  onSelectionChange={setSelectedAssignees}
+                  disabled={loading}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="color">Color</Label>
+                <div className="flex gap-1.5 flex-wrap max-w-[120px]">
+                  {["#EF4444", "#F59E0B", "#10B981", "#3B82F6", "#8B5CF6", "#EC4899", "#6B7280"].map((color) => (
+                    <button
+                      key={color}
+                      type="button"
+                      className={`h-8 w-8 rounded-md border-2 transition-all ${
+                        selectedColor === color ? "border-primary scale-110" : "border-transparent"
+                      }`}
+                      style={{ backgroundColor: color }}
+                      onClick={() => setSelectedColor(color)}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
 
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
