@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { getLateApiKey } from "../_shared/lateClient.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -60,11 +61,15 @@ serve(async (req) => {
 
     console.log('Calling Late API endpoint:', lateEndpoint);
 
+    // Get Late API key for authentication
+    const lateApiKey = getLateApiKey();
+
     // Fetch the authUrl from Late
     const response = await fetch(lateEndpoint, {
       method: 'GET',
       headers: {
-        'Accept': 'application/json'
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${lateApiKey}`
       }
     });
 
