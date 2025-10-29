@@ -293,7 +293,7 @@ export default function Tasks() {
           .from("task_assignees")
           .select(`
             user_id,
-            profiles:user_id (id, name, avatar_url)
+            profiles!user_id (id, name, avatar_url)
           `)
           .eq("task_id", task.id);
 
