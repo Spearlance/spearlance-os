@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useClient } from "@/contexts/ClientContext";
@@ -206,19 +207,36 @@ export function CreateTaskDialog({ open, onOpenChange, onSuccess }: CreateTaskDi
           </div>
           <div>
             <Label htmlFor="color">Color</Label>
-            <div className="flex gap-2 flex-wrap">
-              {["#EF4444", "#F59E0B", "#10B981", "#3B82F6", "#8B5CF6", "#EC4899", "#6B7280"].map((color) => (
-                <button
-                  key={color}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
                   type="button"
-                  className={`h-8 w-8 rounded-md border-2 transition-all ${
-                    selectedColor === color ? "border-primary scale-110" : "border-transparent"
-                  }`}
-                  style={{ backgroundColor: color }}
-                  onClick={() => setSelectedColor(color)}
-                />
-              ))}
-            </div>
+                  variant="outline"
+                  className="w-full h-10 justify-start"
+                >
+                  <div
+                    className="w-6 h-6 rounded border mr-2"
+                    style={{ backgroundColor: selectedColor }}
+                  />
+                  <span className="text-sm">Select color</span>
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-3" align="start">
+                <div className="flex gap-2 flex-wrap max-w-[200px]">
+                  {["#EF4444", "#F59E0B", "#10B981", "#3B82F6", "#8B5CF6", "#EC4899", "#6B7280"].map((color) => (
+                    <button
+                      key={color}
+                      type="button"
+                      className={`h-8 w-8 rounded-md border-2 transition-all ${
+                        selectedColor === color ? "border-primary scale-110" : "border-gray-200"
+                      }`}
+                      style={{ backgroundColor: color }}
+                      onClick={() => setSelectedColor(color)}
+                    />
+                  ))}
+                </div>
+              </PopoverContent>
+            </Popover>
           </div>
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
