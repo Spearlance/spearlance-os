@@ -6,7 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
+import { useToast } from "@/hooks/use-toast";
+import { AssigneeSelector } from "../tasks/AssigneeSelector";
 
 interface CreateChannelTaskDialogProps {
   open: boolean;
@@ -19,6 +20,7 @@ interface CreateChannelTaskDialogProps {
 interface User {
   id: string;
   name: string;
+  avatar_url?: string;
 }
 
 export default function CreateChannelTaskDialog({
@@ -30,13 +32,15 @@ export default function CreateChannelTaskDialog({
 }: CreateChannelTaskDialogProps) {
   const [loading, setLoading] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
+  const [selectedAssignees, setSelectedAssignees] = useState<string[]>([]);
+  const [selectedColor, setSelectedColor] = useState("#6B7280");
+  const { toast } = useToast();
   const [formData, setFormData] = useState({
     title: "",
     description: "",
     status: "to_do" as const,
     priority: "normal" as const,
     dueDate: "",
-    assigneeId: "",
   });
 
   useEffect(() => {
@@ -49,14 +53,18 @@ export default function CreateChannelTaskDialog({
     try {
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, name")
+        .select("id, name, avatar_url")
         .contains("associated_client_ids", [clientId]);
 
       if (error) throw error;
       setUsers(data || []);
     } catch (error) {
       console.error("Error loading users:", error);
-      toast.error("Failed to load team members");
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to load team members",
+      });
     }
   };
 
@@ -78,7 +86,7 @@ export default function CreateChannelTaskDialog({
           status: formData.status,
           priority: formData.priority,
           due_date: formData.dueDate || null,
-          assignee_user_id: formData.assigneeId || null,
+          color: selectedColor,
           client_id: clientId,
           creator_user_id: user.id,
         })
@@ -86,6 +94,20 @@ export default function CreateChannelTaskDialog({
         .single();
 
       if (taskError) throw taskError;
+
+      // Add assignees
+      if (selectedAssignees.length > 0 && task) {
+        const assigneeInserts = selectedAssignees.map(userId => ({
+          task_id: task.id,
+          user_id: userId,
+        }));
+        
+        const { error: assigneeError } = await supabase
+          .from("task_assignees")
+          .insert(assigneeInserts);
+        
+        if (assigneeError) throw assigneeError;
+      }
 
       // Link the task to the channel
       const { error: linkError } = await supabase
@@ -98,7 +120,10 @@ export default function CreateChannelTaskDialog({
 
       if (linkError) throw linkError;
 
-      toast.success("Task created and linked to channel");
+      toast({
+        title: "Success",
+        description: "Task created and linked to channel",
+      });
       
       // Reset form
       setFormData({
@@ -107,14 +132,19 @@ export default function CreateChannelTaskDialog({
         status: "to_do",
         priority: "normal",
         dueDate: "",
-        assigneeId: "",
       });
+      setSelectedAssignees([]);
+      setSelectedColor("#6B7280");
 
       onOpenChange(false);
       onSuccess?.();
     } catch (error) {
       console.error("Error creating task:", error);
-      toast.error("Failed to create task");
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to create task",
+      });
     } finally {
       setLoading(false);
     }
@@ -178,40 +208,46 @@ export default function CreateChannelTaskDialog({
                   <SelectItem value="low">Low</SelectItem>
                   <SelectItem value="normal">Normal</SelectItem>
                   <SelectItem value="high">High</SelectItem>
+                  <SelectItem value="urgent">Urgent</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="dueDate">Due Date</Label>
-              <Input
-                id="dueDate"
-                type="date"
-                value={formData.dueDate}
-                onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
-              />
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="dueDate">Due Date</Label>
+            <Input
+              id="dueDate"
+              type="date"
+              value={formData.dueDate}
+              onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
+            />
+          </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="assignee">Assignee</Label>
-              <Select
-                value={formData.assigneeId || "unassigned"}
-                onValueChange={(value) => setFormData({ ...formData, assigneeId: value === "unassigned" ? "" : value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select assignee" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="unassigned">Unassigned</SelectItem>
-                  {users.map((user) => (
-                    <SelectItem key={user.id} value={user.id}>
-                      {user.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          <div className="space-y-2">
+            <Label htmlFor="assignees">Assignees</Label>
+            <AssigneeSelector
+              users={users}
+              selectedUserIds={selectedAssignees}
+              onSelectionChange={setSelectedAssignees}
+              disabled={loading}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="color">Color</Label>
+            <div className="flex gap-2 flex-wrap">
+              {["#EF4444", "#F59E0B", "#10B981", "#3B82F6", "#8B5CF6", "#EC4899", "#6B7280"].map((color) => (
+                <button
+                  key={color}
+                  type="button"
+                  className={`h-8 w-8 rounded-md border-2 transition-all ${
+                    selectedColor === color ? "border-primary scale-110" : "border-transparent"
+                  }`}
+                  style={{ backgroundColor: color }}
+                  onClick={() => setSelectedColor(color)}
+                />
+              ))}
             </div>
           </div>
 
