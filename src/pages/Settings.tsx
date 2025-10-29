@@ -25,6 +25,7 @@ export default function Settings() {
   const { selectedClient, refreshClients } = useClient();
   const [client, setClient] = useState<any>(null);
   const [userProfile, setUserProfile] = useState<any>(null);
+  const [userRole, setUserRole] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [teamRefresh, setTeamRefresh] = useState(0);
   const [profileRefresh, setProfileRefresh] = useState(0);
@@ -47,6 +48,7 @@ export default function Settings() {
         .eq("id", user.id)
         .single();
       setUserProfile(profile);
+      setUserRole(profile?.role || "");
 
       // Check if user is a primary contact for the selected client
       if (selectedClient) {
@@ -453,7 +455,7 @@ export default function Settings() {
 
         {canViewBilling && (
           <TabsContent value="billing" className="space-y-4">
-            {client && <BillingTab client={client} />}
+            {client && <BillingTab client={client} isAdmin={userRole === 'admin'} onUpdate={refreshClients} />}
           </TabsContent>
         )}
         </Tabs>

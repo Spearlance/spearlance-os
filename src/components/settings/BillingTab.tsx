@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { CreditCard, ExternalLink, Users } from "lucide-react";
@@ -14,18 +16,25 @@ interface BillingTabProps {
     name: string;
     subscription_status?: string;
     stripe_customer_id?: string;
+    stripe_subscription_id?: string;
     billing_plan_id?: string;
+    billing_method?: string;
     billing_plans?: {
       name: string;
       price_monthly: number;
       max_team_members: number | null;
     };
   };
+  isAdmin?: boolean;
+  onUpdate?: () => void;
 }
 
-export function BillingTab({ client }: BillingTabProps) {
+export function BillingTab({ client, isAdmin = false, onUpdate }: BillingTabProps) {
   const [loadingPortal, setLoadingPortal] = useState(false);
   const [pricingModalOpen, setPricingModalOpen] = useState(false);
+  const [stripeCustomerId, setStripeCustomerId] = useState(client.stripe_customer_id || "");
+  const [stripeSubscriptionId, setStripeSubscriptionId] = useState(client.stripe_subscription_id || "");
+  const [savingStripeIds, setSavingStripeIds] = useState(false);
   const { toast } = useToast();
   const { trialDaysRemaining, isInTrial } = useAccountType();
 
@@ -45,6 +54,58 @@ export function BillingTab({ client }: BillingTabProps) {
   const getStatusDisplay = (status?: string) => {
     if (!status) return "No Subscription";
     return status.charAt(0).toUpperCase() + status.slice(1).replace("_", " ");
+  };
+
+  const validateStripeIds = () => {
+    if (stripeCustomerId && !stripeCustomerId.startsWith('cus_')) {
+      return { valid: false, error: "Customer ID must start with 'cus_'" };
+    }
+    if (stripeSubscriptionId && !stripeSubscriptionId.startsWith('sub_')) {
+      return { valid: false, error: "Subscription ID must start with 'sub_'" };
+    }
+    return { valid: true };
+  };
+
+  const handleSaveStripeIds = async () => {
+    const validation = validateStripeIds();
+    if (!validation.valid) {
+      toast({ 
+        title: "Invalid Format", 
+        description: validation.error, 
+        variant: "destructive" 
+      });
+      return;
+    }
+
+    setSavingStripeIds(true);
+    try {
+      const { error } = await supabase
+        .from('clients')
+        .update({
+          stripe_customer_id: stripeCustomerId || null,
+          stripe_subscription_id: stripeSubscriptionId || null,
+          billing_method: stripeCustomerId ? 'stripe' : client.billing_method,
+          subscription_status: stripeSubscriptionId ? 'active' : client.subscription_status
+        })
+        .eq('id', client.id);
+
+      if (error) throw error;
+
+      toast({ 
+        title: "Stripe IDs saved", 
+        description: "Billing will now sync with Stripe" 
+      });
+      onUpdate?.();
+    } catch (error: any) {
+      console.error("Error saving Stripe IDs:", error);
+      toast({ 
+        title: "Error saving", 
+        description: error.message || "Please try again later", 
+        variant: "destructive" 
+      });
+    } finally {
+      setSavingStripeIds(false);
+    }
   };
 
   const handleManageBilling = async () => {
@@ -133,6 +194,44 @@ export function BillingTab({ client }: BillingTabProps) {
           )}
         </CardContent>
       </Card>
+
+      {isAdmin && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Link Existing Stripe Customer</CardTitle>
+            <CardDescription>
+              For existing Stripe customers: enter their IDs to link the account
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="stripe-customer-id">Stripe Customer ID</Label>
+              <Input
+                id="stripe-customer-id"
+                placeholder="cus_xxxxxxxxx"
+                value={stripeCustomerId}
+                onChange={(e) => setStripeCustomerId(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="stripe-subscription-id">Stripe Subscription ID</Label>
+              <Input
+                id="stripe-subscription-id"
+                placeholder="sub_xxxxxxxxx"
+                value={stripeSubscriptionId}
+                onChange={(e) => setStripeSubscriptionId(e.target.value)}
+              />
+            </div>
+            <Button
+              onClick={handleSaveStripeIds}
+              disabled={savingStripeIds || (!stripeCustomerId && !stripeSubscriptionId)}
+              className="w-full"
+            >
+              {savingStripeIds ? "Saving..." : "Save Stripe IDs"}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>
