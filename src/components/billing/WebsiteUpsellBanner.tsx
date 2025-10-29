@@ -78,8 +78,8 @@ export function WebsiteUpsellBanner({ onUpgradeClick }: WebsiteUpsellBannerProps
         <AlertDescription className="flex flex-col gap-1">
           <span className="font-medium">
             {hasStripeCustomer 
-              ? "Add a professional website + AI tools for $750 (includes $5K tax credit)"
-              : "Unlock your professional website with AI tools – $750 add-on (includes $5K tax credit)"}
+              ? "Add a professional website + AI tools for $750"
+              : "Unlock your professional website with AI tools – $750 add-on"}
           </span>
           <span className="text-sm opacity-80">
             Included free in Unlimited plan
