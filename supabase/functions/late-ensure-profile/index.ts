@@ -71,7 +71,7 @@ serve(async (req) => {
     const lateProfile = await lateFetch('/profiles', {
       method: 'POST',
       body: JSON.stringify({
-        name: client.name,
+        name: `${client.name} (${client_id.substring(0, 8)})`,
         description: `Profile for ${client.name}`,
         color: '#6366f1'
       })
@@ -86,7 +86,7 @@ serve(async (req) => {
       .insert({
         client_id: client_id,
         late_profile_id: lateProfileId,
-        profile_name: client.name
+        late_profile_name: `${client.name} (${client_id.substring(0, 8)})`
       })
       .select()
       .single();
