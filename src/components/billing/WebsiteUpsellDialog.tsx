@@ -103,12 +103,14 @@ export function WebsiteUpsellDialog({ open, onOpenChange, onUpgradeClick }: Webs
                     <Check className="h-4 w-4 text-green-600 shrink-0 mt-0.5" />
                     <span className="text-sm">ADA-compliant accessibility</span>
                   </li>
-                <li className="flex items-start gap-2">
-                  <Check className="h-4 w-4 text-purple-600 shrink-0 mt-0.5" />
-                  <span className="text-sm font-semibold text-purple-700 dark:text-purple-300">
-                    ADA federal tax credit
-                  </span>
-                </li>
+                  <li className="flex items-start gap-2">
+                    <Check className="h-4 w-4 text-green-600 shrink-0 mt-0.5" />
+                    <span className="text-sm">50% ADA federal tax credit (up to $5,000 back)</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <Check className="h-4 w-4 text-green-600 shrink-0 mt-0.5" />
+                    <span className="text-sm">Synced with your SpearlanceOS platform</span>
+                  </li>
                 </ul>
               </CardContent>
 
@@ -160,13 +162,8 @@ export function WebsiteUpsellDialog({ open, onOpenChange, onUpgradeClick }: Webs
             </CardHeader>
 
             <CardContent>
+              <p className="text-sm text-muted-foreground mb-3">Everything in the one-time payment, plus:</p>
               <ul className="space-y-2">
-                <li className="flex items-start gap-2">
-                  <Globe className="h-4 w-4 text-purple-600 shrink-0 mt-0.5" />
-                  <span className="text-sm font-semibold text-purple-700 dark:text-purple-300">
-                    Free Website Redesign ($2,000 Value)
-                  </span>
-                </li>
                 <li className="flex items-start gap-2">
                   <Edit className="h-4 w-4 text-green-600 shrink-0 mt-0.5" />
                   <span className="text-sm">Unlimited Website Edits Included</span>
@@ -174,6 +171,12 @@ export function WebsiteUpsellDialog({ open, onOpenChange, onUpgradeClick }: Webs
                 <li className="flex items-start gap-2">
                   <Users className="h-4 w-4 text-green-600 shrink-0 mt-0.5" />
                   <span className="text-sm">Unlimited Team Access</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Globe className="h-4 w-4 text-purple-600 shrink-0 mt-0.5" />
+                  <span className="text-sm font-semibold text-purple-700 dark:text-purple-300">
+                    Free Website Redesign ($2,000 Value)
+                  </span>
                 </li>
                 <li className="flex items-start gap-2">
                   <Award className="h-4 w-4 text-purple-600 shrink-0 mt-0.5" />
