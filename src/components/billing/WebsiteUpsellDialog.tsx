@@ -93,7 +93,7 @@ export function WebsiteUpsellDialog({ open, onOpenChange, onUpgradeClick }: Webs
                   </li>
                   <li className="flex items-start gap-2">
                     <Check className="h-4 w-4 text-green-600 shrink-0 mt-0.5" />
-                    <span className="text-sm">AI Copywriter & SEO tools included</span>
+                    <span className="text-sm">Up to 15 professionally designed pages, plus unlimited pages your team can create with AI</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <Check className="h-4 w-4 text-green-600 shrink-0 mt-0.5" />
