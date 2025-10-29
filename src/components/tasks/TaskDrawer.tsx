@@ -676,23 +676,6 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
                 </div>
               </div>
             </ScrollArea>
-            
-            <div className="flex gap-2 pt-4">
-              <Button onClick={handleSave} className="flex-1">Save Changes</Button>
-              <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-              {isAdminOrFMM && (
-                <DeleteTaskDialog
-                  taskTitle={task.title}
-                  taskId={task.id}
-                  onConfirm={handleDeleteTask}
-                  trigger={
-                    <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive hover:bg-destructive/10">
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  }
-                />
-              )}
-            </div>
           </TabsContent>
 
           <TabsContent value="comments" className="mt-4 flex-1 flex flex-col overflow-hidden">
@@ -995,6 +978,24 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
             </ScrollArea>
           </TabsContent>
         </Tabs>
+
+        {/* Action Buttons - Always Visible */}
+        <div className="flex gap-2 pt-4 mt-4 border-t">
+          <Button onClick={handleSave} className="flex-1">Save Changes</Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+          {isAdminOrFMM && (
+            <DeleteTaskDialog
+              taskTitle={task.title}
+              taskId={task.id}
+              onConfirm={handleDeleteTask}
+              trigger={
+                <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive hover:bg-destructive/10">
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              }
+            />
+          )}
+        </div>
 
       </SheetContent>
     </Sheet>
