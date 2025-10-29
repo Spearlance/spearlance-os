@@ -469,7 +469,7 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
           </TabsList>
 
           <TabsContent value="details" className="mt-4">
-            <ScrollArea className="h-[calc(100vh-280px)] pr-4">
+            <ScrollArea className="h-[calc(100vh-340px)] pr-4">
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label>Title</Label>
@@ -565,25 +565,25 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
                     </Popover>
                   </div>
                 </div>
-
-                <div className="flex gap-2 pt-4 pb-2">
-                  <Button onClick={handleSave} className="flex-1">Save Changes</Button>
-                  <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-                  {isAdminOrFMM && (
-                    <DeleteTaskDialog
-                      taskTitle={task.title}
-                      taskId={task.id}
-                      onConfirm={handleDeleteTask}
-                      trigger={
-                        <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive hover:bg-destructive/10">
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      }
-                    />
-                  )}
-                </div>
               </div>
             </ScrollArea>
+            
+            <div className="flex gap-2 pt-4">
+              <Button onClick={handleSave} className="flex-1">Save Changes</Button>
+              <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+              {isAdminOrFMM && (
+                <DeleteTaskDialog
+                  taskTitle={task.title}
+                  taskId={task.id}
+                  onConfirm={handleDeleteTask}
+                  trigger={
+                    <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive hover:bg-destructive/10">
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  }
+                />
+              )}
+            </div>
           </TabsContent>
 
           <TabsContent value="comments" className="mt-4">
