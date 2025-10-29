@@ -88,6 +88,45 @@ serve(async (req) => {
         }
 
         console.log('Updated subscription:', subscription.id, subscription.status);
+
+        // Check if this is an Unlimited plan subscription and end trial immediately
+        const subscription_details = await stripe.subscriptions.retrieve(subscription.id, {
+          expand: ['items.data.price.product']
+        });
+
+        const price = subscription_details.items.data[0]?.price;
+        const product = price?.product;
+        const productId = typeof product === 'string' ? product : product?.id;
+
+        // TODO: Replace this with your actual Unlimited plan product ID from Stripe Dashboard
+        const unlimitedProductId = 'prod_UNLIMITED_PLAN_ID';
+
+        if (productId === unlimitedProductId) {
+          console.log('Unlimited plan detected - ending trial and unlocking website');
+          
+          const { data: clientData } = await supabaseAdmin
+            .from('clients')
+            .select('id')
+            .eq('stripe_customer_id', subscription.customer as string)
+            .eq('billing_method', 'stripe')
+            .single();
+
+          if (clientData) {
+            // End trial immediately and unlock website
+            await supabaseAdmin
+              .from('clients')
+              .update({
+                trial_end_date: new Date().toISOString(), // End trial now
+                subscription_status: 'active',
+                status: 'active',
+                website_unlocked: true, // Unlock website immediately
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', clientData.id);
+            
+            console.log('Trial ended and website unlocked for client:', clientData.id);
+          }
+        }
         break;
       }
 

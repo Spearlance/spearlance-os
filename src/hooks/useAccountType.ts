@@ -17,6 +17,9 @@ export const useAccountType = () => {
   const billingMethod = selectedClient?.billing_method;
   const hasPaidAccess = billingMethod === 'direct' || billingMethod === 'free';
   
+  // If user has active subscription, they have full access regardless of trial status
+  const hasActiveSubscription = isActive && selectedClient?.stripe_subscription_id;
+  
   return {
     isSelfService,
     isManaged,
@@ -25,6 +28,6 @@ export const useAccountType = () => {
     isPaused,
     trialDaysRemaining,
     billingMethod,
-    hasAccess: isActive || isInTrial || hasPaidAccess,
+    hasAccess: isActive || isInTrial || hasPaidAccess || hasActiveSubscription,
   };
 };

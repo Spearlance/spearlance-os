@@ -119,8 +119,26 @@ serve(async (req) => {
       metadata: { client_id: clientId }
     };
 
-    // If still in trial period, extend it in Stripe
-    if (trialEnd && daysRemaining > 0) {
+    // Check if this is the Unlimited plan - TODO: Replace with your actual Unlimited product ID
+    const unlimitedProductId = 'prod_UNLIMITED_PLAN_ID';
+
+    // Get price details to check product
+    const priceDetails = await stripe.prices.retrieve(priceId, {
+      expand: ['product']
+    });
+
+    const productId = typeof priceDetails.product === 'string' 
+      ? priceDetails.product 
+      : priceDetails.product?.id;
+
+    const isUnlimitedPlan = productId === unlimitedProductId;
+
+    if (isUnlimitedPlan) {
+      // Unlimited plan - end trial immediately upon checkout completion
+      console.log('Unlimited plan detected - trial will end immediately, no trial extension');
+      // No trial_end set, subscription starts billing immediately
+    } else if (trialEnd && daysRemaining > 0) {
+      // Other plans - extend existing trial in Stripe
       subscriptionData.trial_end = Math.floor(trialEnd.getTime() / 1000);
       console.log(`Trial extended in Stripe: ${daysRemaining} days remaining`);
     }

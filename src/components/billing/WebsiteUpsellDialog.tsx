@@ -74,12 +74,15 @@ export function WebsiteUpsellDialog({ open, onOpenChange, onUpgradeClick }: Webs
                   <Globe className="h-5 w-5 text-primary" />
                   <CardTitle>Website Add-on</CardTitle>
                 </div>
-                <div className="text-3xl font-bold text-foreground">
-                  $750
-                  <span className="text-base font-normal text-muted-foreground ml-1">
-                    one-time
-                  </span>
-                </div>
+              <div className="text-3xl font-bold text-foreground">
+                $750
+                <span className="text-base font-normal text-muted-foreground ml-1">
+                  one-time
+                </span>
+              </div>
+              <p className="text-sm text-muted-foreground mt-1">
+                (then just $99/mo after free trial)
+              </p>
                 <CardDescription className="mt-2">
                   Add website features to your current Starter plan
                 </CardDescription>
