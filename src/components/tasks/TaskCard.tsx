@@ -84,7 +84,9 @@ export const TaskCard = ({ task, onClick, isDragging }: TaskCardProps) => {
           {task.assignees?.slice(0, 3).map((assignee) => (
             <Avatar key={assignee.id} className="h-6 w-6 border-2 border-background">
               <AvatarImage src={assignee.avatar_url} />
-              <AvatarFallback className="text-xs">{assignee.name[0]}</AvatarFallback>
+              <AvatarFallback className="text-xs">
+                {assignee.name?.[0]?.toUpperCase() || '?'}
+              </AvatarFallback>
             </Avatar>
           ))}
           {task.assignees && task.assignees.length > 3 && (

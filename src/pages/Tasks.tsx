@@ -310,7 +310,11 @@ export default function Tasks() {
 
         return {
           ...task,
-          assignees: assignees?.map(a => a.profiles).filter(Boolean) || [],
+        assignees: assignees?.map((a: any) => ({
+          id: a.profiles?.id || a.user_id,
+          name: a.profiles?.name || 'Unknown User',
+          avatar_url: a.profiles?.avatar_url
+        })).filter((p: any) => p.id) || [],
           subtask_count: subtasks?.length || 0,
           completed_subtasks: subtasks?.filter(st => st.status === "done").length || 0,
           tags: tagLinks?.map(tl => tl.task_tags).filter(Boolean) || [],
