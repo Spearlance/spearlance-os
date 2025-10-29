@@ -119,6 +119,11 @@ export default function WebsiteFormSubmissions() {
         sub.id === submissionId ? { ...sub, status: newStatus } : sub
       ));
 
+      // Also update selectedSubmission if it's the one being updated
+      if (selectedSubmission?.id === submissionId) {
+        setSelectedSubmission({ ...selectedSubmission, status: newStatus });
+      }
+
       toast({
         title: "Success",
         description: "Submission status updated",
