@@ -279,16 +279,44 @@ export function TaskColumnManager() {
         if (error) throw error;
       }
 
-      // 4. Update display order if reordered
+      // 4. Update display order if reordered (two-phase update to avoid UNIQUE constraint conflicts)
       if (pendingChanges.reordered) {
+        console.log("Reordering columns - Phase 1: Moving to temporary positions");
+        
+        // Phase 1: Move all columns to temporary negative positions
+        for (let i = 0; i < columns.length; i++) {
+          const column = columns[i];
+          if (!column.id.startsWith('temp-')) {
+            const { error } = await supabase
+              .from("task_columns")
+              .update({ display_order: -(i + 1000) }) // Use large negative offset to avoid conflicts
+              .eq("id", column.id);
+            
+            if (error) {
+              console.error("Error in phase 1 reorder:", error);
+              throw error;
+            }
+          }
+        }
+        
+        console.log("Reordering columns - Phase 2: Moving to final positions");
+        
+        // Phase 2: Update to final positions
         for (const column of columns) {
           if (!column.id.startsWith('temp-')) {
-            await supabase
+            const { error } = await supabase
               .from("task_columns")
               .update({ display_order: column.display_order })
               .eq("id", column.id);
+            
+            if (error) {
+              console.error("Error in phase 2 reorder:", error);
+              throw error;
+            }
           }
         }
+        
+        console.log("Reordering complete");
       }
 
       toast({
