@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useClient } from "@/contexts/ClientContext";
+import { AssigneeSelector } from "./AssigneeSelector";
 
 interface CreateTaskDialogProps {
   open: boolean;
@@ -18,6 +19,7 @@ interface CreateTaskDialogProps {
 interface User {
   id: string;
   name: string;
+  avatar_url?: string;
 }
 
 export function CreateTaskDialog({ open, onOpenChange, onSuccess }: CreateTaskDialogProps) {
@@ -25,13 +27,14 @@ export function CreateTaskDialog({ open, onOpenChange, onSuccess }: CreateTaskDi
   const { selectedClient } = useClient();
   const [loading, setLoading] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
+  const [selectedAssignees, setSelectedAssignees] = useState<string[]>([]);
+  const [selectedColor, setSelectedColor] = useState("#6B7280");
   const [formData, setFormData] = useState({
     title: "",
     description: "",
     status: "to_do",
     priority: "normal",
     due_date: "",
-    assignee_user_id: "",
   });
 
   useEffect(() => {
@@ -45,7 +48,7 @@ export function CreateTaskDialog({ open, onOpenChange, onSuccess }: CreateTaskDi
 
     const { data } = await supabase
       .from("profiles")
-      .select("id, name")
+      .select("id, name, avatar_url")
       .contains("associated_client_ids", [selectedClient.id]);
 
     if (data) {
@@ -74,7 +77,8 @@ export function CreateTaskDialog({ open, onOpenChange, onSuccess }: CreateTaskDi
         throw new Error("Not authenticated");
       }
 
-      const { error } = await supabase
+      // Create the task
+      const { data: newTask, error } = await supabase
         .from("tasks")
         .insert([{
           client_id: selectedClient.id,
@@ -83,11 +87,27 @@ export function CreateTaskDialog({ open, onOpenChange, onSuccess }: CreateTaskDi
           status: formData.status as "to_do" | "in_progress" | "done",
           priority: formData.priority as "low" | "normal" | "high" | "urgent",
           due_date: formData.due_date || null,
-          assignee_user_id: formData.assignee_user_id || null,
+          color: selectedColor,
           creator_user_id: user.id,
-        }]);
+        }])
+        .select()
+        .single();
 
       if (error) throw error;
+
+      // Add assignees
+      if (selectedAssignees.length > 0 && newTask) {
+        const assigneeInserts = selectedAssignees.map(userId => ({
+          task_id: newTask.id,
+          user_id: userId,
+        }));
+        
+        const { error: assigneeError } = await supabase
+          .from("task_assignees")
+          .insert(assigneeInserts);
+        
+        if (assigneeError) throw assigneeError;
+      }
 
       toast({
         title: "Success",
@@ -95,7 +115,9 @@ export function CreateTaskDialog({ open, onOpenChange, onSuccess }: CreateTaskDi
       });
 
       onOpenChange(false);
-      setFormData({ title: "", description: "", status: "to_do", priority: "normal", due_date: "", assignee_user_id: "" });
+      setFormData({ title: "", description: "", status: "to_do", priority: "normal", due_date: "" });
+      setSelectedAssignees([]);
+      setSelectedColor("#6B7280");
       onSuccess?.();
     } catch (error) {
       console.error("Error creating task:", error);
@@ -174,19 +196,29 @@ export function CreateTaskDialog({ open, onOpenChange, onSuccess }: CreateTaskDi
             />
           </div>
           <div>
-            <Label htmlFor="assignee">Assignee</Label>
-            <Select value={formData.assignee_user_id} onValueChange={(value) => setFormData({ ...formData, assignee_user_id: value })}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select assignee..." />
-              </SelectTrigger>
-              <SelectContent>
-                {users.map((user) => (
-                  <SelectItem key={user.id} value={user.id}>
-                    {user.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label htmlFor="assignees">Assignees</Label>
+            <AssigneeSelector
+              users={users}
+              selectedUserIds={selectedAssignees}
+              onSelectionChange={setSelectedAssignees}
+              disabled={loading}
+            />
+          </div>
+          <div>
+            <Label htmlFor="color">Color</Label>
+            <div className="flex gap-2 flex-wrap">
+              {["#EF4444", "#F59E0B", "#10B981", "#3B82F6", "#8B5CF6", "#EC4899", "#6B7280"].map((color) => (
+                <button
+                  key={color}
+                  type="button"
+                  className={`h-8 w-8 rounded-md border-2 transition-all ${
+                    selectedColor === color ? "border-primary scale-110" : "border-transparent"
+                  }`}
+                  style={{ backgroundColor: color }}
+                  onClick={() => setSelectedColor(color)}
+                />
+              ))}
+            </div>
           </div>
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>

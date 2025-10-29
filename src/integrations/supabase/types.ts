@@ -3080,6 +3080,35 @@ export type Database = {
         }
         Relationships: []
       }
+      task_assignees: {
+        Row: {
+          created_at: string | null
+          id: string
+          task_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          task_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          task_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_assignees_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       task_comments: {
         Row: {
           body: string
@@ -3119,21 +3148,86 @@ export type Database = {
           },
         ]
       }
+      task_tag_links: {
+        Row: {
+          tag_id: string
+          task_id: string
+        }
+        Insert: {
+          tag_id: string
+          task_id: string
+        }
+        Update: {
+          tag_id?: string
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_tag_links_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "task_tags"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_tag_links_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      task_tags: {
+        Row: {
+          client_id: string
+          color: string | null
+          created_at: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          client_id: string
+          color?: string | null
+          created_at?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          client_id?: string
+          color?: string | null
+          created_at?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_tags_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tasks: {
         Row: {
           activity_log: string | null
           assignee_user_id: string | null
           client_id: string
+          color: string | null
           created_at: string | null
           creator_user_id: string | null
           description: string | null
           due_date: string | null
           id: string
           linked_channel_id: string | null
+          parent_task_id: string | null
           priority: Database["public"]["Enums"]["task_priority"] | null
           related_asset_ids: string[] | null
           related_meeting_ids: string[] | null
           status: Database["public"]["Enums"]["task_status"] | null
+          subtask_order: number | null
           title: string
           updated_at: string | null
         }
@@ -3141,16 +3235,19 @@ export type Database = {
           activity_log?: string | null
           assignee_user_id?: string | null
           client_id: string
+          color?: string | null
           created_at?: string | null
           creator_user_id?: string | null
           description?: string | null
           due_date?: string | null
           id?: string
           linked_channel_id?: string | null
+          parent_task_id?: string | null
           priority?: Database["public"]["Enums"]["task_priority"] | null
           related_asset_ids?: string[] | null
           related_meeting_ids?: string[] | null
           status?: Database["public"]["Enums"]["task_status"] | null
+          subtask_order?: number | null
           title: string
           updated_at?: string | null
         }
@@ -3158,16 +3255,19 @@ export type Database = {
           activity_log?: string | null
           assignee_user_id?: string | null
           client_id?: string
+          color?: string | null
           created_at?: string | null
           creator_user_id?: string | null
           description?: string | null
           due_date?: string | null
           id?: string
           linked_channel_id?: string | null
+          parent_task_id?: string | null
           priority?: Database["public"]["Enums"]["task_priority"] | null
           related_asset_ids?: string[] | null
           related_meeting_ids?: string[] | null
           status?: Database["public"]["Enums"]["task_status"] | null
+          subtask_order?: number | null
           title?: string
           updated_at?: string | null
         }
@@ -3198,6 +3298,13 @@ export type Database = {
             columns: ["linked_channel_id"]
             isOneToOne: false
             referencedRelation: "marketing_flow_channels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_parent_task_id_fkey"
+            columns: ["parent_task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
             referencedColumns: ["id"]
           },
         ]
