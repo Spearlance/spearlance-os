@@ -565,7 +565,7 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
             <TabsTrigger value="related">Related</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="details" className="flex-1 flex flex-col overflow-hidden">
+          <TabsContent value="details" className="mt-0 flex-1 flex flex-col overflow-hidden">
             <ScrollArea className="flex-1 h-full pr-4">
               <div className="space-y-4">
                 <div className="space-y-2">
@@ -678,7 +678,7 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
             </ScrollArea>
           </TabsContent>
 
-          <TabsContent value="comments" className="flex-1 flex flex-col overflow-hidden">
+          <TabsContent value="comments" className="mt-0 flex-1 flex flex-col overflow-hidden">
             <ScrollArea className="flex-1 h-full pr-4">
               <div className="space-y-4">
                 {comments.map((comment) => (
@@ -714,7 +714,7 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
             </div>
           </TabsContent>
 
-          <TabsContent value="related" className="flex-1 flex flex-col overflow-hidden">
+          <TabsContent value="related" className="mt-0 flex-1 flex flex-col overflow-hidden">
             <ScrollArea className="flex-1 h-full pr-4">
               <div className="space-y-6">
                 {/* Related Channels */}
