@@ -31,6 +31,15 @@ const priorityColors = {
   low: "#6B7280",
 };
 
+const getInitials = (name: string) => {
+  if (!name) return '?';
+  const parts = name.trim().split(' ');
+  if (parts.length >= 2) {
+    return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+  }
+  return name.substring(0, 2).toUpperCase();
+};
+
 export const TaskCard = ({ task, onClick, isDragging }: TaskCardProps) => {
   const borderColor = task.color || priorityColors[task.priority as keyof typeof priorityColors] || "#6B7280";
 
@@ -86,7 +95,7 @@ export const TaskCard = ({ task, onClick, isDragging }: TaskCardProps) => {
               <Avatar key={assignee.id} className="h-6 w-6 border-2 border-background">
                 <AvatarImage src={assignee.avatar_url || undefined} />
                 <AvatarFallback className="text-xs">
-                  {assignee.name?.[0]?.toUpperCase() || '?'}
+                  {getInitials(assignee.name || '')}
                 </AvatarFallback>
               </Avatar>
             ))}
