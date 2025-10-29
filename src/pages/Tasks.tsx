@@ -17,6 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 interface Task {
   id: string;
@@ -542,30 +543,49 @@ export default function Tasks() {
                         }`}
                       >
                         {!doneColumnExpanded ? (
-                          // COLLAPSED STATE
-                          <button
-                            onClick={() => setDoneColumnExpanded(true)}
-                            className="h-full w-full rounded-lg border-2 relative overflow-hidden hover:shadow-md transition-shadow"
-                            style={{ 
-                              backgroundColor: `${doneColumn.color}15`, 
-                              borderColor: `${doneColumn.color}40` 
-                            }}
-                          >
-                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
-                              <div 
-                                className="h-8 w-8 rounded-full flex items-center justify-center text-sm font-bold text-white"
-                                style={{ backgroundColor: doneColumn.color }}
+                          // COLLAPSED STATE - Now droppable!
+                          <Droppable droppableId={doneColumn.key}>
+                            {(provided, snapshot) => (
+                              <div
+                                ref={provided.innerRef}
+                                {...provided.droppableProps}
+                                className="h-full"
                               >
-                                {doneColumnTasks.length}
+                                <button
+                                  onClick={() => setDoneColumnExpanded(true)}
+                                  className={cn(
+                                    "h-full w-full rounded-lg border-2 relative overflow-hidden hover:shadow-md transition-all",
+                                    snapshot.isDraggingOver && "ring-2 ring-offset-2"
+                                  )}
+                                  style={{ 
+                                    backgroundColor: `${doneColumn.color}15`, 
+                                    borderColor: snapshot.isDraggingOver 
+                                      ? doneColumn.color 
+                                      : `${doneColumn.color}40`,
+                                    ...(snapshot.isDraggingOver && {
+                                      '--tw-ring-color': doneColumn.color
+                                    } as React.CSSProperties)
+                                  }}
+                                >
+                                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
+                                    <div 
+                                      className="h-8 w-8 rounded-full flex items-center justify-center text-sm font-bold text-white"
+                                      style={{ backgroundColor: doneColumn.color }}
+                                    >
+                                      {doneColumnTasks.length}
+                                    </div>
+                                    <div 
+                                      className="text-sm font-semibold tracking-wider" 
+                                      style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}
+                                    >
+                                      {doneColumn.name.toUpperCase()}
+                                    </div>
+                                  </div>
+                                </button>
+                                {provided.placeholder}
                               </div>
-                              <div 
-                                className="text-sm font-semibold tracking-wider" 
-                                style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}
-                              >
-                                {doneColumn.name.toUpperCase()}
-                              </div>
-                            </div>
-                          </button>
+                            )}
+                          </Droppable>
                         ) : (
                           // EXPANDED STATE
                           <div className="space-y-4 h-full">
