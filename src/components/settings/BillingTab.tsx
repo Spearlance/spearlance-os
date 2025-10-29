@@ -154,9 +154,12 @@ export function BillingTab({ client, isAdmin = false, onUpdate }: BillingTabProp
             <div>
               <p className="text-sm font-medium">Current Plan</p>
               <p className="text-2xl font-bold">
-                {client.billing_plans?.name || "No Plan"}
+                {client.billing_method === 'direct' 
+                  ? "Custom Plan"
+                  : (client.billing_plans?.name || "No Plan")
+                }
               </p>
-              {client.billing_plans?.price_monthly && (
+              {client.billing_plans?.price_monthly && client.billing_method !== 'direct' && (
                 <p className="text-muted-foreground">
                   ${client.billing_plans.price_monthly}/month
                 </p>
