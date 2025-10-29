@@ -31,6 +31,7 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
   const [status, setStatus] = useState(task.status);
   const [priority, setPriority] = useState(task.priority);
   const [dueDate, setDueDate] = useState(task.due_date || "");
+  const [color, setColor] = useState(task.color || "#6B7280");
   const [comments, setComments] = useState<any[]>([]);
   const [newComment, setNewComment] = useState("");
   const [users, setUsers] = useState<any[]>([]);
@@ -329,6 +330,7 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
         priority,
         due_date: dueDate || null,
         assignee_user_id: assigneeId || null,
+        color,
       })
       .eq("id", task.id);
 
@@ -494,6 +496,25 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
                   onChange={(e) => setDueDate(e.target.value)}
                 />
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Task Color</Label>
+              <div className="flex gap-2 flex-wrap">
+                {["#EF4444", "#F59E0B", "#10B981", "#3B82F6", "#8B5CF6", "#EC4899", "#6B7280"].map((colorOption) => (
+                  <button
+                    key={colorOption}
+                    type="button"
+                    className={`h-8 w-8 rounded-md border-2 transition-all ${
+                      color === colorOption ? "border-primary scale-110" : "border-transparent hover:border-muted-foreground/30"
+                    }`}
+                    style={{ backgroundColor: colorOption }}
+                    onClick={() => setColor(colorOption)}
+                    aria-label={`Select color ${colorOption}`}
+                  />
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground">This color appears on the task card</p>
             </div>
 
             <div className="flex gap-2 pt-4">
