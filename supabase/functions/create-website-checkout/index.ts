@@ -69,7 +69,7 @@ serve(async (req) => {
     // Get client data
     const { data: client, error: clientError } = await supabase
       .from('clients')
-      .select('id, name, stripe_customer_id, website_unlocked, billing_method, subscription_status')
+      .select('id, name, stripe_customer_id, website_unlocked, billing_method, subscription_status, trial_end_date, primary_contact_user_id')
       .eq('id', clientId)
       .single();
 
@@ -82,24 +82,14 @@ serve(async (req) => {
       throw new Error('Client is not on Stripe billing');
     }
 
-    if (!client.stripe_customer_id) {
-      throw new Error('Client does not have a Stripe customer ID. Please sign up for a subscription first.');
-    }
-
     if (client.website_unlocked) {
       throw new Error('Website features are already unlocked for this client');
     }
 
-    // Check if on Unlimited plan (they should already have website)
-    if (client.subscription_status === 'active') {
-      const { data: subscription } = await stripe.subscriptions.retrieve(
-        client.stripe_customer_id
-      ).catch(() => ({ data: null }));
-      
-      // If they have an unlimited plan, they shouldn't need this
-      // We'll allow it for now but log it
-      console.log('Client has active subscription, allowing website purchase');
-    }
+    // Determine if client has existing Stripe subscription
+    const hasExistingSubscription = !!client.stripe_customer_id;
+
+    console.log('Has existing subscription:', hasExistingSubscription);
 
     // Website add-on price ID (one-time payment of $750)
     const websitePriceId = Deno.env.get('STRIPE_WEBSITE_PRICE_ID');
@@ -109,25 +99,118 @@ serve(async (req) => {
       throw new Error('Website price ID not configured. Please contact support.');
     }
 
-    // Create Stripe checkout session for one-time payment
-    const session = await stripe.checkout.sessions.create({
-      mode: 'payment',
-      customer: client.stripe_customer_id,
-      line_items: [
-        {
-          price: websitePriceId,
-          quantity: 1,
+    // Starter plan monthly price ID ($99/mo) - TODO: Replace with your actual Stripe price ID
+    const starterMonthlyPriceId = 'price_STARTER_MONTHLY_REPLACE_ME';
+
+    let session;
+
+    if (hasExistingSubscription) {
+      // Scenario A: Existing customer - just charge $750 one-time
+      console.log('Existing customer - creating one-time payment session');
+      
+      session = await stripe.checkout.sessions.create({
+        mode: 'payment',
+        customer: client.stripe_customer_id,
+        line_items: [
+          {
+            price: websitePriceId,
+            quantity: 1,
+          },
+        ],
+        success_url: `${req.headers.get('origin') || 'https://app.spearlance.com'}/dashboard?website_added=true`,
+        cancel_url: `${req.headers.get('origin') || 'https://app.spearlance.com'}/dashboard`,
+        metadata: {
+          client_id: clientId,
+          product_type: 'website',
+          product_id: websiteProductId,
+          user_id: user.id,
         },
-      ],
-      success_url: `${req.headers.get('origin') || 'https://app.spearlance.com'}/dashboard?website_added=true`,
-      cancel_url: `${req.headers.get('origin') || 'https://app.spearlance.com'}/dashboard`,
-      metadata: {
-        client_id: clientId,
-        product_type: 'website',
-        product_id: websiteProductId,
-        user_id: user.id,
-      },
-    });
+      });
+    } else {
+      // Scenario B: New customer - charge $750 AND subscribe to $99/mo Starter
+      console.log('New customer - creating combined payment + subscription session');
+      
+      // Get or create customer
+      let customerId = client.stripe_customer_id;
+      
+      if (!customerId) {
+        // Get primary contact email
+        let primaryEmail = user.email;
+        if (client.primary_contact_user_id) {
+          const { data: primaryContact } = await supabase
+            .from('profiles')
+            .select('email')
+            .eq('id', client.primary_contact_user_id)
+            .maybeSingle();
+          
+          if (primaryContact?.email) {
+            primaryEmail = primaryContact.email;
+          }
+        }
+        
+        const customer = await stripe.customers.create({
+          email: primaryEmail,
+          name: client.name,
+          metadata: { 
+            client_id: clientId,
+            user_id: user.id
+          }
+        });
+        
+        customerId = customer.id;
+        
+        // Save customer ID to database
+        await supabase
+          .from('clients')
+          .update({ stripe_customer_id: customerId })
+          .eq('id', clientId);
+        
+        console.log('Created Stripe customer:', customerId);
+      }
+      
+      // Calculate trial end time
+      const trialEnd = client.trial_end_date ? new Date(client.trial_end_date) : null;
+      const trialEndTimestamp = trialEnd ? Math.floor(trialEnd.getTime() / 1000) : undefined;
+      
+      // Create subscription data with trial
+      const subscriptionData: any = {
+        metadata: { 
+          client_id: clientId,
+          plan: 'starter'
+        }
+      };
+      
+      // Extend trial if they still have days remaining
+      if (trialEndTimestamp) {
+        subscriptionData.trial_end = trialEndTimestamp;
+        console.log('Trial will continue until:', new Date(trialEndTimestamp * 1000).toISOString());
+      }
+      
+      // Create combined checkout: subscription with one-time website charge
+      session = await stripe.checkout.sessions.create({
+        mode: 'subscription',
+        customer: customerId,
+        line_items: [
+          {
+            price: starterMonthlyPriceId, // Starter plan subscription
+            quantity: 1,
+          },
+          {
+            price: websitePriceId, // One-time website charge
+            quantity: 1,
+          },
+        ],
+        subscription_data: subscriptionData,
+        success_url: `${req.headers.get('origin') || 'https://app.spearlance.com'}/dashboard?website_added=true&subscription=started`,
+        cancel_url: `${req.headers.get('origin') || 'https://app.spearlance.com'}/dashboard`,
+        metadata: {
+          client_id: clientId,
+          product_type: 'website_plus_subscription',
+          product_id: websiteProductId,
+          user_id: user.id,
+        },
+      });
+    }
 
     console.log('Website checkout session created:', session.id);
 
