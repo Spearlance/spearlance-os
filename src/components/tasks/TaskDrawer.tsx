@@ -20,6 +20,7 @@ import { AssigneeSelector } from "./AssigneeSelector";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Palette } from "lucide-react";
 import { SubtaskList } from "./SubtaskList";
+import { MentionTextarea } from "./MentionTextarea";
 
 interface TaskDrawerProps {
   task: any;
@@ -52,6 +53,24 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
   const [subtasks, setSubtasks] = useState<any[]>([]);
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  // Helper function to render comment text with highlighted mentions
+  const renderCommentWithMentions = (text: string) => {
+    const mentionPattern = /@(\w+(?:\s+\w+)*)/g;
+    const parts = text.split(mentionPattern);
+    
+    return parts.map((part, index) => {
+      // Odd indices are the captured groups (mentions)
+      if (index % 2 === 1) {
+        return (
+          <span key={index} className="text-primary font-medium bg-primary/10 px-1 rounded">
+            @{part}
+          </span>
+        );
+      }
+      return part;
+    });
+  };
 
   useEffect(() => {
     loadComments();
@@ -403,24 +422,89 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
   const handleAddComment = async () => {
     if (!newComment.trim()) return;
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
 
-    const { error } = await supabase
-      .from("task_comments")
-      .insert({
-        task_id: task.id,
-        user_id: user.id,
-        body: newComment,
+      // Extract mentioned user names
+      const mentionPattern = /@(\w+(?:\s+\w+)*)/g;
+      const mentions = [...newComment.matchAll(mentionPattern)].map(m => m[1]);
+      
+      // Find mentioned user IDs
+      const mentionedUsers = users.filter(u => 
+        mentions.some(mention => u.name.toLowerCase() === mention.toLowerCase())
+      );
+      const mentionedUserIds = mentionedUsers.map(u => u.id);
+
+      // Insert comment
+      const { data: comment, error: commentError } = await supabase
+        .from("task_comments")
+        .insert({
+          task_id: task.id,
+          body: newComment,
+          user_id: user.id,
+        })
+        .select()
+        .single();
+
+      if (commentError) throw commentError;
+
+      // Insert mentions and create notifications
+      if (comment && mentionedUserIds.length > 0) {
+        const { error: mentionsError } = await supabase
+          .from("task_comment_mentions")
+          .insert(
+            mentionedUserIds.map(userId => ({
+              comment_id: comment.id,
+              mentioned_user_id: userId,
+            }))
+          );
+
+        if (mentionsError) {
+          console.error("Error creating mentions:", mentionsError);
+        }
+
+        // Get current user profile for notification
+        const { data: currentProfile } = await supabase
+          .from("profiles")
+          .select("name")
+          .eq("id", user.id)
+          .single();
+
+        // Create notifications for mentioned users
+        for (const userId of mentionedUserIds) {
+          await supabase.from("notifications").insert({
+            user_id: userId,
+            client_id: task.client_id,
+            type: "mention",
+            title: `${currentProfile?.name || "Someone"} mentioned you in a task`,
+            description: `"${newComment.slice(0, 100)}${newComment.length > 100 ? "..." : ""}"`,
+            action_url: `/tasks?task=${task.id}`,
+            payload_json: {
+              task_id: task.id,
+              task_title: task.title,
+              comment_id: comment.id,
+            },
+          });
+        }
+      }
+
+      setNewComment("");
+      loadComments();
+      toast({
+        title: "Comment added",
+        description: mentionedUserIds.length > 0 
+          ? `${mentionedUserIds.length} user(s) will be notified`
+          : undefined,
       });
-
-    if (error) {
-      toast({ title: "Error adding comment", variant: "destructive" });
-      return;
+    } catch (error) {
+      console.error("Error adding comment:", error);
+      toast({
+        title: "Error",
+        description: "Failed to add comment",
+        variant: "destructive",
+      });
     }
-
-    setNewComment("");
-    loadComments();
   };
 
   const handleDeleteTask = async () => {
@@ -611,8 +695,8 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
             </div>
           </TabsContent>
 
-          <TabsContent value="comments" className="mt-4">
-            <ScrollArea className="h-[400px] pr-4">
+          <TabsContent value="comments" className="mt-4 flex-1 flex flex-col overflow-hidden">
+            <ScrollArea className="flex-1 h-full pr-4">
               <div className="space-y-4">
                 {comments.map((comment) => (
                   <div key={comment.id} className="flex gap-3">
@@ -628,7 +712,7 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
                           {new Date(comment.created_at).toLocaleDateString()}
                         </span>
                       </div>
-                      <p className="text-sm">{comment.body}</p>
+                      <p className="text-sm">{renderCommentWithMentions(comment.body)}</p>
                     </div>
                   </div>
                 ))}
@@ -636,18 +720,19 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
             </ScrollArea>
 
             <div className="space-y-2 mt-4 pt-4 border-t">
-              <Textarea
-                placeholder="Add a comment..."
+              <MentionTextarea
+                placeholder="Add a comment... (type @ to mention someone)"
                 value={newComment}
-                onChange={(e) => setNewComment(e.target.value)}
+                onChange={setNewComment}
+                users={users}
                 rows={3}
               />
               <Button onClick={handleAddComment}>Add Comment</Button>
             </div>
           </TabsContent>
 
-          <TabsContent value="related" className="mt-4">
-            <ScrollArea className="h-[500px] pr-4">
+          <TabsContent value="related" className="mt-4 flex-1 flex flex-col overflow-hidden">
+            <ScrollArea className="flex-1 h-full pr-4">
               <div className="space-y-6">
                 {/* Related Channels */}
                 <div>
