@@ -93,9 +93,14 @@ serve(async (req) => {
       .lt('scheduled_date', endDate);
 
     let finalDays = daysToGenerate;
-    if (generation_type === 'all' && existingPosts?.length) {
-      await supabase.from('social_media_posts').delete().in('id', existingPosts.map(p => p.id));
+    if (generation_type === 'all') {
+      // Always delete the batch record when regenerating all posts
       await supabase.from('social_media_generation_batches').delete().eq('client_id', client_id).eq('month', month).eq('year', year);
+      
+      // Delete existing posts if any exist
+      if (existingPosts?.length) {
+        await supabase.from('social_media_posts').delete().in('id', existingPosts.map(p => p.id));
+      }
     } else if (generation_type === 'missing') {
       const existingDays = new Set(existingPosts?.map(p => new Date(p.scheduled_date).getDate()) || []);
       finalDays = daysToGenerate.filter(day => !existingDays.has(day));
