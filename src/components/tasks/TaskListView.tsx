@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { TaskCard } from "./TaskCard";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 interface Task {
   id: string;
@@ -31,6 +33,8 @@ export const TaskListView = ({
   onCreateTask,
   groupBy = "status",
 }: TaskListViewProps) => {
+  const [expandedCategories, setExpandedCategories] = useState<string[]>([]);
+
   const groupTasks = () => {
     if (groupBy === "status") {
       // Dynamically create groups based on taskColumns
@@ -72,23 +76,61 @@ export const TaskListView = ({
         </Button>
       </div>
 
-      {Object.entries(groupedTasks).map(([group, groupTasks]) => (
-        <div key={group} className="space-y-3">
-          <div className="flex items-center gap-2">
-            <h3 className="font-semibold text-lg">{group}</h3>
-            <span className="text-sm text-muted-foreground">({groupTasks.length})</span>
-          </div>
-          <div className="space-y-2">
-            {groupTasks.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No tasks in this group</p>
-            ) : (
-              groupTasks.map((task) => (
-                <TaskCard key={task.id} task={task} onClick={() => onTaskClick(task)} />
-              ))
-            )}
-          </div>
-        </div>
-      ))}
+      <Accordion 
+        type="multiple" 
+        value={expandedCategories}
+        onValueChange={setExpandedCategories}
+        className="space-y-2"
+      >
+        {Object.entries(groupedTasks).map(([group, groupTasks]) => {
+          // Find the column color for visual consistency
+          const columnColor = taskColumns.find(col => col.name === group)?.color || "#6B7280";
+          
+          return (
+            <AccordionItem 
+              key={group} 
+              value={group}
+              className="border rounded-lg"
+              style={{ borderColor: `${columnColor}40` }}
+            >
+              <AccordionTrigger className="px-4 hover:no-underline">
+                <div className="flex items-center gap-3 flex-1">
+                  <div
+                    className="h-3 w-3 rounded-full shrink-0"
+                    style={{ backgroundColor: columnColor }}
+                  />
+                  <h3 className="font-semibold text-lg">{group}</h3>
+                  <span 
+                    className="text-sm font-medium px-2 py-0.5 rounded-full"
+                    style={{ 
+                      backgroundColor: `${columnColor}20`,
+                      color: columnColor
+                    }}
+                  >
+                    {groupTasks.length}
+                  </span>
+                </div>
+              </AccordionTrigger>
+              
+              <AccordionContent className="px-4 pb-4">
+                <div className="space-y-2 pt-2">
+                  {groupTasks.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No tasks in this category</p>
+                  ) : (
+                    groupTasks.map((task) => (
+                      <TaskCard 
+                        key={task.id} 
+                        task={task} 
+                        onClick={() => onTaskClick(task)} 
+                      />
+                    ))
+                  )}
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          );
+        })}
+      </Accordion>
     </div>
   );
 };

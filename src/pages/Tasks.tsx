@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useClient } from "@/contexts/ClientContext";
 import { supabase } from "@/integrations/supabase/client";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
-import { Filter, X, Plus } from "lucide-react";
+import { Filter, X, Plus, ChevronLeft } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TaskDrawer } from "@/components/tasks/TaskDrawer";
 import { TemplateStageManager } from "@/components/tasks/TemplateStageManager";
@@ -56,6 +56,10 @@ export default function Tasks() {
   const [currentView, setCurrentView] = useState<"kanban" | "list" | "table">("kanban");
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [activeTab, setActiveTab] = useState("board");
+  const [doneColumnExpanded, setDoneColumnExpanded] = useState(() => {
+    const saved = localStorage.getItem(`kanban-done-expanded-${selectedClient?.id}`);
+    return saved === 'true';
+  });
   const { toast } = useToast();
 
   const isAdminOrFMM = userRole === 'admin' || userRole === 'fmm';
@@ -70,8 +74,18 @@ export default function Tasks() {
       loadTaskColumns();
       loadTasks();
       loadMarketingChannels();
+      // Load saved done column state for this client
+      const saved = localStorage.getItem(`kanban-done-expanded-${selectedClient.id}`);
+      setDoneColumnExpanded(saved === 'true');
     }
   }, [selectedClient]);
+
+  // Persist done column expanded state
+  useEffect(() => {
+    if (selectedClient) {
+      localStorage.setItem(`kanban-done-expanded-${selectedClient.id}`, String(doneColumnExpanded));
+    }
+  }, [doneColumnExpanded, selectedClient]);
 
   useEffect(() => {
     if (selectedClient && currentUserId) {
@@ -463,50 +477,152 @@ export default function Tasks() {
           {/* View-specific rendering */}
           {currentView === "kanban" && (
             <DragDropContext onDragEnd={onDragEnd}>
-              <div className="grid gap-6" style={{ gridTemplateColumns: `repeat(${taskColumns.length}, minmax(300px, 1fr))` }}>
-                {taskColumns.map((column) => (
-                  <div key={column.key} className="space-y-4">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded" style={{ backgroundColor: column.color }} />
-                      <h2 className="font-semibold text-lg flex-1">
-                        {column.name}
-                      </h2>
-                      <Badge variant="secondary">{tasks[column.key]?.length || 0}</Badge>
+              {(() => {
+                // Separate done column from regular columns
+                const doneColumn = taskColumns.find(col => col.key === 'done');
+                const regularColumns = taskColumns.filter(col => col.key !== 'done');
+                const doneColumnTasks = doneColumn ? tasks[doneColumn.key] || [] : [];
+
+                return (
+                  <div className="flex gap-6">
+                    {/* Regular columns grid */}
+                    <div 
+                      className="grid gap-6 flex-1" 
+                      style={{ gridTemplateColumns: `repeat(${regularColumns.length}, minmax(300px, 1fr))` }}
+                    >
+                      {regularColumns.map((column) => (
+                        <div key={column.key} className="space-y-4">
+                          <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 rounded" style={{ backgroundColor: column.color }} />
+                            <h2 className="font-semibold text-lg flex-1">
+                              {column.name}
+                            </h2>
+                            <Badge variant="secondary">{tasks[column.key]?.length || 0}</Badge>
+                          </div>
+
+                          <Droppable droppableId={column.key}>
+                            {(provided, snapshot) => (
+                              <div
+                                ref={provided.innerRef}
+                                {...provided.droppableProps}
+                                className={`space-y-3 min-h-[200px] rounded-lg p-4 transition-colors ${
+                                  snapshot.isDraggingOver ? "bg-accent/50" : "bg-muted/20"
+                                }`}
+                              >
+                                {(tasks[column.key] || []).map((task, index) => (
+                                  <Draggable key={task.id} draggableId={task.id} index={index}>
+                                    {(provided, snapshot) => (
+                                      <div
+                                        ref={provided.innerRef}
+                                        {...provided.draggableProps}
+                                        {...provided.dragHandleProps}
+                                      >
+                                        <TaskCard
+                                          task={task}
+                                          onClick={() => handleTaskClick(task)}
+                                          isDragging={snapshot.isDragging}
+                                        />
+                                      </div>
+                                    )}
+                                  </Draggable>
+                                ))}
+                                {provided.placeholder}
+                              </div>
+                            )}
+                          </Droppable>
+                        </div>
+                      ))}
                     </div>
 
-                    <Droppable droppableId={column.key}>
-                      {(provided, snapshot) => (
-                        <div
-                          ref={provided.innerRef}
-                          {...provided.droppableProps}
-                          className={`space-y-3 min-h-[200px] rounded-lg p-4 transition-colors ${
-                            snapshot.isDraggingOver ? "bg-accent/50" : "bg-muted/20"
-                          }`}
-                        >
-                          {(tasks[column.key] || []).map((task, index) => (
-                            <Draggable key={task.id} draggableId={task.id} index={index}>
+                    {/* Collapsible Done Column */}
+                    {doneColumn && (
+                      <div 
+                        className={`transition-all duration-300 ease-in-out shrink-0 ${
+                          doneColumnExpanded ? "w-[320px]" : "w-[60px]"
+                        }`}
+                      >
+                        {!doneColumnExpanded ? (
+                          // COLLAPSED STATE
+                          <button
+                            onClick={() => setDoneColumnExpanded(true)}
+                            className="h-full w-full rounded-lg border-2 relative overflow-hidden hover:shadow-md transition-shadow"
+                            style={{ 
+                              backgroundColor: `${doneColumn.color}15`, 
+                              borderColor: `${doneColumn.color}40` 
+                            }}
+                          >
+                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
+                              <div 
+                                className="h-8 w-8 rounded-full flex items-center justify-center text-sm font-bold text-white"
+                                style={{ backgroundColor: doneColumn.color }}
+                              >
+                                {doneColumnTasks.length}
+                              </div>
+                              <div 
+                                className="text-sm font-semibold tracking-wider" 
+                                style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}
+                              >
+                                {doneColumn.name.toUpperCase()}
+                              </div>
+                            </div>
+                          </button>
+                        ) : (
+                          // EXPANDED STATE
+                          <div className="space-y-4 h-full">
+                            <div className="flex items-center gap-2">
+                              <div className="w-3 h-3 rounded" style={{ backgroundColor: doneColumn.color }} />
+                              <h2 className="font-semibold text-lg flex-1">
+                                {doneColumn.name}
+                              </h2>
+                              <Badge variant="secondary">{doneColumnTasks.length}</Badge>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setDoneColumnExpanded(false)}
+                                className="h-8 w-8"
+                              >
+                                <ChevronLeft className="h-4 w-4" />
+                              </Button>
+                            </div>
+
+                            <Droppable droppableId={doneColumn.key}>
                               {(provided, snapshot) => (
                                 <div
                                   ref={provided.innerRef}
-                                  {...provided.draggableProps}
-                                  {...provided.dragHandleProps}
+                                  {...provided.droppableProps}
+                                  className={`space-y-3 min-h-[200px] rounded-lg p-4 transition-colors ${
+                                    snapshot.isDraggingOver ? "bg-accent/50" : "bg-muted/20"
+                                  }`}
+                                  style={{ maxHeight: 'calc(100vh - 300px)', overflowY: 'auto' }}
                                 >
-                                  <TaskCard
-                                    task={task}
-                                    onClick={() => handleTaskClick(task)}
-                                    isDragging={snapshot.isDragging}
-                                  />
+                                  {doneColumnTasks.map((task, index) => (
+                                    <Draggable key={task.id} draggableId={task.id} index={index}>
+                                      {(provided, snapshot) => (
+                                        <div
+                                          ref={provided.innerRef}
+                                          {...provided.draggableProps}
+                                          {...provided.dragHandleProps}
+                                        >
+                                          <TaskCard
+                                            task={task}
+                                            onClick={() => handleTaskClick(task)}
+                                            isDragging={snapshot.isDragging}
+                                          />
+                                        </div>
+                                      )}
+                                    </Draggable>
+                                  ))}
+                                  {provided.placeholder}
                                 </div>
                               )}
-                            </Draggable>
-                          ))}
-                          {provided.placeholder}
-                        </div>
-                      )}
-                    </Droppable>
+                            </Droppable>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
-                ))}
-              </div>
+                );
+              })()}
             </DragDropContext>
           )}
 
