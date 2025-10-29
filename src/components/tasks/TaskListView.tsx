@@ -18,6 +18,7 @@ interface Task {
 
 interface TaskListViewProps {
   tasks: Task[];
+  taskColumns: Array<{ key: string; name: string; color: string }>;
   onTaskClick: (task: Task) => void;
   onCreateTask: () => void;
   groupBy?: "status" | "priority";
@@ -25,17 +26,30 @@ interface TaskListViewProps {
 
 export const TaskListView = ({
   tasks,
+  taskColumns,
   onTaskClick,
   onCreateTask,
   groupBy = "status",
 }: TaskListViewProps) => {
   const groupTasks = () => {
     if (groupBy === "status") {
-      return {
-        "To Do": tasks.filter((t) => t.status === "to_do"),
-        "In Progress": tasks.filter((t) => t.status === "in_progress"),
-        Done: tasks.filter((t) => t.status === "done"),
-      };
+      // Dynamically create groups based on taskColumns
+      const grouped: Record<string, Task[]> = {};
+      
+      // Initialize groups for each column
+      taskColumns.forEach(column => {
+        grouped[column.name] = [];
+      });
+      
+      // Group tasks by their status
+      tasks.forEach(task => {
+        const column = taskColumns.find(col => col.key === task.status);
+        if (column) {
+          grouped[column.name].push(task);
+        }
+      });
+      
+      return grouped;
     } else {
       return {
         Urgent: tasks.filter((t) => t.priority === "urgent"),

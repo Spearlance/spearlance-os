@@ -513,6 +513,7 @@ export default function Tasks() {
           {currentView === "list" && (
             <TaskListView
               tasks={allTasks}
+              taskColumns={taskColumns}
               onTaskClick={handleTaskClick}
               onCreateTask={() => setShowCreateDialog(true)}
               groupBy="status"
@@ -522,6 +523,7 @@ export default function Tasks() {
           {currentView === "table" && (
             <TaskTableView
               tasks={allTasks}
+              taskColumns={taskColumns}
               onTaskClick={handleTaskClick}
               onCreateTask={() => setShowCreateDialog(true)}
             />

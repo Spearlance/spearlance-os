@@ -24,17 +24,17 @@ interface Task {
 
 interface TaskTableViewProps {
   tasks: Task[];
+  taskColumns: Array<{ key: string; name: string; color: string }>;
   onTaskClick: (task: Task) => void;
   onCreateTask: () => void;
 }
 
-const statusLabels = {
-  to_do: "To Do",
-  in_progress: "In Progress",
-  done: "Done",
-};
-
-export const TaskTableView = ({ tasks, onTaskClick, onCreateTask }: TaskTableViewProps) => {
+export const TaskTableView = ({
+  tasks,
+  taskColumns,
+  onTaskClick,
+  onCreateTask,
+}: TaskTableViewProps) => {
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
@@ -77,7 +77,7 @@ export const TaskTableView = ({ tasks, onTaskClick, onCreateTask }: TaskTableVie
                   </TableCell>
                   <TableCell>
                     <Badge variant="secondary">
-                      {statusLabels[task.status as keyof typeof statusLabels]}
+                      {taskColumns.find(col => col.key === task.status)?.name || task.status}
                     </Badge>
                   </TableCell>
                   <TableCell>
