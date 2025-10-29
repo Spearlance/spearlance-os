@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -37,6 +37,12 @@ export function BillingTab({ client, isAdmin = false, onUpdate }: BillingTabProp
   const [savingStripeIds, setSavingStripeIds] = useState(false);
   const { toast } = useToast();
   const { trialDaysRemaining, isInTrial } = useAccountType();
+
+  // Reset Stripe ID fields when client changes
+  useEffect(() => {
+    setStripeCustomerId(client.stripe_customer_id || "");
+    setStripeSubscriptionId(client.stripe_subscription_id || "");
+  }, [client.id, client.stripe_customer_id, client.stripe_subscription_id]);
 
   const getStatusBadgeVariant = (status?: string) => {
     switch (status) {
