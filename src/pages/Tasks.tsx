@@ -6,6 +6,7 @@ import { Filter, X, Plus } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TaskDrawer } from "@/components/tasks/TaskDrawer";
 import { TemplateStageManager } from "@/components/tasks/TemplateStageManager";
+import { TaskStageManager } from "@/components/tasks/TaskStageManager";
 import { CreateTaskDialog } from "@/components/tasks/CreateTaskDialog";
 import { TaskCard } from "@/components/tasks/TaskCard";
 import { TaskViewSelector } from "@/components/tasks/TaskViewSelector";
@@ -294,6 +295,7 @@ export default function Tasks() {
         <TabsList>
           <TabsTrigger value="board">Board</TabsTrigger>
           {isAdminOrFMM && <TabsTrigger value="templates">Templates</TabsTrigger>}
+          <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
 
         <TabsContent value="board" className="space-y-4">
@@ -438,6 +440,10 @@ export default function Tasks() {
             <TemplateStageManager />
           </TabsContent>
         )}
+
+        <TabsContent value="settings" className="space-y-0">
+          <TaskStageManager />
+        </TabsContent>
       </Tabs>
 
       {selectedTask && (
