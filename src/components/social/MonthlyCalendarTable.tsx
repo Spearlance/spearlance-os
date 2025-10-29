@@ -38,9 +38,10 @@ interface MonthlyCalendarTableProps {
   onRefresh: () => void;
   selectedMonth: number;
   selectedYear: number;
+  expectedPostCount?: number;
 }
 
-export const MonthlyCalendarTable = ({ posts, onRefresh, selectedMonth, selectedYear }: MonthlyCalendarTableProps) => {
+export const MonthlyCalendarTable = ({ posts, onRefresh, selectedMonth, selectedYear, expectedPostCount }: MonthlyCalendarTableProps) => {
   const { toast } = useToast();
   const { selectedClient } = useClient();
   const [selectedPosts, setSelectedPosts] = useState<string[]>([]);
@@ -352,7 +353,7 @@ export const MonthlyCalendarTable = ({ posts, onRefresh, selectedMonth, selected
     });
   }).length;
 
-  const totalDays = allDays.length;
+  const totalDays = expectedPostCount ?? allDays.length;
   const progressPercent = totalDays > 0 ? Math.round((daysWithReadyPosts / totalDays) * 100) : 0;
 
   return (

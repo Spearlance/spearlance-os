@@ -218,6 +218,7 @@ const SocialMedia = () => {
               onRefresh={refetch}
               selectedMonth={selectedMonth}
               selectedYear={selectedYear}
+              expectedPostCount={strategyPostCount}
             />
           )}
           
