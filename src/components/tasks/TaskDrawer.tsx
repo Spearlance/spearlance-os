@@ -566,7 +566,7 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
           </TabsList>
 
           <TabsContent value="details" className="mt-0 flex-1 flex flex-col overflow-hidden">
-            <ScrollArea className="flex-1 h-full pr-4">
+            <ScrollArea className="flex-1 pr-4">
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label>Title</Label>
@@ -679,7 +679,7 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
           </TabsContent>
 
           <TabsContent value="comments" className="mt-0 flex-1 flex flex-col overflow-hidden">
-            <ScrollArea className="flex-1 h-full pr-4">
+            <ScrollArea className="flex-1 pr-4">
               <div className="space-y-4">
                 {comments.map((comment) => (
                   <div key={comment.id} className="flex gap-3">
@@ -715,7 +715,7 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
           </TabsContent>
 
           <TabsContent value="related" className="mt-0 flex-1 flex flex-col overflow-hidden">
-            <ScrollArea className="flex-1 h-full pr-4">
+            <ScrollArea className="flex-1 pr-4">
               <div className="space-y-6">
                 {/* Related Channels */}
                 <div>
