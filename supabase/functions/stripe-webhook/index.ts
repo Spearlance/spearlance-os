@@ -41,21 +41,28 @@ serve(async (req) => {
         
         // Check if this is a website add-on purchase
         if (session.metadata?.product_type === 'website' && session.metadata?.client_id) {
-          const { error } = await supabaseAdmin
-            .from('clients')
-            .update({
-              website_unlocked: true,
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', session.metadata.client_id)
-            .eq('billing_method', 'stripe');
+          const websiteProductId = 'prod_XXXXXXXXXXXXX'; // ⚠️ TODO: Replace with actual Stripe Product ID
+          
+          // Validate product ID for additional security
+          if (session.metadata?.product_id === websiteProductId) {
+            const { error } = await supabaseAdmin
+              .from('clients')
+              .update({
+                website_unlocked: true,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', session.metadata.client_id)
+              .eq('billing_method', 'stripe');
 
-          if (error) {
-            console.error('Failed to unlock website:', error);
-            throw new Error(`Database update failed: ${error.message}`);
+            if (error) {
+              console.error('Failed to unlock website:', error);
+              throw new Error(`Database update failed: ${error.message}`);
+            }
+
+            console.log('Website unlocked for client:', session.metadata.client_id);
+          } else {
+            console.log('Product ID mismatch - website not unlocked');
           }
-
-          console.log('Website unlocked for client:', session.metadata.client_id);
         }
         break;
       }

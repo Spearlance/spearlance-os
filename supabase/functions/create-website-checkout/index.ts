@@ -102,7 +102,8 @@ serve(async (req) => {
     }
 
     // Website add-on price ID (one-time payment of $750)
-    const websitePriceId = 'price_1SKWUpJtbnnNcxGrXYFnNzWV'; // You'll need to create this in Stripe
+    const websitePriceId = 'price_1SKWUpJtbnnNcxGrXYFnNzWV';
+    const websiteProductId = 'prod_XXXXXXXXXXXXX'; // ⚠️ TODO: Replace with actual Stripe Product ID
 
     // Create Stripe checkout session for one-time payment
     const session = await stripe.checkout.sessions.create({
@@ -119,6 +120,7 @@ serve(async (req) => {
       metadata: {
         client_id: clientId,
         product_type: 'website',
+        product_id: websiteProductId,
         user_id: user.id,
       },
     });

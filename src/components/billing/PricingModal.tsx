@@ -119,6 +119,7 @@ export function PricingModal({ open, onOpenChange, highlightWebsite = false }: P
         "Unlimited Team Access – Train your entire staff",
         "Priority Setup – Quick personalized onboarding",
         "Free Website Redesign ($2,000 Value)",
+        "Unlimited Website Edits Included",
         "1 Private Coaching Session ($500 Value)",
         "3 Months Private Slack Channel ($600 Value)"
       ],
@@ -139,7 +140,7 @@ export function PricingModal({ open, onOpenChange, highlightWebsite = false }: P
             <div className="text-center p-3 bg-primary/10 rounded-lg border border-primary/20">
               <p className="text-sm font-medium flex items-center justify-center gap-2">
                 <span>💡</span>
-                <span>Tip: Unlimited plan includes professional website for free ($750 value)</span>
+                <span>Tip: Unlimited plan includes professional website + unlimited edits for free – a $750 value plus tax credits!</span>
               </p>
             </div>
           )}

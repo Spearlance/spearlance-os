@@ -89,19 +89,25 @@ export function WebsiteUpsellDialog({ open, onOpenChange, onUpgradeClick }: Webs
                 <ul className="space-y-2">
                   <li className="flex items-start gap-2">
                     <Check className="h-4 w-4 text-green-600 shrink-0 mt-0.5" />
-                    <span className="text-sm">Professional Website Editor</span>
+                    <span className="text-sm">Custom-built by professional designers</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <Check className="h-4 w-4 text-green-600 shrink-0 mt-0.5" />
-                    <span className="text-sm">Form Submissions & Lead Capture</span>
+                    <span className="text-sm">AI Copywriter & SEO tools included</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <Check className="h-4 w-4 text-green-600 shrink-0 mt-0.5" />
-                    <span className="text-sm">Custom Domain Support</span>
+                    <span className="text-sm">Unlimited hosting + SSL for life</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <Check className="h-4 w-4 text-green-600 shrink-0 mt-0.5" />
-                    <span className="text-sm">Keep your current plan benefits</span>
+                    <span className="text-sm">ADA-compliant accessibility</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <Check className="h-4 w-4 text-purple-600 shrink-0 mt-0.5" />
+                    <span className="text-sm font-semibold text-purple-700 dark:text-purple-300">
+                      50% federal tax credit (up to $5,000 back)
+                    </span>
                   </li>
                 </ul>
               </CardContent>
@@ -162,6 +168,12 @@ export function WebsiteUpsellDialog({ open, onOpenChange, onUpgradeClick }: Webs
                   </span>
                 </li>
                 <li className="flex items-start gap-2">
+                  <Globe className="h-4 w-4 text-purple-600 shrink-0 mt-0.5" />
+                  <span className="text-sm font-semibold text-purple-700 dark:text-purple-300">
+                    Unlimited Website Edits Included
+                  </span>
+                </li>
+                <li className="flex items-start gap-2">
                   <Users className="h-4 w-4 text-green-600 shrink-0 mt-0.5" />
                   <span className="text-sm">Unlimited Team Access</span>
                 </li>
@@ -180,7 +192,7 @@ export function WebsiteUpsellDialog({ open, onOpenChange, onUpgradeClick }: Webs
               </ul>
               <div className="mt-4 p-3 bg-green-50 dark:bg-green-950 rounded-lg border border-green-200 dark:border-green-800">
                 <p className="text-sm font-medium text-green-800 dark:text-green-200">
-                  💰 Save $750 on website + get $3,100 in bonuses
+                  💰 Save $750 + Unlimited edits + $3,100 in bonuses
                 </p>
               </div>
             </CardContent>
