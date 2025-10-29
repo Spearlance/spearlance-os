@@ -102,8 +102,12 @@ serve(async (req) => {
     }
 
     // Website add-on price ID (one-time payment of $750)
-    const websitePriceId = 'price_1SKWUpJtbnnNcxGrXYFnNzWV';
+    const websitePriceId = Deno.env.get('STRIPE_WEBSITE_PRICE_ID');
     const websiteProductId = 'prod_TKM8ZkU6KtXYPM';
+    
+    if (!websitePriceId) {
+      throw new Error('Website price ID not configured. Please contact support.');
+    }
 
     // Create Stripe checkout session for one-time payment
     const session = await stripe.checkout.sessions.create({
