@@ -230,7 +230,7 @@ export function BillingTab({ client, isAdmin = false, onUpdate }: BillingTabProp
             </div>
             <Button
               onClick={handleSaveStripeIds}
-              disabled={savingStripeIds || (!stripeCustomerId && !stripeSubscriptionId)}
+              disabled={savingStripeIds}
               className="w-full"
             >
               {savingStripeIds ? "Saving..." : "Save Stripe IDs"}
