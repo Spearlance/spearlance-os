@@ -97,6 +97,15 @@ Deno.serve(async (req) => {
     if (clientId) {
       console.log('Creating notifications for form submission...');
       
+      // Fetch client details for notification
+      const { data: clientDetails } = await supabase
+        .from('clients')
+        .select('name, company_name, brand_name')
+        .eq('id', clientId)
+        .single();
+      
+      const clientName = clientDetails?.brand_name || clientDetails?.company_name || clientDetails?.name || 'Unknown Client';
+      
       // Query for admin and FMM users
       const { data: adminFmmUsers } = await supabase
         .from('user_roles')
@@ -140,7 +149,7 @@ Deno.serve(async (req) => {
           user_id: userId,
           type: 'form_submission',
           title: 'New Form Submission',
-          description: `New contact form submission from ${submitterInfo}`,
+          description: `Contact form submission for ${clientName}`,
           client_id: clientId,
           action_url: `/website/form-submissions?client=${clientId}`,
           priority: 'normal',
