@@ -43,6 +43,13 @@ const getInitials = (name: string) => {
 export const TaskCard = ({ task, onClick, isDragging }: TaskCardProps) => {
   const borderColor = task.color || priorityColors[task.priority as keyof typeof priorityColors] || "#6B7280";
 
+  // Debug logging
+  console.log("TaskCard rendering:", { 
+    title: task.title, 
+    assigneeCount: task.assignees?.length || 0,
+    assignees: task.assignees 
+  });
+
   return (
     <Card
       className="p-4 cursor-pointer hover:shadow-md transition-shadow border-l-4"

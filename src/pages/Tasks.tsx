@@ -72,9 +72,12 @@ export default function Tasks() {
 
   useEffect(() => {
     if (selectedClient) {
-      loadTaskColumns();
-      loadTasks();
-      loadMarketingChannels();
+      const initialize = async () => {
+        await loadTaskColumns();  // Wait for columns to load first
+        loadTasks();               // Then load tasks
+        loadMarketingChannels();
+      };
+      initialize();
       // Load saved done column state for this client
       const saved = localStorage.getItem(`kanban-done-expanded-${selectedClient.id}`);
       setDoneColumnExpanded(saved === 'true');
@@ -131,7 +134,7 @@ export default function Tasks() {
       });
       
       setTasks(grouped);
-      console.log("Tasks grouped:", Object.keys(grouped));
+      console.log("Tasks re-grouped:", Object.entries(grouped).map(([key, tasks]) => `${key}: ${tasks.length} tasks`).join(', '));
     }
   }, [taskColumns, allTasks]);
 
