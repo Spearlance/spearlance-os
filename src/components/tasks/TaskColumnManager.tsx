@@ -64,18 +64,28 @@ export function TaskColumnManager() {
       const key = newColumnName.toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, "");
       const maxOrder = Math.max(...columns.map(c => c.display_order), -1);
 
-      const { error } = await supabase
-        .from("task_columns")
-        .insert({
-          client_id: selectedClient.id,
-          name: newColumnName.trim(),
-          key,
-          color: newColumnColor,
-          display_order: maxOrder + 1,
-          is_default: false,
-        });
+      const payload = {
+        client_id: selectedClient.id,
+        name: newColumnName.trim(),
+        key,
+        color: newColumnColor,
+        display_order: maxOrder + 1,
+        is_default: false,
+      };
 
-      if (error) throw error;
+      console.log("Attempting to insert task column:", payload);
+
+      const { data, error } = await supabase
+        .from("task_columns")
+        .insert(payload)
+        .select();
+
+      if (error) {
+        console.error("Full error details:", error);
+        throw error;
+      }
+
+      console.log("Successfully inserted column:", data);
 
       toast({
         title: "Success",
@@ -85,14 +95,17 @@ export function TaskColumnManager() {
       setNewColumnName("");
       setNewColumnColor("#6B7280");
       setShowAddNew(false);
-      loadColumns();
+      await loadColumns();
+      
+      // Trigger a custom event that Tasks.tsx can listen to
+      window.dispatchEvent(new CustomEvent('taskColumnsUpdated'));
     } catch (error: any) {
       console.error("Error adding column:", error);
       toast({
         title: "Error",
         description: error.message?.includes("duplicate") 
           ? "A column with this name already exists"
-          : "Failed to add column",
+          : error.message || "Failed to add column",
         variant: "destructive",
       });
     }
@@ -124,7 +137,10 @@ export function TaskColumnManager() {
       });
 
       setEditingId(null);
-      loadColumns();
+      await loadColumns();
+      
+      // Trigger update event
+      window.dispatchEvent(new CustomEvent('taskColumnsUpdated'));
     } catch (error) {
       console.error("Error updating column:", error);
       toast({
@@ -188,7 +204,10 @@ export function TaskColumnManager() {
         description: "Column deleted successfully",
       });
 
-      loadColumns();
+      await loadColumns();
+      
+      // Trigger update event
+      window.dispatchEvent(new CustomEvent('taskColumnsUpdated'));
     } catch (error) {
       console.error("Error deleting column:", error);
       toast({

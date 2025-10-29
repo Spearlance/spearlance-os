@@ -55,6 +55,7 @@ export default function Tasks() {
   const [currentUserId, setCurrentUserId] = useState<string>('');
   const [currentView, setCurrentView] = useState<"kanban" | "list" | "table">("kanban");
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [activeTab, setActiveTab] = useState("board");
   const { toast } = useToast();
 
   const isAdminOrFMM = userRole === 'admin' || userRole === 'fmm';
@@ -78,6 +79,20 @@ export default function Tasks() {
       loadTasks();
     }
   }, [assignmentFilter, channelFilter]);
+
+  // Listen for column updates from Settings tab
+  useEffect(() => {
+    const handleColumnsUpdate = () => {
+      console.log("Columns updated, reloading...");
+      if (selectedClient) {
+        loadTaskColumns();
+        loadTasks();
+      }
+    };
+
+    window.addEventListener('taskColumnsUpdated', handleColumnsUpdate);
+    return () => window.removeEventListener('taskColumnsUpdated', handleColumnsUpdate);
+  }, [selectedClient]);
 
   const loadUserRole = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -303,6 +318,15 @@ export default function Tasks() {
     setSelectedTask(task);
   };
 
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    if (value === "board" && selectedClient) {
+      // Reload columns when switching back to board view
+      loadTaskColumns();
+      loadTasks();
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -313,7 +337,7 @@ export default function Tasks() {
         </Button>
       </div>
 
-      <Tabs defaultValue="board" className="space-y-6">
+      <Tabs defaultValue="board" value={activeTab} onValueChange={handleTabChange} className="space-y-6">
         <TabsList>
           <TabsTrigger value="board">Board</TabsTrigger>
           {isAdminOrFMM && <TabsTrigger value="templates">Templates</TabsTrigger>}
