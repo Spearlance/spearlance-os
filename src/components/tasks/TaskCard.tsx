@@ -59,10 +59,6 @@ export const TaskCard = ({ task, onClick, isDragging }: TaskCardProps) => {
       {/* Header */}
       <div className="flex items-start justify-between gap-2 mb-2">
         <div className="flex items-center gap-2 flex-1">
-          <div 
-            className="h-3 w-3 rounded-full shrink-0" 
-            style={{ backgroundColor: borderColor }}
-          />
           <h4 className="font-medium text-sm">{task.title}</h4>
         </div>
         {task.priority === 'urgent' && (
