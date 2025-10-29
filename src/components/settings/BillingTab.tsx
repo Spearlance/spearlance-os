@@ -170,7 +170,7 @@ export function BillingTab({ client, isAdmin = false, onUpdate }: BillingTabProp
             </div>
           </div>
 
-          {isInTrial && (
+          {isInTrial && client.billing_method !== 'direct' && (
             <div className="p-4 bg-secondary rounded-lg">
               <p className="text-sm font-medium">Trial Period</p>
               <p className="text-muted-foreground">
@@ -247,16 +247,18 @@ export function BillingTab({ client, isAdmin = false, onUpdate }: BillingTabProp
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          <Button
-            onClick={() => setPricingModalOpen(true)}
-            className="w-full"
-            variant="outline"
-          >
-            <CreditCard className="w-4 h-4 mr-2" />
-            Upgrade Plan
-          </Button>
+          {client.billing_method !== 'direct' && (
+            <Button
+              onClick={() => setPricingModalOpen(true)}
+              className="w-full"
+              variant="outline"
+            >
+              <CreditCard className="w-4 h-4 mr-2" />
+              Upgrade Plan
+            </Button>
+          )}
 
-          {client.stripe_customer_id && !isInTrial && (
+          {client.stripe_customer_id && (client.billing_method === 'direct' || !isInTrial) && (
             <Button
               onClick={handleManageBilling}
               disabled={loadingPortal}
@@ -273,7 +275,7 @@ export function BillingTab({ client, isAdmin = false, onUpdate }: BillingTabProp
             </Button>
           )}
 
-          {isInTrial && (
+          {isInTrial && client.billing_method !== 'direct' && (
             <div className="p-4 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
               <p className="text-sm text-blue-900 dark:text-blue-100">
                 Billing management will be available once you add a payment method. 
