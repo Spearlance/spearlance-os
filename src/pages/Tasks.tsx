@@ -288,14 +288,23 @@ export default function Tasks() {
     // Load assignees, subtasks, and tags for each task
     const enrichedTasks = await Promise.all(
       (data || []).map(async (task: any) => {
-        // Load assignees
-        const { data: assignees } = await supabase
+        // Load assignees - fetch user_ids first, then profiles separately
+        const { data: taskAssignees } = await supabase
           .from("task_assignees")
-          .select(`
-            user_id,
-            profiles!user_id (id, name, avatar_url)
-          `)
+          .select("user_id")
           .eq("task_id", task.id);
+
+        // Fetch profiles for assignees
+        let assigneeProfiles = [];
+        if (taskAssignees && taskAssignees.length > 0) {
+          const userIds = taskAssignees.map(ta => ta.user_id);
+          const { data: profilesData } = await supabase
+            .from("profiles")
+            .select("id, name, avatar_url")
+            .in("id", userIds);
+          
+          assigneeProfiles = profilesData || [];
+        }
 
         // Load subtasks
         const { data: subtasks } = await supabase
@@ -313,15 +322,15 @@ export default function Tasks() {
 
         return {
           ...task,
-        assignees: assignees?.map((a: any) => {
+        assignees: assigneeProfiles.map((profile: any) => {
           const assignee = {
-            id: a.profiles?.id || a.user_id,
-            name: a.profiles?.name || 'Unknown User',
-            avatar_url: a.profiles?.avatar_url || null
+            id: profile.id,
+            name: profile.name || 'Unknown User',
+            avatar_url: profile.avatar_url || null
           };
-          console.log('Mapped assignee:', assignee, 'from:', a);
+          console.log('Mapped assignee:', assignee, 'from:', profile);
           return assignee;
-        }).filter((p: any) => p.id) || [],
+        }) || [],
           subtask_count: subtasks?.length || 0,
           completed_subtasks: subtasks?.filter(st => st.status === "done").length || 0,
           tags: tagLinks?.map(tl => tl.task_tags).filter(Boolean) || [],
