@@ -468,105 +468,110 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
             <TabsTrigger value="related">Related</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="details" className="space-y-4 mt-4">
-            <div className="space-y-2">
-              <Label>Title</Label>
-              <Input value={title} onChange={(e) => setTitle(e.target.value)} />
-            </div>
+          <TabsContent value="details" className="mt-4">
+            <ScrollArea className="h-[calc(100vh-200px)] pr-4">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Title</Label>
+                  <Input value={title} onChange={(e) => setTitle(e.target.value)} />
+                </div>
 
-            <div className="space-y-2">
-              <Label>Description</Label>
-              <Textarea 
-                value={description} 
-                onChange={(e) => setDescription(e.target.value)}
-                rows={4}
-              />
-            </div>
+                <div className="space-y-2">
+                  <Label>Description</Label>
+                  <Textarea 
+                    value={description} 
+                    onChange={(e) => setDescription(e.target.value)}
+                    rows={4}
+                  />
+                </div>
 
-            <div className="grid grid-cols-3 gap-3">
-              <div className="space-y-2">
-                <Label>Status</Label>
-                <Select value={status} onValueChange={setStatus}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="to_do">To Do</SelectItem>
-                    <SelectItem value="in_progress">In Progress</SelectItem>
-                    <SelectItem value="done">Done</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Priority</Label>
-                <Select value={priority} onValueChange={setPriority}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="low">Low</SelectItem>
-                    <SelectItem value="normal">Normal</SelectItem>
-                    <SelectItem value="high">High</SelectItem>
-                    <SelectItem value="urgent">Urgent</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Due Date</Label>
-                <Input 
-                  type="date" 
-                  value={dueDate} 
-                  onChange={(e) => setDueDate(e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Assignees</Label>
-              <AssigneeSelector
-                users={users}
-                selectedUserIds={selectedAssignees}
-                onSelectionChange={setSelectedAssignees}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Task Color</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="w-full justify-start gap-2">
-                    <div 
-                      className="h-4 w-4 rounded-full border" 
-                      style={{ backgroundColor: color }}
-                    />
-                    <span className="text-sm">Click to change color</span>
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-3" align="start">
-                  <div className="flex gap-2">
-                    {["#EF4444", "#F59E0B", "#10B981", "#3B82F6", "#8B5CF6", "#EC4899", "#6B7280"].map((colorOption) => (
-                      <button
-                        key={colorOption}
-                        type="button"
-                        className={`h-8 w-8 rounded-md border-2 transition-all hover:scale-110 ${
-                          color === colorOption ? "border-primary ring-2 ring-primary/20" : "border-transparent"
-                        }`}
-                        style={{ backgroundColor: colorOption }}
-                        onClick={() => setColor(colorOption)}
-                        aria-label={`Select color ${colorOption}`}
-                      />
-                    ))}
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="space-y-2">
+                    <Label>Status</Label>
+                    <Select value={status} onValueChange={setStatus}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="to_do">To Do</SelectItem>
+                        <SelectItem value="in_progress">In Progress</SelectItem>
+                        <SelectItem value="done">Done</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
-                </PopoverContent>
-              </Popover>
-            </div>
 
-            <div className="flex gap-2 pt-4">
-              <Button onClick={handleSave} className="flex-1">Save Changes</Button>
-              <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-            </div>
+                  <div className="space-y-2">
+                    <Label>Priority</Label>
+                    <Select value={priority} onValueChange={setPriority}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="low">Low</SelectItem>
+                        <SelectItem value="normal">Normal</SelectItem>
+                        <SelectItem value="high">High</SelectItem>
+                        <SelectItem value="urgent">Urgent</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Due Date</Label>
+                    <Input 
+                      type="date" 
+                      value={dueDate} 
+                      onChange={(e) => setDueDate(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="space-y-2 col-span-2">
+                    <Label>Assignees</Label>
+                    <AssigneeSelector
+                      users={users}
+                      selectedUserIds={selectedAssignees}
+                      onSelectionChange={setSelectedAssignees}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Color</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" className="w-full h-10 p-0">
+                          <div 
+                            className="h-6 w-6 rounded-full border-2 border-background" 
+                            style={{ backgroundColor: color }}
+                          />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-3" align="start">
+                        <div className="flex gap-2">
+                          {["#EF4444", "#F59E0B", "#10B981", "#3B82F6", "#8B5CF6", "#EC4899", "#6B7280"].map((colorOption) => (
+                            <button
+                              key={colorOption}
+                              type="button"
+                              className={`h-8 w-8 rounded-md border-2 transition-all hover:scale-110 ${
+                                color === colorOption ? "border-primary ring-2 ring-primary/20" : "border-transparent"
+                              }`}
+                              style={{ backgroundColor: colorOption }}
+                              onClick={() => setColor(colorOption)}
+                              aria-label={`Select color ${colorOption}`}
+                            />
+                          ))}
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                </div>
+
+                <div className="flex gap-2 pt-4">
+                  <Button onClick={handleSave} className="flex-1">Save Changes</Button>
+                  <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+                </div>
+              </div>
+            </ScrollArea>
           </TabsContent>
 
           <TabsContent value="comments" className="mt-4">
