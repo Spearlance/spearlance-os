@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { PostManagementDrawer } from "./PostManagementDrawer";
 import { parseUTCDate } from "@/lib/utils";
+import { useClient } from "@/contexts/ClientContext";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -41,6 +42,7 @@ interface MonthlyCalendarTableProps {
 
 export const MonthlyCalendarTable = ({ posts, onRefresh, selectedMonth, selectedYear }: MonthlyCalendarTableProps) => {
   const { toast } = useToast();
+  const { selectedClient } = useClient();
   const [selectedPosts, setSelectedPosts] = useState<string[]>([]);
   const [generatingCaptions, setGeneratingCaptions] = useState(false);
   const [generatingImages, setGeneratingImages] = useState(false);
@@ -176,11 +178,10 @@ export const MonthlyCalendarTable = ({ posts, onRefresh, selectedMonth, selected
 
   const handleAddPost = async (date: Date) => {
     try {
-      const clientId = posts[0]?.client_id;
-      if (!clientId) {
+      if (!selectedClient?.id) {
         toast({
           title: "Error",
-          description: "Client ID not found. Please refresh the page.",
+          description: "Please select a client first.",
           variant: "destructive",
         });
         return;
@@ -190,7 +191,7 @@ export const MonthlyCalendarTable = ({ posts, onRefresh, selectedMonth, selected
       const { data: newPost, error } = await supabase
         .from('social_media_posts')
         .insert([{
-          client_id: clientId,
+          client_id: selectedClient.id,
           scheduled_date: date.toISOString(),
           status: 'idea',
           topic_category: 'custom',
