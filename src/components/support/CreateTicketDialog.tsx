@@ -69,16 +69,29 @@ export function CreateTicketDialog({ open, onOpenChange }: CreateTicketDialogPro
         .from("ticket_messages")
         .insert({
           ticket_id: ticket.id,
-          author_user_id: user.id,
-          body_richtext: formData.message,
-          is_internal_note: false,
-        });
+          sender_user_id: user.id,
+          message: formData.message,
+          is_internal: false,
+        } as any);
 
       if (messageError) throw messageError;
 
+      // Send email notifications
+      try {
+        await supabase.functions.invoke("ticket-notifications", {
+          body: {
+            ticketId: ticket.id,
+            type: "created",
+          },
+        });
+      } catch (emailError) {
+        console.error("Error sending email notifications:", emailError);
+        // Don't fail the ticket creation if email fails
+      }
+
       toast({
         title: "Success",
-        description: "Support ticket created successfully",
+        description: "Support ticket created successfully. We'll respond within 48 hours.",
       });
 
       onOpenChange(false);

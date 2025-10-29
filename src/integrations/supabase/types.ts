@@ -3252,12 +3252,16 @@ export type Database = {
           category: Database["public"]["Enums"]["ticket_category"] | null
           client_id: string
           created_at: string | null
+          first_response_at: string | null
           id: string
           owner_user_id: string | null
           priority: Database["public"]["Enums"]["task_priority"] | null
           related_asset_ids: string[] | null
           related_task_ids: string[] | null
           requester_user_id: string
+          resolved_at: string | null
+          response_time_minutes: number | null
+          sla_due_at: string | null
           status: Database["public"]["Enums"]["ticket_status"] | null
           tags: string[] | null
           title: string
@@ -3267,12 +3271,16 @@ export type Database = {
           category?: Database["public"]["Enums"]["ticket_category"] | null
           client_id: string
           created_at?: string | null
+          first_response_at?: string | null
           id?: string
           owner_user_id?: string | null
           priority?: Database["public"]["Enums"]["task_priority"] | null
           related_asset_ids?: string[] | null
           related_task_ids?: string[] | null
           requester_user_id: string
+          resolved_at?: string | null
+          response_time_minutes?: number | null
+          sla_due_at?: string | null
           status?: Database["public"]["Enums"]["ticket_status"] | null
           tags?: string[] | null
           title: string
@@ -3282,12 +3290,16 @@ export type Database = {
           category?: Database["public"]["Enums"]["ticket_category"] | null
           client_id?: string
           created_at?: string | null
+          first_response_at?: string | null
           id?: string
           owner_user_id?: string | null
           priority?: Database["public"]["Enums"]["task_priority"] | null
           related_asset_ids?: string[] | null
           related_task_ids?: string[] | null
           requester_user_id?: string
+          resolved_at?: string | null
+          response_time_minutes?: number | null
+          sla_due_at?: string | null
           status?: Database["public"]["Enums"]["ticket_status"] | null
           tags?: string[] | null
           title?: string
