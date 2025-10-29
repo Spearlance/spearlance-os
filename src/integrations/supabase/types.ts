@@ -3109,6 +3109,50 @@ export type Database = {
           },
         ]
       }
+      task_columns: {
+        Row: {
+          client_id: string
+          color: string | null
+          created_at: string | null
+          display_order: number
+          id: string
+          is_default: boolean | null
+          key: string
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          client_id: string
+          color?: string | null
+          created_at?: string | null
+          display_order?: number
+          id?: string
+          is_default?: boolean | null
+          key: string
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          client_id?: string
+          color?: string | null
+          created_at?: string | null
+          display_order?: number
+          id?: string
+          is_default?: boolean | null
+          key?: string
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_columns_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       task_comments: {
         Row: {
           body: string
@@ -3592,6 +3636,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      initialize_default_task_columns: {
+        Args: { p_client_id: string }
+        Returns: undefined
       }
       initialize_marketing_flow: {
         Args: { p_client_id: string; p_user_id: string }

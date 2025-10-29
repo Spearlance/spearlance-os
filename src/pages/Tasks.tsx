@@ -43,11 +43,8 @@ interface Task {
 
 export default function Tasks() {
   const { selectedClient } = useClient();
-  const [tasks, setTasks] = useState<Record<string, Task[]>>({
-    to_do: [],
-    in_progress: [],
-    done: [],
-  });
+  const [taskColumns, setTaskColumns] = useState<Array<{ id: string; name: string; key: string; color: string }>>([]);
+  const [tasks, setTasks] = useState<Record<string, Task[]>>({});
   const [allTasks, setAllTasks] = useState<Task[]>([]);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [userRole, setUserRole] = useState<string>("");
@@ -69,6 +66,7 @@ export default function Tasks() {
 
   useEffect(() => {
     if (selectedClient) {
+      loadTaskColumns();
       loadTasks();
       loadMarketingChannels();
     }
@@ -92,6 +90,30 @@ export default function Tasks() {
       .single();
     
     if (data) setUserRole(data.role);
+  };
+
+  const loadTaskColumns = async () => {
+    if (!selectedClient) return;
+
+    const { data, error } = await supabase
+      .from("task_columns")
+      .select("id, name, key, color")
+      .eq("client_id", selectedClient.id)
+      .order("display_order");
+
+    if (error) {
+      console.error("Error loading task columns:", error);
+      return;
+    }
+
+    setTaskColumns(data || []);
+    
+    // Initialize tasks state with empty arrays for each column
+    const initialTasks: Record<string, Task[]> = {};
+    (data || []).forEach(col => {
+      initialTasks[col.key] = [];
+    });
+    setTasks(initialTasks);
   };
 
   const loadCurrentUser = async () => {
@@ -229,11 +251,11 @@ export default function Tasks() {
       })
     );
 
-    const grouped: Record<string, Task[]> = {
-      to_do: [],
-      in_progress: [],
-      done: [],
-    };
+    // Initialize grouped tasks structure
+    const grouped: Record<string, Task[]> = {};
+    taskColumns.forEach(col => {
+      grouped[col.key] = [];
+    });
 
     enrichedTasks.forEach((task: any) => {
       if (grouped[task.status]) {
@@ -371,17 +393,18 @@ export default function Tasks() {
           {/* View-specific rendering */}
           {currentView === "kanban" && (
             <DragDropContext onDragEnd={onDragEnd}>
-              <div className="grid grid-cols-3 gap-6">
-                {["to_do", "in_progress", "done"].map((columnId) => (
-                  <div key={columnId} className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h2 className="font-semibold text-lg capitalize">
-                        {columnId.replace("_", " ")}
+              <div className="grid gap-6" style={{ gridTemplateColumns: `repeat(${taskColumns.length}, minmax(300px, 1fr))` }}>
+                {taskColumns.map((column) => (
+                  <div key={column.key} className="space-y-4">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded" style={{ backgroundColor: column.color }} />
+                      <h2 className="font-semibold text-lg flex-1">
+                        {column.name}
                       </h2>
-                      <Badge variant="secondary">{tasks[columnId].length}</Badge>
+                      <Badge variant="secondary">{tasks[column.key]?.length || 0}</Badge>
                     </div>
 
-                    <Droppable droppableId={columnId}>
+                    <Droppable droppableId={column.key}>
                       {(provided, snapshot) => (
                         <div
                           ref={provided.innerRef}
@@ -390,7 +413,7 @@ export default function Tasks() {
                             snapshot.isDraggingOver ? "bg-accent/50" : "bg-muted/20"
                           }`}
                         >
-                          {tasks[columnId].map((task, index) => (
+                          {(tasks[column.key] || []).map((task, index) => (
                             <Draggable key={task.id} draggableId={task.id} index={index}>
                               {(provided, snapshot) => (
                                 <div
