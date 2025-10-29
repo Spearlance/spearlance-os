@@ -134,21 +134,32 @@ export const SocialAccountsManager = () => {
                 ))}
               </div>
 
-              <div className="space-y-3 pt-4 border-t">
-                <p className="text-sm text-muted-foreground">Connect another account:</p>
-                <div className="grid gap-3">
-                  <ConnectSocialPopup 
-                    platform="facebook" 
-                    clientId={selectedClient?.id}
-                    lateProfileId={lateProfile?.id}
-                  />
-                  <ConnectSocialPopup 
-                    platform="instagram" 
-                    clientId={selectedClient?.id}
-                    lateProfileId={lateProfile?.id}
-                  />
+              {/* Only show connect buttons for platforms not yet connected */}
+              {(!accounts.some(a => a.platform === 'facebook') || !accounts.some(a => a.platform === 'instagram')) && (
+                <div className="space-y-3 pt-4 border-t">
+                  <p className="text-sm text-muted-foreground">
+                    {accounts.length === 0 
+                      ? 'Connect your accounts:' 
+                      : 'Connect remaining account:'}
+                  </p>
+                  <div className="grid gap-3">
+                    {!accounts.some(a => a.platform === 'facebook') && (
+                      <ConnectSocialPopup 
+                        platform="facebook" 
+                        clientId={selectedClient?.id}
+                        lateProfileId={lateProfile?.id}
+                      />
+                    )}
+                    {!accounts.some(a => a.platform === 'instagram') && (
+                      <ConnectSocialPopup 
+                        platform="instagram" 
+                        clientId={selectedClient?.id}
+                        lateProfileId={lateProfile?.id}
+                      />
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
             </>
           ) : (
             <div className="space-y-4">
