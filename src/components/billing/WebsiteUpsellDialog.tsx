@@ -192,7 +192,7 @@ export function WebsiteUpsellDialog({ open, onOpenChange, onUpgradeClick }: Webs
               </ul>
               <div className="mt-4 p-3 bg-green-50 dark:bg-green-950 rounded-lg border border-green-200 dark:border-green-800">
                 <p className="text-sm font-medium text-green-800 dark:text-green-200">
-                  💰 Save $750 + Unlimited edits + $3,100 in bonuses
+                  💰 Save $750 + Unlimited edits + <span className="text-purple-700 dark:text-purple-300">$3,100 in bonuses</span>
                 </p>
               </div>
             </CardContent>
