@@ -11,6 +11,8 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { useLaunchPadStatus } from "@/hooks/useLaunchPadStatus";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
+import { WebsiteUpsellBanner } from "@/components/billing/WebsiteUpsellBanner";
+import { PricingModal } from "@/components/billing/PricingModal";
 
 interface DashboardStats {
   nextMeeting?: any;
@@ -53,6 +55,7 @@ const Dashboard = () => {
   const [dataLoading, setDataLoading] = useState(true);
   const [generatingPlan, setGeneratingPlan] = useState(false);
   const [generatingStory, setGeneratingStory] = useState(false);
+  const [pricingModalOpen, setPricingModalOpen] = useState(false);
 
   useEffect(() => {
     if (selectedClient) {
@@ -258,6 +261,8 @@ const Dashboard = () => {
           <p className="text-muted-foreground">Welcome to {selectedClient.name}</p>
         </div>
       </div>
+
+      <WebsiteUpsellBanner onUpgradeClick={() => setPricingModalOpen(true)} />
 
       {!launchPadLoading && !isComplete && (
         <Alert 
@@ -572,6 +577,12 @@ const Dashboard = () => {
           </Card>
         )}
       </div>
+
+      <PricingModal 
+        open={pricingModalOpen}
+        onOpenChange={setPricingModalOpen}
+        highlightWebsite={true}
+      />
     </div>
   );
 };

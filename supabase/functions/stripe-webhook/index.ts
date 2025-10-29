@@ -36,6 +36,30 @@ serve(async (req) => {
     console.log('Stripe webhook event:', event.type);
 
     switch (event.type) {
+      case 'checkout.session.completed': {
+        const session = event.data.object as Stripe.Checkout.Session;
+        
+        // Check if this is a website add-on purchase
+        if (session.metadata?.product_type === 'website' && session.metadata?.client_id) {
+          const { error } = await supabaseAdmin
+            .from('clients')
+            .update({
+              website_unlocked: true,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', session.metadata.client_id)
+            .eq('billing_method', 'stripe');
+
+          if (error) {
+            console.error('Failed to unlock website:', error);
+            throw new Error(`Database update failed: ${error.message}`);
+          }
+
+          console.log('Website unlocked for client:', session.metadata.client_id);
+        }
+        break;
+      }
+
       case 'customer.subscription.created':
       case 'customer.subscription.updated': {
         const subscription = event.data.object as Stripe.Subscription;

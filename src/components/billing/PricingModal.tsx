@@ -13,9 +13,10 @@ import { cn } from "@/lib/utils";
 interface PricingModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  highlightWebsite?: boolean;
 }
 
-export function PricingModal({ open, onOpenChange }: PricingModalProps) {
+export function PricingModal({ open, onOpenChange, highlightWebsite = false }: PricingModalProps) {
   const { selectedClient } = useClient();
   const { toast } = useToast();
   const [loading, setLoading] = useState<string | null>(null);
@@ -134,6 +135,14 @@ export function PricingModal({ open, onOpenChange }: PricingModalProps) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
         <DialogHeader className="space-y-2">
+          {highlightWebsite && (
+            <div className="text-center p-3 bg-primary/10 rounded-lg border border-primary/20">
+              <p className="text-sm font-medium flex items-center justify-center gap-2">
+                <span>💡</span>
+                <span>Tip: Unlimited plan includes professional website for free ($750 value)</span>
+              </p>
+            </div>
+          )}
           {daysRemaining > 0 && (
             <div className="text-sm text-center text-yellow-600 font-medium">
               {daysRemaining} days left in trial

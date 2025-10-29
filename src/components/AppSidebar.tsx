@@ -54,12 +54,16 @@ import {
   Share2,
   Globe,
   ExternalLink,
+  Lock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useLaunchPadStatus } from "@/hooks/useLaunchPadStatus";
 import { useAccountType } from "@/hooks/useAccountType";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { WebsiteUpsellDialog } from "@/components/billing/WebsiteUpsellDialog";
+import { PricingModal } from "@/components/billing/PricingModal";
 
 const menuItems = [
   { title: "Home", url: "/", icon: Home },
@@ -114,6 +118,8 @@ export function AppSidebar() {
   const [clientCommunicationOpen, setClientCommunicationOpen] = useState(false);
   const [helpSupportOpen, setHelpSupportOpen] = useState(false);
   const [websiteOpen, setWebsiteOpen] = useState(false);
+  const [websiteUpsellOpen, setWebsiteUpsellOpen] = useState(false);
+  const [pricingModalOpen, setPricingModalOpen] = useState(false);
   const { isComplete } = useLaunchPadStatus();
   const { isSelfService } = useAccountType();
 
@@ -314,64 +320,91 @@ export function AppSidebar() {
                 </SidebarMenuItem>
               </Collapsible>
 
-              {selectedClient?.website_unlocked && (
-                <Collapsible open={websiteOpen} onOpenChange={setWebsiteOpen}>
-                  <SidebarMenuItem>
-                    <CollapsibleTrigger asChild>
-                      <SidebarMenuButton>
-                        <Globe className="h-4 w-4" />
-                        {!collapsed && (
-                          <>
-                            <span>Website</span>
-                            <ChevronDown 
-                              className={`ml-auto h-4 w-4 transition-transform ${
-                                websiteOpen ? "rotate-180" : ""
-                              }`}
-                            />
-                          </>
-                        )}
-                      </SidebarMenuButton>
-                    </CollapsibleTrigger>
-                    {!collapsed && (
-                      <CollapsibleContent>
-                        <SidebarMenuSub>
-                          {websiteSubItems.map((subItem) => (
-                            <SidebarMenuSubItem key={subItem.title}>
-                              {subItem.external && !subItem.comingSoon && selectedClient?.site_id ? (
-                                <SidebarMenuSubButton asChild>
-                                  <a
-                                    href={`https://www.mywebsitemanager.co/home/site/${selectedClient.site_id}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                  >
+              <Collapsible open={websiteOpen} onOpenChange={setWebsiteOpen}>
+                <SidebarMenuItem>
+                  {selectedClient?.website_unlocked ? (
+                    <>
+                      <CollapsibleTrigger asChild>
+                        <SidebarMenuButton>
+                          <Globe className="h-4 w-4" />
+                          {!collapsed && (
+                            <>
+                              <span>Website</span>
+                              <ChevronDown 
+                                className={`ml-auto h-4 w-4 transition-transform ${
+                                  websiteOpen ? "rotate-180" : ""
+                                }`}
+                              />
+                            </>
+                          )}
+                        </SidebarMenuButton>
+                      </CollapsibleTrigger>
+                      {!collapsed && (
+                        <CollapsibleContent>
+                          <SidebarMenuSub>
+                            {websiteSubItems.map((subItem) => (
+                              <SidebarMenuSubItem key={subItem.title}>
+                                {subItem.external && !subItem.comingSoon && selectedClient?.site_id ? (
+                                  <SidebarMenuSubButton asChild>
+                                    <a
+                                      href={`https://www.mywebsitemanager.co/home/site/${selectedClient.site_id}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                    >
+                                      <subItem.icon className="h-4 w-4" />
+                                      <span>{subItem.title}</span>
+                                    </a>
+                                  </SidebarMenuSubButton>
+                                ) : subItem.comingSoon ? (
+                                  <SidebarMenuSubButton className="opacity-50 cursor-not-allowed">
                                     <subItem.icon className="h-4 w-4" />
                                     <span>{subItem.title}</span>
-                                  </a>
-                                </SidebarMenuSubButton>
-                              ) : subItem.comingSoon ? (
-                                <SidebarMenuSubButton className="opacity-50 cursor-not-allowed">
-                                  <subItem.icon className="h-4 w-4" />
-                                  <span>{subItem.title}</span>
-                                  <Badge variant="secondary" className="ml-auto text-[10px]">
-                                    Soon
-                                  </Badge>
-                                </SidebarMenuSubButton>
-                              ) : subItem.url ? (
-                                <SidebarMenuSubButton asChild>
-                                  <NavLink to={subItem.url} end className={getNavClass}>
-                                    <subItem.icon className="h-4 w-4" />
-                                    <span>{subItem.title}</span>
-                                  </NavLink>
-                                </SidebarMenuSubButton>
-                              ) : null}
-                            </SidebarMenuSubItem>
-                          ))}
-                        </SidebarMenuSub>
-                      </CollapsibleContent>
-                    )}
-                  </SidebarMenuItem>
-                </Collapsible>
-              )}
+                                    <Badge variant="secondary" className="ml-auto text-[10px]">
+                                      Soon
+                                    </Badge>
+                                  </SidebarMenuSubButton>
+                                ) : subItem.url ? (
+                                  <SidebarMenuSubButton asChild>
+                                    <NavLink to={subItem.url} end className={getNavClass}>
+                                      <subItem.icon className="h-4 w-4" />
+                                      <span>{subItem.title}</span>
+                                    </NavLink>
+                                  </SidebarMenuSubButton>
+                                ) : null}
+                              </SidebarMenuSubItem>
+                            ))}
+                          </SidebarMenuSub>
+                        </CollapsibleContent>
+                      )}
+                    </>
+                  ) : (
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <SidebarMenuButton 
+                            onClick={() => setWebsiteUpsellOpen(true)}
+                            className="opacity-60"
+                          >
+                            <Globe className="h-4 w-4" />
+                            {!collapsed && (
+                              <>
+                                <span>Website</span>
+                                <Lock className="ml-auto h-4 w-4 text-muted-foreground" />
+                              </>
+                            )}
+                          </SidebarMenuButton>
+                        </TooltipTrigger>
+                        <TooltipContent side="right">
+                          <p className="font-medium">Unlock Website Features</p>
+                          <p className="text-xs text-muted-foreground">
+                            Add for $750 or upgrade to Unlimited
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  )}
+                </SidebarMenuItem>
+              </Collapsible>
 
               {!isLoading && (
                 <Collapsible open={clientCommunicationOpen} onOpenChange={setClientCommunicationOpen}>
@@ -502,6 +535,21 @@ export function AppSidebar() {
           </Button>
         </div>
       </SidebarContent>
+
+      <WebsiteUpsellDialog 
+        open={websiteUpsellOpen}
+        onOpenChange={setWebsiteUpsellOpen}
+        onUpgradeClick={() => {
+          setWebsiteUpsellOpen(false);
+          setPricingModalOpen(true);
+        }}
+      />
+
+      <PricingModal 
+        open={pricingModalOpen}
+        onOpenChange={setPricingModalOpen}
+        highlightWebsite={true}
+      />
     </Sidebar>
   );
 }
