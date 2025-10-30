@@ -99,7 +99,7 @@ const clientCommunicationSubItems = [
 const helpSupportSubItems = [
   { title: "Knowledge Base", url: "/support/docs", icon: BookOpen },
   { title: "Support Tickets", url: "/support", icon: HelpCircle },
-  { title: "My Bug Reports", url: "/my-bug-reports", icon: Bug },
+  { title: "My Bug Reports", url: "/bug-reports", icon: Bug },
 ];
 
 const websiteSubItems = [
