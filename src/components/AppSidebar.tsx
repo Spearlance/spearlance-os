@@ -99,7 +99,6 @@ const clientCommunicationSubItems = [
 const helpSupportSubItems = [
   { title: "Knowledge Base", url: "/support/docs", icon: BookOpen },
   { title: "Support Tickets", url: "/support", icon: HelpCircle },
-  { title: "My Bug Reports", url: "/bug-reports", icon: Bug },
 ];
 
 const websiteSubItems = [
@@ -121,6 +120,7 @@ export function AppSidebar() {
   const [clientCommunicationOpen, setClientCommunicationOpen] = useState(false);
   const [helpSupportOpen, setHelpSupportOpen] = useState(false);
   const [websiteOpen, setWebsiteOpen] = useState(false);
+  const [adminOpen, setAdminOpen] = useState(false);
   const [websiteUpsellOpen, setWebsiteUpsellOpen] = useState(false);
   const [pricingModalOpen, setPricingModalOpen] = useState(false);
   const [isBugReportOpen, setIsBugReportOpen] = useState(false);
@@ -515,14 +515,47 @@ export function AppSidebar() {
               ))}
 
               {userRole === "admin" && (
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild>
-                    <NavLink to="/admin" end className={getNavClass}>
-                      <Shield className="h-4 w-4" />
-                      {!collapsed && <span>Admin</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
+                <Collapsible open={adminOpen} onOpenChange={setAdminOpen}>
+                  <SidebarMenuItem>
+                    <CollapsibleTrigger asChild>
+                      <SidebarMenuButton>
+                        <Shield className="h-4 w-4" />
+                        {!collapsed && (
+                          <>
+                            <span>Admin</span>
+                            <ChevronDown 
+                              className={`ml-auto h-4 w-4 transition-transform ${
+                                adminOpen ? "rotate-180" : ""
+                              }`}
+                            />
+                          </>
+                        )}
+                      </SidebarMenuButton>
+                    </CollapsibleTrigger>
+                    {!collapsed && (
+                      <CollapsibleContent>
+                        <SidebarMenuSub>
+                          <SidebarMenuSubItem>
+                            <SidebarMenuSubButton asChild>
+                              <NavLink to="/admin" end className={getNavClass}>
+                                <Users className="h-4 w-4" />
+                                <span>Client Management</span>
+                              </NavLink>
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
+                          <SidebarMenuSubItem>
+                            <SidebarMenuSubButton asChild>
+                              <NavLink to="/admin/bug-reports" end className={getNavClass}>
+                                <Bug className="h-4 w-4" />
+                                <span>Bug Reports</span>
+                              </NavLink>
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
+                        </SidebarMenuSub>
+                      </CollapsibleContent>
+                    )}
+                  </SidebarMenuItem>
+                </Collapsible>
               )}
             </SidebarMenu>
           </SidebarGroupContent>

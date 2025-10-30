@@ -12,7 +12,9 @@ import { PricingModal } from "@/components/billing/PricingModal";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { SubscriptionLockoutBanner } from "@/components/billing/SubscriptionLockoutBanner";
 import { useAccountType } from "@/hooks/useAccountType";
-import { Lock } from "lucide-react";
+import { Lock, Bug } from "lucide-react";
+import { ReportBugDialog } from "@/components/support/ReportBugDialog";
+import { Button } from "@/components/ui/button";
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -23,6 +25,7 @@ function MainLayoutContent({ children }: MainLayoutProps) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [pricingModalOpen, setPricingModalOpen] = useState(false);
+  const [isBugReportOpen, setIsBugReportOpen] = useState(false);
   const { isAccessLocked, isInGracePeriod } = useAccountType();
 
   useEffect(() => {
@@ -72,6 +75,14 @@ function MainLayoutContent({ children }: MainLayoutProps) {
               <h1 className="text-lg font-semibold">SpearlanceOS</h1>
             </div>
             <div className="flex items-center gap-2">
+              <Button 
+                variant="ghost" 
+                size="icon"
+                onClick={() => setIsBugReportOpen(true)}
+                className="relative"
+              >
+                <Bug className="h-5 w-5" />
+              </Button>
               <NotificationBell />
             </div>
           </header>
@@ -107,6 +118,11 @@ function MainLayoutContent({ children }: MainLayoutProps) {
       <PricingModal
         open={pricingModalOpen}
         onOpenChange={setPricingModalOpen}
+      />
+
+      <ReportBugDialog
+        open={isBugReportOpen}
+        onOpenChange={setIsBugReportOpen}
       />
     </SidebarProvider>
   );
