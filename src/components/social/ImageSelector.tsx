@@ -12,6 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { AssetRecommendationDialog } from "./AssetRecommendationDialog";
 
 interface ImageSelectorProps {
   caption: string;
@@ -27,6 +28,7 @@ export const ImageSelector = ({ caption, onComplete, onBack }: ImageSelectorProp
   const [generatedImages, setGeneratedImages] = useState<any[]>([]);
   const [loadingMessage, setLoadingMessage] = useState("Creating your image...");
   const [showRetry, setShowRetry] = useState(false);
+  const [showAssetRecommendations, setShowAssetRecommendations] = useState(false);
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -170,11 +172,16 @@ export const ImageSelector = ({ caption, onComplete, onBack }: ImageSelectorProp
               <FolderOpen className="h-6 w-6 text-white" />
             </div>
             <CardTitle className="text-lg">Use Brand Asset</CardTitle>
-            <CardDescription>Select from your assets</CardDescription>
+            <CardDescription>AI picks your best matches</CardDescription>
           </CardHeader>
           <CardContent>
-            <Button size="lg" variant="outline" className="w-full" disabled>
-              Coming Soon
+            <Button 
+              size="lg" 
+              variant="outline" 
+              className="w-full"
+              onClick={() => setShowAssetRecommendations(true)}
+            >
+              Show Recommendations
             </Button>
           </CardContent>
         </Card>
@@ -277,6 +284,15 @@ export const ImageSelector = ({ caption, onComplete, onBack }: ImageSelectorProp
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Asset Recommendations Dialog */}
+      <AssetRecommendationDialog
+        open={showAssetRecommendations}
+        onOpenChange={setShowAssetRecommendations}
+        caption={caption}
+        clientId={selectedClient?.id || ''}
+        onSelectAsset={(imageUrl, source) => onComplete(imageUrl, source, '')}
+      />
 
       {/* Actions */}
       <div className="flex gap-4">

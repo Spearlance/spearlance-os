@@ -158,3 +158,12 @@ verify_jwt = true
 
 [functions.backfill-stripe-plan-names]
 verify_jwt = false
+
+[functions.analyze-asset]
+verify_jwt = true
+
+[functions.recommend-assets]
+verify_jwt = true
+
+[functions.backfill-asset-embeddings]
+verify_jwt = true

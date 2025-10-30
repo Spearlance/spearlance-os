@@ -223,7 +223,7 @@ export default function Assets() {
     else if (file.type.includes('pdf') || file.type.includes('document')) type = 'doc';
     
     const { data: userData } = await supabase.auth.getUser();
-    await supabase.from("assets").insert([{
+    const { data: assetData } = await supabase.from("assets").insert([{
       client_id: selectedClient.id,
       folder_id: currentFolderId,
       title: file.name.replace(/\.[^/.]+$/, ""),
@@ -231,7 +231,14 @@ export default function Assets() {
       storage_type: 'upload',
       file_url: publicUrl,
       created_by: userData.user?.id,
-    }]);
+    }]).select().single();
+    
+    // Trigger AI analysis in background for images and videos
+    if (assetData && (type === 'image' || type === 'video')) {
+      supabase.functions.invoke('analyze-asset', {
+        body: { asset_id: assetData.id }
+      }).catch(err => console.error('AI analysis failed:', err));
+    }
   };
 
   const handleAssetClick = (asset: Asset) => {

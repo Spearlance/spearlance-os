@@ -212,6 +212,9 @@ export type Database = {
       }
       assets: {
         Row: {
+          ai_description: string | null
+          ai_embedding: string | null
+          ai_processed_at: string | null
           client_id: string
           created_at: string | null
           created_by: string | null
@@ -227,6 +230,9 @@ export type Database = {
           upload_blob: string | null
         }
         Insert: {
+          ai_description?: string | null
+          ai_embedding?: string | null
+          ai_processed_at?: string | null
           client_id: string
           created_at?: string | null
           created_by?: string | null
@@ -242,6 +248,9 @@ export type Database = {
           upload_blob?: string | null
         }
         Update: {
+          ai_description?: string | null
+          ai_embedding?: string | null
+          ai_processed_at?: string | null
           client_id?: string
           created_at?: string | null
           created_by?: string | null
@@ -3795,6 +3804,22 @@ export type Database = {
       initialize_marketing_flow: {
         Args: { p_client_id: string; p_user_id: string }
         Returns: string
+      }
+      match_assets: {
+        Args: {
+          match_client_id: string
+          match_count?: number
+          match_threshold?: number
+          query_embedding: string
+        }
+        Returns: {
+          ai_description: string
+          file_url: string
+          id: string
+          preview_url: string
+          similarity: number
+          title: string
+        }[]
       }
     }
     Enums: {
