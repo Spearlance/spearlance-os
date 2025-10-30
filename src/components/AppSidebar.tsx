@@ -55,7 +55,9 @@ import {
   Globe,
   ExternalLink,
   Lock,
+  Bug,
 } from "lucide-react";
+import { ReportBugDialog } from "@/components/support/ReportBugDialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
@@ -97,6 +99,7 @@ const clientCommunicationSubItems = [
 const helpSupportSubItems = [
   { title: "Knowledge Base", url: "/support/docs", icon: BookOpen },
   { title: "Support Tickets", url: "/support", icon: HelpCircle },
+  { title: "My Bug Reports", url: "/bug-reports", icon: Bug },
 ];
 
 const websiteSubItems = [
@@ -549,6 +552,11 @@ export function AppSidebar() {
         open={pricingModalOpen}
         onOpenChange={setPricingModalOpen}
         highlightWebsite={true}
+      />
+
+      <ReportBugDialog
+        open={isBugReportOpen}
+        onOpenChange={setIsBugReportOpen}
       />
     </Sidebar>
   );

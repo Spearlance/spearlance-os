@@ -506,6 +506,96 @@ export type Database = {
           },
         ]
       }
+      bug_reports: {
+        Row: {
+          actual_behavior: string | null
+          admin_notes: string | null
+          assigned_to: string | null
+          browser_info: Json | null
+          client_id: string
+          created_at: string | null
+          description: string
+          device_info: Json | null
+          expected_behavior: string | null
+          id: string
+          page_url: string | null
+          related_ticket_id: string | null
+          reporter_user_id: string
+          resolved_at: string | null
+          reward_awarded: boolean | null
+          reward_points: number | null
+          screenshot_urls: string[] | null
+          severity: Database["public"]["Enums"]["bug_report_severity"] | null
+          status: Database["public"]["Enums"]["bug_report_status"] | null
+          steps_to_reproduce: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          actual_behavior?: string | null
+          admin_notes?: string | null
+          assigned_to?: string | null
+          browser_info?: Json | null
+          client_id: string
+          created_at?: string | null
+          description: string
+          device_info?: Json | null
+          expected_behavior?: string | null
+          id?: string
+          page_url?: string | null
+          related_ticket_id?: string | null
+          reporter_user_id: string
+          resolved_at?: string | null
+          reward_awarded?: boolean | null
+          reward_points?: number | null
+          screenshot_urls?: string[] | null
+          severity?: Database["public"]["Enums"]["bug_report_severity"] | null
+          status?: Database["public"]["Enums"]["bug_report_status"] | null
+          steps_to_reproduce?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          actual_behavior?: string | null
+          admin_notes?: string | null
+          assigned_to?: string | null
+          browser_info?: Json | null
+          client_id?: string
+          created_at?: string | null
+          description?: string
+          device_info?: Json | null
+          expected_behavior?: string | null
+          id?: string
+          page_url?: string | null
+          related_ticket_id?: string | null
+          reporter_user_id?: string
+          resolved_at?: string | null
+          reward_awarded?: boolean | null
+          reward_points?: number | null
+          screenshot_urls?: string[] | null
+          severity?: Database["public"]["Enums"]["bug_report_severity"] | null
+          status?: Database["public"]["Enums"]["bug_report_status"] | null
+          steps_to_reproduce?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bug_reports_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bug_reports_related_ticket_id_fkey"
+            columns: ["related_ticket_id"]
+            isOneToOne: false
+            referencedRelation: "tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cal_webhook_logs: {
         Row: {
           created_at: string | null
@@ -3695,6 +3785,14 @@ export type Database = {
       app_role: "admin" | "fmm" | "client"
       asset_type: "image" | "video" | "copy" | "doc" | "link" | "other"
       billing_status: "good" | "delinquent" | "cancelled"
+      bug_report_severity: "critical" | "high" | "medium" | "low" | "cosmetic"
+      bug_report_status:
+        | "submitted"
+        | "triaged"
+        | "in_progress"
+        | "fixed"
+        | "wont_fix"
+        | "duplicate"
       channel_ownership: "spearlance" | "client" | "both"
       channel_status: "active" | "in_progress" | "paused" | "not_used"
       client_status: "active" | "paused" | "archived"
@@ -3840,6 +3938,15 @@ export const Constants = {
       app_role: ["admin", "fmm", "client"],
       asset_type: ["image", "video", "copy", "doc", "link", "other"],
       billing_status: ["good", "delinquent", "cancelled"],
+      bug_report_severity: ["critical", "high", "medium", "low", "cosmetic"],
+      bug_report_status: [
+        "submitted",
+        "triaged",
+        "in_progress",
+        "fixed",
+        "wont_fix",
+        "duplicate",
+      ],
       channel_ownership: ["spearlance", "client", "both"],
       channel_status: ["active", "in_progress", "paused", "not_used"],
       client_status: ["active", "paused", "archived"],

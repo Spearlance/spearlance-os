@@ -1,10 +1,22 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.75.0";
-import { Resend } from "https://esm.sh/resend@4.0.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+
+async function sendEmail(to: string[], subject: string, html: string) {
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${RESEND_API_KEY}`,
+    },
+    body: JSON.stringify({ from: "Spearlance Support <support@spearlance.co>", to, subject, html }),
+  });
+  return response.json();
+}
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -17,166 +29,111 @@ interface TicketNotificationRequest {
   messageId?: string;
 }
 
-serve(async (req) => {
+serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const supabase = createClient(supabaseUrl, supabaseKey);
     const { ticketId, type, messageId }: TicketNotificationRequest = await req.json();
-
     console.log(`Processing ${type} notification for ticket ${ticketId}`);
 
-    // Get ticket details with related data
+    // Fetch ticket details with related data
     const { data: ticket, error: ticketError } = await supabase
       .from("tickets")
       .select(`
         *,
-        client:clients(name, domain),
-        requester:profiles!tickets_requester_user_id_fkey(name, email),
-        owner:profiles!tickets_owner_user_id_fkey(name, email)
+        client:clients(name, id),
+        requester:profiles!tickets_requester_user_id_fkey(email, full_name),
+        owner:profiles!tickets_owner_user_id_fkey(email, full_name)
       `)
       .eq("id", ticketId)
       .single();
 
     if (ticketError || !ticket) {
-      throw new Error(`Ticket not found: ${ticketError?.message}`);
+      console.error("Error fetching ticket:", ticketError);
+      throw new Error("Ticket not found");
     }
 
-    const appUrl = `${supabaseUrl.replace('.supabase.co', '')}/support/${ticketId}`;
-    
+    const ticketUrl = `${Deno.env.get("SUPABASE_URL")?.replace('.supabase.co', '')}/support`;
+
+    // Handle different notification types
     switch (type) {
       case "created":
-        // Email to client (requester)
-        await resend.emails.send({
-          from: "Spearlance Support <support@spearlance.com>",
-          to: [ticket.requester.email],
-          subject: `Support Ticket #${ticket.id.slice(0, 8)} Created - We'll respond within 48 hours`,
-          html: `
-            <h2>Your Support Ticket Has Been Created</h2>
-            <p>Hi ${ticket.requester.name},</p>
-            <p>We've received your support ticket and will respond within 48 hours.</p>
-            
-            <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
-              <h3 style="margin-top: 0;">${ticket.title}</h3>
-              <p><strong>Category:</strong> ${ticket.category}</p>
-              <p><strong>Priority:</strong> ${ticket.priority}</p>
-              <p><strong>Status:</strong> ${ticket.status}</p>
+        // Email to requester
+        await sendEmail([ticket.requester.email], `Support Ticket #${ticket.ticket_number} Created`,
+          `
+            <h2>Your support ticket has been created</h2>
+            <p>Hi ${ticket.requester.full_name || 'there'},</p>
+            <p>Thank you for contacting us. Your support ticket has been created and our team will respond within 48 hours.</p>
+            <div style="margin: 20px 0; padding: 15px; background: #f5f5f5; border-radius: 8px;">
+              <strong>Ticket #${ticket.ticket_number}</strong><br/>
+              <strong>Subject:</strong> ${ticket.title}<br/>
+              <strong>Category:</strong> ${ticket.category}<br/>
+              <strong>Priority:</strong> ${ticket.priority}<br/>
+              <strong>SLA:</strong> Response within 48 hours
             </div>
+            <p><a href="${ticketUrl}" style="background: #4F46E5; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">View Ticket</a></p>
+            <p>Best regards,<br/>Spearlance Support Team</p>
+          `
+        );
 
-            <p><strong>Ticket ID:</strong> ${ticket.id.slice(0, 8)}</p>
-            <p><strong>Created:</strong> ${new Date(ticket.created_at).toLocaleString()}</p>
-
-            <a href="${appUrl}" style="display: inline-block; background: #000; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 20px 0;">
-              View Ticket
-            </a>
-
-            <p style="color: #666; font-size: 14px; margin-top: 30px;">
-              You can reply to updates directly from your dashboard or via email notifications.
-            </p>
-          `,
-        });
-
-        // Email to admins and assigned owner
-        const adminEmails: string[] = [];
+        // Email to admins/FMMs
         const { data: admins } = await supabase
           .from("profiles")
-          .select("email")
-          .eq("role", "admin");
-        
-        if (admins) {
-          adminEmails.push(...admins.map(a => a.email));
-        }
+          .select("email, full_name")
+          .or("role.eq.admin,role.eq.fmm");
 
-        if (ticket.owner?.email && !adminEmails.includes(ticket.owner.email)) {
-          adminEmails.push(ticket.owner.email);
-        }
-
-        if (adminEmails.length > 0) {
-          await resend.emails.send({
-            from: "Spearlance Support <support@spearlance.com>",
-            to: adminEmails,
-            subject: `🚨 New Support Ticket from ${ticket.client.name}`,
-            html: `
-              <h2>New Support Ticket Created</h2>
-              <p><strong>Client:</strong> ${ticket.client.name}</p>
-              <p><strong>Requester:</strong> ${ticket.requester.name}</p>
-              
-              <div style="background: #fef3c7; padding: 20px; border-left: 4px solid #f59e0b; margin: 20px 0;">
-                <p style="margin: 0;"><strong>⏰ SLA Deadline:</strong> ${new Date(ticket.sla_due_at).toLocaleString()}</p>
-                <p style="margin: 8px 0 0 0; color: #92400e;">Must respond within 48 hours</p>
+        if (admins && admins.length > 0) {
+          await sendEmail(admins.map(a => a.email), `New Support Ticket #${ticket.ticket_number} - ${ticket.client.name}`, `
+              <h2>New Support Ticket</h2>
+              <div style="margin: 20px 0; padding: 15px; background: #f5f5f5; border-radius: 8px;">
+                <strong>Ticket #${ticket.ticket_number}</strong><br/>
+                <strong>Client:</strong> ${ticket.client.name}<br/>
+                <strong>From:</strong> ${ticket.requester.full_name} (${ticket.requester.email})<br/>
+                <strong>Subject:</strong> ${ticket.title}<br/>
+                <strong>Category:</strong> ${ticket.category}<br/>
+                <strong>Priority:</strong> ${ticket.priority}<br/>
+                <strong>SLA:</strong> Response within 48 hours
               </div>
-
-              <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                <h3 style="margin-top: 0;">${ticket.title}</h3>
-                <p><strong>Category:</strong> ${ticket.category}</p>
-                <p><strong>Priority:</strong> ${ticket.priority}</p>
-                <p><strong>Status:</strong> ${ticket.status}</p>
-              </div>
-
-              <a href="${appUrl}" style="display: inline-block; background: #000; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 20px 0;">
-                View & Respond
-              </a>
-            `,
-          });
+              <p><a href="${ticketUrl}" style="background: #4F46E5; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">View Ticket</a></p>
+            `
+          );
         }
         break;
 
       case "assigned":
-        if (ticket.owner?.email) {
-          const hoursRemaining = Math.round(
-            (new Date(ticket.sla_due_at).getTime() - Date.now()) / (1000 * 60 * 60)
+        if (ticket.owner) {
+          await sendEmail([ticket.owner.email], `Support Ticket #${ticket.ticket_number} Assigned to You`, `
+              <h2>A support ticket has been assigned to you</h2>
+              <p>Hi ${ticket.owner.full_name || 'there'},</p>
+              <div style="margin: 20px 0; padding: 15px; background: #f5f5f5; border-radius: 8px;">
+                <strong>Ticket #${ticket.ticket_number}</strong><br/>
+                <strong>Client:</strong> ${ticket.client.name}<br/>
+                <strong>From:</strong> ${ticket.requester.full_name}<br/>
+                <strong>Subject:</strong> ${ticket.title}<br/>
+                <strong>Priority:</strong> ${ticket.priority}<br/>
+                <strong>SLA:</strong> Response within 48 hours
+              </div>
+              <p><a href="${ticketUrl}" style="background: #4F46E5; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">View Ticket</a></p>
+            `
           );
-
-          await resend.emails.send({
-            from: "Spearlance Support <support@spearlance.com>",
-            to: [ticket.owner.email],
-            subject: `📋 Support Ticket Assigned: ${ticket.title}`,
-            html: `
-              <h2>A Support Ticket Has Been Assigned to You</h2>
-              <p>Hi ${ticket.owner.name},</p>
-              
-              <div style="background: #fef3c7; padding: 20px; border-left: 4px solid #f59e0b; margin: 20px 0;">
-                <p style="margin: 0;"><strong>⏰ Time Remaining:</strong> ${hoursRemaining} hours</p>
-                <p style="margin: 8px 0 0 0; color: #92400e;">SLA Deadline: ${new Date(ticket.sla_due_at).toLocaleString()}</p>
-              </div>
-
-              <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                <h3 style="margin-top: 0;">${ticket.title}</h3>
-                <p><strong>Client:</strong> ${ticket.client.name}</p>
-                <p><strong>Category:</strong> ${ticket.category}</p>
-                <p><strong>Priority:</strong> ${ticket.priority}</p>
-              </div>
-
-              <a href="${appUrl}" style="display: inline-block; background: #000; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 20px 0;">
-                View Ticket
-              </a>
-            `,
-          });
         }
         break;
 
       case "status_changed":
-        await resend.emails.send({
-          from: "Spearlance Support <support@spearlance.com>",
-          to: [ticket.requester.email],
-          subject: `Support Ticket #${ticket.id.slice(0, 8)} Status Updated`,
-          html: `
-            <h2>Your Support Ticket Status Has Been Updated</h2>
-            <p>Hi ${ticket.requester.name},</p>
-            <p>The status of your support ticket has been updated.</p>
-            
-            <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
-              <h3 style="margin-top: 0;">${ticket.title}</h3>
-              <p><strong>New Status:</strong> <span style="background: #e0e0e0; padding: 4px 12px; border-radius: 4px;">${ticket.status.replace("_", " ")}</span></p>
+        await sendEmail([ticket.requester.email], `Ticket #${ticket.ticket_number} Status Updated`, `
+            <h2>Your support ticket status has been updated</h2>
+            <p>Hi ${ticket.requester.full_name || 'there'},</p>
+            <div style="margin: 20px 0; padding: 15px; background: #f5f5f5; border-radius: 8px;">
+              <strong>Ticket #${ticket.ticket_number}</strong><br/>
+              <strong>Subject:</strong> ${ticket.title}<br/>
+              <strong>New Status:</strong> ${ticket.status}
             </div>
-
-            <a href="${appUrl}" style="display: inline-block; background: #000; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 20px 0;">
-              View Ticket
-            </a>
-          `,
-        });
+            <p><a href="${ticketUrl}" style="background: #4F46E5; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">View Ticket</a></p>
+            <p>Best regards,<br/>Spearlance Support Team</p>
+          `
+        );
         break;
 
       case "new_message":
@@ -185,44 +142,31 @@ serve(async (req) => {
             .from("ticket_messages")
             .select(`
               *,
-              sender:profiles!ticket_messages_sender_user_id_fkey(name, email)
+              author:profiles!ticket_messages_author_user_id_fkey(email, full_name)
             `)
             .eq("id", messageId)
             .single();
 
-          if (message && !message.is_internal) {
-            // Determine recipient
-            const isFromClient = message.sender_user_id === ticket.requester_user_id;
-            const recipientEmail = isFromClient 
-              ? ticket.owner?.email 
-              : ticket.requester.email;
-            const recipientName = isFromClient
-              ? ticket.owner?.name
-              : ticket.requester.name;
+          if (message) {
+            // Determine recipient (if author is owner, send to requester, else send to owner)
+            const isFromOwner = message.author_user_id === ticket.owner_user_id;
+            const recipientEmail = isFromOwner ? ticket.requester.email : ticket.owner?.email;
 
             if (recipientEmail) {
-              await resend.emails.send({
-                from: "Spearlance Support <support@spearlance.com>",
-                to: [recipientEmail],
-                subject: `💬 New Message on Ticket #${ticket.id.slice(0, 8)}`,
-                html: `
-                  <h2>New Message on Your Support Ticket</h2>
-                  <p>Hi ${recipientName},</p>
-                  <p><strong>${message.sender.name}</strong> replied to your ticket:</p>
-                  
-                  <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #000;">
-                    <p style="margin: 0; white-space: pre-wrap;">${message.message}</p>
+              await sendEmail([recipientEmail], `New Message on Ticket #${ticket.ticket_number}`, `
+                  <h2>New message on your support ticket</h2>
+                  <p>Hi ${isFromOwner ? ticket.requester.full_name : ticket.owner?.full_name},</p>
+                  <div style="margin: 20px 0; padding: 15px; background: #f5f5f5; border-radius: 8px;">
+                    <strong>Ticket #${ticket.ticket_number}</strong><br/>
+                    <strong>From:</strong> ${message.author.full_name}<br/>
+                    <strong>Message:</strong><br/>
+                    <div style="margin-top: 10px; padding: 10px; background: white; border-radius: 4px;">
+                      ${message.body_richtext}
+                    </div>
                   </div>
-
-                  <p style="color: #666; font-size: 14px; margin-top: 10px;">
-                    <strong>Ticket:</strong> ${ticket.title}
-                  </p>
-
-                  <a href="${appUrl}" style="display: inline-block; background: #000; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 20px 0;">
-                    View & Respond
-                  </a>
-                `,
-              });
+                  <p><a href="${ticketUrl}" style="background: #4F46E5; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">View & Reply</a></p>
+                `
+              );
             }
           }
         }
@@ -230,14 +174,17 @@ serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ success: true, message: `${type} notification sent` }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      JSON.stringify({ success: true, message: "Notification sent" }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error: any) {
-    console.error("Error sending ticket notification:", error);
+    console.error("Error sending notification:", error);
     return new Response(
       JSON.stringify({ error: error.message }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { 
+        status: 500, 
+        headers: { ...corsHeaders, "Content-Type": "application/json" } 
+      }
     );
   }
 });
