@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ArrowLeft, Send } from "lucide-react";
 import { DeleteTicketDialog } from "@/components/support/DeleteTicketDialog";
@@ -74,7 +74,7 @@ export default function TicketDetail() {
       .from("ticket_messages")
       .select(`
         *,
-        author:author_user_id (id, name, email)
+        author:author_user_id (id, name, email, avatar_url)
       `)
       .eq("ticket_id", id)
       .order("created_at", { ascending: true });
@@ -239,47 +239,59 @@ export default function TicketDetail() {
             <CardContent>
               <ScrollArea className="h-[500px] pr-4">
                 <div className="space-y-4">
-                  {messages.map((message) => (
-                    <div
-                      key={message.id}
-                      className={`p-4 rounded-lg ${
-                        message.is_internal_note
-                          ? "bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800"
-                          : "bg-muted"
-                      }`}
-                    >
-                      <div className="flex gap-3">
-                        <Avatar className="h-8 w-8">
-                          <AvatarFallback>
-                            {message.author?.name?.charAt(0) || "?"}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="font-medium text-sm">
-                              {message.author?.name}
-                            </span>
-                            <span className="text-xs text-muted-foreground">
-                              {new Date(message.created_at).toLocaleString()}
-                            </span>
-                            {message.is_internal_note && (
-                              <Badge variant="outline" className="text-xs">
-                                Internal Note
-                              </Badge>
+                  {messages
+                    .filter(message => {
+                      // Show all messages to admin/FMM
+                      if (userRole === 'admin' || userRole === 'fmm') {
+                        return true;
+                      }
+                      // Only show non-internal notes to clients
+                      return !message.is_internal_note;
+                    })
+                    .map((message) => (
+                      <div
+                        key={message.id}
+                        className={`p-4 rounded-lg ${
+                          message.is_internal_note
+                            ? "bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800"
+                            : "bg-muted"
+                        }`}
+                      >
+                        <div className="flex gap-3">
+                          <Avatar className="h-8 w-8">
+                            {message.author?.avatar_url && (
+                              <AvatarImage src={message.author.avatar_url} alt={message.author?.name || "User"} />
+                            )}
+                            <AvatarFallback>
+                              {message.author?.name?.charAt(0) || "?"}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="font-medium text-sm">
+                                {message.author?.name}
+                              </span>
+                              <span className="text-xs text-muted-foreground">
+                                {new Date(message.created_at).toLocaleString()}
+                              </span>
+                              {message.is_internal_note && (
+                                <Badge variant="outline" className="text-xs">
+                                  Internal Note
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="text-sm whitespace-pre-wrap">
+                              {message.body_richtext}
+                            </p>
+                            {message.attachments && message.attachments.length > 0 && (
+                              <div className="mt-2 text-xs text-muted-foreground">
+                                Attachments: {message.attachments.join(", ")}
+                              </div>
                             )}
                           </div>
-                          <p className="text-sm whitespace-pre-wrap">
-                            {message.body_richtext}
-                          </p>
-                          {message.attachments && message.attachments.length > 0 && (
-                            <div className="mt-2 text-xs text-muted-foreground">
-                              Attachments: {message.attachments.join(", ")}
-                            </div>
-                          )}
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
                 </div>
               </ScrollArea>
 
@@ -322,55 +334,87 @@ export default function TicketDetail() {
               <CardTitle>Details</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label>Status</Label>
-                <Select value={ticket.status} onValueChange={handleUpdateStatus}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="open">Open</SelectItem>
-                    <SelectItem value="in_progress">In Progress</SelectItem>
-                    <SelectItem value="waiting_on_client">Waiting on Client</SelectItem>
-                    <SelectItem value="resolved">Resolved</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              {(userRole === 'admin' || userRole === 'fmm') && (
+                <>
+                  <div className="space-y-2">
+                    <Label>Status</Label>
+                    <Select value={ticket.status} onValueChange={handleUpdateStatus}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="open">Open</SelectItem>
+                        <SelectItem value="in_progress">In Progress</SelectItem>
+                        <SelectItem value="waiting_on_client">Waiting on Client</SelectItem>
+                        <SelectItem value="resolved">Resolved</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-              <div className="space-y-2">
-                <Label>Priority</Label>
-                <Select value={ticket.priority} onValueChange={handleUpdatePriority}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="low">Low</SelectItem>
-                    <SelectItem value="normal">Normal</SelectItem>
-                    <SelectItem value="high">High</SelectItem>
-                    <SelectItem value="urgent">Urgent</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+                  <div className="space-y-2">
+                    <Label>Priority</Label>
+                    <Select value={ticket.priority} onValueChange={handleUpdatePriority}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="low">Low</SelectItem>
+                        <SelectItem value="normal">Normal</SelectItem>
+                        <SelectItem value="high">High</SelectItem>
+                        <SelectItem value="urgent">Urgent</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-              <div className="space-y-2">
-                <Label>Owner</Label>
-                <Select
-                  value={ticket.owner_user_id || "unassigned"}
-                  onValueChange={handleUpdateOwner}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Unassigned" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="unassigned">Unassigned</SelectItem>
-                    {users.map((user) => (
-                      <SelectItem key={user.id} value={user.id}>
-                        {user.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+                  <div className="space-y-2">
+                    <Label>Owner</Label>
+                    <Select
+                      value={ticket.owner_user_id || "unassigned"}
+                      onValueChange={handleUpdateOwner}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Unassigned" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="unassigned">Unassigned</SelectItem>
+                        {users.map((user) => (
+                          <SelectItem key={user.id} value={user.id}>
+                            {user.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </>
+              )}
+
+              {/* Show read-only status info for clients */}
+              {userRole === 'client' && (
+                <div className="space-y-3">
+                  <div>
+                    <Label className="text-muted-foreground">Status</Label>
+                    <div className="mt-1">
+                      <Badge variant={ticket.status === "resolved" ? "outline" : "default"}>
+                        {ticket.status.replace(/_/g, ' ')}
+                      </Badge>
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-muted-foreground">Priority</Label>
+                    <div className="mt-1">
+                      <Badge variant={ticket.priority === "urgent" ? "destructive" : "secondary"}>
+                        {ticket.priority}
+                      </Badge>
+                    </div>
+                  </div>
+                  {ticket.owner && (
+                    <div>
+                      <Label className="text-muted-foreground">Assigned To</Label>
+                      <div className="mt-1 text-sm">{ticket.owner.name}</div>
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div className="pt-4 border-t space-y-2">
                 <div className="text-sm">
