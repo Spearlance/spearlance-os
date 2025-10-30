@@ -12,6 +12,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ArrowLeft, Send } from "lucide-react";
+import { DeleteTicketDialog } from "@/components/support/DeleteTicketDialog";
 
 export default function TicketDetail() {
   const { id } = useParams();
@@ -23,6 +24,7 @@ export default function TicketDetail() {
   const [newMessage, setNewMessage] = useState("");
   const [isInternalNote, setIsInternalNote] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [userRole, setUserRole] = useState<string>("");
 
   useEffect(() => {
     if (id) {
@@ -30,7 +32,20 @@ export default function TicketDetail() {
       loadUsers();
       subscribeToMessages();
     }
+    fetchUserRole();
   }, [id]);
+
+  const fetchUserRole = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single();
+      setUserRole(profile?.role || "");
+    }
+  };
 
   const loadTicket = async () => {
     const { data, error } = await supabase
@@ -308,9 +323,8 @@ export default function TicketDetail() {
                   <SelectContent>
                     <SelectItem value="open">Open</SelectItem>
                     <SelectItem value="in_progress">In Progress</SelectItem>
-                    <SelectItem value="waiting">Waiting</SelectItem>
+                    <SelectItem value="waiting_on_client">Waiting on Client</SelectItem>
                     <SelectItem value="resolved">Resolved</SelectItem>
-                    <SelectItem value="closed">Closed</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -378,6 +392,15 @@ export default function TicketDetail() {
                       </Badge>
                     ))}
                   </div>
+                </div>
+              )}
+
+              {(userRole === "admin" || userRole === "fmm") && (
+                <div className="pt-4 border-t">
+                  <DeleteTicketDialog
+                    ticketTitle={ticket.title}
+                    ticketId={ticket.id}
+                  />
                 </div>
               )}
             </CardContent>
