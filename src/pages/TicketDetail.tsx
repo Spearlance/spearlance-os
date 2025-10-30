@@ -30,9 +30,10 @@ export default function TicketDetail() {
     if (id) {
       loadTicket();
       loadUsers();
-      subscribeToMessages();
+      const cleanup = subscribeToMessages();
+      fetchUserRole();
+      return cleanup;
     }
-    fetchUserRole();
   }, [id]);
 
   const fetchUserRole = async () => {
@@ -134,6 +135,7 @@ export default function TicketDetail() {
 
     setNewMessage("");
     setIsInternalNote(false);
+    loadMessages();
   };
 
   const handleUpdateStatus = async (status: any) => {
