@@ -12,6 +12,7 @@ import { format } from "date-fns";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { BugReportDrawer } from "@/components/admin/BugReportDrawer";
 
 export default function AdminBugReports() {
   const { toast } = useToast();
@@ -21,6 +22,8 @@ export default function AdminBugReports() {
   const [denialDialogOpen, setDenialDialogOpen] = useState(false);
   const [selectedBugForDenial, setSelectedBugForDenial] = useState<any>(null);
   const [denialReason, setDenialReason] = useState("");
+  const [selectedBug, setSelectedBug] = useState<any>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   const { data: bugReports, isLoading } = useQuery({
     queryKey: ["admin-bug-reports", statusFilter, severityFilter],
@@ -29,7 +32,8 @@ export default function AdminBugReports() {
         .from("bug_reports")
         .select(`
           *,
-          client:clients(name)
+          client:clients(name),
+          reporter:reporter_user_id(id, name, email, avatar_url)
         `)
         .order("created_at", { ascending: false });
 
@@ -302,7 +306,14 @@ export default function AdminBugReports() {
             </Card>
           ) : (
             bugReports?.map((bug) => (
-              <Card key={bug.id} className="p-6">
+              <Card 
+                key={bug.id} 
+                className="p-6 cursor-pointer hover:bg-accent/50 transition-colors"
+                onClick={() => {
+                  setSelectedBug(bug);
+                  setDrawerOpen(true);
+                }}
+              >
                 <div className="space-y-4">
                   {/* Header */}
                   <div className="flex items-start justify-between gap-4">
@@ -352,7 +363,7 @@ export default function AdminBugReports() {
                   )}
 
                   {/* Actions */}
-                  <div className="flex items-center gap-3 pt-4 border-t">
+                  <div className="flex items-center gap-3 pt-4 border-t" onClick={(e) => e.stopPropagation()}>
                     <Select
                       value={bug.status}
                       onValueChange={(value) => handleUpdateStatus(bug.id, value)}
@@ -514,6 +525,17 @@ export default function AdminBugReports() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Bug Report Drawer */}
+        <BugReportDrawer
+          bug={selectedBug}
+          open={drawerOpen}
+          onOpenChange={setDrawerOpen}
+          onUpdate={() => {
+            queryClient.invalidateQueries({ queryKey: ["admin-bug-reports"] });
+            queryClient.invalidateQueries({ queryKey: ["bug-report-stats"] });
+          }}
+        />
       </div>
   );
 }
