@@ -69,33 +69,40 @@ Deno.serve(async (req) => {
     // Build image generation prompt
     let basePrompt = `Create a professional social media post image.
 
-Caption context: "${caption_text}"
+⚠️ CRITICAL PROHIBITIONS - NEVER INCLUDE:
+1. NO company names, business names, or brand names (even if mentioned in context)
+2. NO website URLs, email addresses, or contact information (e.g., www.example.com, @handle)
+3. NO logos, watermarks, symbols, or branded graphics
+4. NO emojis, emoticons, or emoji-style graphics (😊🎉❤️ etc.)
+5. NO literal caption text - do NOT copy the caption onto the image
+6. NO fake company names or fabricated branding
+7. NO date stamps, seasonal tags, or "Winter 2025" style labels
 
-Brand Guidelines:
-- Primary Color: ${brand?.primary_color || '#3B82F6'}
-- Secondary Color: ${brand?.secondary_color || '#10B981'}
-- Accent Color: ${brand?.accent_color || '#F59E0B'}
+CAPTION (for thematic inspiration only - DO NOT render this text):
+"${caption_text}"
+
+The caption above provides the THEME and MOOD for your image. Create visual elements that REPRESENT this idea, but do NOT include this exact text in the image.
+
+Brand Colors (use in design elements only):
+- Primary: ${brand?.primary_color || '#3B82F6'}
+- Secondary: ${brand?.secondary_color || '#10B981'}
+- Accent: ${brand?.accent_color || '#F59E0B'}
 - Aesthetic: ${brand?.aesthetic || 'modern'}
 - Mood: ${moodBoard?.title || 'professional and approachable'}
 
 Design Requirements:
-- Include 1-2 short text overlays (max 7 words each)
+- Text overlays: Keep to 1-2 SHORT phrases (max 5 words each)
+- Text content: Should be CONCEPTUAL and thematic, NOT literal caption quotes
+- Example good text: "Build Strength", "Family First", "Stay Active"
+- Example BAD text: Don't copy full sentences from the caption
 - Apply brand colors in design elements
-- Style should match: ${brand?.aesthetic || 'modern'}
+- Style: ${brand?.aesthetic || 'modern'}
 - High contrast for social media visibility
 - Clean, scroll-stopping composition
 - Professional quality suitable for Instagram/Facebook
 - 1080x1080px square format
 
-CRITICAL - DO NOT INCLUDE:
-- NO logos, watermarks, or branding symbols
-- NO date stamps, seasonal tags, or "Winter 2025" style labels
-- NO fake company names or fabricated branding
-- NO complex graphics that compete with the message
-- Keep text overlays minimal and relevant to caption only
-
 PROFESSIONAL VISUAL STANDARDS:
-- NO emojis, emoticons, or emoji-style graphics (😊🎉❤️ etc.)
 - NO stickers, cartoon elements, or decorative graphics
 - NO memes, internet culture references, or casual design trends
 - NO comic-style effects, speech bubbles, or informal typography
@@ -123,7 +130,7 @@ PRODUCT SAFETY GUIDELINES:
 
 ${brand?.imagery_style ? `Imagery Style: ${brand.imagery_style}` : ''}
 
-Generate a clean, eye-catching image that represents this message visually.`;
+Generate a clean, eye-catching image that REPRESENTS the theme of the caption visually, without literally copying the caption text.`;
 
     if (image_mode === 'with_upload' || image_mode === 'with_brand_asset') {
       basePrompt += `\n\nUse the provided reference image as the base and enhance it with brand elements.`;
