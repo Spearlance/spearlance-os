@@ -22,6 +22,7 @@ interface DeleteClientDialogProps {
     domain?: string;
     billing_method?: string;
     subscription_status?: string;
+    stripe_subscription_id?: string;
   };
   assignedUsers: Array<{ id: string; name: string }>;
   onConfirm: () => Promise<void>;
@@ -36,7 +37,7 @@ export function DeleteClientDialog({ client, assignedUsers, onConfirm }: DeleteC
     ? assignedUsers.map(u => u.name).join(", ")
     : "None";
 
-  const hasActiveSubscription = client.subscription_status === 'active';
+  const hasActiveSubscription = !!client.stripe_subscription_id && client.subscription_status === 'active';
 
   const handleDelete = async () => {
     if (confirmText !== "DELETE") return;
