@@ -123,6 +123,7 @@ export function AppSidebar() {
   const [websiteOpen, setWebsiteOpen] = useState(false);
   const [websiteUpsellOpen, setWebsiteUpsellOpen] = useState(false);
   const [pricingModalOpen, setPricingModalOpen] = useState(false);
+  const [isBugReportOpen, setIsBugReportOpen] = useState(false);
   const { isComplete } = useLaunchPadStatus();
   const { isSelfService } = useAccountType();
 
