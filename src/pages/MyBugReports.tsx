@@ -1,6 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { MainLayout } from "@/components/MainLayout";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Bug, Trophy, TrendingUp, ExternalLink } from "lucide-react";
@@ -51,8 +50,7 @@ export default function MyBugReports() {
   };
 
   return (
-    <MainLayout>
-      <div className="container mx-auto p-6 space-y-6">
+    <div className="container mx-auto p-6 space-y-6">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold flex items-center gap-2">
@@ -183,6 +181,5 @@ export default function MyBugReports() {
           )}
         </div>
       </div>
-    </MainLayout>
   );
 }
