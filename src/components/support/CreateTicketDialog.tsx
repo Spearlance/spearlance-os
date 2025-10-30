@@ -97,11 +97,12 @@ export function CreateTicketDialog({ open, onOpenChange }: CreateTicketDialogPro
       onOpenChange(false);
       setFormData({ title: "", category: "other", priority: "normal", message: "" });
       navigate(`/support/${ticket.id}`);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error creating ticket:", error);
+      const errorMessage = error?.message || error?.error_description || "Failed to create ticket";
       toast({
         title: "Error",
-        description: "Failed to create ticket",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
