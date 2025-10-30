@@ -5,52 +5,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-async function checkAdminRateLimit(
-  supabase: any,
-  adminId: string,
-  operation: string
-): Promise<boolean> {
-  const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
-  
-  const { data, error } = await supabase
-    .from('admin_rate_limits')
-    .select('count')
-    .eq('admin_id', adminId)
-    .eq('operation', operation)
-    .gte('created_at', oneHourAgo)
-    .maybeSingle();
-
-  if (error && error.code !== 'PGRST116') {
-    console.error('Rate limit check error:', error);
-    return false;
-  }
-
-  const currentCount = data?.count || 0;
-  
-  if (currentCount >= 50) {
-    return false;
-  }
-
-  if (data) {
-    await supabase
-      .from('admin_rate_limits')
-      .update({ count: currentCount + 1, updated_at: new Date().toISOString() })
-      .eq('admin_id', adminId)
-      .eq('operation', operation)
-      .gte('created_at', oneHourAgo);
-  } else {
-    await supabase
-      .from('admin_rate_limits')
-      .insert({
-        admin_id: adminId,
-        operation,
-        count: 1,
-      });
-  }
-
-  return true;
-}
-
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -104,25 +58,6 @@ Deno.serve(async (req) => {
         JSON.stringify({ error: 'Forbidden - Admin access required' }),
         {
           status: 403,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      );
-    }
-
-    // Rate limiting
-    const rateLimitOk = await checkAdminRateLimit(
-      supabaseServiceRole,
-      user.id,
-      'client_deletion'
-    );
-
-    if (!rateLimitOk) {
-      return new Response(
-        JSON.stringify({
-          error: 'Rate limit exceeded. Maximum 50 client deletions per hour.',
-        }),
-        {
-          status: 429,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         }
       );
@@ -227,7 +162,7 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({
         error: 'Internal server error',
-        details: error.message,
+        details: error instanceof Error ? error.message : 'Unknown error',
       }),
       {
         status: 500,
