@@ -4,7 +4,7 @@ import { useClient } from "@/contexts/ClientContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Calendar, CheckSquare, Target, Zap, AlertCircle, BookOpen, RefreshCw, Rocket, Sparkles, Loader2 } from "lucide-react";
+import { Calendar, CheckSquare, Target, Zap, AlertCircle, BookOpen, RefreshCw, Rocket, Sparkles, Loader2, FileText, ArrowUp, ArrowDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -19,7 +19,16 @@ interface DashboardStats {
   taskCounts: {
     to_do: number;
     in_progress: number;
-    done: number;
+  };
+  formSubmissions: {
+    last30Days: number;
+    last7Days: number;
+    previous30Days: number;
+    previous7Days: number;
+    trend30Days: 'up' | 'down' | 'neutral';
+    trend7Days: 'up' | 'down' | 'neutral';
+    percentChange30Days: number;
+    percentChange7Days: number;
   };
   recentMeetings: any[];
   marketingTools: any[];
@@ -47,7 +56,17 @@ const Dashboard = () => {
   const { selectedClient, loading: clientLoading } = useClient();
   const { isComplete, loading: launchPadLoading } = useLaunchPadStatus();
   const [stats, setStats] = useState<DashboardStats>({
-    taskCounts: { to_do: 0, in_progress: 0, done: 0 },
+    taskCounts: { to_do: 0, in_progress: 0 },
+    formSubmissions: {
+      last30Days: 0,
+      last7Days: 0,
+      previous30Days: 0,
+      previous7Days: 0,
+      trend30Days: 'neutral',
+      trend7Days: 'neutral',
+      percentChange30Days: 0,
+      percentChange7Days: 0,
+    },
     recentMeetings: [],
     marketingTools: [],
   });
@@ -166,7 +185,74 @@ const Dashboard = () => {
       const taskCounts = {
         to_do: tasks?.filter(t => t.status === 'to_do').length || 0,
         in_progress: tasks?.filter(t => t.status === 'in_progress').length || 0,
-        done: tasks?.filter(t => t.status === 'done').length || 0,
+      };
+
+      // Calculate date ranges for form submissions
+      const now = new Date();
+      const last7Days = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      const last30Days = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      const previous7DaysStart = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+      const previous30DaysStart = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
+
+      // Query form submissions for past 30 days
+      const { data: submissions30Days } = await supabase
+        .from('website_form_submissions')
+        .select('submitted_at')
+        .eq('client_id', selectedClient.id)
+        .gte('submitted_at', last30Days.toISOString());
+
+      // Query form submissions for past 7 days
+      const { data: submissions7Days } = await supabase
+        .from('website_form_submissions')
+        .select('submitted_at')
+        .eq('client_id', selectedClient.id)
+        .gte('submitted_at', last7Days.toISOString());
+
+      // Query previous 30 days (for comparison)
+      const { data: submissionsPrevious30Days } = await supabase
+        .from('website_form_submissions')
+        .select('submitted_at')
+        .eq('client_id', selectedClient.id)
+        .gte('submitted_at', previous30DaysStart.toISOString())
+        .lt('submitted_at', last30Days.toISOString());
+
+      // Query previous 7 days (for comparison)
+      const { data: submissionsPrevious7Days } = await supabase
+        .from('website_form_submissions')
+        .select('submitted_at')
+        .eq('client_id', selectedClient.id)
+        .gte('submitted_at', previous7DaysStart.toISOString())
+        .lt('submitted_at', last7Days.toISOString());
+
+      // Calculate counts
+      const count30Days = submissions30Days?.length || 0;
+      const count7Days = submissions7Days?.length || 0;
+      const countPrevious30Days = submissionsPrevious30Days?.length || 0;
+      const countPrevious7Days = submissionsPrevious7Days?.length || 0;
+
+      // Calculate trends and percent changes
+      const calculateTrend = (current: number, previous: number) => {
+        if (previous === 0 && current === 0) return { trend: 'neutral' as const, percentChange: 0 };
+        if (previous === 0) return { trend: 'up' as const, percentChange: 100 };
+        const change = ((current - previous) / previous) * 100;
+        return {
+          trend: change > 0 ? 'up' as const : change < 0 ? 'down' as const : 'neutral' as const,
+          percentChange: Math.round(Math.abs(change))
+        };
+      };
+
+      const trend30 = calculateTrend(count30Days, countPrevious30Days);
+      const trend7 = calculateTrend(count7Days, countPrevious7Days);
+
+      const formSubmissions = {
+        last30Days: count30Days,
+        last7Days: count7Days,
+        previous30Days: countPrevious30Days,
+        previous7Days: countPrevious7Days,
+        trend30Days: trend30.trend,
+        trend7Days: trend7.trend,
+        percentChange30Days: trend30.percentChange,
+        percentChange7Days: trend7.percentChange,
       };
 
       // Load recent meetings
@@ -197,7 +283,8 @@ const Dashboard = () => {
 
       setStats({
         nextMeeting: nextMeeting || undefined,
-        taskCounts,
+        taskCounts: { to_do: taskCounts.to_do, in_progress: taskCounts.in_progress },
+        formSubmissions,
         recentMeetings: meetings || [],
         marketingTools: tools || [],
       });
@@ -403,12 +490,44 @@ const Dashboard = () => {
 
         <Card className="shadow-elegant hover:shadow-glow transition-all">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Done</CardTitle>
-            <CheckSquare className="h-4 w-4 text-primary" />
+            <CardTitle className="text-sm font-medium">Form Submissions</CardTitle>
+            <div className="flex items-center gap-1">
+              {stats.formSubmissions.trend30Days === 'up' && (
+                <ArrowUp className="h-4 w-4 text-green-500" />
+              )}
+              {stats.formSubmissions.trend30Days === 'down' && (
+                <ArrowDown className="h-4 w-4 text-red-500" />
+              )}
+              <FileText className="h-4 w-4 text-muted-foreground" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.taskCounts.done}</div>
-            <p className="text-xs text-muted-foreground">Completed tasks</p>
+            <div className="space-y-2">
+              <div>
+                <div className="text-2xl font-bold">{stats.formSubmissions.last30Days}</div>
+                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <span>Past 30 days</span>
+                  {stats.formSubmissions.trend30Days !== 'neutral' && (
+                    <span className={stats.formSubmissions.trend30Days === 'up' ? 'text-green-500' : 'text-red-500'}>
+                      {stats.formSubmissions.trend30Days === 'up' ? '↑' : '↓'} {stats.formSubmissions.percentChange30Days}%
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className="pt-1 border-t">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">{stats.formSubmissions.last7Days}</span>
+                  <div className="flex items-center gap-1">
+                    <span className="text-xs text-muted-foreground">Past 7 days</span>
+                    {stats.formSubmissions.trend7Days !== 'neutral' && (
+                      <span className={`text-xs font-medium ${stats.formSubmissions.trend7Days === 'up' ? 'text-green-500' : 'text-red-500'}`}>
+                        {stats.formSubmissions.trend7Days === 'up' ? '↑' : '↓'} {stats.formSubmissions.percentChange7Days}%
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
