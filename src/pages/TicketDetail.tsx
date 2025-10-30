@@ -74,7 +74,7 @@ export default function TicketDetail() {
       .from("ticket_messages")
       .select(`
         *,
-        author:author_user_id (id, name, email, avatar_url)
+        author:author_user_id (id, name, email, avatar_url, role)
       `)
       .eq("ticket_id", id)
       .order("created_at", { ascending: true });
@@ -248,50 +248,74 @@ export default function TicketDetail() {
                       // Only show non-internal notes to clients
                       return !message.is_internal_note;
                     })
-                    .map((message) => (
-                      <div
-                        key={message.id}
-                        className={`p-4 rounded-lg ${
-                          message.is_internal_note
-                            ? "bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800"
-                            : "bg-muted"
-                        }`}
-                      >
-                        <div className="flex gap-3">
-                          <Avatar className="h-8 w-8">
-                            {message.author?.avatar_url && (
-                              <AvatarImage src={message.author.avatar_url} alt={message.author?.name || "User"} />
-                            )}
-                            <AvatarFallback>
-                              {message.author?.name?.charAt(0) || "?"}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="font-medium text-sm">
-                                {message.author?.name}
-                              </span>
-                              <span className="text-xs text-muted-foreground">
-                                {new Date(message.created_at).toLocaleString()}
-                              </span>
-                              {message.is_internal_note && (
-                                <Badge variant="outline" className="text-xs">
-                                  Internal Note
-                                </Badge>
+                    .map((message) => {
+                      const isAdminOrFMM = message.author?.role === 'admin' || message.author?.role === 'fmm';
+                      
+                      return (
+                        <div
+                          key={message.id}
+                          className={`flex ${isAdminOrFMM ? 'justify-end' : 'justify-start'}`}
+                        >
+                          <div
+                            className={`max-w-[75%] p-4 rounded-lg ${
+                              message.is_internal_note
+                                ? "bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800"
+                                : isAdminOrFMM
+                                ? "bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800"
+                                : "bg-muted"
+                            }`}
+                          >
+                            <div className="flex gap-3">
+                              {!isAdminOrFMM && (
+                                <Avatar className="h-8 w-8">
+                                  {message.author?.avatar_url && (
+                                    <AvatarImage src={message.author.avatar_url} alt={message.author?.name || "User"} />
+                                  )}
+                                  <AvatarFallback>
+                                    {message.author?.name?.charAt(0) || "?"}
+                                  </AvatarFallback>
+                                </Avatar>
+                              )}
+                              
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className="font-medium text-sm">
+                                    {message.author?.name}
+                                  </span>
+                                  <span className="text-xs text-muted-foreground">
+                                    {new Date(message.created_at).toLocaleString()}
+                                  </span>
+                                  {message.is_internal_note && (
+                                    <Badge variant="outline" className="text-xs">
+                                      Internal Note
+                                    </Badge>
+                                  )}
+                                </div>
+                                <p className="text-sm whitespace-pre-wrap">
+                                  {message.body_richtext}
+                                </p>
+                                {message.attachments && message.attachments.length > 0 && (
+                                  <div className="mt-2 text-xs text-muted-foreground">
+                                    Attachments: {message.attachments.join(", ")}
+                                  </div>
+                                )}
+                              </div>
+                              
+                              {isAdminOrFMM && (
+                                <Avatar className="h-8 w-8">
+                                  {message.author?.avatar_url && (
+                                    <AvatarImage src={message.author.avatar_url} alt={message.author?.name || "User"} />
+                                  )}
+                                  <AvatarFallback>
+                                    {message.author?.name?.charAt(0) || "?"}
+                                  </AvatarFallback>
+                                </Avatar>
                               )}
                             </div>
-                            <p className="text-sm whitespace-pre-wrap">
-                              {message.body_richtext}
-                            </p>
-                            {message.attachments && message.attachments.length > 0 && (
-                              <div className="mt-2 text-xs text-muted-foreground">
-                                Attachments: {message.attachments.join(", ")}
-                              </div>
-                            )}
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                 </div>
               </ScrollArea>
 
