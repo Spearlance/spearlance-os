@@ -262,7 +262,7 @@ export default function TicketDetail() {
                                 ? "bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800"
                                 : isAdminOrFMM
                                 ? "bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800"
-                                : "bg-gray-100 dark:bg-gray-800"
+                                : "bg-gray-50 dark:bg-gray-900"
                             }`}
                           >
                             <div className="flex gap-3">
