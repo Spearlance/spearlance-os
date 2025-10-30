@@ -189,342 +189,342 @@ export default function AdminBugReports() {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold flex items-center gap-2">
-              <Bug className="h-8 w-8" />
-              Bug Reports
-            </h1>
-            <p className="text-muted-foreground">Manage and track bug reports from users</p>
-          </div>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold flex items-center gap-2">
+            <Bug className="h-8 w-8" />
+            Bug Reports
+          </h1>
+          <p className="text-muted-foreground">Manage and track bug reports from users</p>
         </div>
+      </div>
 
-        {/* Disclaimer Banner */}
-        <Alert>
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            <strong>Review Policy:</strong> We reserve the right to deny reports that are not valid bugs (feature requests, user errors, misunderstandings, etc.). Denied reports do not earn points.
-          </AlertDescription>
-        </Alert>
+      {/* Disclaimer Banner */}
+      <Alert>
+        <AlertCircle className="h-4 w-4" />
+        <AlertDescription>
+          <strong>Review Policy:</strong> We reserve the right to deny reports that are not valid bugs (feature requests, user errors, misunderstandings, etc.). Denied reports do not earn points.
+        </AlertDescription>
+      </Alert>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-primary/10 rounded-lg">
-                <Bug className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Total Reports</p>
-                <p className="text-2xl font-bold">{stats?.total || 0}</p>
-              </div>
-            </div>
-          </Card>
-
-          <Card className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-500/10 rounded-lg">
-                <TrendingUp className="h-5 w-5 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">This Month</p>
-                <p className="text-2xl font-bold">{stats?.thisMonth || 0}</p>
-              </div>
-            </div>
-          </Card>
-
-          <Card className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-green-500/10 rounded-lg">
-                <CheckCircle2 className="h-5 w-5 text-green-600" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Fixed This Month</p>
-                <p className="text-2xl font-bold">{stats?.fixed || 0}</p>
-              </div>
-            </div>
-          </Card>
-
-          <Card className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-red-500/10 rounded-lg">
-                <Clock className="h-5 w-5 text-red-600" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Critical/High Open</p>
-                <p className="text-2xl font-bold">{stats?.criticalOpen || 0}</p>
-              </div>
-            </div>
-          </Card>
-        </div>
-
-        {/* Filters */}
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="p-4">
-          <div className="flex gap-4">
-            <div className="flex-1">
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Filter by status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="submitted">Submitted</SelectItem>
-                  <SelectItem value="triaged">Triaged</SelectItem>
-                  <SelectItem value="in_progress">In Progress</SelectItem>
-                  <SelectItem value="fixed">Fixed</SelectItem>
-                  <SelectItem value="wont_fix">Won't Fix</SelectItem>
-                  <SelectItem value="duplicate">Duplicate</SelectItem>
-                </SelectContent>
-              </Select>
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-primary/10 rounded-lg">
+              <Bug className="h-5 w-5 text-primary" />
             </div>
-
-            <div className="flex-1">
-              <Select value={severityFilter} onValueChange={setSeverityFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Filter by severity" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Severities</SelectItem>
-                  <SelectItem value="critical">Critical</SelectItem>
-                  <SelectItem value="high">High</SelectItem>
-                  <SelectItem value="medium">Medium</SelectItem>
-                  <SelectItem value="low">Low</SelectItem>
-                  <SelectItem value="cosmetic">Cosmetic</SelectItem>
-                </SelectContent>
-              </Select>
+            <div>
+              <p className="text-sm text-muted-foreground">Total Reports</p>
+              <p className="text-2xl font-bold">{stats?.total || 0}</p>
             </div>
           </div>
         </Card>
 
-        {/* Bug Reports List */}
-        <div className="space-y-4">
-          {isLoading ? (
-            <Card className="p-8 text-center">Loading bug reports...</Card>
-          ) : bugReports?.length === 0 ? (
-            <Card className="p-8 text-center text-muted-foreground">
-              No bug reports found
-            </Card>
-          ) : (
-            bugReports?.map((bug) => (
-              <Card 
-                key={bug.id} 
-                className="p-6 cursor-pointer hover:bg-accent/50 transition-colors"
-                onClick={() => {
-                  setSelectedBug(bug);
-                  setDrawerOpen(true);
-                }}
-              >
-                <div className="space-y-4">
-                  {/* Header */}
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1">
-                      <h3 className="text-lg font-semibold">{bug.title}</h3>
-                      <div className="flex items-center gap-3 mt-2 text-sm text-muted-foreground">
-                        <span>Client: {bug.client?.name}</span>
-                        <span>•</span>
-                        <span>{format(new Date(bug.created_at), "MMM d, yyyy")}</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Badge variant={getSeverityColor(bug.severity)}>
-                        {bug.severity}
-                      </Badge>
-                      <Badge variant={getStatusColor(bug.status)}>
-                        {bug.status.replace("_", " ")}
-                      </Badge>
+        <Card className="p-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-blue-500/10 rounded-lg">
+              <TrendingUp className="h-5 w-5 text-blue-600" />
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">This Month</p>
+              <p className="text-2xl font-bold">{stats?.thisMonth || 0}</p>
+            </div>
+          </div>
+        </Card>
+
+        <Card className="p-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-green-500/10 rounded-lg">
+              <CheckCircle2 className="h-5 w-5 text-green-600" />
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Fixed This Month</p>
+              <p className="text-2xl font-bold">{stats?.fixed || 0}</p>
+            </div>
+          </div>
+        </Card>
+
+        <Card className="p-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-red-500/10 rounded-lg">
+              <Clock className="h-5 w-5 text-red-600" />
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Critical/High Open</p>
+              <p className="text-2xl font-bold">{stats?.criticalOpen || 0}</p>
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      {/* Filters */}
+      <Card className="p-4">
+        <div className="flex gap-4">
+          <div className="flex-1">
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger>
+                <SelectValue placeholder="Filter by status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Statuses</SelectItem>
+                <SelectItem value="submitted">Submitted</SelectItem>
+                <SelectItem value="triaged">Triaged</SelectItem>
+                <SelectItem value="in_progress">In Progress</SelectItem>
+                <SelectItem value="fixed">Fixed</SelectItem>
+                <SelectItem value="wont_fix">Won't Fix</SelectItem>
+                <SelectItem value="duplicate">Duplicate</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex-1">
+            <Select value={severityFilter} onValueChange={setSeverityFilter}>
+              <SelectTrigger>
+                <SelectValue placeholder="Filter by severity" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Severities</SelectItem>
+                <SelectItem value="critical">Critical</SelectItem>
+                <SelectItem value="high">High</SelectItem>
+                <SelectItem value="medium">Medium</SelectItem>
+                <SelectItem value="low">Low</SelectItem>
+                <SelectItem value="cosmetic">Cosmetic</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </Card>
+
+      {/* Bug Reports List */}
+      <div className="space-y-4">
+        {isLoading ? (
+          <Card className="p-8 text-center">Loading bug reports...</Card>
+        ) : bugReports?.length === 0 ? (
+          <Card className="p-8 text-center text-muted-foreground">
+            No bug reports found
+          </Card>
+        ) : (
+          bugReports?.map((bug) => (
+            <Card 
+              key={bug.id} 
+              className="p-6 cursor-pointer hover:bg-accent/50 transition-colors"
+              onClick={() => {
+                setSelectedBug(bug);
+                setDrawerOpen(true);
+              }}
+            >
+              <div className="space-y-4">
+                {/* Header */}
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold">{bug.title}</h3>
+                    <div className="flex items-center gap-3 mt-2 text-sm text-muted-foreground">
+                      <span>Client: {bug.client?.name}</span>
+                      <span>•</span>
+                      <span>{format(new Date(bug.created_at), "MMM d, yyyy")}</span>
                     </div>
                   </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant={getSeverityColor(bug.severity)}>
+                      {bug.severity}
+                    </Badge>
+                    <Badge variant={getStatusColor(bug.status)}>
+                      {bug.status.replace("_", " ")}
+                    </Badge>
+                  </div>
+                </div>
 
-                  {/* Description */}
-                  <p className="text-sm">{bug.description}</p>
+                {/* Description */}
+                <p className="text-sm">{bug.description}</p>
 
-                  {/* Screenshots */}
-                  {bug.screenshot_urls && bug.screenshot_urls.length > 0 && (
-                    <div className="flex gap-2 flex-wrap">
-                      {bug.screenshot_urls.map((url: string, idx: number) => (
-                        <a
-                          key={idx}
-                          href={url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="relative group"
-                        >
-                          <img
-                            src={url}
-                            alt={`Screenshot ${idx + 1}`}
-                            className="h-20 w-20 object-cover rounded border"
-                          />
-                          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded flex items-center justify-center">
-                            <ExternalLink className="h-5 w-5 text-white" />
-                          </div>
-                        </a>
-                      ))}
+                {/* Screenshots */}
+                {bug.screenshot_urls && bug.screenshot_urls.length > 0 && (
+                  <div className="flex gap-2 flex-wrap">
+                    {bug.screenshot_urls.map((url: string, idx: number) => (
+                      <a
+                        key={idx}
+                        href={url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="relative group"
+                      >
+                        <img
+                          src={url}
+                          alt={`Screenshot ${idx + 1}`}
+                          className="h-20 w-20 object-cover rounded border"
+                        />
+                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded flex items-center justify-center">
+                          <ExternalLink className="h-5 w-5 text-white" />
+                        </div>
+                      </a>
+                    ))}
+                  </div>
+                )}
+
+                {/* Actions */}
+                <div className="flex items-center gap-3 pt-4 border-t" onClick={(e) => e.stopPropagation()}>
+                  <Select
+                    value={bug.status}
+                    onValueChange={(value) => handleUpdateStatus(bug.id, value)}
+                  >
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="submitted">Submitted</SelectItem>
+                      <SelectItem value="triaged">Triaged</SelectItem>
+                      <SelectItem value="in_progress">In Progress</SelectItem>
+                      <SelectItem value="fixed">Fixed</SelectItem>
+                      <SelectItem value="wont_fix">Won't Fix</SelectItem>
+                      <SelectItem value="duplicate">Duplicate</SelectItem>
+                      <SelectItem value="denied">Denied</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  {bug.status !== 'denied' && !bug.reward_awarded && (
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={() => {
+                        setSelectedBugForDenial(bug);
+                        setDenialDialogOpen(true);
+                      }}
+                    >
+                      <XCircle className="h-4 w-4 mr-1" />
+                      Deny Report
+                    </Button>
+                  )}
+
+                  {bug.status !== 'denied' && !bug.reward_awarded && (
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleAwardPoints(bug.id, 5)}
+                      >
+                        <Trophy className="h-4 w-4 mr-1" />
+                        5 pts
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleAwardPoints(bug.id, 15)}
+                      >
+                        <Trophy className="h-4 w-4 mr-1" />
+                        15 pts
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleAwardPoints(bug.id, 30)}
+                      >
+                        <Trophy className="h-4 w-4 mr-1" />
+                        30 pts
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleAwardPoints(bug.id, 50)}
+                      >
+                        <Trophy className="h-4 w-4 mr-1" />
+                        50 pts
+                      </Button>
                     </div>
                   )}
 
-                  {/* Actions */}
-                  <div className="flex items-center gap-3 pt-4 border-t" onClick={(e) => e.stopPropagation()}>
-                    <Select
-                      value={bug.status}
-                      onValueChange={(value) => handleUpdateStatus(bug.id, value)}
-                    >
-                      <SelectTrigger className="w-[180px]">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="submitted">Submitted</SelectItem>
-                        <SelectItem value="triaged">Triaged</SelectItem>
-                        <SelectItem value="in_progress">In Progress</SelectItem>
-                  <SelectItem value="fixed">Fixed</SelectItem>
-                  <SelectItem value="wont_fix">Won't Fix</SelectItem>
-                  <SelectItem value="duplicate">Duplicate</SelectItem>
-                  <SelectItem value="denied">Denied</SelectItem>
-                </SelectContent>
-                    </Select>
+                  {bug.reward_awarded && (
+                    <Badge variant="secondary">
+                      <Trophy className="h-3 w-3 mr-1" />
+                      {bug.reward_points} pts awarded
+                    </Badge>
+                  )}
 
-                    {bug.status !== 'denied' && !bug.reward_awarded && (
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => {
-                          setSelectedBugForDenial(bug);
-                          setDenialDialogOpen(true);
-                        }}
-                      >
-                        <XCircle className="h-4 w-4 mr-1" />
-                        Deny Report
-                      </Button>
-                    )}
-
-                    {bug.status !== 'denied' && !bug.reward_awarded && (
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleAwardPoints(bug.id, 5)}
-                        >
-                          <Trophy className="h-4 w-4 mr-1" />
-                          5 pts
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleAwardPoints(bug.id, 15)}
-                        >
-                          <Trophy className="h-4 w-4 mr-1" />
-                          15 pts
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleAwardPoints(bug.id, 30)}
-                        >
-                          <Trophy className="h-4 w-4 mr-1" />
-                          30 pts
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleAwardPoints(bug.id, 50)}
-                        >
-                          <Trophy className="h-4 w-4 mr-1" />
-                          50 pts
-                        </Button>
-                      </div>
-                    )}
-
-                    {bug.reward_awarded && (
-                      <Badge variant="secondary">
-                        <Trophy className="h-3 w-3 mr-1" />
-                        {bug.reward_points} pts awarded
-                      </Badge>
-                    )}
-
-                    {bug.status === 'denied' && (
-                      <div className="flex-1">
-                        <Alert variant="destructive" className="mt-4">
-                          <XCircle className="h-4 w-4" />
-                          <AlertDescription>
-                            <strong>Report Denied:</strong> {bug.denial_reason}
-                            {bug.denied_at && (
-                              <p className="text-xs mt-1">
-                                Denied on {format(new Date(bug.denied_at), "MMM d, yyyy 'at' h:mm a")}
-                              </p>
-                            )}
-                          </AlertDescription>
-                        </Alert>
-                      </div>
-                    )}
-                  </div>
+                  {bug.status === 'denied' && (
+                    <div className="flex-1">
+                      <Alert variant="destructive" className="mt-4">
+                        <XCircle className="h-4 w-4" />
+                        <AlertDescription>
+                          <strong>Report Denied:</strong> {bug.denial_reason}
+                          {bug.denied_at && (
+                            <p className="text-xs mt-1">
+                              Denied on {format(new Date(bug.denied_at), "MMM d, yyyy 'at' h:mm a")}
+                            </p>
+                          )}
+                        </AlertDescription>
+                      </Alert>
+                    </div>
+                  )}
                 </div>
-              </Card>
-            ))
-          )}
-        </div>
-
-        {/* Denial Dialog */}
-        <Dialog open={denialDialogOpen} onOpenChange={setDenialDialogOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Deny Bug Report</DialogTitle>
-              <DialogDescription>
-                Explain why this report is being denied. The reporter will see this message.
-              </DialogDescription>
-            </DialogHeader>
-
-            {selectedBugForDenial && (
-              <div className="space-y-4">
-                <div className="p-3 bg-muted rounded-lg">
-                  <p className="font-semibold text-sm">{selectedBugForDenial.title}</p>
-                  <p className="text-xs text-muted-foreground mt-1">{selectedBugForDenial.description}</p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="denialReason">Denial Reason (min. 20 characters) *</Label>
-                  <Textarea
-                    id="denialReason"
-                    value={denialReason}
-                    onChange={(e) => setDenialReason(e.target.value)}
-                    placeholder="e.g., This is a feature request, not a bug. Please submit feature requests through the appropriate channel..."
-                    rows={4}
-                    className="resize-none"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    {denialReason.length}/20 characters (be specific and constructive)
-                  </p>
-                </div>
-
-                <Alert>
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription className="text-xs">
-                    This action will set the status to "denied" and ensure no points are awarded. Be professional and constructive in your explanation.
-                  </AlertDescription>
-                </Alert>
               </div>
-            )}
+            </Card>
+          ))
+        )}
+      </div>
 
-            <DialogFooter>
-              <Button 
-                variant="outline" 
-                onClick={() => {
-                  setDenialDialogOpen(false);
-                  setDenialReason("");
-                  setSelectedBugForDenial(null);
-                }}
-              >
-                Cancel
-              </Button>
-              <Button 
-                variant="destructive"
-                onClick={handleDenyReport}
-                disabled={denialReason.trim().length < 20}
-              >
-                <XCircle className="h-4 w-4 mr-2" />
-                Deny Report
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+      {/* Denial Dialog */}
+      <Dialog open={denialDialogOpen} onOpenChange={setDenialDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Deny Bug Report</DialogTitle>
+            <DialogDescription>
+              Explain why this report is being denied. The reporter will see this message.
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedBugForDenial && (
+            <div className="space-y-4">
+              <div className="p-3 bg-muted rounded-lg">
+                <p className="font-semibold text-sm">{selectedBugForDenial.title}</p>
+                <p className="text-xs text-muted-foreground mt-1">{selectedBugForDenial.description}</p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="denialReason">Denial Reason (min. 20 characters) *</Label>
+                <Textarea
+                  id="denialReason"
+                  value={denialReason}
+                  onChange={(e) => setDenialReason(e.target.value)}
+                  placeholder="e.g., This is a feature request, not a bug. Please submit feature requests through the appropriate channel..."
+                  rows={4}
+                  className="resize-none"
+                />
+                <p className="text-xs text-muted-foreground">
+                  {denialReason.length}/20 characters (be specific and constructive)
+                </p>
+              </div>
+
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription className="text-xs">
+                  This action will set the status to "denied" and ensure no points are awarded. Be professional and constructive in your explanation.
+                </AlertDescription>
+              </Alert>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setDenialDialogOpen(false);
+                setDenialReason("");
+                setSelectedBugForDenial(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button 
+              variant="destructive"
+              onClick={handleDenyReport}
+              disabled={denialReason.trim().length < 20}
+            >
+              <XCircle className="h-4 w-4 mr-2" />
+              Deny Report
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
         {/* Bug Report Drawer */}
         <BugReportDrawer
@@ -537,5 +537,5 @@ export default function AdminBugReports() {
           }}
         />
       </div>
-  );
-}
+    );
+  }
