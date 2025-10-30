@@ -9,6 +9,7 @@ import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useClient } from "@/contexts/ClientContext";
+import { FileText, X } from "lucide-react";
 
 interface CreateAssetDialogProps {
   open: boolean;
@@ -22,7 +23,7 @@ export function CreateAssetDialog({ open, onOpenChange, folderId, onSuccess }: C
   const { selectedClient } = useClient();
   const [loading, setLoading] = useState(false);
   const [uploadMode, setUploadMode] = useState<'file' | 'url'>('file');
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [formData, setFormData] = useState({
     type: "link",
@@ -32,35 +33,26 @@ export function CreateAssetDialog({ open, onOpenChange, folderId, onSuccess }: C
   });
 
   const handleFileSelect = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
 
-    // Validate file size (50MB)
-    if (file.size > 50 * 1024 * 1024) {
-      toast({
-        title: "File too large",
-        description: "Maximum file size is 50MB",
-        variant: "destructive",
-      });
-      return;
-    }
+    const validFiles = files.filter(file => {
+      if (file.size > 50 * 1024 * 1024) {
+        toast({
+          title: "File too large",
+          description: `${file.name} exceeds 50MB limit`,
+          variant: "destructive",
+        });
+        return false;
+      }
+      return true;
+    });
 
-    setSelectedFile(file);
+    setSelectedFiles(validFiles);
+  };
 
-    // Auto-detect type from MIME
-    if (file.type.startsWith('image/')) {
-      setFormData({ ...formData, type: 'image' });
-    } else if (file.type.startsWith('video/')) {
-      setFormData({ ...formData, type: 'video' });
-    } else if (file.type.includes('pdf') || file.type.includes('document') || file.type.includes('sheet')) {
-      setFormData({ ...formData, type: 'doc' });
-    }
-
-    // Auto-fill title from filename if empty
-    if (!formData.title) {
-      const nameWithoutExt = file.name.replace(/\.[^/.]+$/, "");
-      setFormData({ ...formData, title: nameWithoutExt });
-    }
+  const removeFile = (index: number) => {
+    setSelectedFiles(files => files.filter((_, i) => i !== index));
   };
 
   const uploadFile = async (file: File, assetId: string) => {
@@ -76,7 +68,6 @@ export function CreateAssetDialog({ open, onOpenChange, folderId, onSuccess }: C
 
     if (error) throw error;
 
-    // Get public URL
     const { data: { publicUrl } } = supabase.storage
       .from('client-assets')
       .getPublicUrl(filePath);
@@ -106,50 +97,80 @@ export function CreateAssetDialog({ open, onOpenChange, folderId, onSuccess }: C
         throw new Error("Not authenticated");
       }
 
-      const tagsArray = formData.tags
-        .split(",")
-        .map(tag => tag.trim())
-        .filter(tag => tag.length > 0);
+      if (uploadMode === 'file' && selectedFiles.length > 0) {
+        let completed = 0;
+        
+        for (const file of selectedFiles) {
+          const assetId = crypto.randomUUID();
+          const fileUrl = await uploadFile(file, assetId);
+          
+          let type: 'image' | 'video' | 'doc' | 'other' = 'other';
+          if (file.type.startsWith('image/')) type = 'image';
+          else if (file.type.startsWith('video/')) type = 'video';
+          else if (file.type.includes('pdf') || file.type.includes('document')) type = 'doc';
+          
+          const { data: assetData, error } = await supabase
+            .from("assets")
+            .insert([{
+              id: assetId,
+              client_id: selectedClient.id,
+              folder_id: folderId,
+              type,
+              title: file.name.replace(/\.[^/.]+$/, ""),
+              file_url: fileUrl,
+              preview_url: type === 'image' ? fileUrl : null,
+              storage_type: "upload",
+              created_by: user.id,
+            }])
+            .select()
+            .single();
 
-      // Generate asset ID first
-      const assetId = crypto.randomUUID();
-      let fileUrl = formData.file_url;
-      let storageType: "url" | "upload" = "url";
+          if (error) throw error;
 
-      // Handle file upload
-      if (uploadMode === 'file' && selectedFile) {
-        setUploadProgress(30);
-        fileUrl = await uploadFile(selectedFile, assetId);
-        storageType = "upload";
-        setUploadProgress(70);
+          if (assetData && (type === 'image' || type === 'video')) {
+            supabase.functions.invoke('analyze-asset', {
+              body: { asset_id: assetData.id }
+            }).catch(err => console.error('AI analysis failed:', err));
+          }
+
+          completed++;
+          setUploadProgress((completed / selectedFiles.length) * 100);
+        }
+
+        toast({
+          title: "Success",
+          description: `${selectedFiles.length} file(s) uploaded successfully`,
+        });
+      } else if (uploadMode === 'url') {
+        const tagsArray = formData.tags
+          .split(",")
+          .map(tag => tag.trim())
+          .filter(tag => tag.length > 0);
+
+        const { error } = await supabase
+          .from("assets")
+          .insert([{
+            client_id: selectedClient.id,
+            folder_id: folderId,
+            type: formData.type as "image" | "video" | "doc" | "link" | "other",
+            title: formData.title,
+            file_url: formData.file_url,
+            storage_type: "url",
+            tags: tagsArray,
+            created_by: user.id,
+          }]);
+
+        if (error) throw error;
+
+        toast({
+          title: "Success",
+          description: "Asset created successfully",
+        });
       }
-
-      const { error } = await supabase
-        .from("assets")
-        .insert([{
-          id: assetId,
-          client_id: selectedClient.id,
-          folder_id: folderId,
-          type: formData.type as "image" | "video" | "doc" | "link" | "other" | "copy",
-          title: formData.title,
-          file_url: fileUrl,
-          storage_type: storageType,
-          tags: tagsArray,
-          created_by: user.id,
-        }]);
-
-      if (error) throw error;
-      
-      setUploadProgress(100);
-
-      toast({
-        title: "Success",
-        description: uploadMode === 'file' ? "File uploaded successfully" : "Asset created successfully",
-      });
 
       onOpenChange(false);
       setFormData({ type: "link", title: "", file_url: "", tags: "" });
-      setSelectedFile(null);
+      setSelectedFiles([]);
       setUploadProgress(0);
       onSuccess?.();
     } catch (error) {
@@ -171,7 +192,6 @@ export function CreateAssetDialog({ open, onOpenChange, folderId, onSuccess }: C
           <DialogTitle>Upload Asset</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Upload Mode Toggle */}
           <div>
             <Label>Upload Method</Label>
             <RadioGroup value={uploadMode} onValueChange={(value: 'file' | 'url') => setUploadMode(value)} className="flex gap-4 mt-2">
@@ -188,40 +208,54 @@ export function CreateAssetDialog({ open, onOpenChange, folderId, onSuccess }: C
 
           {uploadMode === 'file' ? (
             <>
-              {/* File Upload Section */}
               <div>
-                <Label htmlFor="file">Select File</Label>
+                <Label htmlFor="fileInput">Select Files</Label>
                 <Input
-                  id="file"
+                  id="fileInput"
                   type="file"
+                  multiple
                   accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx"
                   onChange={handleFileSelect}
                   required
                   className="mt-1"
                 />
-                {selectedFile && (
-                  <div className="mt-2 p-3 bg-muted rounded-lg">
-                    <p className="text-sm font-medium">{selectedFile.name}</p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
-                    </p>
-                  </div>
-                )}
               </div>
 
-              {/* Image Preview */}
-              {selectedFile && selectedFile.type.startsWith('image/') && (
-                <div className="mt-2">
-                  <Label>Preview</Label>
-                  <img 
-                    src={URL.createObjectURL(selectedFile)} 
-                    alt="Preview" 
-                    className="mt-2 max-h-48 rounded-lg border object-contain w-full"
-                  />
+              {selectedFiles.length > 0 && (
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  <Label>Selected Files ({selectedFiles.length})</Label>
+                  {selectedFiles.map((file, idx) => (
+                    <div key={idx} className="flex items-center gap-3 p-2 bg-muted rounded-lg">
+                      {file.type.startsWith('image/') ? (
+                        <img 
+                          src={URL.createObjectURL(file)} 
+                          alt={file.name}
+                          className="w-12 h-12 object-cover rounded"
+                        />
+                      ) : (
+                        <div className="w-12 h-12 flex items-center justify-center bg-muted-foreground/10 rounded">
+                          <FileText className="h-6 w-6 text-muted-foreground" />
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{file.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {(file.size / 1024 / 1024).toFixed(2)} MB
+                        </p>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeFile(idx)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
                 </div>
               )}
 
-              {/* Upload Progress */}
               {uploadProgress > 0 && uploadProgress < 100 && (
                 <div>
                   <Label>Uploading...</Label>
@@ -231,7 +265,6 @@ export function CreateAssetDialog({ open, onOpenChange, folderId, onSuccess }: C
             </>
           ) : (
             <>
-              {/* External URL Section */}
               <div>
                 <Label htmlFor="file_url">URL</Label>
                 <Input
@@ -243,49 +276,52 @@ export function CreateAssetDialog({ open, onOpenChange, folderId, onSuccess }: C
                   required
                 />
               </div>
+
+              <div>
+                <Label htmlFor="type">Type</Label>
+                <Select value={formData.type} onValueChange={(value) => setFormData({ ...formData, type: value })}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="link">Link</SelectItem>
+                    <SelectItem value="image">Image</SelectItem>
+                    <SelectItem value="video">Video</SelectItem>
+                    <SelectItem value="doc">Document</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="title">Title</Label>
+                <Input
+                  id="title"
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  placeholder="Asset title"
+                  required
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="tags">Tags (comma-separated)</Label>
+                <Input
+                  id="tags"
+                  value={formData.tags}
+                  onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
+                  placeholder="design, logo, brand"
+                />
+              </div>
             </>
           )}
 
-          <div>
-            <Label htmlFor="type">Type</Label>
-            <Select value={formData.type} onValueChange={(value) => setFormData({ ...formData, type: value })}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="link">Link</SelectItem>
-                <SelectItem value="image">Image</SelectItem>
-                <SelectItem value="video">Video</SelectItem>
-                <SelectItem value="doc">Document</SelectItem>
-                <SelectItem value="other">Other</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label htmlFor="title">Title</Label>
-            <Input
-              id="title"
-              value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              placeholder="Asset title"
-              required
-            />
-          </div>
-          <div>
-            <Label htmlFor="tags">Tags (comma-separated)</Label>
-            <Input
-              id="tags"
-              value={formData.tags}
-              onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
-              placeholder="design, logo, brand"
-            />
-          </div>
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
             <Button type="submit" disabled={loading || !selectedClient}>
-              {loading ? "Creating..." : "Upload Asset"}
+              {loading ? "Creating..." : uploadMode === 'file' ? `Upload ${selectedFiles.length || ''} File${selectedFiles.length !== 1 ? 's' : ''}` : "Create Asset"}
             </Button>
           </div>
         </form>

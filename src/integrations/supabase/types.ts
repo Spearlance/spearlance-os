@@ -116,6 +116,7 @@ export type Database = {
           id: string
           name: string
           parent_folder_id: string | null
+          thumbnail_asset_id: string | null
           updated_at: string | null
         }
         Insert: {
@@ -126,6 +127,7 @@ export type Database = {
           id?: string
           name: string
           parent_folder_id?: string | null
+          thumbnail_asset_id?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -136,6 +138,7 @@ export type Database = {
           id?: string
           name?: string
           parent_folder_id?: string | null
+          thumbnail_asset_id?: string | null
           updated_at?: string | null
         }
         Relationships: [
@@ -158,6 +161,13 @@ export type Database = {
             columns: ["parent_folder_id"]
             isOneToOne: false
             referencedRelation: "asset_folders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asset_folders_thumbnail_asset_id_fkey"
+            columns: ["thumbnail_asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
             referencedColumns: ["id"]
           },
         ]

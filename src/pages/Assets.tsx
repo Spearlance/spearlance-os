@@ -29,6 +29,12 @@ interface Folder {
   name: string;
   color: string | null;
   created_at: string;
+  thumbnail_asset_id: string | null;
+  thumbnail?: {
+    id: string;
+    file_url: string | null;
+    preview_url: string | null;
+  };
 }
 
 interface Breadcrumb {
@@ -83,7 +89,10 @@ export default function Assets() {
 
     let query = supabase
       .from("asset_folders")
-      .select("*")
+      .select(`
+        *,
+        thumbnail:thumbnail_asset_id(id, file_url, preview_url)
+      `)
       .eq("client_id", selectedClient.id);
 
     if (currentFolderId === null) {
@@ -337,9 +346,25 @@ export default function Assets() {
                 className="cursor-pointer hover:shadow-lg transition-all hover:scale-105"
                 onClick={() => navigateToFolder(folder.id)}
               >
-                <CardContent className="p-4 text-center">
-                  <Folder className="h-12 w-12 mx-auto mb-2 text-yellow-500" />
-                  <p className="font-medium text-sm truncate">{folder.name}</p>
+                <CardContent className="p-0">
+                  {folder.thumbnail?.file_url || folder.thumbnail?.preview_url ? (
+                    <div className="relative">
+                      <img
+                        src={folder.thumbnail.file_url || folder.thumbnail.preview_url || ''}
+                        alt={folder.name}
+                        className="w-full h-32 object-cover rounded-t-lg"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/50 rounded-t-lg" />
+                      <Folder className="absolute bottom-2 right-2 h-6 w-6 text-white" />
+                    </div>
+                  ) : (
+                    <div className="h-32 flex items-center justify-center bg-muted rounded-t-lg">
+                      <Folder className="h-12 w-12 text-yellow-500" />
+                    </div>
+                  )}
+                  <div className="p-3 text-center">
+                    <p className="font-medium text-sm truncate">{folder.name}</p>
+                  </div>
                 </CardContent>
               </Card>
             ))}

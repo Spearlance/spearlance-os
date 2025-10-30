@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { ExternalLink, Trash2, FileText, Image, Link as LinkIcon, FileVideo, FileAudio, Download } from "lucide-react";
+import { ExternalLink, Trash2, FileText, Image as ImageIcon, Link as LinkIcon, FileVideo, FileAudio, Download, Image } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 interface AssetDrawerProps {
@@ -112,6 +112,29 @@ export function AssetDrawer({ asset, open, onOpenChange, onUpdate }: AssetDrawer
     }
   };
 
+  const handleSetAsFolderCover = async () => {
+    if (!asset.folder_id) return;
+    
+    const { error } = await supabase
+      .from('asset_folders')
+      .update({ thumbnail_asset_id: asset.id })
+      .eq('id', asset.folder_id);
+    
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to set folder cover",
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Success",
+        description: "Folder cover updated",
+      });
+      onUpdate();
+    }
+  };
+
   const handleDelete = async () => {
     try {
       let storageDeleted = true;
@@ -160,7 +183,7 @@ export function AssetDrawer({ asset, open, onOpenChange, onUpdate }: AssetDrawer
   const getTypeIcon = (assetType: string) => {
     switch (assetType) {
       case "image":
-        return <Image className="h-4 w-4" />;
+        return <ImageIcon className="h-4 w-4" />;
       case "video":
         return <FileVideo className="h-4 w-4" />;
       case "audio":
@@ -264,6 +287,17 @@ export function AssetDrawer({ asset, open, onOpenChange, onUpdate }: AssetDrawer
             <div className="text-sm text-muted-foreground pt-4 border-t">
               <div>Created: {new Date(asset.created_at).toLocaleString()}</div>
             </div>
+
+            {asset.folder_id && (asset.type === 'image' || asset.type === 'video') && (
+              <Button
+                variant="outline"
+                onClick={handleSetAsFolderCover}
+                className="w-full"
+              >
+                <Image className="h-4 w-4 mr-2" />
+                Set as Folder Cover
+              </Button>
+            )}
 
             <div className="flex gap-2 pt-4">
               <Button onClick={handleSave} className="flex-1">
