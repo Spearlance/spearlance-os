@@ -155,3 +155,6 @@ verify_jwt = true
 
 [functions.create-website-checkout]
 verify_jwt = true
+
+[functions.backfill-stripe-plan-names]
+verify_jwt = false
