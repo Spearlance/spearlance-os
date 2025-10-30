@@ -26,7 +26,23 @@ function MainLayoutContent({ children }: MainLayoutProps) {
   const [loading, setLoading] = useState(true);
   const [pricingModalOpen, setPricingModalOpen] = useState(false);
   const [isBugReportOpen, setIsBugReportOpen] = useState(false);
+  const [userFirstName, setUserFirstName] = useState<string>("");
   const { isAccessLocked, isInGracePeriod } = useAccountType();
+
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    const firstName = userFirstName || "there";
+    
+    if (hour >= 5 && hour < 12) {
+      return `Good Morning, ${firstName} ☀️`;
+    } else if (hour >= 12 && hour < 17) {
+      return `Good Afternoon, ${firstName} ✨`;
+    } else if (hour >= 17 && hour < 21) {
+      return `Good Evening, ${firstName} 🌙`;
+    } else {
+      return `Working Late, ${firstName}? 🌟`;
+    }
+  };
 
   useEffect(() => {
     // Set up auth state listener
@@ -44,6 +60,19 @@ function MainLayoutContent({ children }: MainLayoutProps) {
       setSession(session);
       if (!session) {
         navigate("/auth");
+      } else {
+        // Fetch user profile to get first name
+        supabase
+          .from("profiles")
+          .select("name")
+          .eq("id", session.user.id)
+          .single()
+          .then(({ data }) => {
+            if (data?.name) {
+              const firstName = data.name.split(" ")[0];
+              setUserFirstName(firstName);
+            }
+          });
       }
       setLoading(false);
     });
@@ -72,7 +101,7 @@ function MainLayoutContent({ children }: MainLayoutProps) {
           <header className="h-16 border-b border-border bg-card flex items-center justify-between px-6">
             <div className="flex items-center gap-4">
               <SidebarTrigger className="md:hidden" />
-              <h1 className="text-lg font-semibold">SpearlanceOS</h1>
+              <h1 className="text-lg font-semibold">{getGreeting()}</h1>
             </div>
             <div className="flex items-center gap-2">
               <Button 
