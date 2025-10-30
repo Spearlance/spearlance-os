@@ -119,13 +119,17 @@ export default function TicketDetail() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
+    // Prevent clients from creating internal notes
+    const canCreateInternalNote = userRole === 'admin' || userRole === 'fmm';
+    const finalIsInternalNote = canCreateInternalNote && isInternalNote;
+
     const { error } = await supabase
       .from("ticket_messages")
       .insert({
         ticket_id: id,
         author_user_id: user.id,
         body_richtext: newMessage,
-        is_internal_note: isInternalNote,
+        is_internal_note: finalIsInternalNote,
       });
 
     if (error) {
@@ -287,20 +291,22 @@ export default function TicketDetail() {
                   rows={4}
                 />
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="internal"
-                      checked={isInternalNote}
-                      onCheckedChange={(checked) => setIsInternalNote(checked as boolean)}
-                    />
-                    <label
-                      htmlFor="internal"
-                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                    >
-                      Internal note
-                    </label>
-                  </div>
-                  <Button onClick={handleSendMessage}>
+                  {(userRole === 'admin' || userRole === 'fmm') && (
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="internal"
+                        checked={isInternalNote}
+                        onCheckedChange={(checked) => setIsInternalNote(checked as boolean)}
+                      />
+                      <label
+                        htmlFor="internal"
+                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                      >
+                        Internal note
+                      </label>
+                    </div>
+                  )}
+                  <Button onClick={handleSendMessage} className={(userRole !== 'admin' && userRole !== 'fmm') ? 'ml-auto' : ''}>
                     <Send className="mr-2 h-4 w-4" />
                     Send
                   </Button>
