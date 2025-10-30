@@ -10,6 +10,9 @@ import { ChatbotWidget } from "@/components/chatbot/ChatbotWidget";
 import { TrialStatusBanner } from "@/components/TrialStatusBanner";
 import { PricingModal } from "@/components/billing/PricingModal";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
+import { SubscriptionLockoutBanner } from "@/components/billing/SubscriptionLockoutBanner";
+import { useAccountType } from "@/hooks/useAccountType";
+import { Lock } from "lucide-react";
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -20,6 +23,7 @@ function MainLayoutContent({ children }: MainLayoutProps) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [pricingModalOpen, setPricingModalOpen] = useState(false);
+  const { isAccessLocked, isInGracePeriod } = useAccountType();
 
   useEffect(() => {
     // Set up auth state listener
@@ -73,8 +77,26 @@ function MainLayoutContent({ children }: MainLayoutProps) {
           </header>
           <main className="flex-1 p-6 overflow-auto">
             <MobileNoticeBanner />
-            <TrialStatusBanner onUpgradeClick={() => setPricingModalOpen(true)} />
-            {children}
+            
+            {/* Show lockout banner if access issues */}
+            {(isAccessLocked || isInGracePeriod) && <SubscriptionLockoutBanner />}
+            
+            {/* Show trial banner only if no access issues */}
+            {!isAccessLocked && !isInGracePeriod && (
+              <TrialStatusBanner onUpgradeClick={() => setPricingModalOpen(true)} />
+            )}
+            
+            {/* Block content if locked */}
+            {isAccessLocked ? (
+              <div className="text-center py-20">
+                <Lock className="h-24 w-24 mx-auto mb-4 text-muted-foreground" />
+                <p className="text-xl text-muted-foreground">
+                  Access to features is currently suspended.
+                </p>
+              </div>
+            ) : (
+              children
+            )}
           </main>
         </div>
       </div>

@@ -18,10 +18,13 @@ interface Client {
   company_name?: string;
   stripe_customer_id?: string;
   stripe_subscription_id?: string;
+  stripe_plan_name?: string;
   billing_plan_id?: string;
   timezone?: string;
   site_id?: string;
   website_unlocked?: boolean;
+  grace_period_end?: string;
+  access_locked?: boolean;
   billing_plans?: {
     name: string;
     price_monthly: number;

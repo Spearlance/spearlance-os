@@ -71,11 +71,32 @@ serve(async (req) => {
       case 'customer.subscription.updated': {
         const subscription = event.data.object as Stripe.Subscription;
         
+        // Retrieve subscription details with expanded product data
+        const subscription_details = await stripe.subscriptions.retrieve(subscription.id, {
+          expand: ['items.data.price.product']
+        });
+
+        const price = subscription_details.items.data[0]?.price;
+        const product = price?.product;
+        const productId = typeof product === 'string' ? product : product?.id;
+        
+        // Extract product name from subscription
+        const productName = typeof product === 'string' ? null : product?.name || 'Subscription Plan';
+        
+        // Calculate grace period for past_due status
+        const isPaymentFailing = subscription.status === 'past_due';
+        const gracePeriodEnd = isPaymentFailing 
+          ? new Date(Date.now() + (3 * 24 * 60 * 60 * 1000)).toISOString() // 3 days from now
+          : null;
+        
         const { error } = await supabaseAdmin
           .from('clients')
           .update({
             stripe_subscription_id: subscription.id,
             subscription_status: subscription.status,
+            stripe_plan_name: productName,
+            grace_period_end: gracePeriodEnd,
+            access_locked: false, // Reset lock when subscription updates
             status: subscription.status === 'active' ? 'active' : 
                     subscription.status === 'trialing' ? 'active' : 'inactive'
           })
@@ -87,16 +108,7 @@ serve(async (req) => {
           throw new Error(`Database update failed: ${error.message}`);
         }
 
-        console.log('Updated subscription:', subscription.id, subscription.status);
-
-        // Check if this is an Unlimited plan subscription and end trial immediately
-        const subscription_details = await stripe.subscriptions.retrieve(subscription.id, {
-          expand: ['items.data.price.product']
-        });
-
-        const price = subscription_details.items.data[0]?.price;
-        const product = price?.product;
-        const productId = typeof product === 'string' ? product : product?.id;
+        console.log('Updated subscription:', subscription.id, subscription.status, 'plan:', productName);
 
         // TODO: Replace this with your actual Unlimited plan product ID from Stripe Dashboard
         const unlimitedProductId = 'prod_UNLIMITED_PLAN_ID';
@@ -159,7 +171,9 @@ serve(async (req) => {
             .from('clients')
             .update({
               subscription_status: 'active',
-              status: 'active'
+              status: 'active',
+              grace_period_end: null,
+              access_locked: false
             })
             .eq('stripe_subscription_id', invoice.subscription as string)
             .eq('billing_method', 'stripe');
@@ -169,7 +183,7 @@ serve(async (req) => {
             throw new Error(`Database update failed: ${error.message}`);
           }
 
-          console.log('Payment succeeded for subscription:', invoice.subscription);
+          console.log('Payment succeeded and cleared grace period for subscription:', invoice.subscription);
         }
         break;
       }
@@ -178,10 +192,15 @@ serve(async (req) => {
         const invoice = event.data.object as Stripe.Invoice;
         
         if (invoice.subscription) {
+          // Set grace period when payment fails
+          const gracePeriodEnd = new Date(Date.now() + (3 * 24 * 60 * 60 * 1000)).toISOString();
+          
           const { error } = await supabaseAdmin
             .from('clients')
             .update({
-              subscription_status: 'past_due'
+              subscription_status: 'past_due',
+              grace_period_end: gracePeriodEnd,
+              access_locked: false // Not locked yet, grace period active
             })
             .eq('stripe_subscription_id', invoice.subscription as string)
             .eq('billing_method', 'stripe');
@@ -191,7 +210,7 @@ serve(async (req) => {
             throw new Error(`Database update failed: ${error.message}`);
           }
 
-          console.log('Payment failed for subscription:', invoice.subscription);
+          console.log('Payment failed for subscription - grace period set:', invoice.subscription);
         }
         break;
       }

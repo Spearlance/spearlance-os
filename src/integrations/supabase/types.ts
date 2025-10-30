@@ -940,6 +940,7 @@ export type Database = {
       }
       clients: {
         Row: {
+          access_locked: boolean | null
           account_type: string | null
           billing_method: string | null
           billing_plan_id: string | null
@@ -953,6 +954,7 @@ export type Database = {
           domain: string | null
           drive_folder_url: string | null
           front_tag: string
+          grace_period_end: string | null
           hq_city: string | null
           id: string
           industry: string | null
@@ -968,6 +970,7 @@ export type Database = {
           site_id: string | null
           status: Database["public"]["Enums"]["client_status"] | null
           stripe_customer_id: string | null
+          stripe_plan_name: string | null
           stripe_subscription_id: string | null
           subscription_status: string | null
           timezone: string | null
@@ -978,6 +981,7 @@ export type Database = {
           website_url: string | null
         }
         Insert: {
+          access_locked?: boolean | null
           account_type?: string | null
           billing_method?: string | null
           billing_plan_id?: string | null
@@ -991,6 +995,7 @@ export type Database = {
           domain?: string | null
           drive_folder_url?: string | null
           front_tag: string
+          grace_period_end?: string | null
           hq_city?: string | null
           id?: string
           industry?: string | null
@@ -1006,6 +1011,7 @@ export type Database = {
           site_id?: string | null
           status?: Database["public"]["Enums"]["client_status"] | null
           stripe_customer_id?: string | null
+          stripe_plan_name?: string | null
           stripe_subscription_id?: string | null
           subscription_status?: string | null
           timezone?: string | null
@@ -1016,6 +1022,7 @@ export type Database = {
           website_url?: string | null
         }
         Update: {
+          access_locked?: boolean | null
           account_type?: string | null
           billing_method?: string | null
           billing_plan_id?: string | null
@@ -1029,6 +1036,7 @@ export type Database = {
           domain?: string | null
           drive_folder_url?: string | null
           front_tag?: string
+          grace_period_end?: string | null
           hq_city?: string | null
           id?: string
           industry?: string | null
@@ -1044,6 +1052,7 @@ export type Database = {
           site_id?: string | null
           status?: Database["public"]["Enums"]["client_status"] | null
           stripe_customer_id?: string | null
+          stripe_plan_name?: string | null
           stripe_subscription_id?: string | null
           subscription_status?: string | null
           timezone?: string | null

@@ -17,6 +17,7 @@ interface BillingTabProps {
     subscription_status?: string;
     stripe_customer_id?: string;
     stripe_subscription_id?: string;
+    stripe_plan_name?: string;
     billing_plan_id?: string;
     billing_method?: string;
     billing_plans?: {
@@ -156,7 +157,9 @@ export function BillingTab({ client, isAdmin = false, onUpdate }: BillingTabProp
               <p className="text-2xl font-bold">
                 {client.billing_method === 'direct' 
                   ? "Custom Plan"
-                  : (client.billing_plans?.name || "No Plan")
+                  : client.stripe_subscription_id && client.stripe_plan_name
+                    ? client.stripe_plan_name
+                    : (client.billing_plans?.name || "No Plan")
                 }
               </p>
               {client.billing_plans?.price_monthly && client.billing_method !== 'direct' && (

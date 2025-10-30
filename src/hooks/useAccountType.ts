@@ -20,6 +20,22 @@ export const useAccountType = () => {
   // If user has active subscription, they have full access regardless of trial status
   const hasActiveSubscription = isActive && selectedClient?.stripe_subscription_id;
   
+  // Grace period calculations
+  const gracePeriodEnd = selectedClient?.grace_period_end 
+    ? new Date(selectedClient.grace_period_end)
+    : null;
+
+  const graceDaysRemaining = gracePeriodEnd
+    ? Math.max(0, Math.ceil((gracePeriodEnd.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)))
+    : 0;
+
+  const isInGracePeriod = selectedClient?.subscription_status === 'past_due' && 
+                          graceDaysRemaining > 0 &&
+                          !selectedClient?.access_locked;
+
+  const isAccessLocked = selectedClient?.access_locked === true || 
+                         (selectedClient?.subscription_status === 'past_due' && graceDaysRemaining <= 0);
+  
   return {
     isSelfService,
     isManaged,
@@ -28,6 +44,9 @@ export const useAccountType = () => {
     isPaused,
     trialDaysRemaining,
     billingMethod,
-    hasAccess: isActive || isInTrial || hasPaidAccess || hasActiveSubscription,
+    isInGracePeriod,
+    isAccessLocked,
+    graceDaysRemaining,
+    hasAccess: !isAccessLocked && (isActive || isInTrial || hasPaidAccess || hasActiveSubscription),
   };
 };

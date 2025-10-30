@@ -39,6 +39,9 @@ verify_jwt = false
 [functions.check-trial-expirations]
 verify_jwt = false
 
+[functions.check-subscription-grace-periods]
+verify_jwt = false
+
 [functions.avatar-generate-summary]
 verify_jwt = true
 
@@ -115,4 +118,40 @@ verify_jwt = true
 verify_jwt = false
 
 [functions.late-sync-accounts]
+verify_jwt = true
+
+[functions.late-create-profile]
+verify_jwt = true
+
+[functions.late-test-api-key]
+verify_jwt = true
+
+[functions.late-schedule-post]
+verify_jwt = true
+
+[functions.late-sync-post-status]
+verify_jwt = true
+
+[functions.late-upload-media]
+verify_jwt = true
+
+[functions.late-webhook-handler]
+verify_jwt = false
+
+[functions.social-bulk-generate-captions]
+verify_jwt = true
+
+[functions.social-bulk-generate-images]
+verify_jwt = true
+
+[functions.social-generate-monthly-topics]
+verify_jwt = true
+
+[functions.ticket-notifications]
+verify_jwt = true
+
+[functions.create-portal-session]
+verify_jwt = true
+
+[functions.create-website-checkout]
 verify_jwt = true
