@@ -69,10 +69,10 @@ export function CreateTicketDialog({ open, onOpenChange }: CreateTicketDialogPro
         .from("ticket_messages")
         .insert({
           ticket_id: ticket.id,
-          sender_user_id: user.id,
-          message: formData.message,
-          is_internal: false,
-        } as any);
+          author_user_id: user.id,
+          body_richtext: formData.message,
+          is_internal_note: false,
+        });
 
       if (messageError) throw messageError;
 
