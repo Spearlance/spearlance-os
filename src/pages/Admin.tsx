@@ -17,6 +17,7 @@ import { UserInfoDialog } from "@/components/admin/UserInfoDialog";
 import { EditClientDialog } from "@/components/admin/EditClientDialog";
 import { Admin2FABanner } from "@/components/admin/Admin2FABanner";
 import { DeleteUserDialog } from "@/components/admin/DeleteUserDialog";
+import { DeleteClientDialog } from "@/components/admin/DeleteClientDialog";
 
 export default function Admin() {
   const navigate = useNavigate();
@@ -245,6 +246,28 @@ export default function Admin() {
       toast({
         title: "Error deleting user",
         description: error.message || "Failed to delete user",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteClient = async (clientId: string, clientName: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('admin-delete-client', {
+        body: { clientId }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Client deleted",
+        description: `${clientName} has been permanently deleted`,
+      });
+      loadData();
+    } catch (error: any) {
+      toast({
+        title: "Error deleting client",
+        description: error.message || "Failed to delete client",
         variant: "destructive",
       });
     }
@@ -568,11 +591,18 @@ export default function Admin() {
                           )}
                         </TableCell>
                         <TableCell>
-                          <EditClientDialog
-                            client={client}
-                            assignedUsers={assignedUsers}
-                            onClientUpdated={loadData}
-                          />
+                          <div className="flex items-center gap-2">
+                            <EditClientDialog
+                              client={client}
+                              assignedUsers={assignedUsers}
+                              onClientUpdated={loadData}
+                            />
+                            <DeleteClientDialog
+                              client={client}
+                              assignedUsers={assignedUsers}
+                              onConfirm={() => handleDeleteClient(client.id, client.name)}
+                            />
+                          </div>
                         </TableCell>
                       </TableRow>
                     );
