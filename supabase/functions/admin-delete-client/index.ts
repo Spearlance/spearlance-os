@@ -27,7 +27,7 @@ async function checkAdminRateLimit(
 
   const currentCount = data?.count || 0;
   
-  if (currentCount >= 5) {
+  if (currentCount >= 50) {
     return false;
   }
 
@@ -119,7 +119,7 @@ Deno.serve(async (req) => {
     if (!rateLimitOk) {
       return new Response(
         JSON.stringify({
-          error: 'Rate limit exceeded. Maximum 5 client deletions per hour.',
+          error: 'Rate limit exceeded. Maximum 50 client deletions per hour.',
         }),
         {
           status: 429,
