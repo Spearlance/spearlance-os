@@ -34,7 +34,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: 'google/gemini-2.5-flash',
-        input: caption_text
+        prompt: caption_text
       })
     });
 
