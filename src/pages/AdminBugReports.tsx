@@ -7,14 +7,20 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Bug, Trophy, TrendingUp, Clock, CheckCircle2, ExternalLink } from "lucide-react";
+import { Bug, Trophy, TrendingUp, Clock, CheckCircle2, ExternalLink, AlertCircle, XCircle } from "lucide-react";
 import { format } from "date-fns";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function AdminBugReports() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [statusFilter, setStatusFilter] = useState("all");
   const [severityFilter, setSeverityFilter] = useState("all");
+  const [denialDialogOpen, setDenialDialogOpen] = useState(false);
+  const [selectedBugForDenial, setSelectedBugForDenial] = useState<any>(null);
+  const [denialReason, setDenialReason] = useState("");
 
   const { data: bugReports, isLoading } = useQuery({
     queryKey: ["admin-bug-reports", statusFilter, severityFilter],
@@ -108,6 +114,51 @@ export default function AdminBugReports() {
     }
   };
 
+  const handleDenyReport = async () => {
+    if (!selectedBugForDenial || !denialReason.trim()) return;
+    
+    if (denialReason.trim().length < 20) {
+      toast({ 
+        title: "Denial reason too short", 
+        description: "Please provide at least 20 characters explaining why this report is being denied.",
+        variant: "destructive" 
+      });
+      return;
+    }
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      const { error } = await supabase
+        .from("bug_reports")
+        .update({
+          status: 'denied',
+          denial_reason: denialReason.trim(),
+          denied_at: new Date().toISOString(),
+          denied_by: user.id,
+          reward_awarded: false,
+          reward_points: 0,
+        })
+        .eq("id", selectedBugForDenial.id);
+
+      if (error) throw error;
+
+      toast({ 
+        title: "Bug report denied", 
+        description: "The reporter will be notified with your explanation." 
+      });
+      
+      setDenialDialogOpen(false);
+      setSelectedBugForDenial(null);
+      setDenialReason("");
+      queryClient.invalidateQueries({ queryKey: ["admin-bug-reports"] });
+      queryClient.invalidateQueries({ queryKey: ["bug-report-stats"] });
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    }
+  };
+
   const getSeverityColor = (severity: string): "default" | "destructive" | "outline" | "secondary" => {
     const colors: Record<string, "default" | "destructive" | "outline" | "secondary"> = {
       critical: "destructive",
@@ -127,6 +178,7 @@ export default function AdminBugReports() {
       fixed: "default",
       wont_fix: "outline",
       duplicate: "outline",
+      denied: "destructive",
     };
     return colors[status] || "default";
   };
@@ -142,6 +194,14 @@ export default function AdminBugReports() {
             <p className="text-muted-foreground">Manage and track bug reports from users</p>
           </div>
         </div>
+
+        {/* Disclaimer Banner */}
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            <strong>Review Policy:</strong> We reserve the right to deny reports that are not valid bugs (feature requests, user errors, misunderstandings, etc.). Denied reports do not earn points.
+          </AlertDescription>
+        </Alert>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -304,13 +364,28 @@ export default function AdminBugReports() {
                         <SelectItem value="submitted">Submitted</SelectItem>
                         <SelectItem value="triaged">Triaged</SelectItem>
                         <SelectItem value="in_progress">In Progress</SelectItem>
-                        <SelectItem value="fixed">Fixed</SelectItem>
-                        <SelectItem value="wont_fix">Won't Fix</SelectItem>
-                        <SelectItem value="duplicate">Duplicate</SelectItem>
-                      </SelectContent>
+                  <SelectItem value="fixed">Fixed</SelectItem>
+                  <SelectItem value="wont_fix">Won't Fix</SelectItem>
+                  <SelectItem value="duplicate">Duplicate</SelectItem>
+                  <SelectItem value="denied">Denied</SelectItem>
+                </SelectContent>
                     </Select>
 
-                    {!bug.reward_awarded && (
+                    {bug.status !== 'denied' && !bug.reward_awarded && (
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => {
+                          setSelectedBugForDenial(bug);
+                          setDenialDialogOpen(true);
+                        }}
+                      >
+                        <XCircle className="h-4 w-4 mr-1" />
+                        Deny Report
+                      </Button>
+                    )}
+
+                    {bug.status !== 'denied' && !bug.reward_awarded && (
                       <div className="flex gap-2">
                         <Button
                           size="sm"
@@ -353,12 +428,92 @@ export default function AdminBugReports() {
                         {bug.reward_points} pts awarded
                       </Badge>
                     )}
+
+                    {bug.status === 'denied' && (
+                      <div className="flex-1">
+                        <Alert variant="destructive" className="mt-4">
+                          <XCircle className="h-4 w-4" />
+                          <AlertDescription>
+                            <strong>Report Denied:</strong> {bug.denial_reason}
+                            {bug.denied_at && (
+                              <p className="text-xs mt-1">
+                                Denied on {format(new Date(bug.denied_at), "MMM d, yyyy 'at' h:mm a")}
+                              </p>
+                            )}
+                          </AlertDescription>
+                        </Alert>
+                      </div>
+                    )}
                   </div>
                 </div>
               </Card>
             ))
           )}
         </div>
+
+        {/* Denial Dialog */}
+        <Dialog open={denialDialogOpen} onOpenChange={setDenialDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Deny Bug Report</DialogTitle>
+              <DialogDescription>
+                Explain why this report is being denied. The reporter will see this message.
+              </DialogDescription>
+            </DialogHeader>
+
+            {selectedBugForDenial && (
+              <div className="space-y-4">
+                <div className="p-3 bg-muted rounded-lg">
+                  <p className="font-semibold text-sm">{selectedBugForDenial.title}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{selectedBugForDenial.description}</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="denialReason">Denial Reason (min. 20 characters) *</Label>
+                  <Textarea
+                    id="denialReason"
+                    value={denialReason}
+                    onChange={(e) => setDenialReason(e.target.value)}
+                    placeholder="e.g., This is a feature request, not a bug. Please submit feature requests through the appropriate channel..."
+                    rows={4}
+                    className="resize-none"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {denialReason.length}/20 characters (be specific and constructive)
+                  </p>
+                </div>
+
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription className="text-xs">
+                    This action will set the status to "denied" and ensure no points are awarded. Be professional and constructive in your explanation.
+                  </AlertDescription>
+                </Alert>
+              </div>
+            )}
+
+            <DialogFooter>
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setDenialDialogOpen(false);
+                  setDenialReason("");
+                  setSelectedBugForDenial(null);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button 
+                variant="destructive"
+                onClick={handleDenyReport}
+                disabled={denialReason.trim().length < 20}
+              >
+                <XCircle className="h-4 w-4 mr-2" />
+                Deny Report
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
   );
 }

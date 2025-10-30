@@ -154,7 +154,7 @@ export function ReportBugDialog({ open, onOpenChange }: ReportBugDialogProps) {
               <p className="text-xs text-yellow-800 dark:text-yellow-200 mb-2">
                 Valid bug reports earn you points and exclusive perks:
               </p>
-              <div className="grid grid-cols-2 gap-2 text-xs">
+              <div className="grid grid-cols-2 gap-2 text-xs mb-3">
                 <div className="bg-white/50 dark:bg-black/20 p-2 rounded">
                   <strong>Critical:</strong> 50 pts
                 </div>
@@ -167,6 +167,11 @@ export function ReportBugDialog({ open, onOpenChange }: ReportBugDialogProps) {
                 <div className="bg-white/50 dark:bg-black/20 p-2 rounded">
                   <strong>Low:</strong> 5 pts
                 </div>
+              </div>
+              <div className="bg-red-100 dark:bg-red-950/50 p-2 rounded border border-red-200 dark:border-red-800">
+                <p className="text-xs text-red-900 dark:text-red-200">
+                  ⚠️ <strong>Important:</strong> Only report actual bugs. Feature requests, user errors, or misunderstandings will be denied without points.
+                </p>
               </div>
             </div>
           </div>
@@ -295,6 +300,10 @@ export function ReportBugDialog({ open, onOpenChange }: ReportBugDialogProps) {
               </div>
             )}
           </div>
+
+          <p className="text-xs text-muted-foreground border-t pt-3">
+            By submitting, you confirm this is a legitimate bug report. Invalid reports may be denied without review.
+          </p>
 
           <div className="flex justify-end gap-2 pt-4">
             <Button

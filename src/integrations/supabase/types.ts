@@ -514,6 +514,9 @@ export type Database = {
           browser_info: Json | null
           client_id: string
           created_at: string | null
+          denial_reason: string | null
+          denied_at: string | null
+          denied_by: string | null
           description: string
           device_info: Json | null
           expected_behavior: string | null
@@ -538,6 +541,9 @@ export type Database = {
           browser_info?: Json | null
           client_id: string
           created_at?: string | null
+          denial_reason?: string | null
+          denied_at?: string | null
+          denied_by?: string | null
           description: string
           device_info?: Json | null
           expected_behavior?: string | null
@@ -562,6 +568,9 @@ export type Database = {
           browser_info?: Json | null
           client_id?: string
           created_at?: string | null
+          denial_reason?: string | null
+          denied_at?: string | null
+          denied_by?: string | null
           description?: string
           device_info?: Json | null
           expected_behavior?: string | null
@@ -585,6 +594,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bug_reports_denied_by_fkey"
+            columns: ["denied_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
@@ -3793,6 +3809,7 @@ export type Database = {
         | "fixed"
         | "wont_fix"
         | "duplicate"
+        | "denied"
       channel_ownership: "spearlance" | "client" | "both"
       channel_status: "active" | "in_progress" | "paused" | "not_used"
       client_status: "active" | "paused" | "archived"
@@ -3946,6 +3963,7 @@ export const Constants = {
         "fixed",
         "wont_fix",
         "duplicate",
+        "denied",
       ],
       channel_ownership: ["spearlance", "client", "both"],
       channel_status: ["active", "in_progress", "paused", "not_used"],

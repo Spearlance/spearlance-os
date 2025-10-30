@@ -2,8 +2,9 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Bug, Trophy, TrendingUp, ExternalLink } from "lucide-react";
+import { Bug, Trophy, TrendingUp, ExternalLink, XCircle } from "lucide-react";
 import { format } from "date-fns";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function MyBugReports() {
   const { data: bugReports, isLoading } = useQuery({
@@ -25,6 +26,7 @@ export default function MyBugReports() {
 
   const totalPoints = bugReports?.reduce((sum, bug) => sum + (bug.reward_points || 0), 0) || 0;
   const fixedCount = bugReports?.filter(bug => bug.status === "fixed").length || 0;
+  const deniedCount = bugReports?.filter(bug => bug.status === "denied").length || 0;
 
   const getSeverityColor = (severity: string): "default" | "destructive" | "outline" | "secondary" => {
     const colors: Record<string, "default" | "destructive" | "outline" | "secondary"> = {
@@ -45,6 +47,7 @@ export default function MyBugReports() {
       fixed: "default",
       wont_fix: "outline",
       duplicate: "outline",
+      denied: "destructive",
     };
     return colors[status] || "default";
   };
@@ -161,8 +164,25 @@ export default function MyBugReports() {
                     </div>
                   )}
 
+                  {/* Denial Info */}
+                  {bug.status === 'denied' && (
+                    <Alert variant="destructive" className="mt-4">
+                      <XCircle className="h-4 w-4" />
+                      <AlertDescription>
+                        <strong>Report Denied</strong>
+                        <p className="text-sm mt-1">{bug.denial_reason}</p>
+                        {bug.denied_at && (
+                          <p className="text-xs mt-2 opacity-75">
+                            Denied on {format(new Date(bug.denied_at), "MMM d, yyyy")}
+                          </p>
+                        )}
+                        <p className="text-xs mt-2 font-semibold">No points awarded</p>
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
                   {/* Points */}
-                  {bug.reward_awarded && (
+                  {bug.reward_awarded && bug.status !== 'denied' && (
                     <div className="flex items-center gap-2 pt-4 border-t">
                       <Trophy className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
                       <span className="font-semibold text-yellow-700 dark:text-yellow-300">
@@ -173,6 +193,12 @@ export default function MyBugReports() {
                           ✓ Fixed
                         </Badge>
                       )}
+                    </div>
+                  )}
+
+                  {!bug.reward_awarded && bug.status !== 'denied' && (
+                    <div className="pt-4 border-t">
+                      <p className="text-sm text-muted-foreground">Pending review</p>
                     </div>
                   )}
                 </div>
