@@ -9,6 +9,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { CheckSquare, Edit, Save, X } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 
 interface Meeting {
   id: string;
@@ -79,6 +81,7 @@ export default function MeetingDetail() {
     const { error } = await supabase
       .from("meetings")
       .update({
+        date_time: editedMeeting.date_time,
         summary: editedMeeting.summary,
         attendees: editedMeeting.attendees,
         decisions: editedMeeting.decisions,
@@ -177,6 +180,33 @@ export default function MeetingDetail() {
           </div>
         )}
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Meeting Date & Time</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isEditing ? (
+            <div className="space-y-2">
+              <Label>Date & Time</Label>
+              <Input
+                type="datetime-local"
+                value={editedMeeting?.date_time 
+                  ? new Date(editedMeeting.date_time).toISOString().slice(0, 16)
+                  : ""}
+                onChange={(e) =>
+                  setEditedMeeting({ 
+                    ...editedMeeting!, 
+                    date_time: new Date(e.target.value).toISOString() 
+                  })
+                }
+              />
+            </div>
+          ) : (
+            <p>{new Date(meeting.date_time).toLocaleString()}</p>
+          )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
