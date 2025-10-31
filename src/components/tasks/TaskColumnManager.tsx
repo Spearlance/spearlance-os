@@ -340,13 +340,38 @@ export function TaskColumnManager() {
         if (error) throw error;
       }
 
+      // Reload columns from database to get the newly inserted columns with real IDs
+      let columnsToReorder = columns;
+      if (pendingChanges.added.length > 0) {
+        const { data: freshColumns, error: reloadError } = await supabase
+          .from("task_columns")
+          .select("*")
+          .eq("client_id", selectedClient.id)
+          .order("display_order");
+
+        if (reloadError) throw reloadError;
+        
+        // Map fresh columns with their intended display_order from UI state
+        columnsToReorder = freshColumns!.map((col) => {
+          // Find the column in our UI state to get its intended display_order
+          const uiColumn = columns.find(c => 
+            c.id === col.id || 
+            (c.id.startsWith('temp-') && c.key === col.key)
+          );
+          return {
+            ...col,
+            display_order: uiColumn?.display_order ?? col.display_order
+          };
+        });
+      }
+
       // 3. Update display order if reordered OR if new columns were added (two-phase update to avoid UNIQUE constraint conflicts)
       if (pendingChanges.reordered || pendingChanges.added.length > 0) {
         console.log("Reordering columns - Phase 1: Moving to temporary positions");
         
         // Phase 1: Move all columns to large negative positions to guarantee no conflicts
-        for (let i = 0; i < columns.length; i++) {
-          const column = columns[i];
+        for (let i = 0; i < columnsToReorder.length; i++) {
+          const column = columnsToReorder[i];
           if (!column.id.startsWith('temp-')) {
             const tempOrder = -10000 - i; // Large negative offset to avoid any conflicts
             const { error } = await supabase
@@ -364,7 +389,7 @@ export function TaskColumnManager() {
         console.log("Reordering columns - Phase 2: Moving to final positions");
         
         // Phase 2: Update to final positions
-        for (const column of columns) {
+        for (const column of columnsToReorder) {
           if (!column.id.startsWith('temp-')) {
             const { error } = await supabase
               .from("task_columns")
