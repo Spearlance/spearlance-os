@@ -25,16 +25,21 @@ serve(async (req) => {
 
     console.log(`Finding assets for caption: "${caption_text.substring(0, 50)}..."`);
 
-    // Step 1: Generate embedding for the caption
-    const embeddingResponse = await fetch('https://ai.gateway.lovable.dev/v1/embeddings', {
+    // Step 1: Generate embedding for the caption using OpenAI
+    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
+    if (!OPENAI_API_KEY) {
+      throw new Error('OPENAI_API_KEY not configured');
+    }
+
+    const embeddingResponse = await fetch('https://api.openai.com/v1/embeddings', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+        'Authorization': `Bearer ${OPENAI_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        prompt: caption_text
+        model: 'text-embedding-3-small',
+        input: caption_text
       })
     });
 
@@ -46,7 +51,7 @@ serve(async (req) => {
         throw new Error('Rate limit exceeded. Please try again later.');
       }
       if (embeddingResponse.status === 402) {
-        throw new Error('AI credits depleted. Please add credits to your workspace.');
+        throw new Error('Payment required. Please check your OpenAI API key.');
       }
       throw new Error(`Embedding API error: ${embeddingResponse.status}`);
     }
