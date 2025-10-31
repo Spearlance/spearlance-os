@@ -39,6 +39,7 @@ export function ToolDialog({ open, onOpenChange, tool, clientId, onSave, loading
     url: "",
     logo_url: "",
     description: "",
+    owner: "",
     credentials_notes: "",
     cost_per_month: "",
     affiliate_url: "",
@@ -53,6 +54,7 @@ export function ToolDialog({ open, onOpenChange, tool, clientId, onSave, loading
         url: tool.url || "",
         logo_url: tool.logo_url || "",
         description: tool.description || "",
+        owner: tool.owner || "",
         credentials_notes: tool.credentials_notes || "",
         cost_per_month: tool.cost_per_month?.toString() || "",
         affiliate_url: tool.affiliate_url || "",
@@ -64,6 +66,7 @@ export function ToolDialog({ open, onOpenChange, tool, clientId, onSave, loading
         url: "",
         logo_url: "",
         description: "",
+        owner: "",
         credentials_notes: "",
         cost_per_month: "",
         affiliate_url: "",
@@ -90,6 +93,7 @@ export function ToolDialog({ open, onOpenChange, tool, clientId, onSave, loading
       url: formData.url,
       logo_url: formData.logo_url || null,
       description: formData.description || null,
+      owner: formData.owner || null,
       credentials_notes: formData.credentials_notes || null,
       cost_per_month: formData.cost_per_month ? parseFloat(formData.cost_per_month) : null,
     };
@@ -173,6 +177,19 @@ export function ToolDialog({ open, onOpenChange, tool, clientId, onSave, loading
               placeholder="Brief description of what this tool is used for"
               rows={2}
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="owner">Tool Owner</Label>
+            <Input
+              id="owner"
+              value={formData.owner}
+              onChange={(e) => setFormData(prev => ({ ...prev, owner: e.target.value }))}
+              placeholder="e.g., John Smith, Marketing Team, jane@company.com"
+            />
+            <p className="text-xs text-muted-foreground">
+              Who owns or manages this tool? Can be a name, team, or email address.
+            </p>
           </div>
 
           <div className="space-y-2">

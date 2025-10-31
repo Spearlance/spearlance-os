@@ -25,12 +25,14 @@ export function AddRecommendedToolDialog({
 }: AddRecommendedToolDialogProps) {
   const [url, setUrl] = useState("");
   const [description, setDescription] = useState("");
+  const [owner, setOwner] = useState("");
   const [costPerMonth, setCostPerMonth] = useState("");
 
   useEffect(() => {
     if (open && recommendedTool) {
       setUrl("");
       setDescription(recommendedTool.description || "");
+      setOwner("");
       setCostPerMonth("");
     }
   }, [open, recommendedTool]);
@@ -44,6 +46,7 @@ export function AddRecommendedToolDialog({
       logo_url: recommendedTool.logo_url,
       url: url.trim(),
       description: description.trim(),
+      owner: owner.trim() || null,
       cost_per_month: costPerMonth ? parseFloat(costPerMonth) : null,
       affiliate_url: recommendedTool.url, // Store the affiliate link
     });
@@ -110,6 +113,19 @@ export function AddRecommendedToolDialog({
               placeholder="How you use this tool..."
               rows={3}
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="owner">Tool Owner (Optional)</Label>
+            <Input
+              id="owner"
+              value={owner}
+              onChange={(e) => setOwner(e.target.value)}
+              placeholder="e.g., John Smith, Marketing Team, jane@company.com"
+            />
+            <p className="text-xs text-muted-foreground">
+              Who owns or manages this tool?
+            </p>
           </div>
 
           <div className="space-y-2">

@@ -2166,6 +2166,7 @@ export type Database = {
           id: string
           logo_url: string | null
           name: string
+          owner: string | null
           updated_at: string | null
           url: string
         }
@@ -2181,6 +2182,7 @@ export type Database = {
           id?: string
           logo_url?: string | null
           name: string
+          owner?: string | null
           updated_at?: string | null
           url: string
         }
@@ -2196,6 +2198,7 @@ export type Database = {
           id?: string
           logo_url?: string | null
           name?: string
+          owner?: string | null
           updated_at?: string | null
           url?: string
         }

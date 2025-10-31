@@ -70,10 +70,19 @@ export function ToolCard({ tool, type, isAdmin, onEdit, onDelete, onAddToClient 
               </p>
             )}
 
-            {type === 'client' && tool.cost_per_month && (
-              <p className="text-sm font-medium text-foreground mb-2">
-                ${tool.cost_per_month}/month
-              </p>
+            {type === 'client' && (
+              <>
+                {tool.owner && (
+                  <p className="text-xs text-muted-foreground mb-2">
+                    <span className="font-medium">Owner:</span> {tool.owner}
+                  </p>
+                )}
+                {tool.cost_per_month && (
+                  <p className="text-sm font-medium text-foreground mb-2">
+                    ${tool.cost_per_month}/month
+                  </p>
+                )}
+              </>
             )}
 
             <div className="flex items-center justify-between gap-2 mt-3">
