@@ -481,14 +481,14 @@ export function TaskColumnManager() {
                   key={column.id} 
                   draggableId={column.id} 
                   index={index}
-                  isDragDisabled={column.id.startsWith('temp-')}
+                  isDragDisabled={column.key === 'done'}
                 >
                   {(provided) => (
                             <div
                               ref={provided.innerRef}
                               {...provided.draggableProps}
                               className={`flex items-center gap-3 p-4 border rounded-lg bg-card hover:bg-accent/50 transition-colors ${
-                                column.id.startsWith('temp-') ? 'opacity-60' : ''
+                                column.key === 'done' ? 'opacity-75 cursor-not-allowed' : ''
                               }`}
                             >
                               <div {...provided.dragHandleProps}>
