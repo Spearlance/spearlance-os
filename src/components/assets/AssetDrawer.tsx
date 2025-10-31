@@ -204,7 +204,7 @@ export function AssetDrawer({ asset, open, onOpenChange, onUpdate }: AssetDrawer
           </TabsList>
 
           <TabsContent value="preview" className="mt-0 flex-1 flex flex-col overflow-hidden">
-            <ScrollArea className="flex-1">
+            <ScrollArea className="flex-1 pr-4">
               {asset.preview_url ? (
                 <div className="relative w-full max-h-[500px] min-h-[200px] bg-muted rounded-lg overflow-hidden mb-4 flex items-center justify-center">
                   <img
