@@ -3,6 +3,7 @@ import { CheckCircle2, Circle, ListTodo, Calendar, MessageSquare, TrendingUp } f
 import { cn } from "@/lib/utils";
 import { useNotifications, type Notification } from "@/hooks/useNotifications";
 import { useNavigate } from "react-router-dom";
+import { useClient } from "@/contexts/ClientContext";
 
 interface NotificationItemProps {
   notification: Notification;
@@ -28,11 +29,29 @@ const getNotificationIcon = (type: string) => {
 export const NotificationItem = ({ notification }: NotificationItemProps) => {
   const { markAsRead } = useNotifications();
   const navigate = useNavigate();
+  const { selectedClient, setSelectedClient, clients } = useClient();
 
-  const handleClick = () => {
+  const handleClick = async () => {
+    // Mark as read
     if (!notification.read_flag) {
       markAsRead(notification.id);
     }
+
+    // If notification has a client_id and it's different from current selection
+    if (notification.client_id && notification.client_id !== selectedClient?.id) {
+      // Find the client from the available clients list
+      const targetClient = clients.find(c => c.id === notification.client_id);
+      
+      if (targetClient) {
+        // Switch to the correct client context
+        setSelectedClient(targetClient);
+        
+        // Small delay to ensure context updates before navigation
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+    }
+
+    // Navigate to the action URL
     if (notification.action_url) {
       navigate(notification.action_url);
     }
