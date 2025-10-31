@@ -144,12 +144,19 @@ export function TaskColumnManager() {
     }));
 
     // Add to columns for immediate display
-    setColumns([...updatedColumns, {
+    const newColumnWithId = {
       ...newColumn,
       id: tempId,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
-    } as TaskColumn]);
+    } as TaskColumn;
+
+    // Add the new column to updatedColumns and sort by display_order
+    const finalColumns = [...updatedColumns, newColumnWithId].sort(
+      (a, b) => a.display_order - b.display_order
+    );
+
+    setColumns(finalColumns);
 
     setHasUnsavedChanges(true);
     setNewColumnName("");
