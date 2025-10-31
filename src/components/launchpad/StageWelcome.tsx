@@ -18,7 +18,7 @@ export function StageWelcome({ onStart }: StageWelcomeProps) {
         </div>
         
         <h1 className="text-4xl font-bold tracking-tight">
-          Welcome to Your Marketing Setup
+          Welcome to SpearlanceOS
         </h1>
         
         <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
