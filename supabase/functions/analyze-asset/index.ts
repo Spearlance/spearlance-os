@@ -143,7 +143,7 @@ serve(async (req) => {
       .from('assets')
       .update({
         ai_description: description,
-        ai_embedding: JSON.stringify(embedding),
+        ai_embedding: embedding,
         ai_processed_at: new Date().toISOString()
       })
       .eq('id', asset_id);
