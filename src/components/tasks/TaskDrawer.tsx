@@ -54,6 +54,18 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
   const { toast } = useToast();
   const navigate = useNavigate();
 
+  // Helper function to extract meeting title from summary
+  const extractMeetingTitle = (summary: string): string => {
+    // Check if summary starts with markdown heading
+    if (summary.startsWith('# ')) {
+      const lines = summary.split('\n');
+      // Remove the '# ' prefix and return the first line
+      return lines[0].substring(2).trim();
+    }
+    // Fallback: return first 50 characters of summary
+    return summary.substring(0, 50) + (summary.length > 50 ? '...' : '');
+  };
+
   // Helper function to render comment text with highlighted mentions
   const renderCommentWithMentions = (text: string) => {
     const mentionPattern = /@(\w+(?:\s+\w+)*)/g;
@@ -926,7 +938,7 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
                                 onClick={() => handleLinkMeeting(meeting.id)}
                               >
                                 <div className="flex-1">
-                                  <div className="font-medium text-sm">{meeting.summary}</div>
+                                  <div className="font-medium text-sm">{extractMeetingTitle(meeting.summary)}</div>
                                   <div className="text-xs text-muted-foreground mt-1">
                                     {new Date(meeting.date_time).toLocaleString()}
                                   </div>
@@ -950,7 +962,7 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
                           onClick={() => navigate(`/meetings/${meeting.id}`)}
                         >
                           <div className="flex-1">
-                            <div className="font-medium text-sm">{meeting.summary}</div>
+                            <div className="font-medium text-sm">{extractMeetingTitle(meeting.summary)}</div>
                             <div className="text-xs text-muted-foreground mt-1">
                               {new Date(meeting.date_time).toLocaleString()}
                             </div>
