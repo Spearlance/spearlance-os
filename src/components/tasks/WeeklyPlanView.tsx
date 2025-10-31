@@ -12,11 +12,18 @@ import { cn } from "@/lib/utils";
 interface Task {
   id: string;
   title: string;
+  description: string | null;
   status: string;
   priority: string;
-  due_date: string;
+  due_date: string | null;
+  assignee_user_id: string | null;
+  client_id: string;
+  related_asset_ids: string[];
+  related_meeting_ids: string[];
   color: string;
   is_recurring_instance: boolean;
+  linked_channel_id: string | null;
+  parent_task_id?: string | null;
 }
 
 interface WeeklyPlanViewProps {
@@ -60,11 +67,18 @@ export function WeeklyPlanView({ onTaskClick, onCreateTask }: WeeklyPlanViewProp
         .select(`
           id,
           title,
+          description,
           status,
           priority,
           due_date,
           color,
           is_recurring_instance,
+          assignee_user_id,
+          client_id,
+          related_asset_ids,
+          related_meeting_ids,
+          linked_channel_id,
+          parent_task_id,
           task_assignees!inner(user_id)
         `)
         .eq("client_id", selectedClient.id)
@@ -83,10 +97,25 @@ export function WeeklyPlanView({ onTaskClick, onCreateTask }: WeeklyPlanViewProp
         grouped[dayKey] = [];
       }
 
-      tasks?.forEach((task) => {
+      tasks?.forEach((task: any) => {
         if (task.due_date) {
           grouped[task.due_date] = grouped[task.due_date] || [];
-          grouped[task.due_date].push(task as Task);
+          grouped[task.due_date].push({
+            id: task.id,
+            title: task.title,
+            description: task.description,
+            status: task.status,
+            priority: task.priority,
+            due_date: task.due_date,
+            assignee_user_id: task.assignee_user_id,
+            client_id: task.client_id,
+            related_asset_ids: task.related_asset_ids || [],
+            related_meeting_ids: task.related_meeting_ids || [],
+            linked_channel_id: task.linked_channel_id,
+            color: task.color,
+            is_recurring_instance: task.is_recurring_instance,
+            parent_task_id: task.parent_task_id,
+          });
         }
       });
 
