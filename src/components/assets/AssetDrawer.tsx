@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -173,182 +172,180 @@ export function AssetDrawer({ asset, open, onOpenChange, onUpdate }: AssetDrawer
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="sm:max-w-[600px] w-full flex flex-col">
-        <SheetHeader>
-          <div className="flex items-center justify-between">
-            <SheetTitle>Asset Details</SheetTitle>
-            <div className="flex gap-2">
-              {fileUrl && (
-                <>
-                  <Button variant="outline" size="sm" onClick={handleDownload}>
-                    <Download className="h-4 w-4 mr-2" />
-                    {asset.storage_type === 'upload' ? 'Download' : 'Open'}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => window.open(fileUrl, "_blank")}
-                  >
-                    <ExternalLink className="h-4 w-4" />
-                  </Button>
-                </>
-              )}
+      <SheetContent className="sm:max-w-[600px] w-full p-0 overflow-hidden">
+        <div className="flex h-full flex-col">
+          <SheetHeader className="shrink-0 px-6 pt-6">
+            <div className="flex items-center justify-between">
+              <SheetTitle>Asset Details</SheetTitle>
+              <div className="flex gap-2">
+                {fileUrl && (
+                  <>
+                    <Button variant="outline" size="sm" onClick={handleDownload}>
+                      <Download className="h-4 w-4 mr-2" />
+                      {asset.storage_type === 'upload' ? 'Download' : 'Open'}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => window.open(fileUrl, "_blank")}
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                    </Button>
+                  </>
+                )}
+              </div>
             </div>
-          </div>
-        </SheetHeader>
+          </SheetHeader>
 
-        <Tabs defaultValue="preview" className="mt-6 flex-1 flex flex-col overflow-hidden">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="preview">Preview</TabsTrigger>
-            <TabsTrigger value="details">Details</TabsTrigger>
-          </TabsList>
+          <div className="flex-1 min-h-0 px-6 pb-6">
+            <Tabs defaultValue="preview" className="flex h-full flex-col">
+              <TabsList className="grid w-full grid-cols-2 shrink-0 mt-6">
+                <TabsTrigger value="preview">Preview</TabsTrigger>
+                <TabsTrigger value="details">Details</TabsTrigger>
+              </TabsList>
 
-          <TabsContent value="preview" className="mt-0 flex-1 flex flex-col overflow-hidden">
-            <ScrollArea className="flex-1 pr-4">
-              <div className="space-y-4">
-                {asset.preview_url ? (
-                  <div className="relative w-full h-[400px] bg-muted rounded-lg overflow-hidden mb-4 flex items-center justify-center">
-                    <img
-                      src={asset.preview_url}
-                      alt={title}
-                      className="w-full h-full object-contain"
-                      onError={(e) => {
-                        e.currentTarget.style.display = 'none';
-                        if (e.currentTarget.parentElement) {
-                          e.currentTarget.parentElement.classList.add('flex', 'items-center', 'justify-center');
-                          const icon = document.createElement('div');
-                          icon.className = 'text-muted-foreground text-sm';
-                          icon.textContent = 'Image not available';
-                          e.currentTarget.parentElement.appendChild(icon);
-                        }
-                      }}
+              <div className="flex-1 min-h-0 overflow-y-auto">
+                <TabsContent value="preview" className="mt-4 space-y-4">
+                  {asset.preview_url ? (
+                    <div className="relative w-full h-[400px] bg-muted rounded-lg overflow-hidden mb-4 flex items-center justify-center">
+                      <img
+                        src={asset.preview_url}
+                        alt={title}
+                        className="w-full h-full object-contain"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                          if (e.currentTarget.parentElement) {
+                            e.currentTarget.parentElement.classList.add('flex', 'items-center', 'justify-center');
+                            const icon = document.createElement('div');
+                            icon.className = 'text-muted-foreground text-sm';
+                            icon.textContent = 'Image not available';
+                            e.currentTarget.parentElement.appendChild(icon);
+                          }
+                        }}
+                      />
+                    </div>
+                  ) : (
+                    <div className="relative w-full max-h-[500px] min-h-[200px] bg-muted rounded-lg flex items-center justify-center mb-4">
+                      {getTypeIcon(asset.type)}
+                      <span className="ml-2 text-muted-foreground">No preview available</span>
+                    </div>
+                  )}
+
+                  <div className="space-y-2">
+                    {fileUrl && (
+                      <Button variant="outline" onClick={handleDownload} className="w-full">
+                        <Download className="h-4 w-4 mr-2" />
+                        {asset.storage_type === 'upload' ? 'Download File' : 'Open Link'}
+                      </Button>
+                    )}
+                    
+                    {asset.folder_id && (asset.type === 'image' || asset.type === 'video') && (
+                      <Button variant="outline" onClick={handleSetAsFolderCover} className="w-full">
+                        <Image className="h-4 w-4 mr-2" />
+                        Set as Folder Cover
+                      </Button>
+                    )}
+                  </div>
+
+                  <div className="mt-6 text-sm text-muted-foreground space-y-1 pt-4 border-t">
+                    <div>Created: {new Date(asset.created_at).toLocaleString()}</div>
+                    {asset.ai_processed_at && (
+                      <div>AI Analyzed: {new Date(asset.ai_processed_at).toLocaleString()}</div>
+                    )}
+                    {asset.file_url && asset.storage_type === 'upload' && (
+                      <div className="text-xs truncate">Path: {asset.file_url}</div>
+                    )}
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="details" className="mt-4 space-y-4">
+                  <div className="space-y-2">
+                    <Label>Title</Label>
+                    <Input value={title} onChange={(e) => setTitle(e.target.value)} />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Type</Label>
+                    <Select value={type} onValueChange={setType}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="image">Image</SelectItem>
+                        <SelectItem value="video">Video</SelectItem>
+                        <SelectItem value="audio">Audio</SelectItem>
+                        <SelectItem value="document">Document</SelectItem>
+                        <SelectItem value="link">Link</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>URL</Label>
+                    <Input value={fileUrl} onChange={(e) => setFileUrl(e.target.value)} />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Tags (comma-separated)</Label>
+                    <Input
+                      value={tags}
+                      onChange={(e) => setTags(e.target.value)}
+                      placeholder="tag1, tag2, tag3"
                     />
                   </div>
-                ) : (
-                  <div className="relative w-full max-h-[500px] min-h-[200px] bg-muted rounded-lg flex items-center justify-center mb-4">
-                    {getTypeIcon(asset.type)}
-                    <span className="ml-2 text-muted-foreground">No preview available</span>
+
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2">
+                      <Sparkles className="h-4 w-4 text-purple-500" />
+                      AI Description
+                    </Label>
+                    <Textarea
+                      value={aiDescription}
+                      onChange={(e) => setAiDescription(e.target.value)}
+                      placeholder="AI-generated description will appear here after analysis..."
+                      rows={6}
+                      className="resize-none"
+                    />
+                    {asset.ai_processed_at && (
+                      <p className="text-xs text-muted-foreground">
+                        Generated: {new Date(asset.ai_processed_at).toLocaleString()}
+                      </p>
+                    )}
                   </div>
-                )}
 
-                <div className="space-y-2">
-                  {fileUrl && (
-                    <Button variant="outline" onClick={handleDownload} className="w-full">
-                      <Download className="h-4 w-4 mr-2" />
-                      {asset.storage_type === 'upload' ? 'Download File' : 'Open Link'}
+                  <div className="flex gap-2 pt-4 sticky bottom-0 bg-background">
+                    <Button onClick={handleSave} className="flex-1">
+                      Save Changes
                     </Button>
-                  )}
-                  
-                  {asset.folder_id && (asset.type === 'image' || asset.type === 'video') && (
-                    <Button variant="outline" onClick={handleSetAsFolderCover} className="w-full">
-                      <Image className="h-4 w-4 mr-2" />
-                      Set as Folder Cover
+                    <Button variant="outline" onClick={() => onOpenChange(false)}>
+                      Cancel
                     </Button>
-                  )}
-                </div>
-
-                <div className="mt-6 text-sm text-muted-foreground space-y-1 pt-4 border-t">
-                  <div>Created: {new Date(asset.created_at).toLocaleString()}</div>
-                  {asset.ai_processed_at && (
-                    <div>AI Analyzed: {new Date(asset.ai_processed_at).toLocaleString()}</div>
-                  )}
-                  {asset.file_url && asset.storage_type === 'upload' && (
-                    <div className="text-xs truncate">Path: {asset.file_url}</div>
-                  )}
-                </div>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="destructive" size="icon">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete Asset</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Are you sure you want to delete this asset? This action cannot be undone.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                </TabsContent>
               </div>
-            </ScrollArea>
-          </TabsContent>
-
-          <TabsContent value="details" className="mt-0 flex-1 flex flex-col overflow-hidden">
-            <ScrollArea className="flex-1 pr-4">
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Title</Label>
-                  <Input value={title} onChange={(e) => setTitle(e.target.value)} />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Type</Label>
-                  <Select value={type} onValueChange={setType}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="image">Image</SelectItem>
-                      <SelectItem value="video">Video</SelectItem>
-                      <SelectItem value="audio">Audio</SelectItem>
-                      <SelectItem value="document">Document</SelectItem>
-                      <SelectItem value="link">Link</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>URL</Label>
-                  <Input value={fileUrl} onChange={(e) => setFileUrl(e.target.value)} />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Tags (comma-separated)</Label>
-                  <Input
-                    value={tags}
-                    onChange={(e) => setTags(e.target.value)}
-                    placeholder="tag1, tag2, tag3"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="flex items-center gap-2">
-                    <Sparkles className="h-4 w-4 text-purple-500" />
-                    AI Description
-                  </Label>
-                  <Textarea
-                    value={aiDescription}
-                    onChange={(e) => setAiDescription(e.target.value)}
-                    placeholder="AI-generated description will appear here after analysis..."
-                    rows={6}
-                    className="resize-none"
-                  />
-                  {asset.ai_processed_at && (
-                    <p className="text-xs text-muted-foreground">
-                      Generated: {new Date(asset.ai_processed_at).toLocaleString()}
-                    </p>
-                  )}
-                </div>
-
-                <div className="flex gap-2 pt-4 sticky bottom-0 bg-background">
-                  <Button onClick={handleSave} className="flex-1">
-                    Save Changes
-                  </Button>
-                  <Button variant="outline" onClick={() => onOpenChange(false)}>
-                    Cancel
-                  </Button>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="destructive" size="icon">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Delete Asset</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Are you sure you want to delete this asset? This action cannot be undone.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </div>
-              </div>
-            </ScrollArea>
-          </TabsContent>
-        </Tabs>
+            </Tabs>
+          </div>
+        </div>
       </SheetContent>
     </Sheet>
   );
