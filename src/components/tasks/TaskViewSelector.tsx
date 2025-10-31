@@ -1,9 +1,9 @@
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { List, Table, LayoutGrid } from "lucide-react";
+import { List, Table, LayoutGrid, Calendar } from "lucide-react";
 
 interface TaskViewSelectorProps {
-  value: "kanban" | "list" | "table";
-  onChange: (value: "kanban" | "list" | "table") => void;
+  value: "kanban" | "list" | "table" | "weekly";
+  onChange: (value: "kanban" | "list" | "table" | "weekly") => void;
 }
 
 export const TaskViewSelector = ({ value, onChange }: TaskViewSelectorProps) => {
@@ -21,6 +21,10 @@ export const TaskViewSelector = ({ value, onChange }: TaskViewSelectorProps) => 
         <TabsTrigger value="table" className="gap-2">
           <Table className="h-4 w-4" />
           <span className="hidden sm:inline">Table</span>
+        </TabsTrigger>
+        <TabsTrigger value="weekly" className="gap-2">
+          <Calendar className="h-4 w-4" />
+          <span className="hidden sm:inline">Weekly</span>
         </TabsTrigger>
       </TabsList>
     </Tabs>

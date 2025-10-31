@@ -6,10 +6,13 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useClient } from "@/contexts/ClientContext";
 import { AssigneeSelector } from "./AssigneeSelector";
+import { Repeat } from "lucide-react";
 
 interface CreateTaskDialogProps {
   open: boolean;
@@ -30,6 +33,14 @@ export function CreateTaskDialog({ open, onOpenChange, onSuccess }: CreateTaskDi
   const [users, setUsers] = useState<User[]>([]);
   const [selectedAssignees, setSelectedAssignees] = useState<string[]>([]);
   const [selectedColor, setSelectedColor] = useState("#6B7280");
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [recurrenceFrequency, setRecurrenceFrequency] = useState<'daily' | 'weekly' | 'monthly' | 'quarterly' | 'yearly'>('weekly');
+  const [recurrenceInterval, setRecurrenceInterval] = useState(1);
+  const [selectedDaysOfWeek, setSelectedDaysOfWeek] = useState<number[]>([]);
+  const [dayOfMonth, setDayOfMonth] = useState(1);
+  const [endCondition, setEndCondition] = useState<'never' | 'on_date' | 'after_occurrences'>('never');
+  const [endDate, setEndDate] = useState('');
+  const [maxOccurrences, setMaxOccurrences] = useState(10);
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -78,6 +89,24 @@ export function CreateTaskDialog({ open, onOpenChange, onSuccess }: CreateTaskDi
         throw new Error("Not authenticated");
       }
 
+      // Prepare recurrence pattern
+      let recurrencePattern = null;
+      let nextOccurrence = null;
+      
+      if (isRecurring && formData.due_date) {
+        recurrencePattern = {
+          frequency: recurrenceFrequency,
+          interval: recurrenceInterval,
+          ...(recurrenceFrequency === 'weekly' && selectedDaysOfWeek.length > 0 && { days_of_week: selectedDaysOfWeek }),
+          ...(recurrenceFrequency === 'monthly' && { day_of_month: dayOfMonth }),
+          ...(endCondition === 'on_date' && endDate && { end_date: endDate }),
+          ...(endCondition === 'after_occurrences' && { max_occurrences: maxOccurrences }),
+        };
+        
+        // Set next occurrence to the due date
+        nextOccurrence = formData.due_date;
+      }
+
       // Create the task
       const { data: newTask, error } = await supabase
         .from("tasks")
@@ -90,6 +119,9 @@ export function CreateTaskDialog({ open, onOpenChange, onSuccess }: CreateTaskDi
           due_date: formData.due_date || null,
           color: selectedColor,
           creator_user_id: user.id,
+          is_recurring: isRecurring,
+          recurrence_pattern: recurrencePattern,
+          next_occurrence_date: nextOccurrence,
         }])
         .select()
         .single();
@@ -119,6 +151,9 @@ export function CreateTaskDialog({ open, onOpenChange, onSuccess }: CreateTaskDi
       setFormData({ title: "", description: "", status: "to_do", priority: "normal", due_date: "" });
       setSelectedAssignees([]);
       setSelectedColor("#6B7280");
+      setIsRecurring(false);
+      setSelectedDaysOfWeek([]);
+      setEndDate('');
       onSuccess?.();
     } catch (error) {
       console.error("Error creating task:", error);
@@ -237,6 +272,135 @@ export function CreateTaskDialog({ open, onOpenChange, onSuccess }: CreateTaskDi
                 </div>
               </PopoverContent>
             </Popover>
+          </div>
+
+          {/* Recurring Task Section */}
+          <div className="space-y-3 border-t pt-4">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="recurring"
+                checked={isRecurring}
+                onCheckedChange={(checked) => setIsRecurring(checked as boolean)}
+              />
+              <Label htmlFor="recurring" className="flex items-center gap-2 cursor-pointer">
+                <Repeat className="h-4 w-4" />
+                Make this a recurring task
+              </Label>
+            </div>
+
+            {isRecurring && (
+              <div className="space-y-3 pl-6 border-l-2 border-muted">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label htmlFor="frequency">Frequency</Label>
+                    <Select value={recurrenceFrequency} onValueChange={(value: any) => setRecurrenceFrequency(value)}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="daily">Daily</SelectItem>
+                        <SelectItem value="weekly">Weekly</SelectItem>
+                        <SelectItem value="monthly">Monthly</SelectItem>
+                        <SelectItem value="quarterly">Quarterly</SelectItem>
+                        <SelectItem value="yearly">Yearly</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="interval">Every</Label>
+                    <Input
+                      id="interval"
+                      type="number"
+                      min="1"
+                      value={recurrenceInterval}
+                      onChange={(e) => setRecurrenceInterval(parseInt(e.target.value) || 1)}
+                    />
+                  </div>
+                </div>
+
+                {recurrenceFrequency === 'weekly' && (
+                  <div>
+                    <Label>Days of Week</Label>
+                    <div className="flex gap-2 flex-wrap mt-2">
+                      {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, index) => (
+                        <Button
+                          key={day}
+                          type="button"
+                          variant={selectedDaysOfWeek.includes(index) ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => {
+                            setSelectedDaysOfWeek(prev =>
+                              prev.includes(index)
+                                ? prev.filter(d => d !== index)
+                                : [...prev, index]
+                            );
+                          }}
+                        >
+                          {day}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {recurrenceFrequency === 'monthly' && (
+                  <div>
+                    <Label htmlFor="dayOfMonth">Day of Month</Label>
+                    <Input
+                      id="dayOfMonth"
+                      type="number"
+                      min="1"
+                      max="31"
+                      value={dayOfMonth}
+                      onChange={(e) => setDayOfMonth(parseInt(e.target.value) || 1)}
+                    />
+                  </div>
+                )}
+
+                <div>
+                  <Label>End Condition</Label>
+                  <RadioGroup value={endCondition} onValueChange={(value: any) => setEndCondition(value)}>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="never" id="never" />
+                      <Label htmlFor="never" className="cursor-pointer">Never</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="on_date" id="on_date" />
+                      <Label htmlFor="on_date" className="cursor-pointer">On date</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="after_occurrences" id="after_occurrences" />
+                      <Label htmlFor="after_occurrences" className="cursor-pointer">After occurrences</Label>
+                    </div>
+                  </RadioGroup>
+                </div>
+
+                {endCondition === 'on_date' && (
+                  <div>
+                    <Label htmlFor="endDate">End Date</Label>
+                    <Input
+                      id="endDate"
+                      type="date"
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                    />
+                  </div>
+                )}
+
+                {endCondition === 'after_occurrences' && (
+                  <div>
+                    <Label htmlFor="maxOccurrences">Number of Occurrences</Label>
+                    <Input
+                      id="maxOccurrences"
+                      type="number"
+                      min="1"
+                      value={maxOccurrences}
+                      onChange={(e) => setMaxOccurrences(parseInt(e.target.value) || 10)}
+                    />
+                  </div>
+                )}
+              </div>
+            )}
           </div>
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>

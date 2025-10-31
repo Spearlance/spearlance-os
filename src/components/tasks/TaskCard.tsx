@@ -1,7 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Calendar, Paperclip, MessageSquare, CheckCircle2 } from "lucide-react";
+import { Calendar, Paperclip, MessageSquare, CheckCircle2, Repeat, Link } from "lucide-react";
 import { format } from "date-fns";
 
 interface TaskCardProps {
@@ -13,6 +13,8 @@ interface TaskCardProps {
     status: string;
     due_date?: string;
     color?: string;
+    is_recurring?: boolean;
+    is_recurring_instance?: boolean;
     assignees?: Array<{ id: string; name: string; avatar_url?: string }>;
     tags?: Array<{ id: string; name: string; color: string }>;
     subtask_count?: number;
@@ -43,13 +45,6 @@ const getInitials = (name: string) => {
 export const TaskCard = ({ task, onClick, isDragging }: TaskCardProps) => {
   const borderColor = task.color || priorityColors[task.priority as keyof typeof priorityColors] || "#6B7280";
 
-  // Debug logging
-  console.log("TaskCard rendering:", { 
-    title: task.title, 
-    assigneeCount: task.assignees?.length || 0,
-    assignees: task.assignees 
-  });
-
   return (
     <Card
       className="p-4 cursor-pointer hover:shadow-md transition-shadow border-l-4"
@@ -58,20 +53,32 @@ export const TaskCard = ({ task, onClick, isDragging }: TaskCardProps) => {
     >
       {/* Header */}
       <div className="flex items-start justify-between gap-2 mb-2">
-        <div className="flex items-center gap-2 flex-1">
-          <h4 className="font-medium text-sm">{task.title}</h4>
+        <div className="flex-1 min-w-0">
+          <h3 className="font-semibold text-sm truncate">{task.title}</h3>
+          {task.description && (
+            <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
+              {task.description}
+            </p>
+          )}
         </div>
-        {task.priority === 'urgent' && (
-          <Badge variant="destructive" className="text-xs shrink-0">
-            !
-          </Badge>
-        )}
+        {/* Recurring indicator in top-right */}
+        <div className="flex-shrink-0 flex items-center gap-1">
+          {task.priority === 'urgent' && (
+            <Badge variant="destructive" className="text-xs">
+              !
+            </Badge>
+          )}
+          {task.is_recurring && (
+            <Repeat className="h-4 w-4 text-primary" />
+          )}
+          {task.is_recurring_instance && (
+            <div className="relative">
+              <Repeat className="h-4 w-4 text-muted-foreground" />
+              <Link className="h-2 w-2 text-muted-foreground absolute -bottom-0.5 -right-0.5" />
+            </div>
+          )}
+        </div>
       </div>
-
-      {/* Description */}
-      {task.description && (
-        <p className="text-xs text-muted-foreground mb-3 line-clamp-2">{task.description}</p>
-      )}
 
       {/* Tags */}
       {task.tags && task.tags.length > 0 && (

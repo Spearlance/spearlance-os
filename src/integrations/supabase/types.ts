@@ -3365,6 +3365,48 @@ export type Database = {
           },
         ]
       }
+      task_recurrence_history: {
+        Row: {
+          created_at: string | null
+          generated_at: string | null
+          generated_task_id: string
+          id: string
+          recurring_task_id: string
+          scheduled_for: string
+        }
+        Insert: {
+          created_at?: string | null
+          generated_at?: string | null
+          generated_task_id: string
+          id?: string
+          recurring_task_id: string
+          scheduled_for: string
+        }
+        Update: {
+          created_at?: string | null
+          generated_at?: string | null
+          generated_task_id?: string
+          id?: string
+          recurring_task_id?: string
+          scheduled_for?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_recurrence_history_generated_task_id_fkey"
+            columns: ["generated_task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_recurrence_history_recurring_task_id_fkey"
+            columns: ["recurring_task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       task_tag_links: {
         Row: {
           tag_id: string
@@ -3438,9 +3480,15 @@ export type Database = {
           description: string | null
           due_date: string | null
           id: string
+          is_recurring: boolean | null
+          is_recurring_instance: boolean | null
           linked_channel_id: string | null
+          next_occurrence_date: string | null
+          original_due_date: string | null
+          parent_recurring_task_id: string | null
           parent_task_id: string | null
           priority: Database["public"]["Enums"]["task_priority"] | null
+          recurrence_pattern: Json | null
           related_asset_ids: string[] | null
           related_meeting_ids: string[] | null
           status: Database["public"]["Enums"]["task_status"] | null
@@ -3458,9 +3506,15 @@ export type Database = {
           description?: string | null
           due_date?: string | null
           id?: string
+          is_recurring?: boolean | null
+          is_recurring_instance?: boolean | null
           linked_channel_id?: string | null
+          next_occurrence_date?: string | null
+          original_due_date?: string | null
+          parent_recurring_task_id?: string | null
           parent_task_id?: string | null
           priority?: Database["public"]["Enums"]["task_priority"] | null
+          recurrence_pattern?: Json | null
           related_asset_ids?: string[] | null
           related_meeting_ids?: string[] | null
           status?: Database["public"]["Enums"]["task_status"] | null
@@ -3478,9 +3532,15 @@ export type Database = {
           description?: string | null
           due_date?: string | null
           id?: string
+          is_recurring?: boolean | null
+          is_recurring_instance?: boolean | null
           linked_channel_id?: string | null
+          next_occurrence_date?: string | null
+          original_due_date?: string | null
+          parent_recurring_task_id?: string | null
           parent_task_id?: string | null
           priority?: Database["public"]["Enums"]["task_priority"] | null
+          recurrence_pattern?: Json | null
           related_asset_ids?: string[] | null
           related_meeting_ids?: string[] | null
           status?: Database["public"]["Enums"]["task_status"] | null
@@ -3515,6 +3575,13 @@ export type Database = {
             columns: ["linked_channel_id"]
             isOneToOne: false
             referencedRelation: "marketing_flow_channels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_parent_recurring_task_id_fkey"
+            columns: ["parent_recurring_task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
             referencedColumns: ["id"]
           },
           {

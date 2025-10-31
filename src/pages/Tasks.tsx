@@ -12,6 +12,7 @@ import { TaskCard } from "@/components/tasks/TaskCard";
 import { TaskViewSelector } from "@/components/tasks/TaskViewSelector";
 import { TaskListView } from "@/components/tasks/TaskListView";
 import { TaskTableView } from "@/components/tasks/TaskTableView";
+import { WeeklyPlanView } from "@/components/tasks/WeeklyPlanView";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -54,7 +55,7 @@ export default function Tasks() {
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
   const [marketingChannels, setMarketingChannels] = useState<Array<{id: string, name: string}>>([]);
   const [currentUserId, setCurrentUserId] = useState<string>('');
-  const [currentView, setCurrentView] = useState<"kanban" | "list" | "table">("kanban");
+  const [currentView, setCurrentView] = useState<"kanban" | "list" | "table" | "weekly">("kanban");
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [activeTab, setActiveTab] = useState("board");
   const [doneColumnExpanded, setDoneColumnExpanded] = useState(() => {
@@ -682,6 +683,13 @@ export default function Tasks() {
               taskColumns={taskColumns}
               onTaskClick={handleTaskClick}
               onCreateTask={() => setShowCreateDialog(true)}
+            />
+          )}
+
+          {currentView === "weekly" && (
+            <WeeklyPlanView
+              onTaskClick={handleTaskClick}
+              onCreateTask={(date) => setShowCreateDialog(true)}
             />
           )}
         </TabsContent>
