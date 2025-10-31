@@ -34,7 +34,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Building2, Globe, BarChart3, FolderOpen, Palette, Calendar, Clock, LinkIcon, Copy } from "lucide-react";
+import { Loader2, Building2, Globe, Calendar, Clock, Copy, CreditCard } from "lucide-react";
 import { ClientLogoUpload } from "./ClientLogoUpload";
 import { format } from "date-fns";
 
@@ -43,31 +43,11 @@ const clientEditSchema = z.object({
   status: z.enum(['active', 'archived', 'paused']),
   billing_method: z.enum(['stripe', 'direct', 'free']),
   subscription_status: z.string().optional(),
-  booking_permissions: z.string().optional(),
-  website_url: z.string().url("Invalid URL").optional().or(z.literal('')),
-  oviond_url: z.string().url("Invalid URL").optional().or(z.literal('')),
-  drive_folder_url: z.string().url("Invalid URL").optional().or(z.literal('')),
-  canva_folder_url: z.string().url("Invalid URL").optional().or(z.literal('')),
-  domain: z.string().optional(),
+  stripe_customer_id: z.string().optional(),
+  stripe_subscription_id: z.string().optional(),
   logo_url: z.string().optional(),
   site_id: z.string().optional(),
   website_unlocked: z.boolean().optional(),
-}).refine((data) => {
-  // Validate domain matches website URL hostname
-  if (data.website_url && data.domain) {
-    try {
-      const url = new URL(data.website_url);
-      const websiteDomain = url.hostname.replace('www.', '');
-      const providedDomain = data.domain.replace('www.', '').toLowerCase();
-      return websiteDomain.toLowerCase() === providedDomain;
-    } catch {
-      return true; // If URL parsing fails, let the URL validation handle it
-    }
-  }
-  return true;
-}, {
-  message: "Domain doesn't match website URL hostname",
-  path: ["domain"],
 });
 
 type ClientEditForm = z.infer<typeof clientEditSchema>;
@@ -79,14 +59,10 @@ interface EditClientDialogProps {
     status: 'active' | 'archived' | 'paused';
     billing_method?: 'stripe' | 'direct' | 'free';
     subscription_status?: string;
-    booking_permissions?: string;
-    website_url?: string;
-    oviond_url?: string;
-    drive_folder_url?: string;
-    canva_folder_url?: string;
-    domain?: string;
     logo_url?: string;
     stripe_customer_id?: string;
+    stripe_subscription_id?: string;
+    plan_name?: string;
     trial_end_date?: string;
     created_at?: string;
     updated_at?: string;
@@ -106,6 +82,8 @@ export function EditClientDialog({ client, assignedUsers, onClientUpdated }: Edi
     assignedUsers.map(u => u.id)
   );
   const [allUsers, setAllUsers] = useState<Array<{ id: string; name: string; role: string }>>([]);
+  const [fetchingPlanName, setFetchingPlanName] = useState(false);
+  const [localPlanName, setLocalPlanName] = useState<string | null>(client.plan_name || null);
 
   const form = useForm<ClientEditForm>({
     resolver: zodResolver(clientEditSchema),
@@ -114,12 +92,8 @@ export function EditClientDialog({ client, assignedUsers, onClientUpdated }: Edi
       status: client.status || "active",
       billing_method: client.billing_method || "stripe",
       subscription_status: client.subscription_status || "",
-      booking_permissions: client.booking_permissions || "self_book",
-      website_url: client.website_url || "",
-      oviond_url: client.oviond_url || "",
-      drive_folder_url: client.drive_folder_url || "",
-      canva_folder_url: client.canva_folder_url || "",
-      domain: client.domain || "",
+      stripe_customer_id: client.stripe_customer_id || "",
+      stripe_subscription_id: client.stripe_subscription_id || "",
       logo_url: client.logo_url || "",
       site_id: client.site_id || "",
       website_unlocked: client.website_unlocked || false,
@@ -143,40 +117,75 @@ export function EditClientDialog({ client, assignedUsers, onClientUpdated }: Edi
     setSelectedUserIds(assignedUsers.map(u => u.id));
   };
 
-  const handleAutoFillDomain = () => {
-    const websiteUrl = form.getValues("website_url");
-    if (websiteUrl) {
-      try {
-        const url = new URL(websiteUrl);
-        const domain = url.hostname.replace('www.', '');
-        form.setValue("domain", domain);
-        toast({
-          title: "Domain auto-filled",
-          description: `Set to: ${domain}`,
-        });
-      } catch {
-        toast({
-          title: "Invalid URL",
-          description: "Cannot extract domain from website URL",
-          variant: "destructive",
-        });
-      }
+  const validateStripeIds = (customerId: string, subscriptionId: string) => {
+    const errors: string[] = [];
+    if (customerId && !customerId.startsWith('cus_')) {
+      errors.push('Customer ID must start with "cus_"');
     }
+    if (subscriptionId && !subscriptionId.startsWith('sub_')) {
+      errors.push('Subscription ID must start with "sub_"');
+    }
+    return errors;
+  };
+
+  const fetchStripePlanName = async (subscriptionId: string) => {
+    if (!subscriptionId) return null;
+    
+    setFetchingPlanName(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        console.error('No active session');
+        return null;
+      }
+
+      const { data, error } = await supabase.functions.invoke('get-stripe-subscription-name', {
+        body: { 
+          subscription_id: subscriptionId,
+          client_id: client.id
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.success && data?.plan_name) {
+        setLocalPlanName(data.plan_name);
+        return data.plan_name;
+      }
+    } catch (error: any) {
+      console.error('Error fetching plan name:', error);
+    } finally {
+      setFetchingPlanName(false);
+    }
+    return null;
   };
 
   const onSubmit = async (data: ClientEditForm) => {
     setIsLoading(true);
     try {
+      // Validate Stripe IDs if provided
+      if (data.stripe_customer_id || data.stripe_subscription_id) {
+        const validationErrors = validateStripeIds(
+          data.stripe_customer_id || '',
+          data.stripe_subscription_id || ''
+        );
+        if (validationErrors.length > 0) {
+          toast({
+            title: "Invalid Stripe IDs",
+            description: validationErrors.join('. '),
+            variant: "destructive",
+          });
+          setIsLoading(false);
+          return;
+        }
+      }
+
       const updateData: any = {
         name: data.name,
         status: data.status,
         billing_method: data.billing_method,
-        booking_permissions: data.booking_permissions || null,
-        website_url: data.website_url || null,
-        oviond_url: data.oviond_url || null,
-        drive_folder_url: data.drive_folder_url || null,
-        canva_folder_url: data.canva_folder_url || null,
-        domain: data.domain || null,
+        stripe_customer_id: data.stripe_customer_id || null,
+        stripe_subscription_id: data.stripe_subscription_id || null,
         logo_url: data.logo_url || null,
         site_id: data.site_id || null,
         website_unlocked: data.website_unlocked || false,
@@ -241,6 +250,11 @@ export function EditClientDialog({ client, assignedUsers, onClientUpdated }: Edi
         }
       }
 
+      // Fetch plan name if subscription ID was provided
+      if (data.stripe_subscription_id && data.stripe_subscription_id !== client.stripe_subscription_id) {
+        await fetchStripePlanName(data.stripe_subscription_id);
+      }
+
       toast({
         title: "Client updated successfully",
         description: `${data.name} has been updated.`,
@@ -269,64 +283,13 @@ export function EditClientDialog({ client, assignedUsers, onClientUpdated }: Edi
       </DialogTrigger>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <div className="flex items-start justify-between">
-            <div>
-              <DialogTitle className="flex items-center gap-2">
-                <Building2 className="h-5 w-5" />
-                Edit Client Information
-              </DialogTitle>
-              <DialogDescription>
-                Update client details and configuration
-              </DialogDescription>
-            </div>
-            {/* Quick Links */}
-            <div className="flex gap-1">
-              {client.website_url && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => window.open(client.website_url, "_blank", "noopener,noreferrer")}
-                  title={client.website_url}
-                >
-                  <Globe className="h-4 w-4" />
-                </Button>
-              )}
-              {client.oviond_url && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => window.open(client.oviond_url, "_blank", "noopener,noreferrer")}
-                  title="Oviond Dashboard"
-                >
-                  <BarChart3 className="h-4 w-4" />
-                </Button>
-              )}
-              {client.drive_folder_url && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => window.open(client.drive_folder_url, "_blank", "noopener,noreferrer")}
-                  title="Google Drive Folder"
-                >
-                  <FolderOpen className="h-4 w-4" />
-                </Button>
-              )}
-              {client.canva_folder_url && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => window.open(client.canva_folder_url, "_blank", "noopener,noreferrer")}
-                  title="Canva Folder"
-                >
-                  <Palette className="h-4 w-4" />
-                </Button>
-              )}
-            </div>
-          </div>
+          <DialogTitle className="flex items-center gap-2">
+            <Building2 className="h-5 w-5" />
+            Edit Client Information
+          </DialogTitle>
+          <DialogDescription>
+            Update client details and configuration
+          </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
@@ -430,149 +393,87 @@ export function EditClientDialog({ client, assignedUsers, onClientUpdated }: Edi
               )}
             />
 
-            {/* Show Stripe info only for Stripe billing */}
-            {form.watch("billing_method") === "stripe" && (
-              <div className="space-y-2 p-3 border rounded-md bg-muted/50">
-                <div className="text-sm font-medium">Stripe Billing Information</div>
-                <div className="space-y-1 text-sm">
-                  {client.stripe_customer_id && (
-                    <div className="flex items-center gap-2">
-                      <span className="text-muted-foreground">Customer ID:</span>
-                      <Badge variant="secondary" className="font-mono text-xs">
-                        {client.stripe_customer_id}
-                      </Badge>
-                    </div>
-                  )}
-                  {client.subscription_status && (
+            {/* Stripe Customer Linking Section */}
+            <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
+              <div>
+                <h3 className="text-sm font-semibold flex items-center gap-2">
+                  <CreditCard className="h-4 w-4" />
+                  Link Existing Stripe Customer
+                </h3>
+                <p className="text-xs text-muted-foreground mt-1">
+                  For existing Stripe customers: enter their IDs to link the account
+                </p>
+              </div>
+
+              <FormField
+                control={form.control}
+                name="stripe_customer_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Stripe Customer ID</FormLabel>
+                    <FormControl>
+                      <Input placeholder="cus_xxxxxxxxx" {...field} />
+                    </FormControl>
+                    <FormDescription className="text-xs">
+                      Must start with "cus_"
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="stripe_subscription_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Stripe Subscription ID</FormLabel>
+                    <FormControl>
+                      <Input placeholder="sub_xxxxxxxxx" {...field} />
+                    </FormControl>
+                    <FormDescription className="text-xs">
+                      Must start with "sub_"
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {fetchingPlanName && (
+                <div className="text-xs text-muted-foreground flex items-center gap-2">
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  Fetching plan details from Stripe...
+                </div>
+              )}
+
+              {localPlanName && (
+                <div className="space-y-1 p-2 border rounded-md bg-background">
+                  <div className="text-xs font-medium text-muted-foreground">Detected Plan</div>
+                  <div className="text-sm font-semibold">{localPlanName}</div>
+                </div>
+              )}
+
+              {/* Show existing Stripe info if available */}
+              {form.watch("billing_method") === "stripe" && client.subscription_status && (
+                <div className="space-y-2 p-3 border rounded-md bg-muted/50">
+                  <div className="text-sm font-medium">Current Stripe Status</div>
+                  <div className="space-y-1 text-sm">
                     <div className="flex items-center gap-2">
                       <span className="text-muted-foreground">Status:</span>
                       <Badge variant={client.subscription_status === 'active' ? 'default' : 'secondary'}>
                         {client.subscription_status}
                       </Badge>
                     </div>
-                  )}
-                  {client.trial_end_date && (
-                    <div className="flex items-center gap-2">
-                      <span className="text-muted-foreground">Trial Ends:</span>
-                      <span>{format(new Date(client.trial_end_date), 'PPP')}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            <FormField
-              control={form.control}
-              name="booking_permissions"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Booking Permissions</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select booking permissions" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="self_book">Self Book</SelectItem>
-                      <SelectItem value="request_only">Request Only</SelectItem>
-                      <SelectItem value="admin_only">Admin Only</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormDescription>
-                    Controls how meetings can be scheduled for this client
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="website_url"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Website URL</FormLabel>
-                  <FormControl>
-                    <Input placeholder="https://example.com" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="oviond_url"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Oviond URL</FormLabel>
-                  <FormControl>
-                    <Input placeholder="https://app.oviond.com/..." {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="drive_folder_url"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Google Drive Folder URL</FormLabel>
-                  <FormControl>
-                    <Input placeholder="https://drive.google.com/..." {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="canva_folder_url"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Canva Folder URL</FormLabel>
-                  <FormControl>
-                    <Input placeholder="https://canva.com/..." {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="domain"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="flex items-center gap-2">
-                    <LinkIcon className="h-4 w-4" />
-                    Domain
-                  </FormLabel>
-                  <div className="flex gap-2">
-                    <FormControl>
-                      <Input placeholder="example.com" {...field} />
-                    </FormControl>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={handleAutoFillDomain}
-                      disabled={!form.watch("website_url")}
-                    >
-                      Auto-fill
-                    </Button>
+                    {client.trial_end_date && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-muted-foreground">Trial Ends:</span>
+                        <span>{format(new Date(client.trial_end_date), 'PPP')}</span>
+                      </div>
+                    )}
                   </div>
-                  <FormDescription className="text-xs">
-                    Should match your website URL hostname
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
+                </div>
               )}
-            />
+            </div>
 
             <Separator />
 
