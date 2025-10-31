@@ -55,6 +55,13 @@ export function BillingTab({ client, isAdmin = false, onUpdate }: BillingTabProp
         console.log('Auto-fetching missing plan name for subscription:', client.stripe_subscription_id);
         setFetchingPlanName(true);
         try {
+          // Ensure we have a valid session before making the request
+          const { data: { session } } = await supabase.auth.getSession();
+          if (!session) {
+            console.error('No active session found');
+            return;
+          }
+
           const { data, error } = await supabase.functions.invoke('get-stripe-subscription-name', {
             body: { 
               subscription_id: client.stripe_subscription_id,
@@ -144,6 +151,15 @@ export function BillingTab({ client, isAdmin = false, onUpdate }: BillingTabProp
       if (stripeSubscriptionId) {
         setFetchingPlanName(true);
         try {
+          // Ensure we have a valid session before making the request
+          const { data: { session } } = await supabase.auth.getSession();
+          if (!session) {
+            console.error('No active session found');
+            setFetchingPlanName(false);
+            onUpdate?.();
+            return;
+          }
+
           const { data, error: planError } = await supabase.functions.invoke('get-stripe-subscription-name', {
             body: { 
               subscription_id: stripeSubscriptionId,

@@ -167,3 +167,6 @@ verify_jwt = true
 
 [functions.backfill-asset-embeddings]
 verify_jwt = true
+
+[functions.get-stripe-subscription-name]
+verify_jwt = true
