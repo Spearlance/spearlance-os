@@ -206,7 +206,7 @@ export function AssetDrawer({ asset, open, onOpenChange, onUpdate }: AssetDrawer
           <TabsContent value="preview" className="mt-0 flex-1 flex flex-col overflow-hidden">
             <ScrollArea className="flex-1">
               {asset.preview_url ? (
-                <div className="relative w-full aspect-video bg-muted rounded-lg overflow-hidden mb-4">
+                <div className="relative w-full max-h-[500px] min-h-[200px] bg-muted rounded-lg overflow-hidden mb-4 flex items-center justify-center">
                   <img
                     src={asset.preview_url}
                     alt={title}
@@ -224,7 +224,7 @@ export function AssetDrawer({ asset, open, onOpenChange, onUpdate }: AssetDrawer
                   />
                 </div>
               ) : (
-                <div className="relative w-full aspect-video bg-muted rounded-lg flex items-center justify-center mb-4">
+                <div className="relative w-full max-h-[500px] min-h-[200px] bg-muted rounded-lg flex items-center justify-center mb-4">
                   {getTypeIcon(asset.type)}
                   <span className="ml-2 text-muted-foreground">No preview available</span>
                 </div>
