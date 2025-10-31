@@ -197,7 +197,7 @@ export function AssetDrawer({ asset, open, onOpenChange, onUpdate }: AssetDrawer
           </div>
         </SheetHeader>
 
-        <Tabs defaultValue="preview" className="mt-6 flex-1 flex flex-col overflow-hidden">
+        <Tabs defaultValue="preview" className="mt-6 flex-1 flex flex-col overflow-hidden w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="preview">Preview</TabsTrigger>
             <TabsTrigger value="details">Details</TabsTrigger>
