@@ -7,12 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { EditPostDialog } from "./EditPostDialog";
+import { PostManagementDrawer } from "./PostManagementDrawer";
 import { useToast } from "@/hooks/use-toast";
-import { CalendarIcon, MoreVertical, Search, Grid3x3, List } from "lucide-react";
+import { Search, Grid3x3, List } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 
@@ -24,9 +21,7 @@ export function PostsList() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const [editingPost, setEditingPost] = useState<any | null>(null);
-  const [schedulingPost, setSchedulingPost] = useState<any | null>(null);
-  const [scheduleDate, setScheduleDate] = useState<Date | undefined>(undefined);
+  const [selectedPost, setSelectedPost] = useState<any | null>(null);
 
   const { data: posts, isLoading } = useQuery({
     queryKey: ['social-posts', selectedClient?.id, statusFilter, searchQuery],
@@ -53,66 +48,6 @@ export function PostsList() {
     enabled: !!selectedClient?.id,
   });
 
-  const scheduleMutation = useMutation({
-    mutationFn: async ({ postId, date }: { postId: string; date: Date }) => {
-      const { error } = await supabase
-        .from('social_media_posts')
-        .update({
-          scheduled_date: date.toISOString(),
-          status: 'scheduled',
-        })
-        .eq('id', postId);
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['social-posts'] });
-      toast({
-        title: "Post scheduled",
-        description: "Your post has been scheduled successfully.",
-      });
-      setSchedulingPost(null);
-      setScheduleDate(undefined);
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error scheduling post",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  const duplicateMutation = useMutation({
-    mutationFn: async (post: any) => {
-      const { error } = await supabase
-        .from('social_media_posts')
-        .insert([{
-          client_id: post.client_id,
-          caption_text: post.caption_text + " (Copy)",
-          image_url: post.image_url,
-          hashtags: post.hashtags,
-          status: 'draft',
-          topic_category: post.topic_category || 'manual',
-        }]);
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['social-posts'] });
-      toast({
-        title: "Post duplicated",
-        description: "A copy has been created as a draft.",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error duplicating post",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, "default" | "secondary" | "outline"> = {
@@ -210,31 +145,9 @@ export function PostsList() {
                     />
                   )}
                   <div className="p-4 space-y-3">
-                    <div className="flex items-start justify-between gap-2">
-                      <p className="text-sm line-clamp-2 flex-1">
-                        {post.caption_text || "No caption"}
-                      </p>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => setEditingPost(post)}>
-                            Edit
-                          </DropdownMenuItem>
-                          {post.status === 'draft' && (
-                            <DropdownMenuItem onClick={() => setSchedulingPost(post)}>
-                              Schedule
-                            </DropdownMenuItem>
-                          )}
-                          <DropdownMenuItem onClick={() => duplicateMutation.mutate(post)}>
-                            Duplicate
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
+                    <p className="text-sm line-clamp-2">
+                      {post.caption_text || "No caption"}
+                    </p>
                     
                     <div className="flex items-center justify-between">
                       {getStatusBadge(post.status)}
@@ -245,15 +158,14 @@ export function PostsList() {
                       )}
                     </div>
 
-                    {post.status === 'draft' && (
-                      <Button
-                        size="sm"
-                        className="w-full"
-                        onClick={() => setSchedulingPost(post)}
-                      >
-                        Schedule This
-                      </Button>
-                    )}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => setSelectedPost(post)}
+                    >
+                      Details
+                    </Button>
                   </div>
                 </div>
               ) : (
@@ -276,26 +188,13 @@ export function PostsList() {
                       )}
                     </div>
                   </div>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon">
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => setEditingPost(post)}>
-                        Edit
-                      </DropdownMenuItem>
-                      {post.status === 'draft' && (
-                        <DropdownMenuItem onClick={() => setSchedulingPost(post)}>
-                          Schedule
-                        </DropdownMenuItem>
-                      )}
-                      <DropdownMenuItem onClick={() => duplicateMutation.mutate(post)}>
-                        Duplicate
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setSelectedPost(post)}
+                  >
+                    Details
+                  </Button>
                 </>
               )}
             </Card>
@@ -303,58 +202,13 @@ export function PostsList() {
         </div>
       )}
 
-      {/* Edit Dialog */}
-      {editingPost && (
-        <EditPostDialog
-          post={editingPost}
-          open={!!editingPost}
-          onOpenChange={(open) => !open && setEditingPost(null)}
-        />
-      )}
-
-      {/* Schedule Dialog */}
-      {schedulingPost && (
-        <Popover
-          open={!!schedulingPost}
-          onOpenChange={(open) => !open && setSchedulingPost(null)}
-        >
-          <PopoverContent className="w-auto p-0" align="center">
-            <div className="p-4 space-y-4">
-              <h4 className="font-semibold">Schedule Post</h4>
-              <Calendar
-                mode="single"
-                selected={scheduleDate}
-                onSelect={setScheduleDate}
-                initialFocus
-                className="pointer-events-auto"
-              />
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => setSchedulingPost(null)}
-                  className="flex-1"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={() => {
-                    if (scheduleDate) {
-                      scheduleMutation.mutate({
-                        postId: schedulingPost.id,
-                        date: scheduleDate,
-                      });
-                    }
-                  }}
-                  disabled={!scheduleDate || scheduleMutation.isPending}
-                  className="flex-1"
-                >
-                  {scheduleMutation.isPending ? "Scheduling..." : "Schedule"}
-                </Button>
-              </div>
-            </div>
-          </PopoverContent>
-        </Popover>
-      )}
+      {/* Post Management Drawer */}
+      <PostManagementDrawer
+        post={selectedPost}
+        open={!!selectedPost}
+        onOpenChange={(open) => !open && setSelectedPost(null)}
+        onRefresh={() => queryClient.invalidateQueries({ queryKey: ['social-posts'] })}
+      />
     </div>
   );
 }
