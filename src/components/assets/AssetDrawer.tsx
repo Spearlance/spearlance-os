@@ -177,7 +177,7 @@ export function AssetDrawer({ asset, open, onOpenChange, onUpdate }: AssetDrawer
           <SheetHeader className="shrink-0 px-6 pt-6">
             <div className="flex items-center justify-between">
               <SheetTitle>Asset Details</SheetTitle>
-              <div className="flex gap-2">
+              <div className="flex gap-2 mr-8">
                 {fileUrl && (
                   <>
                     <Button variant="outline" size="sm" onClick={handleDownload}>
