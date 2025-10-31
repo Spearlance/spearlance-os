@@ -98,15 +98,17 @@ export function AssetRecommendationDialog({
   };
 
   const getSimilarityColor = (similarity: number) => {
-    if (similarity >= 0.8) return "text-green-600";
-    if (similarity >= 0.6) return "text-yellow-600";
-    return "text-orange-600";
+    if (similarity >= 0.50) return "text-green-600";
+    if (similarity >= 0.35) return "text-yellow-600";
+    if (similarity >= 0.20) return "text-orange-600";
+    return "text-gray-500";
   };
 
   const getSimilarityLabel = (similarity: number) => {
-    if (similarity >= 0.8) return "Excellent Match";
-    if (similarity >= 0.6) return "Good Match";
-    return "Fair Match";
+    if (similarity >= 0.50) return "Excellent Match";
+    if (similarity >= 0.35) return "Good Match";
+    if (similarity >= 0.20) return "Fair Match";
+    return "Possible Match";
   };
 
   return (
@@ -135,7 +137,7 @@ export function AssetRecommendationDialog({
             {error === 'no_results' && (
               <>
                 <p className="text-center text-muted-foreground">
-                  No matching assets found. Try uploading more images to your asset library!
+                  No assets found in your library yet. Upload some images to get AI-powered recommendations!
                 </p>
                 <Button onClick={() => onOpenChange(false)}>
                   Close

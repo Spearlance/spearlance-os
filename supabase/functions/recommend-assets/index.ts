@@ -77,8 +77,8 @@ serve(async (req) => {
       {
         query_embedding: JSON.stringify(captionEmbedding),
         match_client_id: client_id,
-        match_threshold: 0.5,
-        match_count: 3
+        match_threshold: 0.15,
+        match_count: 5
       }
     );
 
