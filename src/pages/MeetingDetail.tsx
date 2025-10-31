@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { CheckSquare, Edit, Save, X } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import ReactMarkdown from "react-markdown";
 
 interface Meeting {
   id: string;
@@ -251,8 +252,8 @@ export default function MeetingDetail() {
                   className="min-h-[200px]"
                 />
               ) : (
-                <div className="prose prose-sm max-w-none whitespace-pre-wrap">
-                  {meeting.summary}
+                <div className="prose prose-sm max-w-none">
+                  <ReactMarkdown>{meeting.summary}</ReactMarkdown>
                 </div>
               )}
             </CardContent>
