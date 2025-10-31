@@ -34,6 +34,7 @@ export const PostSaver = ({ postData, onBack, onComplete }: PostSaverProps) => {
       const { error } = await supabase.from('social_media_posts').insert([{
         client_id: selectedClient?.id,
         topic_category: postData.topic_category,
+        post_idea_json: postData.selected_idea,
         caption_text: postData.caption_text,
         caption_tone: postData.caption_tone,
         hashtags: postData.hashtags,

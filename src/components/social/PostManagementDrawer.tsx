@@ -31,8 +31,10 @@ import {
   Twitter,
   Video,
   Loader2,
+  FolderOpen,
 } from "lucide-react";
 import { format } from "date-fns";
+import { AssetRecommendationDialog } from "./AssetRecommendationDialog";
 
 interface Post {
   id: string;
@@ -108,6 +110,7 @@ export const PostManagementDrawer = ({
   const [isGeneratingTopicIdeas, setIsGeneratingTopicIdeas] = useState(false);
   const [generatedTopicIdeas, setGeneratedTopicIdeas] = useState<any[]>([]);
   const [connectedPlatforms, setConnectedPlatforms] = useState<Set<string>>(new Set());
+  const [showAssetDialog, setShowAssetDialog] = useState(false);
 
   useEffect(() => {
     if (post) {
@@ -835,6 +838,14 @@ export const PostManagementDrawer = ({
                         </>
                       )}
                     </Button>
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => setShowAssetDialog(true)}
+                    >
+                      <FolderOpen className="h-3 w-3 mr-2" />
+                      Choose from Assets
+                    </Button>
                     <Button size="sm" variant="outline">
                       <Upload className="h-3 w-3 mr-2" />
                       Upload
@@ -1073,6 +1084,42 @@ export const PostManagementDrawer = ({
           </ScrollArea>
         </Tabs>
       </SheetContent>
+
+      <AssetRecommendationDialog
+        open={showAssetDialog}
+        onOpenChange={setShowAssetDialog}
+        caption={caption}
+        clientId={selectedClient?.id}
+        onSelectAsset={async (imageUrl, source) => {
+          if (!post) return;
+          
+          try {
+            const { error } = await supabase
+              .from('social_media_posts')
+              .update({
+                image_url: imageUrl,
+                image_source: source,
+              })
+              .eq('id', post.id);
+
+            if (error) throw error;
+
+            toast({
+              title: "Asset Applied",
+              description: "Image updated from your brand assets.",
+            });
+            
+            setShowAssetDialog(false);
+            onRefresh();
+          } catch (error: any) {
+            toast({
+              title: "Update Failed",
+              description: error.message,
+              variant: "destructive",
+            });
+          }
+        }}
+      />
     </Sheet>
   );
 };
