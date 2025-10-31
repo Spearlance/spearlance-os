@@ -6,6 +6,7 @@ import { MonthlyCalendarGrid } from "@/components/social/MonthlyCalendarGrid";
 import { WeeklyCalendarView } from "@/components/social/WeeklyCalendarView";
 import { CalendarViewSelector } from "@/components/social/CalendarViewSelector";
 import { PostCreatorSheet } from "@/components/social/PostCreatorSheet";
+import { PostsList } from "@/components/social/PostsList";
 import { StrategyForm } from "@/components/social/StrategyForm";
 import { useClient } from "@/contexts/ClientContext";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -29,7 +30,7 @@ const SocialMedia = () => {
   const [showPostCreator, setShowPostCreator] = useState(false);
   const [generationType, setGenerationType] = useState<'all' | 'missing'>('all');
   const [viewType, setViewType] = useState<'table' | 'monthly' | 'weekly'>('table');
-  const [activeTab, setActiveTab] = useState<'planner' | 'strategy'>('planner');
+  const [activeTab, setActiveTab] = useState<'planner' | 'drafts' | 'strategy'>('planner');
 
   const currentMonth = new Date().getMonth() + 1;
   const currentYear = new Date().getFullYear();
@@ -127,6 +128,7 @@ const SocialMedia = () => {
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
         <TabsList>
           <TabsTrigger value="planner">Planner</TabsTrigger>
+          <TabsTrigger value="drafts">Drafts</TabsTrigger>
           <TabsTrigger value="strategy">Strategy</TabsTrigger>
         </TabsList>
         
@@ -240,6 +242,10 @@ const SocialMedia = () => {
               selectedYear={selectedYear}
             />
           )}
+        </TabsContent>
+        
+        <TabsContent value="drafts" className="space-y-6">
+          <PostsList />
         </TabsContent>
         
         <TabsContent value="strategy" className="space-y-6">
