@@ -181,7 +181,7 @@ export const ImageSelector = ({ caption, onComplete, onBack }: ImageSelectorProp
               className="w-full"
               onClick={() => setShowAssetRecommendations(true)}
             >
-              Show Recommendations
+              Choose from Assets
             </Button>
           </CardContent>
         </Card>

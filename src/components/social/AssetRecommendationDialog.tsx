@@ -120,7 +120,7 @@ export function AssetRecommendationDialog({
             AI-Recommended Assets
           </DialogTitle>
           <DialogDescription>
-            We've analyzed your caption and found the most relevant images from your asset library
+            Sorted by relevance - best matches first
           </DialogDescription>
         </DialogHeader>
 
