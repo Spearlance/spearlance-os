@@ -37,6 +37,7 @@ export function BillingTab({ client, isAdmin = false, onUpdate }: BillingTabProp
   const [stripeSubscriptionId, setStripeSubscriptionId] = useState(client.stripe_subscription_id || "");
   const [savingStripeIds, setSavingStripeIds] = useState(false);
   const [fetchingPlanName, setFetchingPlanName] = useState(false);
+  const [localPlanName, setLocalPlanName] = useState<string | null>(null);
   const { toast } = useToast();
   const { trialDaysRemaining, isInTrial } = useAccountType();
 
@@ -44,12 +45,13 @@ export function BillingTab({ client, isAdmin = false, onUpdate }: BillingTabProp
   useEffect(() => {
     setStripeCustomerId(client.stripe_customer_id || "");
     setStripeSubscriptionId(client.stripe_subscription_id || "");
-  }, [client.id, client.stripe_customer_id, client.stripe_subscription_id]);
+    setLocalPlanName(client.stripe_plan_name || null);
+  }, [client.id, client.stripe_customer_id, client.stripe_subscription_id, client.stripe_plan_name]);
 
   // Auto-fetch missing plan name when subscription ID exists
   useEffect(() => {
     const fetchMissingPlanName = async () => {
-      if (client.stripe_subscription_id && !client.stripe_plan_name && !fetchingPlanName) {
+      if (client.stripe_subscription_id && !client.stripe_plan_name && !localPlanName && !fetchingPlanName) {
         console.log('Auto-fetching missing plan name for subscription:', client.stripe_subscription_id);
         setFetchingPlanName(true);
         try {
@@ -62,8 +64,11 @@ export function BillingTab({ client, isAdmin = false, onUpdate }: BillingTabProp
 
           if (error) throw error;
 
-          if (data?.success) {
+          if (data?.success && data?.plan_name) {
             console.log('Successfully fetched plan name:', data.plan_name);
+            // Update local state IMMEDIATELY
+            setLocalPlanName(data.plan_name);
+            // Then refresh from database (will eventually be consistent)
             onUpdate?.();
           }
         } catch (error: any) {
@@ -75,7 +80,7 @@ export function BillingTab({ client, isAdmin = false, onUpdate }: BillingTabProp
     };
 
     fetchMissingPlanName();
-  }, [client.stripe_subscription_id, client.stripe_plan_name, client.id]);
+  }, [client.stripe_subscription_id, client.stripe_plan_name, localPlanName, client.id]);
 
   const getStatusBadgeVariant = (status?: string) => {
     switch (status) {
@@ -148,8 +153,10 @@ export function BillingTab({ client, isAdmin = false, onUpdate }: BillingTabProp
 
           if (planError) {
             console.error('Error fetching plan name after save:', planError);
-          } else if (data?.success) {
+          } else if (data?.success && data?.plan_name) {
             console.log('Successfully fetched plan name after save:', data.plan_name);
+            // Update local state IMMEDIATELY
+            setLocalPlanName(data.plan_name);
           }
         } catch (planError) {
           console.error('Error fetching plan name:', planError);
@@ -158,6 +165,7 @@ export function BillingTab({ client, isAdmin = false, onUpdate }: BillingTabProp
         }
       }
 
+      // Call onUpdate AFTER we've updated local state
       onUpdate?.();
     } catch (error: any) {
       console.error("Error saving Stripe IDs:", error);
@@ -215,8 +223,8 @@ export function BillingTab({ client, isAdmin = false, onUpdate }: BillingTabProp
                   <span className="text-muted-foreground">Loading plan details...</span>
                 ) : client.billing_method === 'direct' 
                   ? "Custom Plan"
-                  : client.stripe_plan_name
-                    ? client.stripe_plan_name
+                  : (localPlanName || client.stripe_plan_name)
+                    ? (localPlanName || client.stripe_plan_name)
                     : (client.billing_plans?.name || "No Plan")
                 }
               </p>
