@@ -198,9 +198,12 @@ export function ToolDialog({ open, onOpenChange, tool, clientId, onSave, loading
               id="credentials_notes"
               value={formData.credentials_notes}
               onChange={(e) => setFormData(prev => ({ ...prev, credentials_notes: e.target.value }))}
-              placeholder="Where login info is stored, who has access, etc."
+              placeholder="e.g., 'Stored in 1Password vault' or 'Contact Sarah for access'"
               rows={2}
             />
+            <p className="text-xs text-amber-600 dark:text-amber-500">
+              ⚠️ Security Notice: Do not store actual passwords here. This field is not encrypted. Use it only to note where credentials are stored (e.g., password manager, shared vault).
+            </p>
           </div>
 
           <div className="space-y-2">
