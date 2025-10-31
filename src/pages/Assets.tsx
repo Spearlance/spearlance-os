@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { FileText, Image, Link as LinkIcon, FileVideo, FileAudio, Upload, FolderPlus, Folder, LayoutGrid, List } from "lucide-react";
+import { FileText, Image, Link as LinkIcon, FileVideo, FileAudio, Upload, FolderPlus, Folder, LayoutGrid, List, Sparkles } from "lucide-react";
 import { AssetDrawer } from "@/components/assets/AssetDrawer";
 import { CreateAssetDialog } from "@/components/assets/CreateAssetDialog";
 import { CreateFolderDialog } from "@/components/assets/CreateFolderDialog";
@@ -55,6 +55,7 @@ export default function Assets() {
   const [breadcrumbs, setBreadcrumbs] = useState<Breadcrumb[]>([{ id: null, name: 'Root' }]);
   const [isDragging, setIsDragging] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [isBackfilling, setIsBackfilling] = useState(false);
 
   useEffect(() => {
     if (selectedClient) {
@@ -255,6 +256,43 @@ export default function Assets() {
     setDrawerOpen(true);
   };
 
+  const handleBackfillEmbeddings = async () => {
+    if (!selectedClient) return;
+    
+    setIsBackfilling(true);
+    
+    toast({
+      title: "Starting AI Analysis",
+      description: "This may take a few minutes for large libraries...",
+    });
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('backfill-asset-embeddings', {
+        body: { client_id: selectedClient.id }
+      });
+      
+      if (error) throw error;
+      
+      toast({
+        title: "AI Analysis Complete",
+        description: `Processed ${data.processed} of ${data.total} assets${data.errors ? ` (${data.errors} errors)` : ''}`,
+      });
+      
+      // Refresh assets to show updated AI descriptions
+      loadAssets();
+      
+    } catch (error: any) {
+      console.error('Backfill error:', error);
+      toast({
+        title: "Analysis Failed",
+        description: error.message || "Failed to analyze assets",
+        variant: "destructive",
+      });
+    } finally {
+      setIsBackfilling(false);
+    }
+  };
+
   const getTypeIcon = (type: string) => {
     switch (type) {
       case "image":
@@ -309,6 +347,15 @@ export default function Assets() {
               <List className="h-4 w-4" />
             </ToggleGroupItem>
           </ToggleGroup>
+          
+          <Button 
+            variant="outline"
+            onClick={handleBackfillEmbeddings}
+            disabled={isBackfilling}
+          >
+            <Sparkles className="h-4 w-4 mr-2" />
+            {isBackfilling ? "Analyzing..." : "AI Analyze All Assets"}
+          </Button>
           
           <Button onClick={() => setCreateFolderDialogOpen(true)}>
             <FolderPlus className="h-4 w-4 mr-2" />

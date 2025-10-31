@@ -4,12 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { ExternalLink, Trash2, FileText, Image as ImageIcon, Link as LinkIcon, FileVideo, FileAudio, Download, Image } from "lucide-react";
+import { ExternalLink, Trash2, FileText, Image as ImageIcon, Link as LinkIcon, FileVideo, FileAudio, Download, Image, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 interface AssetDrawerProps {
@@ -24,6 +25,7 @@ export function AssetDrawer({ asset, open, onOpenChange, onUpdate }: AssetDrawer
   const [type, setType] = useState(asset.type);
   const [fileUrl, setFileUrl] = useState(asset.file_url || "");
   const [tags, setTags] = useState(asset.tags?.join(", ") || "");
+  const [aiDescription, setAiDescription] = useState(asset.ai_description || "");
   const [relatedTasks, setRelatedTasks] = useState<any[]>([]);
   const [relatedTickets, setRelatedTickets] = useState<any[]>([]);
   const { toast } = useToast();
@@ -41,6 +43,7 @@ export function AssetDrawer({ asset, open, onOpenChange, onUpdate }: AssetDrawer
     setType(asset.type);
     setFileUrl(asset.file_url || "");
     setTags(asset.tags?.join(", ") || "");
+    setAiDescription(asset.ai_description || "");
   }, [asset]);
 
   const loadRelatedItems = async () => {
@@ -69,6 +72,7 @@ export function AssetDrawer({ asset, open, onOpenChange, onUpdate }: AssetDrawer
         type,
         file_url: fileUrl,
         tags: tags.split(",").map(t => t.trim()).filter(t => t),
+        ai_description: aiDescription,
       })
       .eq("id", asset.id);
 
@@ -282,6 +286,25 @@ export function AssetDrawer({ asset, open, onOpenChange, onUpdate }: AssetDrawer
                 onChange={(e) => setTags(e.target.value)}
                 placeholder="tag1, tag2, tag3"
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-purple-500" />
+                AI Description
+              </Label>
+              <Textarea
+                value={aiDescription}
+                onChange={(e) => setAiDescription(e.target.value)}
+                placeholder="AI-generated description will appear here after analysis..."
+                rows={4}
+                className="resize-none"
+              />
+              {asset.ai_processed_at && (
+                <p className="text-xs text-muted-foreground">
+                  Generated: {new Date(asset.ai_processed_at).toLocaleString()}
+                </p>
+              )}
             </div>
 
             <div className="text-sm text-muted-foreground pt-4 border-t">
