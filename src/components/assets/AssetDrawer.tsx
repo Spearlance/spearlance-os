@@ -205,55 +205,57 @@ export function AssetDrawer({ asset, open, onOpenChange, onUpdate }: AssetDrawer
 
           <TabsContent value="preview" className="mt-0 flex-1 flex flex-col overflow-hidden">
             <ScrollArea className="flex-1 pr-4">
-              {asset.preview_url ? (
-                <div className="relative w-full max-h-[500px] min-h-[200px] bg-muted rounded-lg overflow-hidden mb-4 flex items-center justify-center">
-                  <img
-                    src={asset.preview_url}
-                    alt={title}
-                    className="w-full h-full object-contain"
-                    onError={(e) => {
-                      e.currentTarget.style.display = 'none';
-                      if (e.currentTarget.parentElement) {
-                        e.currentTarget.parentElement.classList.add('flex', 'items-center', 'justify-center');
-                        const icon = document.createElement('div');
-                        icon.className = 'text-muted-foreground text-sm';
-                        icon.textContent = 'Image not available';
-                        e.currentTarget.parentElement.appendChild(icon);
-                      }
-                    }}
-                  />
-                </div>
-              ) : (
-                <div className="relative w-full max-h-[500px] min-h-[200px] bg-muted rounded-lg flex items-center justify-center mb-4">
-                  {getTypeIcon(asset.type)}
-                  <span className="ml-2 text-muted-foreground">No preview available</span>
-                </div>
-              )}
+              <div className="space-y-4">
+                {asset.preview_url ? (
+                  <div className="relative w-full max-h-[500px] min-h-[200px] bg-muted rounded-lg overflow-hidden mb-4 flex items-center justify-center">
+                    <img
+                      src={asset.preview_url}
+                      alt={title}
+                      className="w-full h-full object-contain"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                        if (e.currentTarget.parentElement) {
+                          e.currentTarget.parentElement.classList.add('flex', 'items-center', 'justify-center');
+                          const icon = document.createElement('div');
+                          icon.className = 'text-muted-foreground text-sm';
+                          icon.textContent = 'Image not available';
+                          e.currentTarget.parentElement.appendChild(icon);
+                        }
+                      }}
+                    />
+                  </div>
+                ) : (
+                  <div className="relative w-full max-h-[500px] min-h-[200px] bg-muted rounded-lg flex items-center justify-center mb-4">
+                    {getTypeIcon(asset.type)}
+                    <span className="ml-2 text-muted-foreground">No preview available</span>
+                  </div>
+                )}
 
-              <div className="space-y-2">
-                {fileUrl && (
-                  <Button variant="outline" onClick={handleDownload} className="w-full">
-                    <Download className="h-4 w-4 mr-2" />
-                    {asset.storage_type === 'upload' ? 'Download File' : 'Open Link'}
-                  </Button>
-                )}
-                
-                {asset.folder_id && (asset.type === 'image' || asset.type === 'video') && (
-                  <Button variant="outline" onClick={handleSetAsFolderCover} className="w-full">
-                    <Image className="h-4 w-4 mr-2" />
-                    Set as Folder Cover
-                  </Button>
-                )}
-              </div>
+                <div className="space-y-2">
+                  {fileUrl && (
+                    <Button variant="outline" onClick={handleDownload} className="w-full">
+                      <Download className="h-4 w-4 mr-2" />
+                      {asset.storage_type === 'upload' ? 'Download File' : 'Open Link'}
+                    </Button>
+                  )}
+                  
+                  {asset.folder_id && (asset.type === 'image' || asset.type === 'video') && (
+                    <Button variant="outline" onClick={handleSetAsFolderCover} className="w-full">
+                      <Image className="h-4 w-4 mr-2" />
+                      Set as Folder Cover
+                    </Button>
+                  )}
+                </div>
 
-              <div className="mt-6 text-sm text-muted-foreground space-y-1 pt-4 border-t">
-                <div>Created: {new Date(asset.created_at).toLocaleString()}</div>
-                {asset.ai_processed_at && (
-                  <div>AI Analyzed: {new Date(asset.ai_processed_at).toLocaleString()}</div>
-                )}
-                {asset.file_url && asset.storage_type === 'upload' && (
-                  <div className="text-xs truncate">Path: {asset.file_url}</div>
-                )}
+                <div className="mt-6 text-sm text-muted-foreground space-y-1 pt-4 border-t">
+                  <div>Created: {new Date(asset.created_at).toLocaleString()}</div>
+                  {asset.ai_processed_at && (
+                    <div>AI Analyzed: {new Date(asset.ai_processed_at).toLocaleString()}</div>
+                  )}
+                  {asset.file_url && asset.storage_type === 'upload' && (
+                    <div className="text-xs truncate">Path: {asset.file_url}</div>
+                  )}
+                </div>
               </div>
             </ScrollArea>
           </TabsContent>
