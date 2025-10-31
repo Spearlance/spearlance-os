@@ -36,6 +36,7 @@ export function BillingTab({ client, isAdmin = false, onUpdate }: BillingTabProp
   const [stripeCustomerId, setStripeCustomerId] = useState(client.stripe_customer_id || "");
   const [stripeSubscriptionId, setStripeSubscriptionId] = useState(client.stripe_subscription_id || "");
   const [savingStripeIds, setSavingStripeIds] = useState(false);
+  const [fetchingPlanName, setFetchingPlanName] = useState(false);
   const { toast } = useToast();
   const { trialDaysRemaining, isInTrial } = useAccountType();
 
@@ -44,6 +45,37 @@ export function BillingTab({ client, isAdmin = false, onUpdate }: BillingTabProp
     setStripeCustomerId(client.stripe_customer_id || "");
     setStripeSubscriptionId(client.stripe_subscription_id || "");
   }, [client.id, client.stripe_customer_id, client.stripe_subscription_id]);
+
+  // Auto-fetch missing plan name when subscription ID exists
+  useEffect(() => {
+    const fetchMissingPlanName = async () => {
+      if (client.stripe_subscription_id && !client.stripe_plan_name && !fetchingPlanName) {
+        console.log('Auto-fetching missing plan name for subscription:', client.stripe_subscription_id);
+        setFetchingPlanName(true);
+        try {
+          const { data, error } = await supabase.functions.invoke('get-stripe-subscription-name', {
+            body: { 
+              subscription_id: client.stripe_subscription_id,
+              client_id: client.id
+            }
+          });
+
+          if (error) throw error;
+
+          if (data?.success) {
+            console.log('Successfully fetched plan name:', data.plan_name);
+            onUpdate?.();
+          }
+        } catch (error: any) {
+          console.error('Error fetching plan name:', error);
+        } finally {
+          setFetchingPlanName(false);
+        }
+      }
+    };
+
+    fetchMissingPlanName();
+  }, [client.stripe_subscription_id, client.stripe_plan_name, client.id]);
 
   const getStatusBadgeVariant = (status?: string) => {
     switch (status) {
@@ -102,6 +134,30 @@ export function BillingTab({ client, isAdmin = false, onUpdate }: BillingTabProp
         title: "Stripe IDs saved", 
         description: "Billing will now sync with Stripe" 
       });
+
+      // Fetch the plan name if subscription ID was provided
+      if (stripeSubscriptionId) {
+        setFetchingPlanName(true);
+        try {
+          const { data, error: planError } = await supabase.functions.invoke('get-stripe-subscription-name', {
+            body: { 
+              subscription_id: stripeSubscriptionId,
+              client_id: client.id
+            }
+          });
+
+          if (planError) {
+            console.error('Error fetching plan name after save:', planError);
+          } else if (data?.success) {
+            console.log('Successfully fetched plan name after save:', data.plan_name);
+          }
+        } catch (planError) {
+          console.error('Error fetching plan name:', planError);
+        } finally {
+          setFetchingPlanName(false);
+        }
+      }
+
       onUpdate?.();
     } catch (error: any) {
       console.error("Error saving Stripe IDs:", error);
@@ -155,9 +211,11 @@ export function BillingTab({ client, isAdmin = false, onUpdate }: BillingTabProp
             <div>
               <p className="text-sm font-medium">Current Plan</p>
               <p className="text-2xl font-bold">
-                {client.billing_method === 'direct' 
+                {fetchingPlanName ? (
+                  <span className="text-muted-foreground">Loading plan details...</span>
+                ) : client.billing_method === 'direct' 
                   ? "Custom Plan"
-                  : client.stripe_subscription_id && client.stripe_plan_name
+                  : client.stripe_plan_name
                     ? client.stripe_plan_name
                     : (client.billing_plans?.name || "No Plan")
                 }
