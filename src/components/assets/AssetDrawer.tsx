@@ -207,7 +207,7 @@ export function AssetDrawer({ asset, open, onOpenChange, onUpdate }: AssetDrawer
             <ScrollArea className="flex-1 pr-4">
               <div className="space-y-4">
                 {asset.preview_url ? (
-                  <div className="relative w-full max-h-[500px] min-h-[200px] bg-muted rounded-lg overflow-hidden mb-4 flex items-center justify-center">
+                  <div className="relative w-full h-[400px] bg-muted rounded-lg overflow-hidden mb-4 flex items-center justify-center">
                     <img
                       src={asset.preview_url}
                       alt={title}
