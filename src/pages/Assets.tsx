@@ -263,7 +263,7 @@ export default function Assets() {
     
     toast({
       title: "Starting AI Analysis",
-      description: "This may take a few minutes for large libraries...",
+      description: "Analyzing assets without AI descriptions. This may take a few minutes...",
     });
     
     try {
@@ -354,7 +354,7 @@ export default function Assets() {
             disabled={isBackfilling}
           >
             <Sparkles className="h-4 w-4 mr-2" />
-            {isBackfilling ? "Analyzing..." : "AI Analyze All Assets"}
+            {isBackfilling ? "Analyzing..." : "Analyze Missing"}
           </Button>
           
           <Button onClick={() => setCreateFolderDialogOpen(true)}>
