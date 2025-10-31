@@ -105,7 +105,27 @@ export function TaskColumnManager() {
       return;
     }
 
-    const maxOrder = Math.max(...columns.map(c => c.display_order), -1);
+    // Find the "Done" column to insert before it
+    const doneColumn = columns.find(c => c.key === 'done');
+    let newOrder: number;
+    let updatedColumns = [...columns];
+
+    if (doneColumn) {
+      // Insert before "Done"
+      newOrder = doneColumn.display_order;
+      
+      // Shift all columns from this position onwards by 1
+      updatedColumns = updatedColumns.map(col => 
+        col.display_order >= newOrder 
+          ? { ...col, display_order: col.display_order + 1 }
+          : col
+      );
+    } else {
+      // No "Done" column, add at the end
+      const maxOrder = Math.max(...columns.map(c => c.display_order), -1);
+      newOrder = maxOrder + 1;
+    }
+
     const tempId = `temp-${Date.now()}`;
 
     const newColumn: PendingColumn = {
@@ -114,7 +134,7 @@ export function TaskColumnManager() {
       name: newColumnName.trim(),
       key,
       color: newColumnColor,
-      display_order: maxOrder + 1,
+      display_order: newOrder,
       is_default: false,
     };
 
@@ -124,7 +144,7 @@ export function TaskColumnManager() {
     }));
 
     // Add to columns for immediate display
-    setColumns(prev => [...prev, {
+    setColumns([...updatedColumns, {
       ...newColumn,
       id: tempId,
       created_at: new Date().toISOString(),
@@ -234,6 +254,20 @@ export function TaskColumnManager() {
     const [reorderedItem] = items.splice(result.source.index, 1);
     items.splice(result.destination.index, 0, reorderedItem);
 
+    // Check if "Done" column was moved
+    const doneIndex = items.findIndex(col => col.key === 'done');
+    
+    if (doneIndex !== -1 && doneIndex !== items.length - 1) {
+      // Move "Done" back to the end
+      const [doneColumn] = items.splice(doneIndex, 1);
+      items.push(doneColumn);
+      
+      toast({
+        title: "Note",
+        description: "'Done' column must remain at the end",
+      });
+    }
+
     // Update display_order for all items
     const reorderedItems = items.map((item, index) => ({
       ...item,
@@ -303,13 +337,14 @@ export function TaskColumnManager() {
       if (pendingChanges.reordered) {
         console.log("Reordering columns - Phase 1: Moving to temporary positions");
         
-        // Phase 1: Move all columns to temporary negative positions
+        // Phase 1: Move all columns to large negative positions to guarantee no conflicts
         for (let i = 0; i < columns.length; i++) {
           const column = columns[i];
           if (!column.id.startsWith('temp-')) {
+            const tempOrder = -10000 - i; // Large negative offset to avoid any conflicts
             const { error } = await supabase
               .from("task_columns")
-              .update({ display_order: -(i + 1000) }) // Use large negative offset to avoid conflicts
+              .update({ display_order: tempOrder })
               .eq("id", column.id);
             
             if (error) {
@@ -442,12 +477,19 @@ export function TaskColumnManager() {
                   {(provided) => (
                     <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-2">
                       {columns.map((column, index) => (
-                        <Draggable key={column.id} draggableId={column.id} index={index}>
-                          {(provided) => (
+                <Draggable 
+                  key={column.id} 
+                  draggableId={column.id} 
+                  index={index}
+                  isDragDisabled={column.id.startsWith('temp-')}
+                >
+                  {(provided) => (
                             <div
                               ref={provided.innerRef}
                               {...provided.draggableProps}
-                              className="flex items-center gap-3 p-4 border rounded-lg bg-card hover:bg-accent/50 transition-colors"
+                              className={`flex items-center gap-3 p-4 border rounded-lg bg-card hover:bg-accent/50 transition-colors ${
+                                column.id.startsWith('temp-') ? 'opacity-60' : ''
+                              }`}
                             >
                               <div {...provided.dragHandleProps}>
                                 <GripVertical className="h-5 w-5 text-muted-foreground" />
