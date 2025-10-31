@@ -324,7 +324,7 @@ export function TaskColumnManager() {
         }
       }
 
-      // 2. Add new columns (edits are saved immediately, so skip updated Map)
+      // 2. Add new columns with temporary high display_order to avoid conflicts
       for (const newColumn of pendingChanges.added) {
         const { error } = await supabase
           .from("task_columns")
@@ -333,15 +333,15 @@ export function TaskColumnManager() {
             name: newColumn.name,
             key: newColumn.key,
             color: newColumn.color,
-            display_order: newColumn.display_order,
+            display_order: 9999, // Temporary high value to avoid conflicts
             is_default: newColumn.is_default,
           });
 
         if (error) throw error;
       }
 
-      // 3. Update display order if reordered (two-phase update to avoid UNIQUE constraint conflicts)
-      if (pendingChanges.reordered) {
+      // 3. Update display order if reordered OR if new columns were added (two-phase update to avoid UNIQUE constraint conflicts)
+      if (pendingChanges.reordered || pendingChanges.added.length > 0) {
         console.log("Reordering columns - Phase 1: Moving to temporary positions");
         
         // Phase 1: Move all columns to large negative positions to guarantee no conflicts
