@@ -9,6 +9,7 @@ import { useClient } from "@/contexts/ClientContext";
 import { ConnectSocialPopup } from "./ConnectSocialPopup";
 import { LateSyncButton } from "./LateSyncButton";
 import { InitializeLateButton } from "./InitializeLateButton";
+import { SocialMediaTroubleshooting } from "./SocialMediaTroubleshooting";
 
 export const SocialAccountsManager = () => {
   const { selectedClient } = useClient();
@@ -184,6 +185,13 @@ export const SocialAccountsManager = () => {
             </div>
           )}
         </CardContent>
+        
+        {/* Troubleshooting section - only show when profile is initialized */}
+        {lateProfile && (
+          <CardContent className="pt-0 border-t">
+            <SocialMediaTroubleshooting />
+          </CardContent>
+        )}
       </Card>
 
     </div>

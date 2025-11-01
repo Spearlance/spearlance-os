@@ -92,7 +92,36 @@ export const ConnectSocialPopup = ({
       }, 1000);
     },
     onError: (error: any) => {
-      toast.error(error.message || `Failed to set up Late access`);
+      const errorMsg = error.message?.toLowerCase() || '';
+      
+      // Detect specific error scenarios and provide targeted guidance
+      if (errorMsg.includes('2fa') || errorMsg.includes('two-factor') || errorMsg.includes('two factor')) {
+        toast.error(
+          "Waiting for 2FA approval. Check your phone for Facebook notification - this may take 1-2 minutes.",
+          { duration: 8000 }
+        );
+      } else if (errorMsg.includes('blocked') && platform === 'instagram') {
+        toast.error(
+          "Instagram blocked this connection. Check your Instagram app to approve 'It was me'.",
+          { duration: 7000 }
+        );
+      } else if (errorMsg.includes('page') || errorMsg.includes('permission')) {
+        toast.error(
+          "Unable to connect page. Ensure you have admin access - see troubleshooting guide below.",
+          { duration: 6000 }
+        );
+      } else if (errorMsg.includes('popup')) {
+        toast.error(
+          "Popup was blocked. Please allow popups in your browser and try again.",
+          { duration: 5000 }
+        );
+      } else {
+        toast.error(
+          error.message || `Failed to connect ${platform}. See troubleshooting guide below for help.`,
+          { duration: 5000 }
+        );
+      }
+      
       setIsConnecting(false);
     },
   });
