@@ -32,9 +32,13 @@ import {
   Video,
   Loader2,
   FolderOpen,
+  RefreshCw,
+  BarChart3,
+  Info,
 } from "lucide-react";
 import { format } from "date-fns";
 import { AssetRecommendationDialog } from "./AssetRecommendationDialog";
+import { PostAnalytics } from "./PostAnalytics";
 
 interface Post {
   id: string;
@@ -111,6 +115,8 @@ export const PostManagementDrawer = ({
   const [generatedTopicIdeas, setGeneratedTopicIdeas] = useState<any[]>([]);
   const [connectedPlatforms, setConnectedPlatforms] = useState<Set<string>>(new Set());
   const [showAssetDialog, setShowAssetDialog] = useState(false);
+  const [isRefreshingAnalytics, setIsRefreshingAnalytics] = useState(false);
+  const [analyticsLastSynced, setAnalyticsLastSynced] = useState<string | null>(null);
 
   useEffect(() => {
     if (post) {
@@ -208,6 +214,29 @@ export const PostManagementDrawer = ({
       
       if (error) throw error;
       return data as Comment[];
+    },
+    enabled: !!post?.id,
+  });
+
+  // Fetch analytics for this post
+  const { data: analytics = [], refetch: refetchAnalytics } = useQuery({
+    queryKey: ['post-analytics', post?.id],
+    queryFn: async () => {
+      if (!post?.id) return [];
+      const { data, error } = await supabase
+        .from('social_post_analytics')
+        .select('*')
+        .eq('post_id', post.id)
+        .order('synced_at', { ascending: false });
+      
+      if (error) throw error;
+      
+      // Set last synced time from most recent entry
+      if (data && data.length > 0) {
+        setAnalyticsLastSynced(data[0].synced_at);
+      }
+      
+      return data;
     },
     enabled: !!post?.id,
   });
@@ -561,6 +590,82 @@ export const PostManagementDrawer = ({
     );
   };
 
+  // Refresh analytics
+  const handleRefreshAnalytics = async () => {
+    if (!post?.id) return;
+    
+    // Check if post has been published via Late
+    if (!(post as any).late_post_id) {
+      toast({
+        title: "Analytics Not Available",
+        description: "This post hasn't been scheduled through Late yet.",
+        variant: "default",
+      });
+      return;
+    }
+
+    // Check if post is published
+    if ((post as any).late_status !== 'published') {
+      toast({
+        title: "Post Not Published",
+        description: "Analytics are only available for published posts.",
+        variant: "default",
+      });
+      return;
+    }
+
+    setIsRefreshingAnalytics(true);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('late-sync-analytics', {
+        body: {
+          post_id: post.id,
+        },
+      });
+
+      if (error) {
+        // Handle specific Late API errors
+        if (error.message?.includes('analytics_addon_required')) {
+          toast({
+            title: "Analytics Add-on Required",
+            description: "The Late Analytics add-on is required to access post performance data. Please upgrade your Late plan.",
+            variant: "default",
+          });
+          return;
+        }
+        
+        if (error.message?.includes('429')) {
+          toast({
+            title: "Rate Limit Reached",
+            description: "You've reached the analytics API rate limit (30 requests/hour). Please try again later.",
+            variant: "default",
+          });
+          return;
+        }
+        
+        throw error;
+      }
+
+      toast({
+        title: "Analytics Updated",
+        description: `Synced analytics for ${data.platforms?.length || 0} platform(s).`,
+      });
+      
+      // Refetch analytics data
+      refetchAnalytics();
+      
+    } catch (error: any) {
+      console.error('Error refreshing analytics:', error);
+      toast({
+        title: "Refresh Failed",
+        description: error.message || "Failed to sync analytics. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRefreshingAnalytics(false);
+    }
+  };
+
   if (!post) return null;
 
   const idea = post.post_idea_json || {};
@@ -620,6 +725,7 @@ export const PostManagementDrawer = ({
         <Tabs defaultValue="content" className="flex-1">
           <TabsList className="w-full">
             <TabsTrigger value="content" className="flex-1">Content</TabsTrigger>
+            <TabsTrigger value="analytics" className="flex-1">Analytics</TabsTrigger>
             <TabsTrigger value="comments" className="flex-1">Comments</TabsTrigger>
             <TabsTrigger value="channels" className="flex-1">Channels</TabsTrigger>
           </TabsList>
@@ -963,6 +1069,77 @@ export const PostManagementDrawer = ({
                     {(post as any).late_status === 'failed' && '✗ Publishing failed - please try again'}
                   </p>
                 </div>
+              )}
+            </TabsContent>
+
+            {/* Analytics Tab */}
+            <TabsContent value="analytics" className="p-6 space-y-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold">Post Performance</h3>
+                  {analyticsLastSynced && (
+                    <p className="text-sm text-muted-foreground">
+                      Last updated: {format(new Date(analyticsLastSynced), 'MMM d, yyyy \'at\' h:mm a')}
+                    </p>
+                  )}
+                </div>
+                <Button
+                  size="sm"
+                  onClick={handleRefreshAnalytics}
+                  disabled={isRefreshingAnalytics || !(post as any).late_post_id}
+                >
+                  {isRefreshingAnalytics ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Syncing...
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                      Refresh
+                    </>
+                  )}
+                </Button>
+              </div>
+
+              <Separator />
+
+              {/* Analytics Cards */}
+              {analytics.length === 0 ? (
+                <Card className="p-8 text-center">
+                  <BarChart3 className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                  <h4 className="font-semibold mb-2">No Analytics Yet</h4>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    {!(post as any).late_post_id
+                      ? "Schedule this post through Late to track analytics."
+                      : (post as any).late_status !== 'published'
+                      ? "Analytics will be available after the post is published."
+                      : "Click 'Refresh' to sync analytics from your social platforms."}
+                  </p>
+                </Card>
+              ) : (
+                <div className="space-y-4">
+                  {analytics.map((analyticsData: any) => (
+                    <PostAnalytics key={analyticsData.id} analytics={analyticsData} />
+                  ))}
+                </div>
+              )}
+
+              {/* Info callout for Late addon */}
+              {(post as any).late_status === 'published' && analytics.length === 0 && (
+                <Card className="p-4 bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
+                  <div className="flex gap-3">
+                    <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+                    <div className="text-sm">
+                      <p className="font-medium text-blue-900 dark:text-blue-100 mb-1">Analytics Add-on Required</p>
+                      <p className="text-blue-700 dark:text-blue-300">
+                        To track detailed performance metrics for your social posts, you'll need the 
+                        Late Analytics add-on. This provides insights on impressions, reach, engagement, 
+                        and more across all your platforms.
+                      </p>
+                    </div>
+                  </div>
+                </Card>
               )}
             </TabsContent>
 
