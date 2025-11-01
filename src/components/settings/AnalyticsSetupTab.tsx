@@ -120,7 +120,7 @@ export function AnalyticsSetupTab() {
     if (!workspaceKey) return '';
 
     const collectorUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/analytics-collector`;
-    const scriptSrc = `${window.location.origin}/sos.js`;
+    const scriptSrc = 'https://os.spearlance.com/sos.js';
 
     const baseCode = `<script>
 (function() {
