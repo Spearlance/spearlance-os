@@ -15,6 +15,7 @@ import { TeamMembersList } from "@/components/settings/TeamMembersList";
 import { ClientLogoUploader } from "@/components/settings/ClientLogoUploader";
 import { BillingTab } from "@/components/settings/BillingTab";
 import { UserProfileTab } from "@/components/settings/UserProfileTab";
+import { AnalyticsSetupTab } from "@/components/settings/AnalyticsSetupTab";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Clock, Copy, Info, Globe } from "lucide-react";
@@ -101,6 +102,7 @@ export default function Settings() {
   const showCalendarTab = userProfile?.role === 'fmm' || userProfile?.role === 'admin';
   const canManageTeam = userProfile?.role === 'admin' || userProfile?.role === 'fmm' || isPrimaryContact;
   const canViewBilling = userProfile?.role === 'admin' || (userProfile?.role === 'client' && isPrimaryContact);
+  const showAnalyticsTab = (userProfile?.role === 'admin' || userProfile?.role === 'fmm') && client?.website_unlocked;
 
   return (
     <div className="space-y-6">
@@ -124,6 +126,7 @@ export default function Settings() {
             {client && <TabsTrigger value="social">Social Media</TabsTrigger>}
             {client && showCalendarTab && <TabsTrigger value="calendar">Calendar</TabsTrigger>}
             {client && <TabsTrigger value="team">Team</TabsTrigger>}
+            {client && showAnalyticsTab && <TabsTrigger value="analytics">Analytics</TabsTrigger>}
             {client && canViewBilling && <TabsTrigger value="billing">Billing</TabsTrigger>}
           </TabsList>
 
@@ -452,6 +455,12 @@ export default function Settings() {
             </Card>
           )}
         </TabsContent>
+
+        {showAnalyticsTab && (
+          <TabsContent value="analytics" className="space-y-4">
+            <AnalyticsSetupTab />
+          </TabsContent>
+        )}
 
         {canViewBilling && (
           <TabsContent value="billing" className="space-y-4">

@@ -105,7 +105,7 @@ const helpSupportSubItems = [
 const websiteSubItems = [
   { title: "Editor", icon: ExternalLink, external: true },
   { title: "Form Submissions", url: "/website/form-submissions", icon: FileText },
-  { title: "Analytics", icon: TrendingUp, comingSoon: true },
+  { title: "Analytics", url: "/analytics", icon: TrendingUp },
 ];
 
 export function AppSidebar() {
@@ -349,7 +349,7 @@ export function AppSidebar() {
                           <SidebarMenuSub>
                             {websiteSubItems.map((subItem) => (
                               <SidebarMenuSubItem key={subItem.title}>
-                                {subItem.external && !subItem.comingSoon && selectedClient?.site_id ? (
+                                {subItem.external && selectedClient?.site_id ? (
                                   <SidebarMenuSubButton asChild>
                                     <a
                                       href={`https://www.mywebsitemanager.co/home/site/${selectedClient.site_id}`}
@@ -359,14 +359,6 @@ export function AppSidebar() {
                                       <subItem.icon className="h-4 w-4" />
                                       <span>{subItem.title}</span>
                                     </a>
-                                  </SidebarMenuSubButton>
-                                ) : subItem.comingSoon ? (
-                                  <SidebarMenuSubButton className="opacity-50 cursor-not-allowed">
-                                    <subItem.icon className="h-4 w-4" />
-                                    <span>{subItem.title}</span>
-                                    <Badge variant="secondary" className="ml-auto text-[10px]">
-                                      Soon
-                                    </Badge>
                                   </SidebarMenuSubButton>
                                 ) : subItem.url ? (
                                   <SidebarMenuSubButton asChild>

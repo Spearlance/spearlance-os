@@ -43,6 +43,7 @@ import WebsiteFormSubmissions from "./pages/WebsiteFormSubmissions";
 import Leads from "./pages/Leads";
 import AdminBugReports from "./pages/AdminBugReports";
 import MyBugReports from "./pages/MyBugReports";
+import Analytics from "./pages/Analytics";
 
 const queryClient = new QueryClient();
 
@@ -95,6 +96,7 @@ const App = () => (
             <Route path="/admin/2fa-setup" element={<MainLayout><Admin2FASetup /></MainLayout>} />
             <Route path="/backfill-images" element={<MainLayout><BackfillImages /></MainLayout>} />
             <Route path="/website/form-submissions" element={<MainLayout><WebsiteFormSubmissions /></MainLayout>} />
+            <Route path="/analytics" element={<MainLayout><Analytics /></MainLayout>} />
             <Route path="/leads" element={<MainLayout><Leads /></MainLayout>} />
             <Route path="/admin/bug-reports" element={<MainLayout><AdminBugReports /></MainLayout>} />
             <Route path="/bug-reports" element={<MainLayout><MyBugReports /></MainLayout>} />
