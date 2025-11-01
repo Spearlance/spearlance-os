@@ -16,7 +16,14 @@ export const usePageAnalysis = (clientId: string) => {
             last_crawled_at
           )
         `)
-        .eq('client_id', clientId);
+        .eq('client_id', clientId)
+        // Filter out editor/platform domains at query level
+        .not('website_pages.page_path', 'like', '%my.duda.co%')
+        .not('website_pages.page_path', 'like', '%edit.duda.co%')
+        .not('website_pages.page_path', 'like', '%mywebsitemanager.co%')
+        .not('website_pages.page_path', 'like', '%/editor/%')
+        .not('website_pages.page_path', 'like', '%/preview/%')
+        .not('website_pages.page_path', 'like', '%/edit-site/%');
 
       if (error) throw error;
       return data || [];

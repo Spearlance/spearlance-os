@@ -98,6 +98,66 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Get client's website URL for domain validation
+    const { data: client, error: clientError } = await supabase
+      .from('clients')
+      .select('website_url')
+      .eq('id', workspace.client_id)
+      .single();
+
+    if (clientError || !client?.website_url) {
+      console.error('Client website URL not found');
+      return new Response(JSON.stringify({ error: 'Invalid client configuration' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Validate event URL matches client domain
+    const eventUrl = payload.url || '';
+    if (eventUrl) {
+      try {
+        const eventDomain = new URL(eventUrl).hostname.replace(/^www\./, '');
+        const clientDomain = new URL(
+          client.website_url.startsWith('http') 
+            ? client.website_url 
+            : `https://${client.website_url}`
+        ).hostname.replace(/^www\./, '');
+        
+        if (eventDomain !== clientDomain) {
+          console.log('Blocked non-client domain:', eventDomain, 'Expected:', clientDomain);
+          return new Response(null, { 
+            status: 204,
+            headers: corsHeaders 
+          });
+        }
+      } catch (e) {
+        console.error('URL parsing error:', e);
+        return new Response(null, { 
+          status: 204,
+          headers: corsHeaders 
+        });
+      }
+    }
+
+    // Block known editor/platform paths as backup
+    const urlToCheck = payload.url || payload.path || '';
+    const isEditorPath = 
+      urlToCheck.includes('my.duda.co') ||
+      urlToCheck.includes('edit.duda.co') ||
+      urlToCheck.includes('mywebsitemanager.co') ||
+      urlToCheck.includes('/editor/') ||
+      urlToCheck.includes('/preview/') ||
+      urlToCheck.includes('/edit-site/');
+      
+    if (isEditorPath) {
+      console.log('Blocked editor path:', urlToCheck);
+      return new Response(null, { 
+        status: 204,
+        headers: corsHeaders 
+      });
+    }
+
     const clientIP = req.headers.get('x-forwarded-for')?.split(',')[0] || 
                      req.headers.get('x-real-ip') || 
                      'unknown';

@@ -37,9 +37,52 @@ serve(async (req) => {
       throw new Error('Client website URL not found');
     }
 
-    // Construct full URL
+    // Validate page_path doesn't contain editor/platform domains
+    const isEditorPath = 
+      page_path.includes('my.duda.co') ||
+      page_path.includes('edit.duda.co') ||
+      page_path.includes('mywebsitemanager.co') ||
+      page_path.includes('/editor/') ||
+      page_path.includes('/preview/') ||
+      page_path.includes('/edit-site/');
+
+    if (isEditorPath) {
+      console.log('Rejected editor page path:', page_path);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'Editor and platform pages cannot be analyzed. Only pages from your client domain are allowed.',
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Construct full URL - must use client's actual domain
     const fullUrl = new URL(page_path, client.website_url).toString();
     console.log('Full URL:', fullUrl);
+
+    // Double-check the constructed URL is on client domain
+    try {
+      const constructedDomain = new URL(fullUrl).hostname.replace(/^www\./, '');
+      const clientDomain = new URL(
+        client.website_url.startsWith('http') 
+          ? client.website_url 
+          : `https://${client.website_url}`
+      ).hostname.replace(/^www\./, '');
+      
+      if (constructedDomain !== clientDomain) {
+        throw new Error('Page path must be on client domain');
+      }
+    } catch (e) {
+      console.error('Domain validation error:', e);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'Invalid page path. Must be a path from your client domain.',
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     // Fetch page with timeout
     const controller = new AbortController();

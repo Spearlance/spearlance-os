@@ -111,6 +111,19 @@ export const usePagePerformance = (clientId: string, dateRange: DateRange) => {
       });
       
       const pages = Array.from(pageMap.values())
+        .filter(page => {
+          // Filter out known editor/platform domains
+          const blockedDomains = [
+            'my.duda.co',
+            'edit.duda.co', 
+            'mywebsitemanager.co',
+            '/editor/',
+            '/preview/',
+            '/edit-site/'
+          ];
+          
+          return !blockedDomains.some(domain => page.page_path.includes(domain));
+        })
         .map(page => ({
           ...page,
           avg_engaged_time: page.event_count > 0 ? Math.round(page.total_engaged_time / page.event_count) : 0,
