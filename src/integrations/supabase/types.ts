@@ -107,6 +107,44 @@ export type Database = {
         }
         Relationships: []
       }
+      analytics_workspace_keys: {
+        Row: {
+          active: boolean | null
+          client_id: string
+          created_at: string | null
+          id: string
+          last_event_at: string | null
+          site_name: string | null
+          workspace_key: string
+        }
+        Insert: {
+          active?: boolean | null
+          client_id: string
+          created_at?: string | null
+          id?: string
+          last_event_at?: string | null
+          site_name?: string | null
+          workspace_key: string
+        }
+        Update: {
+          active?: boolean | null
+          client_id?: string
+          created_at?: string | null
+          id?: string
+          last_event_at?: string | null
+          site_name?: string | null
+          workspace_key?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "analytics_workspace_keys_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       asset_folders: {
         Row: {
           client_id: string
@@ -3792,6 +3830,107 @@ export type Database = {
         }
         Relationships: []
       }
+      web_events: {
+        Row: {
+          client_id: string
+          content_type: string | null
+          created_at: string | null
+          entry: boolean | null
+          form: string | null
+          id: number
+          ip_hash: string | null
+          medium: string | null
+          meta: Json | null
+          path: string | null
+          received_at: string
+          referrer: string | null
+          sid: string
+          slug: string | null
+          source: string | null
+          title: string | null
+          ts_ms: number
+          type: string
+          ua_device: string | null
+          ua_family: string | null
+          uid: string | null
+          url: string | null
+          utm_campaign: string | null
+          utm_content: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          utm_term: string | null
+          value: number | null
+        }
+        Insert: {
+          client_id: string
+          content_type?: string | null
+          created_at?: string | null
+          entry?: boolean | null
+          form?: string | null
+          id?: number
+          ip_hash?: string | null
+          medium?: string | null
+          meta?: Json | null
+          path?: string | null
+          received_at?: string
+          referrer?: string | null
+          sid: string
+          slug?: string | null
+          source?: string | null
+          title?: string | null
+          ts_ms: number
+          type: string
+          ua_device?: string | null
+          ua_family?: string | null
+          uid?: string | null
+          url?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+          value?: number | null
+        }
+        Update: {
+          client_id?: string
+          content_type?: string | null
+          created_at?: string | null
+          entry?: boolean | null
+          form?: string | null
+          id?: number
+          ip_hash?: string | null
+          medium?: string | null
+          meta?: Json | null
+          path?: string | null
+          received_at?: string
+          referrer?: string | null
+          sid?: string
+          slug?: string | null
+          source?: string | null
+          title?: string | null
+          ts_ms?: number
+          type?: string
+          ua_device?: string | null
+          ua_family?: string | null
+          uid?: string | null
+          url?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+          value?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "web_events_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       website_form_submissions: {
         Row: {
           assigned_to: string | null
@@ -3863,7 +4002,68 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      content_daily: {
+        Row: {
+          client_id: string | null
+          content_type: string | null
+          day: string | null
+          entry_sessions: number | null
+          leads_same_session: number | null
+          slug: string | null
+          total_views: number | null
+          unique_visitors: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "web_events_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      page_daily: {
+        Row: {
+          avg_engaged_seconds: number | null
+          client_id: string | null
+          day: string | null
+          entry_sessions: number | null
+          leads_started: number | null
+          path: string | null
+          total_pageviews: number | null
+          unique_sessions: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "web_events_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sources_daily: {
+        Row: {
+          client_id: string | null
+          day: string | null
+          leads: number | null
+          medium: string | null
+          pageviews: number | null
+          sessions: number | null
+          source: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "web_events_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       has_client_access: {
@@ -3900,6 +4100,10 @@ export type Database = {
           similarity: number
           title: string
         }[]
+      }
+      refresh_materialized_view: {
+        Args: { view_name: string }
+        Returns: undefined
       }
     }
     Enums: {

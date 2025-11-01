@@ -1,5 +1,11 @@
 project_id = "hrmhqybdsdngsvhjqwma"
 
+[functions.analytics-collector]
+verify_jwt = false
+
+[functions.analytics-refresh-views]
+verify_jwt = false
+
 [functions.analyze-lead]
 verify_jwt = true
 
