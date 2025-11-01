@@ -120,47 +120,346 @@ export function AnalyticsSetupTab() {
     if (!workspaceKey) return '';
 
     const collectorUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/analytics-collector`;
-    const scriptSrc = 'https://os.spearlance.com/sos.js';
 
     const baseCode = `<script>
+/**
+ * SpearlanceOS Analytics Tracker (SOS) - Inline Version
+ * Version 1.0.0
+ */
 (function() {
-  console.log('[SOS DEBUG] Loading analytics script...');
-  var script = document.createElement('script');
-  script.src = '${scriptSrc}';
-  script.async = true;
-  script.onerror = function() {
-    console.error('[SOS DEBUG] Failed to load script from ${scriptSrc}');
+  'use strict';
+  console.log('[SOS] Initializing inline tracker...');
+  
+  if (window.sos) {
+    console.log('[SOS] Already loaded, skipping');
+    return;
+  }
+  
+  const config = {
+    version: '1.0.0',
+    collectorUrl: '${collectorUrl}',
+    workspaceKey: '${workspaceKey}',
+    enablePopupConsent: false,
+    policyUrl: '/privacy',
+    autoTrackPageViews: true,
+    autoTrackScroll: true,
+    autoTrackEngagement: true
   };
-  script.onload = function() {
-    console.log('[SOS DEBUG] Script loaded successfully');
-    console.log('[SOS DEBUG] window.sos exists:', !!window.sos);
-    if (window.sos) {
-      console.log('[SOS DEBUG] Initializing with config:', {
-        collectorUrl: '${collectorUrl}',
-        workspaceKey: '${workspaceKey}'.substring(0, 15) + '...',
-        version: window.sos.version
-      });
-      sos.init({
-        collectorUrl: '${collectorUrl}',
-        workspaceKey: '${workspaceKey}',
-        enablePopupConsent: false
-      });
-      console.log('[SOS DEBUG] Config set, granting consent...');
-      sos.consent('granted');
-      console.log('[SOS DEBUG] Consent granted');
+  
+  let sessionId = null;
+  let userId = null;
+  let consentGranted = false;
+  let eventQueue = [];
+  let scrollTracked = {};
+  let engagedStart = null;
+  let engagedTotal = 0;
+  let sessionFirstPath = null;
+  
+  function generateId() {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      const r = Math.random() * 16 | 0;
+      const v = c === 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
+  }
+  
+  function getStorage(key) {
+    try {
+      return localStorage.getItem(key);
+    } catch (e) {
+      return null;
+    }
+  }
+  
+  function setStorage(key, value) {
+    try {
+      localStorage.setItem(key, value);
+    } catch (e) {}
+  }
+  
+  function isOptedOut() {
+    return getStorage('sos_optout') === 'true';
+  }
+  
+  function getUTMParams() {
+    const params = new URLSearchParams(window.location.search);
+    return {
+      utm_source: params.get('utm_source'),
+      utm_medium: params.get('utm_medium'),
+      utm_campaign: params.get('utm_campaign'),
+      utm_term: params.get('utm_term'),
+      utm_content: params.get('utm_content')
+    };
+  }
+  
+  function classifyReferrer(ref) {
+    if (!ref || ref === '' || ref.indexOf(window.location.hostname) !== -1) {
+      return { source: 'direct', medium: 'none' };
+    }
+    
+    try {
+      const url = new URL(ref);
+      const host = url.hostname.toLowerCase();
       
-      // Manually trigger a test page view after 1 second
-      setTimeout(function() {
-        console.log('[SOS DEBUG] Manually triggering page view test...');
-        sos.page();
-        console.log('[SOS DEBUG] Page view triggered');
-      }, 1000);
-    } else {
-      console.error('[SOS DEBUG] window.sos not found after script load!');
+      if (host.includes('google')) return { source: 'google', medium: 'organic' };
+      if (host.includes('bing')) return { source: 'bing', medium: 'organic' };
+      if (host.includes('duckduckgo')) return { source: 'duckduckgo', medium: 'organic' };
+      if (host.includes('brave')) return { source: 'brave', medium: 'organic' };
+      if (host.includes('yahoo')) return { source: 'yahoo', medium: 'organic' };
+      
+      if (host.includes('chatgpt') || host.includes('openai')) {
+        return { source: 'chatgpt', medium: 'referral' };
+      }
+      if (host.includes('claude') || host.includes('anthropic')) {
+        return { source: 'claude', medium: 'referral' };
+      }
+      
+      if (host.includes('facebook') || host.includes('fb.com')) return { source: 'facebook', medium: 'social' };
+      if (host.includes('twitter') || host.includes('t.co')) return { source: 'twitter', medium: 'social' };
+      if (host.includes('linkedin')) return { source: 'linkedin', medium: 'social' };
+      if (host.includes('instagram')) return { source: 'instagram', medium: 'social' };
+      if (host.includes('youtube')) return { source: 'youtube', medium: 'social' };
+      if (host.includes('tiktok')) return { source: 'tiktok', medium: 'social' };
+      if (host.includes('pinterest')) return { source: 'pinterest', medium: 'social' };
+      
+      return { source: host.replace('www.', ''), medium: 'referral' };
+    } catch (e) {
+      return { source: 'direct', medium: 'none' };
+    }
+  }
+  
+  function send(eventData) {
+    console.log('[SOS] Sending event:', eventData.type);
+    
+    if (!config.collectorUrl || !config.workspaceKey) {
+      console.error('[SOS] Missing config - collectorUrl or workspaceKey');
+      return;
+    }
+    
+    if (!consentGranted || isOptedOut()) {
+      console.log('[SOS] Event blocked - consent not granted or opted out');
+      return;
+    }
+    
+    const payload = {
+      workspaceKey: config.workspaceKey,
+      ts: Date.now(),
+      sid: sessionId,
+      uid: userId,
+      ...eventData
+    };
+    
+    console.log('[SOS] Payload:', { ...payload, workspaceKey: payload.workspaceKey.substring(0, 15) + '...' });
+    
+    const data = JSON.stringify(payload);
+    
+    try {
+      if (navigator.sendBeacon) {
+        const blob = new Blob([data], { type: 'application/json' });
+        const sent = navigator.sendBeacon(config.collectorUrl, blob);
+        console.log('[SOS] sendBeacon result:', sent);
+      } else {
+        console.log('[SOS] Using fetch fallback');
+        fetch(config.collectorUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: data,
+          keepalive: true
+        }).then(function(res) {
+          console.log('[SOS] Fetch response:', res.status, res.statusText);
+        }).catch(function(err) {
+          console.error('[SOS] Fetch error:', err);
+        });
+      }
+    } catch (e) {
+      console.error('[SOS] Send error:', e);
+    }
+  }
+  
+  function trackPageView() {
+    console.log('[SOS] Tracking page view:', window.location.pathname);
+    
+    try {
+      const isEntry = sessionFirstPath === null;
+      
+      if (isEntry) {
+        sessionFirstPath = window.location.pathname;
+        try {
+          sessionStorage.setItem('sos_first_path', sessionFirstPath);
+        } catch (e) {}
+      }
+      
+      const utm = getUTMParams();
+      const ref = classifyReferrer(document.referrer);
+      
+      send({
+        type: 'page_view',
+        url: window.location.href,
+        path: window.location.pathname,
+        title: document.title,
+        referrer: document.referrer,
+        source: ref.source,
+        medium: ref.medium,
+        ...utm,
+        entry: isEntry,
+        userAgent: navigator.userAgent.substring(0, 200)
+      });
+      
+      scrollTracked = {};
+    } catch (e) {
+      console.error('[SOS] trackPageView error:', e);
+    }
+  }
+  
+  function trackScrollDepth() {
+    try {
+      const scrollPercentage = Math.round(
+        (window.scrollY + window.innerHeight) / document.body.scrollHeight * 100
+      );
+      
+      [25, 50, 75, 100].forEach(function(threshold) {
+        if (scrollPercentage >= threshold && !scrollTracked[threshold]) {
+          scrollTracked[threshold] = true;
+          console.log('[SOS] Scroll depth:', threshold + '%');
+          send({
+            type: 'scroll_depth',
+            path: window.location.pathname,
+            value: threshold
+          });
+        }
+      });
+    } catch (e) {}
+  }
+  
+  function trackEngagedTime() {
+    try {
+      if (engagedStart !== null) {
+        engagedTotal += Date.now() - engagedStart;
+      }
+      engagedStart = Date.now();
+      
+      if (engagedTotal >= 15000) {
+        const seconds = Math.round(engagedTotal / 1000);
+        console.log('[SOS] Engaged time:', seconds + 's');
+        send({
+          type: 'engaged_time',
+          path: window.location.pathname,
+          value: seconds
+        });
+        engagedTotal = 0;
+      }
+    } catch (e) {}
+  }
+  
+  window.sos = {
+    version: config.version,
+    
+    init: function(opts) {
+      console.log('[SOS] init() called - already configured inline');
+    },
+    
+    consent: function(state) {
+      console.log('[SOS] consent():', state);
+      try {
+        if (state === 'granted') {
+          consentGranted = true;
+          setStorage('sos_consent', 'granted');
+          window.sos._startTracking();
+        } else if (state === 'denied') {
+          consentGranted = false;
+          setStorage('sos_consent', 'denied');
+        }
+      } catch (e) {}
+    },
+    
+    identify: function(id) {
+      try {
+        userId = id;
+        setStorage('sos_uid', id);
+      } catch (e) {}
+    },
+    
+    page: function() {
+      console.log('[SOS] Manual page() trigger');
+      trackPageView();
+    },
+    
+    track: function(evt) {
+      try {
+        send(evt);
+      } catch (e) {}
+    },
+    
+    _startTracking: function() {
+      console.log('[SOS] Starting tracking...');
+      
+      if (config.autoTrackPageViews) {
+        trackPageView();
+      }
+      
+      if (config.autoTrackScroll) {
+        let scrollTimeout;
+        window.addEventListener('scroll', function() {
+          clearTimeout(scrollTimeout);
+          scrollTimeout = setTimeout(trackScrollDepth, 200);
+        }, { passive: true });
+      }
+      
+      if (config.autoTrackEngagement) {
+        engagedStart = Date.now();
+        
+        let engageTimeout;
+        function throttledEngage() {
+          clearTimeout(engageTimeout);
+          engageTimeout = setTimeout(trackEngagedTime, 500);
+        }
+        
+        window.addEventListener('mousemove', throttledEngage, { passive: true });
+        window.addEventListener('keydown', throttledEngage, { passive: true });
+        window.addEventListener('touchstart', throttledEngage, { passive: true });
+        window.addEventListener('click', throttledEngage, { passive: true });
+        
+        window.addEventListener('blur', function() {
+          if (engagedStart !== null) {
+            engagedTotal += Date.now() - engagedStart;
+            engagedStart = null;
+          }
+        });
+        window.addEventListener('focus', function() {
+          engagedStart = Date.now();
+        });
+      }
+      
+      const pushState = history.pushState;
+      history.pushState = function() {
+        pushState.apply(history, arguments);
+        setTimeout(trackPageView, 100);
+      };
+      
+      window.addEventListener('popstate', function() {
+        setTimeout(trackPageView, 100);
+      });
     }
   };
-  document.head.appendChild(script);
-  console.log('[SOS DEBUG] Script tag added to document head');
+  
+  // Auto-initialize
+  sessionId = getStorage('sos_sid') || generateId();
+  setStorage('sos_sid', sessionId);
+  userId = getStorage('sos_uid');
+  
+  const storedConsent = getStorage('sos_consent');
+  if (storedConsent === 'granted') {
+    consentGranted = true;
+  }
+  
+  try {
+    sessionFirstPath = sessionStorage.getItem('sos_first_path');
+  } catch (e) {}
+  
+  console.log('[SOS] Auto-granting consent and starting tracking...');
+  window.sos.consent('granted');
+  
+  console.log('[SOS] Tracker initialized successfully');
 })();
 </script>`;
 
