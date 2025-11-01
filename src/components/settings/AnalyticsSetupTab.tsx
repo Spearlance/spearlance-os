@@ -119,14 +119,23 @@ export function AnalyticsSetupTab() {
   const getInstallationCode = (platform: string) => {
     if (!workspaceKey) return '';
 
+    const collectorUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/analytics-collector`;
+    const scriptSrc = `${window.location.origin}/sos.js`;
+
     const baseCode = `<script>
 (function() {
   var script = document.createElement('script');
-  script.src = '${window.location.origin}/sos.js';
+  script.src = '${scriptSrc}';
   script.async = true;
   script.onload = function() {
     if (window.sos) {
-      sos.init('${workspaceKey}');
+      sos.init({
+        collectorUrl: '${collectorUrl}',
+        workspaceKey: '${workspaceKey}',
+        enablePopupConsent: false
+      });
+      // Start tracking immediately
+      sos.consent('granted');
     }
   };
   document.head.appendChild(script);
