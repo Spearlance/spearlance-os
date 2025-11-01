@@ -242,19 +242,18 @@ export function WeeklyPlanView({ onTaskClick, onCreateTask }: WeeklyPlanViewProp
                           )}>
                             {task.title}
                           </div>
-                          <div className="flex items-center gap-1 mt-1">
-                            <Badge
-                              variant={getPriorityColor(task.priority) as any}
-                              className="text-xs h-5"
-                            >
-                              {task.priority}
-                            </Badge>
-                            {task.is_recurring_instance && (
-                              <Badge variant="outline" className="text-xs h-5">
-                                ↻
-                              </Badge>
-                            )}
-                          </div>
+                      <div className="flex items-center gap-1 mt-1">
+                        {task.priority === 'urgent' && (
+                          <Badge variant="destructive" className="text-xs h-5">
+                            !
+                          </Badge>
+                        )}
+                        {task.is_recurring_instance && (
+                          <Badge variant="outline" className="text-xs h-5">
+                            ↻
+                          </Badge>
+                        )}
+                      </div>
                         </div>
                       </div>
                     </div>
