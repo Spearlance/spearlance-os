@@ -128,10 +128,8 @@ export function AnalyticsSetupTab() {
  */
 (function() {
   'use strict';
-  console.log('[SOS] Initializing inline tracker...');
   
   if (window.sos) {
-    console.log('[SOS] Already loaded, skipping');
     return;
   }
   
@@ -227,17 +225,14 @@ export function AnalyticsSetupTab() {
       return { source: 'direct', medium: 'none' };
     }
   }
-  
-  function send(eventData) {
-    console.log('[SOS] Sending event:', eventData.type);
     
-    if (!config.collectorUrl || !config.workspaceKey) {
+    function send(eventData) {
+      if (!config.collectorUrl || !config.workspaceKey) {
       console.error('[SOS] Missing config - collectorUrl or workspaceKey');
       return;
     }
     
     if (!consentGranted || isOptedOut()) {
-      console.log('[SOS] Event blocked - consent not granted or opted out');
       return;
     }
     
@@ -247,35 +242,28 @@ export function AnalyticsSetupTab() {
       sid: sessionId,
       uid: userId,
       ...eventData
-    };
+      };
     
-    console.log('[SOS] Payload:', { ...payload, workspaceKey: payload.workspaceKey.substring(0, 15) + '...' });
-    
-    const data = JSON.stringify(payload);
-    
-    try {
-      console.log('[SOS] Using fetch with credentials: omit');
-      fetch(config.collectorUrl, {
+      const data = JSON.stringify(payload);
+      
+      try {
+        fetch(config.collectorUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: data,
         keepalive: true,
-        credentials: 'omit',
-        mode: 'cors'
-      }).then(function(res) {
-        console.log('[SOS] Fetch response:', res.status, res.statusText);
-      }).catch(function(err) {
+          credentials: 'omit',
+          mode: 'cors'
+        }).catch(function(err) {
         console.error('[SOS] Fetch error:', err);
       });
     } catch (e) {
       console.error('[SOS] Send error:', e);
     }
-  }
-  
-  function trackPageView() {
-    console.log('[SOS] Tracking page view:', window.location.pathname);
+    }
     
-    try {
+    function trackPageView() {
+      try {
       const isEntry = sessionFirstPath === null;
       
       if (isEntry) {
@@ -316,7 +304,6 @@ export function AnalyticsSetupTab() {
       [25, 50, 75, 100].forEach(function(threshold) {
         if (scrollPercentage >= threshold && !scrollTracked[threshold]) {
           scrollTracked[threshold] = true;
-          console.log('[SOS] Scroll depth:', threshold + '%');
           send({
             type: 'scroll_depth',
             path: window.location.pathname,
@@ -336,7 +323,6 @@ export function AnalyticsSetupTab() {
       
       if (engagedTotal >= 15000) {
         const seconds = Math.round(engagedTotal / 1000);
-        console.log('[SOS] Engaged time:', seconds + 's');
         send({
           type: 'engaged_time',
           path: window.location.pathname,
@@ -351,11 +337,9 @@ export function AnalyticsSetupTab() {
     version: config.version,
     
     init: function(opts) {
-      console.log('[SOS] init() called - already configured inline');
     },
     
     consent: function(state) {
-      console.log('[SOS] consent():', state);
       try {
         if (state === 'granted') {
           consentGranted = true;
@@ -376,7 +360,6 @@ export function AnalyticsSetupTab() {
     },
     
     page: function() {
-      console.log('[SOS] Manual page() trigger');
       trackPageView();
     },
     
@@ -387,8 +370,6 @@ export function AnalyticsSetupTab() {
     },
     
     _startTracking: function() {
-      console.log('[SOS] Starting tracking...');
-      
       if (config.autoTrackPageViews) {
         trackPageView();
       }
@@ -452,10 +433,7 @@ export function AnalyticsSetupTab() {
     sessionFirstPath = sessionStorage.getItem('sos_first_path');
   } catch (e) {}
   
-  console.log('[SOS] Auto-granting consent and starting tracking...');
   window.sos.consent('granted');
-  
-  console.log('[SOS] Tracker initialized successfully');
 })();
 </script>`;
 
