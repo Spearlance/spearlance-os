@@ -254,23 +254,19 @@ export function AnalyticsSetupTab() {
     const data = JSON.stringify(payload);
     
     try {
-      if (navigator.sendBeacon) {
-        const blob = new Blob([data], { type: 'application/json' });
-        const sent = navigator.sendBeacon(config.collectorUrl, blob);
-        console.log('[SOS] sendBeacon result:', sent);
-      } else {
-        console.log('[SOS] Using fetch fallback');
-        fetch(config.collectorUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: data,
-          keepalive: true
-        }).then(function(res) {
-          console.log('[SOS] Fetch response:', res.status, res.statusText);
-        }).catch(function(err) {
-          console.error('[SOS] Fetch error:', err);
-        });
-      }
+      console.log('[SOS] Using fetch with credentials: omit');
+      fetch(config.collectorUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: data,
+        keepalive: true,
+        credentials: 'omit',
+        mode: 'cors'
+      }).then(function(res) {
+        console.log('[SOS] Fetch response:', res.status, res.statusText);
+      }).catch(function(err) {
+        console.error('[SOS] Fetch error:', err);
+      });
     } catch (e) {
       console.error('[SOS] Send error:', e);
     }
