@@ -48,14 +48,12 @@ function parseUserAgent(ua: string): { family: string; device: string } {
   return { family, device };
 }
 
-function hashIP(ip: string, salt: string): string {
+async function hashIP(ip: string, salt: string): Promise<string> {
   const encoder = new TextEncoder();
   const data = encoder.encode(ip + salt);
-  return crypto.subtle.digest('SHA-256', data)
-    .then(hash => {
-      const hashArray = Array.from(new Uint8Array(hash));
-      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-    });
+  const hash = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hash));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
 Deno.serve(async (req) => {
