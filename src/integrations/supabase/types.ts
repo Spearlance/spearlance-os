@@ -2510,6 +2510,89 @@ export type Database = {
           },
         ]
       }
+      page_content_analysis: {
+        Row: {
+          analyzed_at: string | null
+          analyzed_by: string | null
+          avatar_alignment_score: number | null
+          avatar_id: string | null
+          brevity_score: number | null
+          clarity_score: number | null
+          client_id: string
+          created_at: string | null
+          id: string
+          overall_score: number | null
+          page_id: string
+          recommendations: Json | null
+          strengths: string[] | null
+          tone_score: number | null
+          weaknesses: string[] | null
+        }
+        Insert: {
+          analyzed_at?: string | null
+          analyzed_by?: string | null
+          avatar_alignment_score?: number | null
+          avatar_id?: string | null
+          brevity_score?: number | null
+          clarity_score?: number | null
+          client_id: string
+          created_at?: string | null
+          id?: string
+          overall_score?: number | null
+          page_id: string
+          recommendations?: Json | null
+          strengths?: string[] | null
+          tone_score?: number | null
+          weaknesses?: string[] | null
+        }
+        Update: {
+          analyzed_at?: string | null
+          analyzed_by?: string | null
+          avatar_alignment_score?: number | null
+          avatar_id?: string | null
+          brevity_score?: number | null
+          clarity_score?: number | null
+          client_id?: string
+          created_at?: string | null
+          id?: string
+          overall_score?: number | null
+          page_id?: string
+          recommendations?: Json | null
+          strengths?: string[] | null
+          tone_score?: number | null
+          weaknesses?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "page_content_analysis_analyzed_by_fkey"
+            columns: ["analyzed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "page_content_analysis_avatar_id_fkey"
+            columns: ["avatar_id"]
+            isOneToOne: false
+            referencedRelation: "avatars"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "page_content_analysis_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "page_content_analysis_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "website_pages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           associated_client_ids: string[] | null
@@ -4074,6 +4157,56 @@ export type Database = {
           },
           {
             foreignKeyName: "website_form_submissions_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      website_pages: {
+        Row: {
+          client_id: string
+          created_at: string | null
+          full_content: string | null
+          id: string
+          is_indexable: boolean | null
+          last_crawled_at: string | null
+          meta_description: string | null
+          page_path: string
+          page_title: string | null
+          updated_at: string | null
+          word_count: number | null
+        }
+        Insert: {
+          client_id: string
+          created_at?: string | null
+          full_content?: string | null
+          id?: string
+          is_indexable?: boolean | null
+          last_crawled_at?: string | null
+          meta_description?: string | null
+          page_path: string
+          page_title?: string | null
+          updated_at?: string | null
+          word_count?: number | null
+        }
+        Update: {
+          client_id?: string
+          created_at?: string | null
+          full_content?: string | null
+          id?: string
+          is_indexable?: boolean | null
+          last_crawled_at?: string | null
+          meta_description?: string | null
+          page_path?: string
+          page_title?: string | null
+          updated_at?: string | null
+          word_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "website_pages_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
