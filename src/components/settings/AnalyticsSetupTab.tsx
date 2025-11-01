@@ -124,21 +124,43 @@ export function AnalyticsSetupTab() {
 
     const baseCode = `<script>
 (function() {
+  console.log('[SOS DEBUG] Loading analytics script...');
   var script = document.createElement('script');
   script.src = '${scriptSrc}';
   script.async = true;
+  script.onerror = function() {
+    console.error('[SOS DEBUG] Failed to load script from ${scriptSrc}');
+  };
   script.onload = function() {
+    console.log('[SOS DEBUG] Script loaded successfully');
+    console.log('[SOS DEBUG] window.sos exists:', !!window.sos);
     if (window.sos) {
+      console.log('[SOS DEBUG] Initializing with config:', {
+        collectorUrl: '${collectorUrl}',
+        workspaceKey: '${workspaceKey}'.substring(0, 15) + '...',
+        version: window.sos.version
+      });
       sos.init({
         collectorUrl: '${collectorUrl}',
         workspaceKey: '${workspaceKey}',
         enablePopupConsent: false
       });
-      // Start tracking immediately
+      console.log('[SOS DEBUG] Config set, granting consent...');
       sos.consent('granted');
+      console.log('[SOS DEBUG] Consent granted');
+      
+      // Manually trigger a test page view after 1 second
+      setTimeout(function() {
+        console.log('[SOS DEBUG] Manually triggering page view test...');
+        sos.page();
+        console.log('[SOS DEBUG] Page view triggered');
+      }, 1000);
+    } else {
+      console.error('[SOS DEBUG] window.sos not found after script load!');
     }
   };
   document.head.appendChild(script);
+  console.log('[SOS DEBUG] Script tag added to document head');
 })();
 </script>`;
 
