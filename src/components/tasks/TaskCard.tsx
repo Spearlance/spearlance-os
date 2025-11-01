@@ -1,6 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import { Calendar, Paperclip, MessageSquare, CheckCircle2, Repeat, Link } from "lucide-react";
 import { format } from "date-fns";
 
@@ -46,15 +47,23 @@ export const TaskCard = ({ task, onClick, isDragging }: TaskCardProps) => {
   const borderColor = task.color || priorityColors[task.priority as keyof typeof priorityColors] || "#6B7280";
 
   return (
-    <Card
-      className="p-4 cursor-pointer hover:shadow-md transition-shadow border-l-4"
-      style={{ borderLeftColor: borderColor, opacity: isDragging ? 0.5 : 1 }}
-      onClick={onClick}
-    >
-      {/* Header */}
-      <div className="flex items-start justify-between gap-2 mb-2">
-        <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-sm truncate">{task.title}</h3>
+    <TooltipProvider>
+      <Card
+        className="p-4 cursor-pointer hover:shadow-md transition-shadow border-l-4"
+        style={{ borderLeftColor: borderColor, opacity: isDragging ? 0.5 : 1 }}
+        onClick={onClick}
+      >
+        {/* Header */}
+        <div className="flex items-start justify-between gap-2 mb-2">
+          <div className="flex-1 min-w-0">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <h3 className="font-semibold text-sm truncate">{task.title}</h3>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p className="max-w-xs">{task.title}</p>
+              </TooltipContent>
+            </Tooltip>
           {task.description && (
             <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
               {task.description}
@@ -150,5 +159,6 @@ export const TaskCard = ({ task, onClick, isDragging }: TaskCardProps) => {
         </div>
       </div>
     </Card>
+    </TooltipProvider>
   );
 };

@@ -9,6 +9,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import { Plus } from "lucide-react";
 import { format } from "date-fns";
 
@@ -36,7 +37,8 @@ export const TaskTableView = ({
   onCreateTask,
 }: TaskTableViewProps) => {
   return (
-    <div className="space-y-4">
+    <TooltipProvider>
+      <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold">Tasks</h2>
         <Button onClick={onCreateTask}>
@@ -71,7 +73,16 @@ export const TaskTableView = ({
                   className="cursor-pointer hover:bg-muted/50"
                   onClick={() => onTaskClick(task)}
                 >
-                  <TableCell className="font-medium">{task.title}</TableCell>
+                  <TableCell className="font-medium">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="truncate block max-w-[300px]">{task.title}</span>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="max-w-xs">{task.title}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TableCell>
                   <TableCell>
                     <Badge variant="outline">{task.priority}</Badge>
                   </TableCell>
@@ -125,6 +136,7 @@ export const TaskTableView = ({
           </TableBody>
         </Table>
       </div>
-    </div>
+      </div>
+    </TooltipProvider>
   );
 };

@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { format, startOfWeek, addDays, isSameDay, isToday } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -160,7 +161,8 @@ export function WeeklyPlanView({ onTaskClick, onCreateTask }: WeeklyPlanViewProp
   };
 
   return (
-    <div className="space-y-4">
+    <TooltipProvider>
+      <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -236,13 +238,20 @@ export function WeeklyPlanView({ onTaskClick, onCreateTask }: WeeklyPlanViewProp
                           className="mt-0.5"
                         />
                         <div className="flex-1 min-w-0">
-                          <div className={cn(
-                            "text-sm font-medium truncate",
-                            task.status === "done" && "line-through text-muted-foreground"
-                          )}>
-                            {task.title}
-                          </div>
-                      <div className="flex items-center gap-1 mt-1">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div className={cn(
+                                "text-sm font-medium truncate",
+                                task.status === "done" && "line-through text-muted-foreground"
+                              )}>
+                                {task.title}
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p className="max-w-xs">{task.title}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                          <div className="flex items-center gap-1 mt-1">
                         {task.priority === 'urgent' && (
                           <Badge variant="destructive" className="text-xs h-5">
                             !
@@ -274,6 +283,7 @@ export function WeeklyPlanView({ onTaskClick, onCreateTask }: WeeklyPlanViewProp
           );
         })}
       </div>
-    </div>
+      </div>
+    </TooltipProvider>
   );
 }
