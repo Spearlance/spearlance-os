@@ -120,11 +120,48 @@ export function AnalyticsSetupTab() {
     if (!workspaceKey) return '';
 
     const collectorUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/analytics-collector`;
+    const scriptSrc = 'https://os.spearlance.com/sos.js';
 
-    // Inline the entire tracking script to avoid external file loading issues
     const baseCode = `<script>
-console.log('[SOS] Initializing analytics...');
-(function(){if(window.sos)return;var e={version:"1.0.0",collectorUrl:"${collectorUrl}",workspaceKey:"${workspaceKey}",enablePopupConsent:!1,policyUrl:"/privacy",autoTrackPageViews:!0,autoTrackScroll:!0,autoTrackEngagement:!0},t=null,n=null,o=!1,r=[],i={},c=null,a=0,s=null;function l(){return"xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g,function(e){var t=16*Math.random()|0;return("x"===e?t:3&t|8).toString(16)})}function u(e){try{return localStorage.getItem(e)}catch(e){return null}}function d(e,t){try{localStorage.setItem(e,t)}catch(e){}}function f(){return"true"===u("sos_optout")}function g(){var t=new URLSearchParams(window.location.search);return{utm_source:t.get("utm_source"),utm_medium:t.get("utm_medium"),utm_campaign:t.get("utm_campaign"),utm_term:t.get("utm_term"),utm_content:t.get("utm_content")}}function m(e){if(!e||""===e||-1!==e.indexOf(window.location.hostname))return{source:"direct",medium:"none"};try{var t=new URL(e).hostname.toLowerCase();return t.includes("google")?{source:"google",medium:"organic"}:t.includes("bing")?{source:"bing",medium:"organic"}:t.includes("duckduckgo")?{source:"duckduckgo",medium:"organic"}:t.includes("brave")?{source:"brave",medium:"organic"}:t.includes("yahoo")?{source:"yahoo",medium:"organic"}:t.includes("chatgpt")||t.includes("openai")?{source:"chatgpt",medium:"referral"}:t.includes("claude")||t.includes("anthropic")?{source:"claude",medium:"referral"}:t.includes("facebook")||t.includes("fb.com")?{source:"facebook",medium:"social"}:t.includes("twitter")||t.includes("t.co")?{source:"twitter",medium:"social"}:t.includes("linkedin")?{source:"linkedin",medium:"social"}:t.includes("instagram")?{source:"instagram",medium:"social"}:t.includes("youtube")?{source:"youtube",medium:"social"}:t.includes("tiktok")?{source:"tiktok",medium:"social"}:t.includes("pinterest")?{source:"pinterest",medium:"social"}:{source:t.replace("www.",""),medium:"referral"}}catch(e){return{source:"direct",medium:"none"}}}function p(r){if(e.collectorUrl&&e.workspaceKey&&(o&&!f())){var i=JSON.stringify(Object.assign({workspaceKey:e.workspaceKey,ts:Date.now(),sid:t,uid:n},r));try{if(navigator.sendBeacon){var c=new Blob([i],{type:"application/json"});navigator.sendBeacon(e.collectorUrl,c)}else fetch(e.collectorUrl,{method:"POST",headers:{"Content-Type":"application/json"},body:i,keepalive:!0}).catch(function(){})}catch(e){}}}function v(){try{var e=null===s;e&&(s=window.location.pathname,sessionStorage.setItem("sos_first_path",s));var t=g(),n=m(document.referrer);p(Object.assign({type:"page_view",url:window.location.href,path:window.location.pathname,title:document.title,referrer:document.referrer,source:n.source,medium:n.medium},t,{entry:e,userAgent:navigator.userAgent.substring(0,200)})),i={}}catch(e){}}function h(){try{var e=Math.round(100*(window.scrollY+window.innerHeight)/document.body.scrollHeight);[25,50,75,100].forEach(function(t){e>=t&&!i[t]&&(i[t]=!0,p({type:"scroll_depth",path:window.location.pathname,value:t}))})}catch(e){}}function w(){try{null!==c&&(a+=Date.now()-c),c=Date.now(),a>=15e3&&(p({type:"engaged_time",path:window.location.pathname,value:Math.round(a/1e3)}),a=0)}catch(e){}}window.sos={version:e.version,init:function(o){try{e.collectorUrl=o.collectorUrl,e.workspaceKey=o.workspaceKey,e.enablePopupConsent=o.enablePopupConsent||!1,e.policyUrl=o.policyUrl||"/privacy",t=u("sos_sid")||l(),d("sos_sid",t),n=u("sos_uid");var r=u("sos_consent");"granted"===r&&(o=!0);try{s=sessionStorage.getItem("sos_first_path")}catch(e){}e.enablePopupConsent&&!r&&!f()?window.sos._showConsentPopup():o&&window.sos._startTracking()}catch(e){}},consent:function(e){try{"granted"===e?(o=!0,d("sos_consent","granted"),window.sos._startTracking()):"denied"===e&&(o=!1,d("sos_consent","denied"))}catch(e){}},identify:function(e){try{n=e,d("sos_uid",e)}catch(e){}},page:function(){v()},track:function(e){try{p(e)}catch(e){}},_startTracking:function(){e.autoTrackPageViews&&v(),e.autoTrackScroll&&window.addEventListener("scroll",function e(){clearTimeout(e.timeout),e.timeout=setTimeout(h,200)},{passive:!0}),e.autoTrackEngagement&&(c=Date.now(),window.addEventListener("mousemove",function e(){clearTimeout(e.timeout),e.timeout=setTimeout(w,500)},{passive:!0}),window.addEventListener("keydown",function e(){clearTimeout(e.timeout),e.timeout=setTimeout(w,500)},{passive:!0}),window.addEventListener("touchstart",function e(){clearTimeout(e.timeout),e.timeout=setTimeout(w,500)},{passive:!0}),window.addEventListener("click",function e(){clearTimeout(e.timeout),e.timeout=setTimeout(w,500)},{passive:!0}),window.addEventListener("blur",function(){null!==c&&(a+=Date.now()-c,c=null)}),window.addEventListener("focus",function(){c=Date.now()}));var t=history.pushState;history.pushState=function(){t.apply(history,arguments),setTimeout(v,100)},window.addEventListener("popstate",function(){setTimeout(v,100)})},_showConsentPopup:function(){try{var t=document.createElement("div");t.id="sos-consent-popup",t.style.cssText="position:fixed;bottom:20px;left:20px;right:20px;max-width:500px;background:#fff;border:1px solid #ddd;border-radius:8px;padding:16px;box-shadow:0 4px 12px rgba(0,0,0,0.15);z-index:999999;font-family:system-ui,-apple-system,BlinkMacSystemFont,\\"Segoe UI\\",sans-serif;font-size:14px;line-height:1.5;",t.setAttribute("role","dialog"),t.setAttribute("aria-labelledby","sos-consent-title"),t.setAttribute("aria-modal","true"),t.innerHTML='<div id="sos-consent-title" style="font-weight:600;margin-bottom:8px;color:#111;">Cookie Consent</div><p style="margin:0 0 12px;color:#555;">We use cookies to understand how you use our site and improve your experience. <a href="'+e.policyUrl+'" style="color:#0066cc;text-decoration:underline;" target="_blank" rel="noopener">Learn more</a></p><div style="display:flex;gap:8px;"><button id="sos-accept" style="flex:1;background:#0066cc;color:#fff;border:none;border-radius:4px;padding:10px 16px;cursor:pointer;font-weight:500;font-size:14px;">Accept</button><button id="sos-decline" style="flex:1;background:#f0f0f0;color:#333;border:1px solid #ddd;border-radius:4px;padding:10px 16px;cursor:pointer;font-weight:500;font-size:14px;">Decline</button></div>',document.body.appendChild(t),document.getElementById("sos-accept").onclick=function(){window.sos.consent("granted"),t.remove()},document.getElementById("sos-decline").onclick=function(){window.sos.consent("denied"),t.remove()},document.getElementById("sos-accept").focus(),document.addEventListener("keydown",function e(n){"Escape"===n.key&&(window.sos.consent("denied"),t.remove(),document.removeEventListener("keydown",e))})}catch(e){}}},console.log('[SOS] Analytics ready, auto-starting...'),window.sos.consent('granted')})();
+(function() {
+  console.log('[SOS DEBUG] Loading analytics script...');
+  var script = document.createElement('script');
+  script.src = '${scriptSrc}';
+  script.async = true;
+  script.onerror = function() {
+    console.error('[SOS DEBUG] Failed to load script from ${scriptSrc}');
+  };
+  script.onload = function() {
+    console.log('[SOS DEBUG] Script loaded successfully');
+    console.log('[SOS DEBUG] window.sos exists:', !!window.sos);
+    if (window.sos) {
+      console.log('[SOS DEBUG] Initializing with config:', {
+        collectorUrl: '${collectorUrl}',
+        workspaceKey: '${workspaceKey}'.substring(0, 15) + '...',
+        version: window.sos.version
+      });
+      sos.init({
+        collectorUrl: '${collectorUrl}',
+        workspaceKey: '${workspaceKey}',
+        enablePopupConsent: false
+      });
+      console.log('[SOS DEBUG] Config set, granting consent...');
+      sos.consent('granted');
+      console.log('[SOS DEBUG] Consent granted');
+      
+      // Manually trigger a test page view after 1 second
+      setTimeout(function() {
+        console.log('[SOS DEBUG] Manually triggering page view test...');
+        sos.page();
+        console.log('[SOS DEBUG] Page view triggered');
+      }, 1000);
+    } else {
+      console.error('[SOS DEBUG] window.sos not found after script load!');
+    }
+  };
+  document.head.appendChild(script);
+  console.log('[SOS DEBUG] Script tag added to document head');
+})();
 </script>`;
 
     if (platform === 'duda') {
