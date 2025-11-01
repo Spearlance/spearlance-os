@@ -3027,6 +3027,87 @@ export type Database = {
           },
         ]
       }
+      social_post_analytics: {
+        Row: {
+          clicks: number | null
+          client_id: string | null
+          comments: number | null
+          created_at: string | null
+          engagement: number | null
+          external_id: string | null
+          id: string
+          impressions: number | null
+          late_post_id: string
+          likes: number | null
+          platform: string
+          post_id: string | null
+          published_at: string | null
+          raw_analytics: Json | null
+          reach: number | null
+          saves: number | null
+          shares: number | null
+          synced_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          clicks?: number | null
+          client_id?: string | null
+          comments?: number | null
+          created_at?: string | null
+          engagement?: number | null
+          external_id?: string | null
+          id?: string
+          impressions?: number | null
+          late_post_id: string
+          likes?: number | null
+          platform: string
+          post_id?: string | null
+          published_at?: string | null
+          raw_analytics?: Json | null
+          reach?: number | null
+          saves?: number | null
+          shares?: number | null
+          synced_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          clicks?: number | null
+          client_id?: string | null
+          comments?: number | null
+          created_at?: string | null
+          engagement?: number | null
+          external_id?: string | null
+          id?: string
+          impressions?: number | null
+          late_post_id?: string
+          likes?: number | null
+          platform?: string
+          post_id?: string | null
+          published_at?: string | null
+          raw_analytics?: Json | null
+          reach?: number | null
+          saves?: number | null
+          shares?: number | null
+          synced_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "social_post_analytics_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "social_post_analytics_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "social_media_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       social_post_comments: {
         Row: {
           comment_text: string

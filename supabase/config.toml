@@ -144,6 +144,9 @@ verify_jwt = true
 [functions.late-webhook-handler]
 verify_jwt = false
 
+[functions.late-sync-analytics]
+verify_jwt = true
+
 [functions.social-bulk-generate-captions]
 verify_jwt = true
 
