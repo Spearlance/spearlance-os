@@ -1,22 +1,64 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useClient } from "@/contexts/ClientContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Lock, FileText, MapPin } from "lucide-react";
+import { Search, Lock, FileText, MapPin, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { PagePerformanceTable } from "@/components/analytics/PagePerformanceTable";
 import { usePagePerformance } from "@/hooks/useAnalytics";
 import { PricingModal } from "@/components/billing/PricingModal";
 import { subDays } from "date-fns";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function SEO() {
   const { selectedClient } = useClient();
+  const { toast } = useToast();
   const [pricingModalOpen, setPricingModalOpen] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [userRole, setUserRole] = useState<string | null>(null);
   const [dateRange] = useState({
     from: subDays(new Date(), 30),
     to: new Date(),
   });
+
+  useEffect(() => {
+    const fetchUserRole = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', user.id)
+          .single();
+        if (profile) setUserRole(profile.role);
+      }
+    };
+    fetchUserRole();
+  }, []);
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('analytics-refresh-views');
+      if (error) throw error;
+      
+      toast({
+        title: "Data refreshed",
+        description: "Analytics data has been updated successfully",
+      });
+    } catch (error) {
+      console.error('Error refreshing data:', error);
+      toast({
+        title: "Refresh failed",
+        description: "Failed to refresh analytics data",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   const { data: pagePerformance, isLoading: pagesLoading } = usePagePerformance(
     selectedClient?.id || '',
@@ -56,19 +98,30 @@ export default function SEO() {
           </h1>
           <p className="text-muted-foreground">Optimize your website content for search engines and conversions</p>
         </div>
+        {(userRole === 'admin' || userRole === 'fmm') && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+            {isRefreshing ? 'Refreshing...' : 'Refresh Data'}
+          </Button>
+        )}
       </div>
 
       {/* Tabs */}
       <Tabs defaultValue="analysis" className="space-y-6">
         <TabsList>
           <TabsTrigger value="analysis">Page Analysis</TabsTrigger>
-          <TabsTrigger value="blog">
+          <TabsTrigger value="blog" disabled>
             Blog Writer
-            <Badge variant="secondary" className="ml-2 text-xs">Coming Soon</Badge>
+            <Badge variant="outline" className="ml-2 px-1.5 py-0 text-[10px] font-normal">Coming Soon</Badge>
           </TabsTrigger>
-          <TabsTrigger value="pages">
+          <TabsTrigger value="pages" disabled>
             Local Landing Pages
-            <Badge variant="secondary" className="ml-2 text-xs">Coming Soon</Badge>
+            <Badge variant="outline" className="ml-2 px-1.5 py-0 text-[10px] font-normal">Coming Soon</Badge>
           </TabsTrigger>
         </TabsList>
 
