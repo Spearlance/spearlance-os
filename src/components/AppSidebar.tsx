@@ -56,6 +56,7 @@ import {
   ExternalLink,
   Lock,
   Bug,
+  Search,
 } from "lucide-react";
 import { ReportBugDialog } from "@/components/support/ReportBugDialog";
 import { Button } from "@/components/ui/button";
@@ -106,6 +107,7 @@ const websiteSubItems = [
   { title: "Editor", icon: ExternalLink, external: true },
   { title: "Form Submissions", url: "/website/form-submissions", icon: FileText },
   { title: "Analytics", url: "/analytics", icon: TrendingUp },
+  { title: "SEO", url: "/seo", icon: Search },
 ];
 
 export function AppSidebar() {

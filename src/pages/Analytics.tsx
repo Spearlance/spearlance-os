@@ -9,14 +9,13 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { AnalyticsOverview } from "@/components/analytics/AnalyticsOverview";
 import { TrafficSourcesChart } from "@/components/analytics/TrafficSourcesChart";
-import { PagePerformanceTable } from "@/components/analytics/PagePerformanceTable";
+
 import { ContentPerformanceTable } from "@/components/analytics/ContentPerformanceTable";
 import { VisitorsTimelineChart } from "@/components/analytics/VisitorsTimelineChart";
 import { AnalyticsFilters } from "@/components/analytics/AnalyticsFilters";
 import { 
   useAnalyticsOverview, 
   useTrafficSources, 
-  usePagePerformance,
   useContentPerformance,
   useVisitorTimeline,
   useWorkspaceKey,
@@ -54,10 +53,6 @@ export default function Analytics() {
     comparisonDateRange || dateRange
   );
   const { data: trafficSources, isLoading: trafficLoading } = useTrafficSources(
-    selectedClient?.id || '',
-    dateRange
-  );
-  const { data: pagePerformance, isLoading: pagesLoading } = usePagePerformance(
     selectedClient?.id || '',
     dateRange
   );
@@ -188,7 +183,6 @@ export default function Analytics() {
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="traffic">Traffic Sources</TabsTrigger>
-          <TabsTrigger value="pages">Pages</TabsTrigger>
           <TabsTrigger value="content">Content</TabsTrigger>
         </TabsList>
 
@@ -203,7 +197,7 @@ export default function Analytics() {
                   <AlertTitle>Overview Summary</AlertTitle>
                   <AlertDescription>
                     Your analytics dashboard shows key metrics for website performance.
-                    Explore different tabs to dive deeper into traffic sources, page performance, and content metrics.
+                    Explore different tabs to dive deeper into traffic sources and content metrics.
                   </AlertDescription>
                 </Alert>
               </CardContent>
@@ -213,10 +207,6 @@ export default function Analytics() {
 
         <TabsContent value="traffic" className="space-y-6">
           <TrafficSourcesChart data={trafficSources} isLoading={trafficLoading} />
-        </TabsContent>
-
-        <TabsContent value="pages" className="space-y-6">
-          <PagePerformanceTable data={pagePerformance} isLoading={pagesLoading} />
         </TabsContent>
 
         <TabsContent value="content" className="space-y-6">
