@@ -4,7 +4,13 @@ project_id = "hrmhqybdsdngsvhjqwma"
 verify_jwt = false
 
 [functions.analytics-refresh-views]
-verify_jwt = false
+verify_jwt = true
+
+[functions.crawl-website-page]
+verify_jwt = true
+
+[functions.analyze-page-content]
+verify_jwt = true
 
 [functions.analyze-lead]
 verify_jwt = true

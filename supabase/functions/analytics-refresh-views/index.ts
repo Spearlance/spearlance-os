@@ -11,17 +11,41 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const authHeader = req.headers.get('authorization');
-    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_ANON_KEY')!,
+      {
+        global: {
+          headers: { Authorization: req.headers.get('Authorization')! },
+        },
+      }
+    );
+
+    // Verify user is authenticated and is admin/fmm
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
     
-    if (!authHeader || !supabaseAnonKey || !authHeader.includes(supabaseAnonKey)) {
+    if (userError || !user) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
-    const supabase = createClient(
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+
+    if (!profile || (profile.role !== 'admin' && profile.role !== 'fmm')) {
+      return new Response(JSON.stringify({ error: 'Forbidden: Admin or FMM role required' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Use service role for refresh operations
+    const serviceSupabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
@@ -31,9 +55,9 @@ Deno.serve(async (req) => {
     const startTime = Date.now();
     
     const results = await Promise.allSettled([
-      supabase.rpc('refresh_materialized_view', { view_name: 'page_daily' }),
-      supabase.rpc('refresh_materialized_view', { view_name: 'content_daily' }),
-      supabase.rpc('refresh_materialized_view', { view_name: 'sources_daily' })
+      serviceSupabase.rpc('refresh_materialized_view', { view_name: 'page_daily' }),
+      serviceSupabase.rpc('refresh_materialized_view', { view_name: 'content_daily' }),
+      serviceSupabase.rpc('refresh_materialized_view', { view_name: 'sources_daily' })
     ]);
 
     const duration = Date.now() - startTime;
