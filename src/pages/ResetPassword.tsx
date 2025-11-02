@@ -7,6 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, CheckCircle2 } from "lucide-react";
+import { PasswordStrengthIndicator } from "@/components/auth/PasswordStrengthIndicator";
+import logo from "@/assets/spearlance-logo.png";
 
 const ResetPassword = () => {
   const navigate = useNavigate();
@@ -91,9 +93,7 @@ const ResetPassword = () => {
       <Card className="w-full max-w-md shadow-elegant">
         <CardHeader className="space-y-1">
           <div className="flex items-center justify-center mb-4">
-            <div className="h-12 w-12 rounded-lg bg-gradient-primary flex items-center justify-center">
-              <span className="text-2xl font-bold text-white">S</span>
-            </div>
+            <img src={logo} alt="Spearlance" className="h-12" />
           </div>
           <CardTitle className="text-2xl text-center">Reset Your Password</CardTitle>
           <CardDescription className="text-center">
@@ -113,6 +113,7 @@ const ResetPassword = () => {
                 required
                 minLength={6}
               />
+              <PasswordStrengthIndicator password={password} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="confirm-password">Confirm Password</Label>
