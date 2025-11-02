@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useClient } from "@/contexts/ClientContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,6 +24,8 @@ import { SocialAccountsManager } from "@/components/social/SocialAccountsManager
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function Settings() {
+  const [searchParams] = useSearchParams();
+  const defaultTab = searchParams.get('tab') || 'profile';
   const { selectedClient, refreshClients } = useClient();
   const [client, setClient] = useState<any>(null);
   const [userProfile, setUserProfile] = useState<any>(null);
@@ -119,14 +122,13 @@ export default function Settings() {
           </CardContent>
         </Card>
       ) : (
-        <Tabs defaultValue="profile" className="w-full">
+        <Tabs defaultValue={defaultTab} className="w-full">
           <TabsList>
             <TabsTrigger value="profile">Profile</TabsTrigger>
             {client && <TabsTrigger value="general">General</TabsTrigger>}
-            {client && <TabsTrigger value="social">Social Media</TabsTrigger>}
+            {client && <TabsTrigger value="integrations">Integrations</TabsTrigger>}
             {client && showCalendarTab && <TabsTrigger value="calendar">Calendar</TabsTrigger>}
             {client && <TabsTrigger value="team">Team</TabsTrigger>}
-            {client && showAnalyticsTab && <TabsTrigger value="analytics">Analytics</TabsTrigger>}
             {client && canViewBilling && <TabsTrigger value="billing">Billing</TabsTrigger>}
           </TabsList>
 
@@ -231,8 +233,32 @@ export default function Settings() {
           )}
         </TabsContent>
 
-        <TabsContent value="social" className="space-y-4">
-          <SocialAccountsManager />
+        <TabsContent value="integrations" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Social Media Accounts</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Connect your social media accounts to schedule and manage posts
+              </p>
+            </CardHeader>
+            <CardContent>
+              <SocialAccountsManager />
+            </CardContent>
+          </Card>
+
+          {showAnalyticsTab && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Analytics Setup</CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Configure Google Analytics for website tracking
+                </p>
+              </CardHeader>
+              <CardContent>
+                <AnalyticsSetupTab />
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         <TabsContent value="calendar" className="space-y-4">
@@ -455,12 +481,6 @@ export default function Settings() {
             </Card>
           )}
         </TabsContent>
-
-        {showAnalyticsTab && (
-          <TabsContent value="analytics" className="space-y-4">
-            <AnalyticsSetupTab />
-          </TabsContent>
-        )}
 
         {canViewBilling && (
           <TabsContent value="billing" className="space-y-4">

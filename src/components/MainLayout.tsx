@@ -15,6 +15,7 @@ import { useAccountType } from "@/hooks/useAccountType";
 import { Lock, Bug } from "lucide-react";
 import { ReportBugDialog } from "@/components/support/ReportBugDialog";
 import { Button } from "@/components/ui/button";
+import { UserProfileDropdown } from "@/components/UserProfileDropdown";
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -113,6 +114,7 @@ function MainLayoutContent({ children }: MainLayoutProps) {
                 <Bug className="h-5 w-5" />
               </Button>
               <NotificationBell />
+              <UserProfileDropdown />
             </div>
           </header>
           <main className="flex-1 p-6 overflow-auto">

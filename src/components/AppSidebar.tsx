@@ -72,7 +72,6 @@ const menuItems = [
   { title: "Home", url: "/", icon: Home },
   { title: "Launchpad", url: "/launchpad", icon: Rocket },
   { title: "Tasks", url: "/tasks", icon: CheckSquare },
-  { title: "Settings", url: "/settings", icon: Settings },
 ];
 
 const brandContentSubItems = [
