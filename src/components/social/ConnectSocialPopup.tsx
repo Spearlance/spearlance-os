@@ -133,17 +133,16 @@ export const ConnectSocialPopup = ({
     <Button
       onClick={() => createProfileAndConnect.mutate()}
       disabled={isConnecting}
-      size="lg"
-      className="w-full"
+      size="default"
     >
       {isConnecting ? (
         <>
-          <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
           Connecting...
         </>
       ) : (
         <>
-          <Icon className="mr-2 h-5 w-5" />
+          <Icon className="mr-2 h-4 w-4" />
           {label}
         </>
       )}

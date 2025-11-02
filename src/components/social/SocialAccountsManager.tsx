@@ -105,7 +105,9 @@ export const SocialAccountsManager = () => {
                 </AlertDescription>
               </Alert>
               
-              <InitializeLateButton clientId={selectedClient?.id} />
+              <div className="flex justify-start">
+                <InitializeLateButton clientId={selectedClient?.id} />
+              </div>
             </div>
           ) : accounts && accounts.length > 0 ? (
             <>
@@ -143,7 +145,7 @@ export const SocialAccountsManager = () => {
                       ? 'Connect your accounts:' 
                       : 'Connect remaining account:'}
                   </p>
-                  <div className="grid gap-3">
+                  <div className="flex gap-3">
                     {!accounts.some(a => a.platform === 'facebook') && (
                       <ConnectSocialPopup 
                         platform="facebook" 
@@ -170,7 +172,7 @@ export const SocialAccountsManager = () => {
                 </AlertDescription>
               </Alert>
               
-              <div className="grid gap-3">
+              <div className="flex gap-3">
                 <ConnectSocialPopup 
                   platform="facebook" 
                   clientId={selectedClient?.id}

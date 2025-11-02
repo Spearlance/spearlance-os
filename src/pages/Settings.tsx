@@ -234,30 +234,10 @@ export default function Settings() {
         </TabsContent>
 
         <TabsContent value="integrations" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Social Media Accounts</CardTitle>
-              <p className="text-sm text-muted-foreground">
-                Connect your social media accounts to schedule and manage posts
-              </p>
-            </CardHeader>
-            <CardContent>
-              <SocialAccountsManager />
-            </CardContent>
-          </Card>
+          <SocialAccountsManager />
 
           {showAnalyticsTab && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Analytics Setup</CardTitle>
-                <p className="text-sm text-muted-foreground">
-                  Configure Google Analytics for website tracking
-                </p>
-              </CardHeader>
-              <CardContent>
-                <AnalyticsSetupTab />
-              </CardContent>
-            </Card>
+            <AnalyticsSetupTab />
           )}
         </TabsContent>
 

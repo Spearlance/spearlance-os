@@ -45,17 +45,16 @@ export const InitializeLateButton = ({ clientId }: InitializeLateButtonProps) =>
     <Button
       onClick={handleInitialize}
       disabled={isInitializing || !clientId}
-      size="lg"
-      className="w-full"
+      size="default"
     >
       {isInitializing ? (
         <>
-          <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
           Setting up...
         </>
       ) : (
         <>
-          <Rss className="mr-2 h-5 w-5" />
+          <Rss className="mr-2 h-4 w-4" />
           Connect Your Social Media
         </>
       )}
