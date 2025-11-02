@@ -1430,6 +1430,56 @@ export type Database = {
           },
         ]
       }
+      email_templates: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          html_body: string
+          id: string
+          is_active: boolean | null
+          is_default: boolean | null
+          subject: string
+          template_key: string
+          template_name: string
+          updated_at: string | null
+          variables: Json | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          html_body: string
+          id?: string
+          is_active?: boolean | null
+          is_default?: boolean | null
+          subject: string
+          template_key: string
+          template_name: string
+          updated_at?: string | null
+          variables?: Json | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          html_body?: string
+          id?: string
+          is_active?: boolean | null
+          is_default?: boolean | null
+          subject?: string
+          template_key?: string
+          template_name?: string
+          updated_at?: string | null
+          variables?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_templates_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       front_webhook_logs: {
         Row: {
           client_id: string | null
@@ -1797,6 +1847,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      magic_link_requests: {
+        Row: {
+          email: string
+          expires_at: string | null
+          id: string
+          ip_address: string | null
+          requested_at: string | null
+          used: boolean | null
+        }
+        Insert: {
+          email: string
+          expires_at?: string | null
+          id?: string
+          ip_address?: string | null
+          requested_at?: string | null
+          used?: boolean | null
+        }
+        Update: {
+          email?: string
+          expires_at?: string | null
+          id?: string
+          ip_address?: string | null
+          requested_at?: string | null
+          used?: boolean | null
+        }
+        Relationships: []
       }
       marketing_flow_channel_notes: {
         Row: {
@@ -3820,6 +3897,44 @@ export type Database = {
             columns: ["parent_task_id"]
             isOneToOne: false
             referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      temp_passwords: {
+        Row: {
+          created_at: string | null
+          expires_at: string | null
+          id: string
+          password_hash: string
+          used: boolean | null
+          used_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          password_hash: string
+          used?: boolean | null
+          used_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          password_hash?: string
+          used?: boolean | null
+          used_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "temp_passwords_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]

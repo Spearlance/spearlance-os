@@ -45,6 +45,7 @@ import AdminBugReports from "./pages/AdminBugReports";
 import MyBugReports from "./pages/MyBugReports";
 import Analytics from "./pages/Analytics";
 import SEO from "./pages/SEO";
+import EmailTemplates from "./pages/admin/EmailTemplates";
 
 const queryClient = new QueryClient();
 
@@ -94,6 +95,7 @@ const App = () => (
             <Route path="/settings" element={<MainLayout><Settings /></MainLayout>} />
             <Route path="/notifications" element={<MainLayout><Notifications /></MainLayout>} />
             <Route path="/admin" element={<MainLayout><Admin /></MainLayout>} />
+            <Route path="/admin/email-templates" element={<MainLayout><EmailTemplates /></MainLayout>} />
             <Route path="/admin/2fa-setup" element={<MainLayout><Admin2FASetup /></MainLayout>} />
             <Route path="/backfill-images" element={<MainLayout><BackfillImages /></MainLayout>} />
             <Route path="/website/form-submissions" element={<MainLayout><WebsiteFormSubmissions /></MainLayout>} />

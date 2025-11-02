@@ -10,6 +10,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import { z } from "zod";
 import { AnimatedCarousel } from "@/components/auth/AnimatedCarousel";
+import { PasswordStrengthIndicator } from "@/components/auth/PasswordStrengthIndicator";
+import { MagicLinkLogin } from "@/components/auth/MagicLinkLogin";
 
 const signupSchema = z.object({
   email: z.string().trim().email("Please enter a valid email address"),
@@ -48,6 +50,7 @@ const Auth = () => {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
   const [sendingReset, setSendingReset] = useState(false);
+  const [showMagicLink, setShowMagicLink] = useState(false);
 
   useEffect(() => {
     // Check if user is already logged in
@@ -231,7 +234,9 @@ const Auth = () => {
         {/* Left Column - Login/Signup Form */}
         <div className="flex items-center justify-center p-8 lg:pl-16 lg:pr-8 bg-background">
         <div className="w-full max-w-md pt-56">
-          {!isSignUp ? (
+          {showMagicLink ? (
+            <MagicLinkLogin onBack={() => setShowMagicLink(false)} />
+          ) : !isSignUp ? (
             // Sign In Form
             <>
               <h1 className="text-4xl font-bold mb-8">Log in</h1>
@@ -304,6 +309,24 @@ const Auth = () => {
                 >
                   {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Log in
+                </Button>
+
+                <div className="relative my-6">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-background px-2 text-muted-foreground">Or</span>
+                  </div>
+                </div>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => setShowMagicLink(true)}
+                >
+                  ✨ Login with Magic Link
                 </Button>
 
                 <div className="text-center mt-6">
@@ -398,9 +421,7 @@ const Auth = () => {
                   {validationErrors.password && (
                     <p className="text-sm text-destructive">{validationErrors.password}</p>
                   )}
-                  <p className="text-xs text-muted-foreground">
-                    Must be 8+ characters with uppercase, lowercase, and number
-                  </p>
+                  <PasswordStrengthIndicator password={password} />
                 </div>
 
                 <Button

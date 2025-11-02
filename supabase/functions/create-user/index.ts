@@ -88,10 +88,34 @@ serve(async (req) => {
 
     console.log('Creating new user:', { email, name, role });
 
-    // Create user without password - they'll set it via reset link
+    // Generate a secure temporary password
+    const generatePassword = () => {
+      const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+      const lowercase = 'abcdefghijklmnopqrstuvwxyz';
+      const numbers = '0123456789';
+      const symbols = '!@#$%^&*';
+      const all = uppercase + lowercase + numbers + symbols;
+      
+      let password = '';
+      password += uppercase[Math.floor(Math.random() * uppercase.length)];
+      password += lowercase[Math.floor(Math.random() * lowercase.length)];
+      password += numbers[Math.floor(Math.random() * numbers.length)];
+      password += symbols[Math.floor(Math.random() * symbols.length)];
+      
+      for (let i = 4; i < 12; i++) {
+        password += all[Math.floor(Math.random() * all.length)];
+      }
+      
+      return password.split('').sort(() => Math.random() - 0.5).join('');
+    };
+
+    const tempPassword = generatePassword();
+
+    // Create user with auto-generated password
     const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
       email,
-      email_confirm: false, // User will confirm via password reset link
+      password: tempPassword,
+      email_confirm: true, // Auto-confirm so they can login immediately
       user_metadata: {
         name,
         role,
@@ -117,23 +141,23 @@ serve(async (req) => {
 
     console.log('User created successfully');
 
-    // Generate password reset link
-    const appUrl = 'https://os.spearlance.com';
-    const { data: signupData, error: signupError } = await supabaseAdmin.auth.admin.generateLink({
-      type: 'recovery',
-      email: email,
-      options: {
-        redirectTo: `${appUrl}/set-password`
-      }
-    });
+    // Store hashed temporary password for tracking
+    const encoder = new TextEncoder();
+    const data = encoder.encode(tempPassword);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const passwordHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 
-    if (signupError) {
-      console.error('Error generating signup link:', signupError);
-      throw new Error('Failed to generate signup link');
-    }
+    await supabaseAdmin
+      .from('temp_passwords')
+      .insert({
+        user_id: newUser.user.id,
+        password_hash: passwordHash,
+      });
 
     // Prepare email content
-    let clientNamesText = '';
+    const appUrl = 'https://os.spearlance.com';
+    let clientNames = '';
     if (client_ids.length > 0) {
       const { data: clientsData } = await supabaseAdmin
         .from('clients')
@@ -141,60 +165,32 @@ serve(async (req) => {
         .in('id', client_ids);
       
       if (clientsData && clientsData.length > 0) {
-        const clientNames = clientsData.map(c => c.name).join(', ');
-        clientNamesText = `<p><strong>Assigned Clients:</strong> ${clientNames}</p>`;
+        clientNames = clientsData.map(c => c.name).join(', ');
       }
     }
 
-    const roleDisplay = role.charAt(0).toUpperCase() + role.slice(1);
-
-    // Send invitation email with signup link
+    // Send invitation email using template
     try {
-      await resend.emails.send({
-        from: 'Spearlance Platform <noreply@em.os.spearlance.com>',
-        to: [email],
-        subject: `Welcome to Spearlance - Set Your Password`,
-        html: `
-          <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h1 style="color: #1a1a1a; margin-bottom: 24px;">Welcome to Spearlance!</h1>
-            
-            <p style="color: #4a5568; font-size: 16px; line-height: 1.5;">Hi ${name},</p>
-            
-            <p style="color: #4a5568; font-size: 16px; line-height: 1.5;">
-              You've been invited to join Spearlance as an <strong>${roleDisplay}</strong>.
-            </p>
-            
-            ${clientNamesText}
-            
-            <div style="background: #f7fafc; padding: 20px; border-radius: 8px; margin: 24px 0;">
-              <h2 style="color: #2d3748; font-size: 18px; margin-top: 0;">Get Started</h2>
-              <p style="color: #4a5568; margin-bottom: 16px;">Click the button below to set your password and access your account:</p>
-              
-              <a href="${signupData.properties.action_link}" 
-                 style="display: inline-block; padding: 14px 28px; background-color: #4F46E5; color: white; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px;">
-                Create Your Password
-              </a>
-            </div>
-            
-            <div style="background: #fffbeb; border-left: 4px solid #f59e0b; padding: 12px 16px; margin: 24px 0;">
-              <p style="color: #92400e; margin: 0; font-size: 14px;">
-                <strong>Important:</strong> This link will expire in 24 hours for security reasons.
-              </p>
-            </div>
-            
-            <p style="color: #718096; font-size: 14px;">
-              Your email: <strong>${email}</strong>
-            </p>
-            
-            <p style="color: #4a5568; margin-top: 32px;">
-              Best regards,<br>
-              <strong>The Spearlance Team</strong>
-            </p>
-          </div>
-        `,
+      const { error: emailError } = await supabaseAdmin.functions.invoke('send-templated-email', {
+        body: {
+          to: email,
+          template_key: 'user_invitation',
+          variables: {
+            name: name,
+            email: email,
+            password: tempPassword,
+            client_name: clientNames || 'Spearlance',
+            inviter_name: 'The Spearlance Team',
+            app_url: appUrl
+          }
+        }
       });
 
-      console.log('Invitation email sent to:', email);
+      if (emailError) {
+        console.error('Error sending invitation email:', emailError);
+      } else {
+        console.log('Invitation email sent to:', email);
+      }
     } catch (emailError) {
       console.error('Error sending email:', emailError);
       // Continue anyway - user was created successfully

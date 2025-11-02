@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Users, Building2, BarChart3, Loader2, Globe, KeyRound, Mail, FileText } from "lucide-react";
+import { Users, Building2, BarChart3, Loader2, Globe, KeyRound, Mail, FileText, Settings } from "lucide-react";
 import { AddUserDialog } from "@/components/admin/AddUserDialog";
 import { UserInfoDialog } from "@/components/admin/UserInfoDialog";
 import { EditClientDialog } from "@/components/admin/EditClientDialog";
@@ -289,6 +289,13 @@ export default function Admin() {
       </div>
 
       <Admin2FABanner />
+
+      <div className="flex justify-end mb-4">
+        <Button onClick={() => navigate("/admin/email-templates")} variant="outline">
+          <Mail className="h-4 w-4 mr-2" />
+          Email Templates
+        </Button>
+      </div>
 
       <Tabs defaultValue="overview" className="w-full">
         <TabsList>
