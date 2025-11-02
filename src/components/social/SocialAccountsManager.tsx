@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+
 import { Loader2, Facebook, Instagram } from "lucide-react";
 import { useClient } from "@/contexts/ClientContext";
 import { ConnectSocialPopup } from "./ConnectSocialPopup";
@@ -99,11 +99,9 @@ export const SocialAccountsManager = () => {
             </div>
           ) : !lateProfile ? (
             <div className="space-y-4">
-              <Alert>
-                <AlertDescription>
-                  First, initialize your social media setup. Then you'll be able to connect your Facebook and Instagram accounts.
-                </AlertDescription>
-              </Alert>
+              <p className="text-sm text-muted-foreground">
+                First, initialize your social media setup. Then you'll be able to connect your Facebook and Instagram accounts.
+              </p>
               
               <div className="flex justify-start">
                 <InitializeLateButton clientId={selectedClient?.id} />
@@ -166,11 +164,9 @@ export const SocialAccountsManager = () => {
             </>
           ) : (
             <div className="space-y-4">
-              <Alert>
-                <AlertDescription>
-                  Connect your Facebook and Instagram accounts to start scheduling posts.
-                </AlertDescription>
-              </Alert>
+              <p className="text-sm text-muted-foreground">
+                Connect your Facebook and Instagram accounts to start scheduling posts.
+              </p>
               
               <div className="flex gap-3">
                 <ConnectSocialPopup 
