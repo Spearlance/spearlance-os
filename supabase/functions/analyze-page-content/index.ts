@@ -127,19 +127,33 @@ serve(async (req) => {
       throw new Error('Page not found');
     }
 
-    // Fetch avatar (use provided or get primary)
-    let avatarQuery = supabase
-      .from('avatars')
-      .select('*')
-      .eq('client_id', page.client_id);
-
+    // Fetch avatar (use provided or get any avatar)
+    let avatar;
     if (avatar_id) {
-      avatarQuery = avatarQuery.eq('id', avatar_id);
+      // Use specific avatar if provided
+      const { data, error } = await supabase
+        .from('avatars')
+        .select('*')
+        .eq('id', avatar_id)
+        .eq('client_id', page.client_id)
+        .maybeSingle();
+      
+      if (error) throw error;
+      avatar = data;
     } else {
-      avatarQuery = avatarQuery.eq('is_primary', true);
+      // Get any avatar for this client
+      const { data, error } = await supabase
+        .from('avatars')
+        .select('*')
+        .eq('client_id', page.client_id)
+        .limit(1)
+        .maybeSingle();
+      
+      if (error) throw error;
+      avatar = data;
     }
 
-    const { data: avatar, error: avatarError } = await avatarQuery.maybeSingle();
+    const avatarError = !avatar;
 
     if (avatarError || !avatar) {
       console.error('Avatar fetch error:', avatarError);

@@ -8,7 +8,14 @@ import { ArrowUpDown, Search, Loader2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useClient } from "@/contexts/ClientContext";
 import { usePageAnalysis, useAnalyzePage } from "@/hooks/usePageAnalysis";
+import { useCanAnalyzePages } from "@/hooks/useCanAnalyzePages";
 import { PageAnalysisDrawer } from "./PageAnalysisDrawer";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface PageData {
   page_path: string;
@@ -62,6 +69,7 @@ export function PagePerformanceTable({ data, isLoading, isRefreshing }: PagePerf
 
   const { data: analysisData } = usePageAnalysis(selectedClient?.id || '');
   const analyzePage = useAnalyzePage();
+  const { data: validationResult } = useCanAnalyzePages();
   const [analyzingPath, setAnalyzingPath] = useState<string | null>(null);
 
   // Create a map of page_path to analysis
@@ -255,20 +263,42 @@ export function PagePerformanceTable({ data, isLoading, isRefreshing }: PagePerf
                           View Analysis
                         </Button>
                       ) : (
-                        <Button
-                          size="sm"
-                          onClick={() => handleAnalyzePage(page)}
-                          disabled={isAnalyzing || analyzePage.isPending}
-                        >
-                          {isAnalyzing ? (
-                            <>
-                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                              Analyzing...
-                            </>
-                          ) : (
-                            'Analyze Page'
-                          )}
-                        </Button>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div>
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleAnalyzePage(page)}
+                                  disabled={
+                                    !validationResult?.canAnalyze ||
+                                    isAnalyzing ||
+                                    analyzePage.isPending
+                                  }
+                                >
+                                  {isAnalyzing ? (
+                                    <>
+                                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                      Analyzing...
+                                    </>
+                                  ) : (
+                                    'Analyze Page'
+                                  )}
+                                </Button>
+                              </div>
+                            </TooltipTrigger>
+                            {!validationResult?.canAnalyze && (
+                              <TooltipContent className="max-w-xs">
+                                <p className="font-semibold mb-2">Cannot analyze yet:</p>
+                                <ul className="list-disc pl-4 space-y-1">
+                                  {validationResult?.reasons.map((reason, i) => (
+                                    <li key={i} className="text-sm">{reason}</li>
+                                  ))}
+                                </ul>
+                              </TooltipContent>
+                            )}
+                          </Tooltip>
+                        </TooltipProvider>
                       )}
                     </TableCell>
                   </TableRow>

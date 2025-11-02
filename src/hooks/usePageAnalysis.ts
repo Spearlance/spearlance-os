@@ -109,16 +109,30 @@ export const useAnalyzePage = () => {
       });
     },
     onError: (error: any) => {
-      if (error.message?.includes('Avatar not found')) {
+      const errorMessage = error.message || "Failed to analyze page";
+      
+      if (errorMessage.includes('Avatar not found')) {
         toast({
           title: "Customer Avatar Required",
-          description: "Please create a customer avatar first in the Avatar section.",
+          description: "Please create a customer avatar in the Avatar section.",
+          variant: "destructive",
+        });
+      } else if (errorMessage.includes('website URL') || errorMessage.includes('Website URL')) {
+        toast({
+          title: "Website URL Required",
+          description: "Please add your website URL in LaunchPad > Discovery.",
+          variant: "destructive",
+        });
+      } else if (errorMessage.includes('timeout') || errorMessage.includes('took too long') || errorMessage.includes('10')) {
+        toast({
+          title: "Page Took Too Long",
+          description: "Your website didn't respond in time. Try again or check your website URL.",
           variant: "destructive",
         });
       } else {
         toast({
           title: "Analysis Failed",
-          description: error.message || "Failed to analyze page. Please try again.",
+          description: errorMessage,
           variant: "destructive",
         });
       }

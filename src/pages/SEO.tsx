@@ -3,8 +3,9 @@ import { useClient } from "@/contexts/ClientContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Lock, FileText, MapPin, RefreshCw } from "lucide-react";
+import { Search, Lock, FileText, MapPin, RefreshCw, AlertCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { PagePerformanceTable } from "@/components/analytics/PagePerformanceTable";
 import { usePagePerformance } from "@/hooks/useAnalytics";
 import { PricingModal } from "@/components/billing/PricingModal";
@@ -12,6 +13,7 @@ import { subDays, formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useLastRefreshTime } from "@/hooks/useLastRefreshTime";
+import { useCanAnalyzePages } from "@/hooks/useCanAnalyzePages";
 
 export default function SEO() {
   const { selectedClient } = useClient();
@@ -73,6 +75,7 @@ export default function SEO() {
   );
   
   const { data: lastRefreshTime } = useLastRefreshTime(selectedClient?.id);
+  const { data: validationResult } = useCanAnalyzePages();
 
   // Check if website is unlocked
   if (!selectedClient?.website_unlocked) {
@@ -142,6 +145,20 @@ export default function SEO() {
         </TabsList>
 
         <TabsContent value="analysis" className="space-y-6">
+          {!validationResult?.canAnalyze && (
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Setup Required</AlertTitle>
+              <AlertDescription className="space-y-2">
+                <p>Complete these steps to analyze your pages:</p>
+                <ul className="list-disc pl-4 space-y-1">
+                  {validationResult?.reasons.map((reason, i) => (
+                    <li key={i}>{reason}</li>
+                  ))}
+                </ul>
+              </AlertDescription>
+            </Alert>
+          )}
           <Card>
             <CardContent className="pt-6">
               <h3 className="text-lg font-semibold mb-2">Content Analysis</h3>
