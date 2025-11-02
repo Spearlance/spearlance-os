@@ -169,7 +169,7 @@ serve(async (req) => {
       }
     }
 
-    // Send invitation email using template
+    // Send simplified invitation email - user can login directly with temp password
     try {
       const { error: emailError } = await supabaseAdmin.functions.invoke('send-templated-email', {
         body: {
@@ -180,7 +180,6 @@ serve(async (req) => {
             email: email,
             password: tempPassword,
             client_name: clientNames || 'Spearlance',
-            inviter_name: 'The Spearlance Team',
             app_url: appUrl
           }
         }
