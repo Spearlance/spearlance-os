@@ -37,6 +37,11 @@ serve(async (req) => {
       throw new Error('Client website URL not found');
     }
 
+    // Normalize website URL to ensure it has a protocol
+    const websiteUrl = client.website_url.startsWith('http') 
+      ? client.website_url 
+      : `https://${client.website_url}`;
+
     // Validate page_path doesn't contain editor/platform domains
     const isEditorPath = 
       page_path.includes('my.duda.co') ||
@@ -59,17 +64,13 @@ serve(async (req) => {
     }
 
     // Construct full URL - must use client's actual domain
-    const fullUrl = new URL(page_path, client.website_url).toString();
+    const fullUrl = new URL(page_path, websiteUrl).toString();
     console.log('Full URL:', fullUrl);
 
     // Double-check the constructed URL is on client domain
     try {
       const constructedDomain = new URL(fullUrl).hostname.replace(/^www\./, '');
-      const clientDomain = new URL(
-        client.website_url.startsWith('http') 
-          ? client.website_url 
-          : `https://${client.website_url}`
-      ).hostname.replace(/^www\./, '');
+      const clientDomain = new URL(websiteUrl).hostname.replace(/^www\./, '');
       
       if (constructedDomain !== clientDomain) {
         throw new Error('Page path must be on client domain');
