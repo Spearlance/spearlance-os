@@ -37,10 +37,15 @@ serve(async (req) => {
       throw new Error('Client website URL not found');
     }
 
-    // Normalize website URL to ensure it has a protocol
-    const websiteUrl = client.website_url.startsWith('http') 
-      ? client.website_url 
-      : `https://${client.website_url}`;
+    console.log('Raw website_url from database:', client.website_url);
+
+    // Normalize website URL - ensure it has a protocol and proper format
+    let baseUrl = client.website_url.trim();
+    if (!baseUrl.startsWith('http://') && !baseUrl.startsWith('https://')) {
+      baseUrl = `https://${baseUrl}`;
+    }
+    
+    console.log('Normalized base URL:', baseUrl);
 
     // Validate page_path doesn't contain editor/platform domains
     const isEditorPath = 
@@ -63,14 +68,22 @@ serve(async (req) => {
       );
     }
 
-    // Construct full URL - must use client's actual domain
-    const fullUrl = new URL(page_path, websiteUrl).toString();
-    console.log('Full URL:', fullUrl);
+    // Construct full URL safely
+    let fullUrl: string;
+    try {
+      // Ensure page_path starts with /
+      const cleanPath = page_path.startsWith('/') ? page_path : `/${page_path}`;
+      fullUrl = new URL(cleanPath, baseUrl).toString();
+      console.log('Constructed full URL:', fullUrl);
+    } catch (urlError) {
+      console.error('URL construction failed:', urlError);
+      throw new Error(`Failed to construct URL from path "${page_path}" and base "${baseUrl}"`);
+    }
 
     // Double-check the constructed URL is on client domain
     try {
       const constructedDomain = new URL(fullUrl).hostname.replace(/^www\./, '');
-      const clientDomain = new URL(websiteUrl).hostname.replace(/^www\./, '');
+      const clientDomain = new URL(baseUrl).hostname.replace(/^www\./, '');
       
       if (constructedDomain !== clientDomain) {
         throw new Error('Page path must be on client domain');
