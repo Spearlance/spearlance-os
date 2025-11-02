@@ -2257,6 +2257,35 @@ export type Database = {
           },
         ]
       }
+      materialized_view_refreshes: {
+        Row: {
+          client_id: string | null
+          created_at: string
+          last_refreshed_at: string
+          view_name: string
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string
+          last_refreshed_at?: string
+          view_name: string
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string
+          last_refreshed_at?: string
+          view_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "materialized_view_refreshes_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       meeting_tasks: {
         Row: {
           created_at: string | null

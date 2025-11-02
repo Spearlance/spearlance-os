@@ -23,7 +23,8 @@ export const usePageAnalysis = (clientId: string) => {
         .not('website_pages.page_path', 'like', '%mywebsitemanager.co%')
         .not('website_pages.page_path', 'like', '%/editor/%')
         .not('website_pages.page_path', 'like', '%/preview/%')
-        .not('website_pages.page_path', 'like', '%/edit-site/%');
+        .not('website_pages.page_path', 'like', '%/edit-site/%')
+        .not('website_pages.page_path', 'like', '%/site/%'); // Duda internal site editor paths
 
       if (error) throw error;
       return data || [];

@@ -50,6 +50,16 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
+    // Get client_id from request body
+    const { client_id } = await req.json();
+    
+    if (!client_id) {
+      return new Response(JSON.stringify({ error: 'client_id is required' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
     console.log('Starting materialized view refresh...');
 
     const startTime = Date.now();
@@ -68,6 +78,17 @@ Deno.serve(async (req) => {
     }
 
     console.log(`Views refreshed in ${duration}ms`);
+
+    // Track refresh timestamp
+    await serviceSupabase
+      .from('materialized_view_refreshes')
+      .upsert({
+        view_name: 'analytics_views',
+        client_id: client_id,
+        last_refreshed_at: new Date().toISOString()
+      }, {
+        onConflict: 'view_name'
+      });
 
     return new Response(JSON.stringify({ 
       success: true,

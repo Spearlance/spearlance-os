@@ -113,14 +113,15 @@ export const usePagePerformance = (clientId: string, dateRange: DateRange) => {
       const pages = Array.from(pageMap.values())
         .filter(page => {
           // Filter out known editor/platform domains
-          const blockedDomains = [
-            'my.duda.co',
-            'edit.duda.co', 
-            'mywebsitemanager.co',
-            '/editor/',
-            '/preview/',
-            '/edit-site/'
-          ];
+      const blockedDomains = [
+        'my.duda.co',
+        'edit.duda.co',
+        'mywebsitemanager.co',
+        '/editor/',
+        '/preview/',
+        '/edit-site/',
+        '/site/' // Duda internal site editor paths
+      ];
           
           return !blockedDomains.some(domain => page.page_path.includes(domain));
         })

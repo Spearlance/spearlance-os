@@ -48,9 +48,10 @@ interface PageAnalysis {
 interface PagePerformanceTableProps {
   data?: PageData[];
   isLoading?: boolean;
+  isRefreshing?: boolean;
 }
 
-export function PagePerformanceTable({ data, isLoading }: PagePerformanceTableProps) {
+export function PagePerformanceTable({ data, isLoading, isRefreshing }: PagePerformanceTableProps) {
   const { selectedClient } = useClient();
   const [search, setSearch] = useState("");
   const [sortField, setSortField] = useState<keyof PageData>("pageviews");
@@ -144,7 +145,7 @@ export function PagePerformanceTable({ data, isLoading }: PagePerformanceTablePr
     setDrawerOpen(false);
   };
 
-  if (isLoading) {
+  if (isLoading || isRefreshing) {
     return (
       <Card>
         <CardHeader>

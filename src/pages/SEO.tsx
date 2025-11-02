@@ -8,9 +8,10 @@ import { Badge } from "@/components/ui/badge";
 import { PagePerformanceTable } from "@/components/analytics/PagePerformanceTable";
 import { usePagePerformance } from "@/hooks/useAnalytics";
 import { PricingModal } from "@/components/billing/PricingModal";
-import { subDays } from "date-fns";
+import { subDays, formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useLastRefreshTime } from "@/hooks/useLastRefreshTime";
 
 export default function SEO() {
   const { selectedClient } = useClient();
@@ -39,9 +40,15 @@ export default function SEO() {
   }, []);
 
   const handleRefresh = async () => {
+    if (!selectedClient?.id) return;
+    
     setIsRefreshing(true);
     try {
-      const { data, error } = await supabase.functions.invoke('analytics-refresh-views');
+      const { error } = await supabase.functions.invoke('analytics-refresh-views', {
+        method: 'POST',
+        body: { client_id: selectedClient.id }
+      });
+      
       if (error) throw error;
       
       toast({
@@ -64,6 +71,8 @@ export default function SEO() {
     selectedClient?.id || '',
     dateRange
   );
+  
+  const { data: lastRefreshTime } = useLastRefreshTime(selectedClient?.id);
 
   // Check if website is unlocked
   if (!selectedClient?.website_unlocked) {
@@ -96,7 +105,14 @@ export default function SEO() {
             <Search className="h-8 w-8" />
             SEO Tools
           </h1>
-          <p className="text-muted-foreground">Optimize your website content for search engines and conversions</p>
+          <div className="flex items-center gap-4">
+            <p className="text-muted-foreground">Optimize your website content for search engines and conversions</p>
+            {lastRefreshTime && (
+              <p className="text-sm text-muted-foreground">
+                Last updated: {formatDistanceToNow(new Date(lastRefreshTime), { addSuffix: true })}
+              </p>
+            )}
+          </div>
         </div>
         {(userRole === 'admin' || userRole === 'fmm') && (
           <Button
@@ -134,7 +150,11 @@ export default function SEO() {
               </p>
             </CardContent>
           </Card>
-          <PagePerformanceTable data={pagePerformance} isLoading={pagesLoading} />
+          <PagePerformanceTable 
+            data={pagePerformance} 
+            isLoading={pagesLoading}
+            isRefreshing={isRefreshing}
+          />
         </TabsContent>
 
         <TabsContent value="blog" className="space-y-6">

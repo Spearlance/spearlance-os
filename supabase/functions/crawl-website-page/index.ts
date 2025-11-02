@@ -44,7 +44,8 @@ serve(async (req) => {
       page_path.includes('mywebsitemanager.co') ||
       page_path.includes('/editor/') ||
       page_path.includes('/preview/') ||
-      page_path.includes('/edit-site/');
+      page_path.includes('/edit-site/') ||
+      page_path.includes('/site/'); // Duda internal site editor paths
 
     if (isEditorPath) {
       console.log('Rejected editor page path:', page_path);
