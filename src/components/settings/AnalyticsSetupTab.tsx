@@ -562,13 +562,22 @@ export function AnalyticsSetupTab() {
               </div>
             </>
           ) : (
-            <div className="py-8 text-center space-y-4">
+            <div className="py-8 space-y-4">
               <p className="text-muted-foreground">
                 No workspace key generated yet. Click below to create one.
               </p>
-              <Button onClick={generateWorkspaceKey} disabled={loading}>
-                {loading ? 'Generating...' : 'Generate Workspace Key'}
-              </Button>
+              <div className="flex justify-start">
+                <Button onClick={generateWorkspaceKey} disabled={loading} size="default">
+                  {loading ? (
+                    <>
+                      <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    'Generate Workspace Key'
+                  )}
+                </Button>
+              </div>
             </div>
           )}
         </CardContent>
