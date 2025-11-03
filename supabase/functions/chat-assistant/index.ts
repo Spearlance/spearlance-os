@@ -994,6 +994,520 @@ async function getCommunicationLogs(supabase: any, params: any, clientId: string
   };
 }
 
+// Helper function: Parse form_data JSON from various formats
+function parseFormData(formData: any): Record<string, any> | null {
+  if (!formData) return null;
+  if (typeof formData === 'object' && !Array.isArray(formData)) return formData;
+  if (typeof formData === 'string') {
+    try { return JSON.parse(formData); } catch { return null; }
+  }
+  return null;
+}
+
+// Helper function: Extract name from form data
+function extractNameFromForm(data: Record<string, any> | null): string {
+  if (!data) return 'Anonymous';
+  const nameFields = ['NAME', 'name', 'full_name', 'Full Name', 'fullName', 'fullname'];
+  for (const field of nameFields) {
+    if (data[field]) return String(data[field]).trim();
+  }
+  const firstName = data['first_name'] || data['First Name'] || data['firstName'];
+  const lastName = data['last_name'] || data['Last Name'] || data['lastName'];
+  if (firstName && lastName) return `${firstName} ${lastName}`.trim();
+  if (firstName) return String(firstName).trim();
+  return 'Anonymous';
+}
+
+// Helper function: Extract email from form data
+function extractEmailFromForm(data: Record<string, any> | null): string | null {
+  if (!data) return null;
+  const emailFields = ['EMAIL', 'email', 'Email', 'email_address', 'emailAddress'];
+  for (const field of emailFields) {
+    if (data[field]) return String(data[field]).trim();
+  }
+  return null;
+}
+
+// Helper function: Extract phone from form data
+function extractPhoneFromForm(data: Record<string, any> | null): string | null {
+  if (!data) return null;
+  const phoneFields = ['PHONE', 'phone', 'Phone', 'phone_number', 'phoneNumber', 'tel'];
+  for (const field of phoneFields) {
+    if (data[field]) return String(data[field]).trim();
+  }
+  return null;
+}
+
+// Helper function: Get clean form fields (exclude system/contact fields)
+function getCleanFormFields(data: Record<string, any> | null): Record<string, string> {
+  if (!data) return {};
+  const excludeFields = ['id', 'form_title', 'date', 'site_name', 'fields', 'NAME', 'name', 'EMAIL', 'email', 'PHONE', 'phone', 'first_name', 'last_name', 'firstName', 'lastName', 'full_name', 'fullName'];
+  const clean: Record<string, string> = {};
+  for (const [key, value] of Object.entries(data)) {
+    if (excludeFields.some(f => f.toLowerCase() === key.toLowerCase())) continue;
+    if (typeof value === 'object') continue;
+    if (!value) continue;
+    const strValue = String(value);
+    clean[key] = strValue.length > 500 ? strValue.substring(0, 500) + '...' : strValue;
+  }
+  return clean;
+}
+
+// Helper function: Calculate time ago
+function formatTimeAgo(date: string): string {
+  const now = new Date();
+  const past = new Date(date);
+  const diffMs = now.getTime() - past.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+  
+  if (diffMins < 60) return `${diffMins} minute${diffMins !== 1 ? 's' : ''} ago`;
+  if (diffHours < 24) return `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
+  if (diffDays === 1) return 'yesterday';
+  if (diffDays < 30) return `${diffDays} days ago`;
+  
+  return past.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+// Get website form submissions (leads/inquiries)
+async function getFormSubmissions(supabase: any, params: any, clientId: string, userRole: string) {
+  // Get client's site_id first
+  const { data: client } = await supabase
+    .from('clients')
+    .select('site_id')
+    .eq('id', clientId)
+    .maybeSingle();
+  
+  if (!client?.site_id) {
+    return { items: [], result_count: 0, total_count: 0, message: 'No website configured for this client' };
+  }
+
+  let query = supabase
+    .from('website_form_submissions')
+    .select('id, form_name, submitted_at, status, page_url, form_data, submission_source', { count: 'exact' })
+    .eq('site_id', client.site_id);
+  
+  // Apply filters
+  if (params.status) query = query.eq('status', params.status);
+  if (params.date_from) query = query.gte('submitted_at', params.date_from);
+  if (params.date_to) query = query.lte('submitted_at', params.date_to);
+  
+  const limit = Math.min(params.limit || 20, 50);
+  const offset = params.offset || 0;
+  
+  query = query.order('submitted_at', { ascending: false }).range(offset, offset + limit - 1);
+  
+  const { data, count, error } = await query;
+  
+  if (error) throw error;
+  
+  // Parse and structure data
+  const processedSubmissions = (data || []).map((sub: any) => {
+    const formData = parseFormData(sub.form_data);
+    
+    return {
+      id: sub.id,
+      form_name: sub.form_name,
+      submitted_at: sub.submitted_at,
+      time_ago: formatTimeAgo(sub.submitted_at),
+      status: sub.status,
+      page_url: sub.page_url,
+      source: sub.submission_source,
+      contact: {
+        name: extractNameFromForm(formData),
+        email: extractEmailFromForm(formData),
+        phone: extractPhoneFromForm(formData)
+      },
+      form_fields: getCleanFormFields(formData)
+    };
+  });
+  
+  // Apply role-based redaction
+  const redactedData = redactForRole(processedSubmissions, userRole);
+  
+  return {
+    items: sanitizeDataForPrompt(redactedData),
+    result_count: processedSubmissions.length,
+    total_count: count || 0,
+    next_offset: processedSubmissions.length >= limit ? offset + limit : null
+  };
+}
+
+// Get social media posts from content calendar
+async function getSocialMediaPosts(supabase: any, params: any, clientId: string) {
+  let query = supabase
+    .from('social_media_posts')
+    .select('id, status, scheduled_date, posted_at, platforms, topic_category, caption_text, hashtags, image_url, late_status, late_error_message', { count: 'exact' })
+    .eq('client_id', clientId);
+  
+  // Apply filters
+  if (params.status) query = query.eq('status', params.status);
+  if (params.platform) {
+    query = query.contains('platforms', [params.platform]);
+  }
+  if (params.topic_category) query = query.eq('topic_category', params.topic_category);
+  if (params.date_from) query = query.gte('scheduled_date', params.date_from);
+  if (params.date_to) query = query.lte('scheduled_date', params.date_to);
+  
+  const limit = Math.min(params.limit || 20, 50);
+  const offset = params.offset || 0;
+  
+  query = query.order('scheduled_date', { ascending: false }).range(offset, offset + limit - 1);
+  
+  const { data, count, error } = await query;
+  
+  if (error) throw error;
+  
+  // Check which posts have analytics
+  const postIds = (data || []).map((p: any) => p.id);
+  const { data: analyticsData } = await supabase
+    .from('social_post_analytics')
+    .select('post_id')
+    .in('post_id', postIds);
+  
+  const analyticsSet = new Set((analyticsData || []).map((a: any) => a.post_id));
+  
+  const processedPosts = (data || []).map((post: any) => ({
+    id: post.id,
+    status: post.status,
+    scheduled_date: post.scheduled_date,
+    posted_at: post.posted_at,
+    platforms: post.platforms,
+    topic_category: post.topic_category,
+    caption_preview: post.caption_text?.substring(0, 150) || '',
+    hashtags: post.hashtags,
+    has_image: !!post.image_url,
+    late_status: post.late_status,
+    has_error: !!post.late_error_message,
+    error_message: post.late_error_message,
+    has_analytics: analyticsSet.has(post.id)
+  }));
+  
+  return {
+    items: sanitizeDataForPrompt(processedPosts),
+    result_count: processedPosts.length,
+    total_count: count || 0,
+    next_offset: processedPosts.length >= limit ? offset + limit : null
+  };
+}
+
+// Get social media post analytics
+async function getSocialPostAnalytics(supabase: any, params: any, clientId: string) {
+  let query = supabase
+    .from('social_post_analytics')
+    .select(`
+      id, post_id, platform, published_at, impressions, reach, engagement, 
+      likes, comments, shares, saves, clicks, synced_at,
+      social_media_posts!inner(client_id, caption_text, topic_category, platforms)
+    `, { count: 'exact' })
+    .eq('social_media_posts.client_id', clientId);
+  
+  // Apply filters
+  if (params.post_id) query = query.eq('post_id', params.post_id);
+  if (params.platform) query = query.eq('platform', params.platform);
+  if (params.date_from) query = query.gte('published_at', params.date_from);
+  if (params.date_to) query = query.lte('published_at', params.date_to);
+  
+  const limit = Math.min(params.limit || 20, 50);
+  const offset = params.offset || 0;
+  
+  // Default sort by published_at unless specified
+  const sortBy = params.sort_by || 'published_at';
+  query = query.order(sortBy, { ascending: false }).range(offset, offset + limit - 1);
+  
+  const { data, count, error } = await query;
+  
+  if (error) throw error;
+  
+  const processedAnalytics = (data || []).map((item: any) => {
+    const engagementRate = item.reach > 0 ? ((item.engagement / item.reach) * 100).toFixed(2) : '0.00';
+    
+    return {
+      post_id: item.post_id,
+      platform: item.platform,
+      published_at: item.published_at,
+      caption_preview: item.social_media_posts?.caption_text?.substring(0, 100) || '',
+      topic_category: item.social_media_posts?.topic_category,
+      metrics: {
+        impressions: item.impressions || 0,
+        reach: item.reach || 0,
+        engagement: item.engagement || 0,
+        engagement_rate: parseFloat(engagementRate),
+        likes: item.likes || 0,
+        comments: item.comments || 0,
+        shares: item.shares || 0,
+        saves: item.saves || 0,
+        clicks: item.clicks || 0
+      },
+      synced_at: item.synced_at
+    };
+  });
+  
+  return {
+    items: sanitizeDataForPrompt(processedAnalytics),
+    result_count: processedAnalytics.length,
+    total_count: count || 0,
+    next_offset: processedAnalytics.length >= limit ? offset + limit : null
+  };
+}
+
+// Get website analytics (traffic, sources, conversions)
+async function getWebsiteAnalytics(supabase: any, params: any, clientId: string) {
+  const metricType = params.metric_type || 'overview';
+  
+  // Default to last 30 days if no date range specified
+  const dateFrom = params.date_from || new Date(Date.now() - 30*24*60*60*1000).toISOString().split('T')[0];
+  const dateTo = params.date_to || new Date().toISOString().split('T')[0];
+  
+  try {
+    if (metricType === 'overview') {
+      // Get aggregated overview metrics
+      const { data: pageData } = await supabase
+        .from('page_daily')
+        .select('unique_sessions, total_pageviews, total_engaged_seconds')
+        .eq('client_id', clientId)
+        .gte('day', dateFrom)
+        .lte('day', dateTo);
+      
+      const { data: sourceData } = await supabase
+        .from('sources_daily')
+        .select('source, sessions')
+        .eq('client_id', clientId)
+        .gte('day', dateFrom)
+        .lte('day', dateTo)
+        .order('sessions', { ascending: false })
+        .limit(1);
+      
+      const { data: contentData } = await supabase
+        .from('content_daily')
+        .select('content_type, total_views')
+        .eq('client_id', clientId)
+        .gte('day', dateFrom)
+        .lte('day', dateTo)
+        .order('total_views', { ascending: false })
+        .limit(1);
+      
+      // Aggregate metrics
+      let totalSessions = 0, totalPageviews = 0, totalEngagedSeconds = 0;
+      
+      (pageData || []).forEach((row: any) => {
+        totalSessions += row.unique_sessions || 0;
+        totalPageviews += row.total_pageviews || 0;
+        totalEngagedSeconds += row.total_engaged_seconds || 0;
+      });
+      
+      const avgEngagementTime = totalSessions > 0 ? Math.round(totalEngagedSeconds / totalSessions) : 0;
+      
+      return {
+        period: { start: dateFrom, end: dateTo },
+        unique_visitors: totalSessions,
+        total_pageviews: totalPageviews,
+        avg_engagement_seconds: avgEngagementTime,
+        top_traffic_source: sourceData?.[0]?.source || 'N/A',
+        top_content_type: contentData?.[0]?.content_type || 'N/A'
+      };
+      
+    } else if (metricType === 'pages') {
+      const limit = Math.min(params.limit || 20, 50);
+      const offset = params.offset || 0;
+      
+      const { data, count } = await supabase
+        .from('page_daily')
+        .select('page_path, total_pageviews, unique_sessions, total_engaged_seconds, entry_sessions', { count: 'exact' })
+        .eq('client_id', clientId)
+        .gte('day', dateFrom)
+        .lte('day', dateTo)
+        .order('total_pageviews', { ascending: false })
+        .range(offset, offset + limit - 1);
+      
+      // Aggregate by page_path
+      const pageMap = new Map();
+      (data || []).forEach((row: any) => {
+        if (!pageMap.has(row.page_path)) {
+          pageMap.set(row.page_path, {
+            path: row.page_path,
+            pageviews: 0,
+            sessions: 0,
+            engaged_seconds: 0,
+            entries: 0
+          });
+        }
+        const page = pageMap.get(row.page_path);
+        page.pageviews += row.total_pageviews || 0;
+        page.sessions += row.unique_sessions || 0;
+        page.engaged_seconds += row.total_engaged_seconds || 0;
+        page.entries += row.entry_sessions || 0;
+      });
+      
+      const pages = Array.from(pageMap.values())
+        .sort((a, b) => b.pageviews - a.pageviews)
+        .map(p => ({
+          path: p.path,
+          total_pageviews: p.pageviews,
+          unique_sessions: p.sessions,
+          avg_engaged_seconds: p.sessions > 0 ? Math.round(p.engaged_seconds / p.sessions) : 0,
+          entry_sessions: p.entries
+        }));
+      
+      return {
+        items: sanitizeDataForPrompt(pages),
+        result_count: pages.length,
+        total_count: count || 0,
+        next_offset: pages.length >= limit ? offset + limit : null
+      };
+      
+    } else if (metricType === 'sources') {
+      const limit = Math.min(params.limit || 20, 50);
+      const offset = params.offset || 0;
+      
+      const { data, count } = await supabase
+        .from('sources_daily')
+        .select('source, medium, sessions, pageviews', { count: 'exact' })
+        .eq('client_id', clientId)
+        .gte('day', dateFrom)
+        .lte('day', dateTo)
+        .order('sessions', { ascending: false })
+        .range(offset, offset + limit - 1);
+      
+      // Aggregate by source/medium
+      const sourceMap = new Map();
+      (data || []).forEach((row: any) => {
+        const key = `${row.source}/${row.medium}`;
+        if (!sourceMap.has(key)) {
+          sourceMap.set(key, {
+            source: row.source,
+            medium: row.medium,
+            sessions: 0,
+            pageviews: 0
+          });
+        }
+        const src = sourceMap.get(key);
+        src.sessions += row.sessions || 0;
+        src.pageviews += row.pageviews || 0;
+      });
+      
+      const sources = Array.from(sourceMap.values())
+        .sort((a, b) => b.sessions - a.sessions);
+      
+      return {
+        items: sanitizeDataForPrompt(sources),
+        result_count: sources.length,
+        total_count: count || 0,
+        next_offset: sources.length >= limit ? offset + limit : null
+      };
+      
+    } else if (metricType === 'content') {
+      const limit = Math.min(params.limit || 20, 50);
+      const offset = params.offset || 0;
+      
+      const { data, count } = await supabase
+        .from('content_daily')
+        .select('content_type, content_slug, total_views, unique_visitors, entry_sessions', { count: 'exact' })
+        .eq('client_id', clientId)
+        .gte('day', dateFrom)
+        .lte('day', dateTo)
+        .order('total_views', { ascending: false })
+        .range(offset, offset + limit - 1);
+      
+      // Aggregate by content
+      const contentMap = new Map();
+      (data || []).forEach((row: any) => {
+        const key = `${row.content_type}:${row.content_slug}`;
+        if (!contentMap.has(key)) {
+          contentMap.set(key, {
+            content_type: row.content_type,
+            slug: row.content_slug,
+            views: 0,
+            visitors: 0,
+            entries: 0
+          });
+        }
+        const content = contentMap.get(key);
+        content.views += row.total_views || 0;
+        content.visitors += row.unique_visitors || 0;
+        content.entries += row.entry_sessions || 0;
+      });
+      
+      const content = Array.from(contentMap.values())
+        .sort((a, b) => b.views - a.views);
+      
+      return {
+        items: sanitizeDataForPrompt(content),
+        result_count: content.length,
+        total_count: count || 0,
+        next_offset: content.length >= limit ? offset + limit : null
+      };
+    }
+    
+    return { error: 'Invalid metric_type' };
+  } catch (error: any) {
+    console.error('Website analytics error:', error);
+    throw error;
+  }
+}
+
+// Get page content analysis (SEO scores, recommendations)
+async function getPageAnalysis(supabase: any, params: any, clientId: string) {
+  let query = supabase
+    .from('page_content_analysis')
+    .select(`
+      id, page_id, overall_score, clarity_score, tone_score, brevity_score,
+      avatar_alignment_score, strengths, weaknesses, recommendations,
+      analyzed_at, analyzed_by,
+      website_pages!inner(client_id, page_path, page_title, last_crawled_at),
+      profiles(name)
+    `, { count: 'exact' })
+    .eq('website_pages.client_id', clientId);
+  
+  // Filter out editor/platform domains
+  query = query.not('website_pages.page_path', 'like', '%my.duda.co%')
+    .not('website_pages.page_path', 'like', '%edit.duda.co%')
+    .not('website_pages.page_path', 'like', '%mywebsitemanager.co%')
+    .not('website_pages.page_path', 'like', '%/editor/%')
+    .not('website_pages.page_path', 'like', '%/preview/%');
+  
+  // Apply filters
+  if (params.page_id) query = query.eq('page_id', params.page_id);
+  if (params.min_score !== undefined) query = query.gte('overall_score', params.min_score);
+  if (params.max_score !== undefined) query = query.lte('overall_score', params.max_score);
+  
+  const limit = Math.min(params.limit || 20, 50);
+  const offset = params.offset || 0;
+  
+  // Sort by score ascending (lowest scores = highest priority)
+  query = query.order('overall_score', { ascending: true }).range(offset, offset + limit - 1);
+  
+  const { data, count, error } = await query;
+  
+  if (error) throw error;
+  
+  const processedAnalysis = (data || []).map((item: any) => ({
+    page_path: item.website_pages?.page_path,
+    page_title: item.website_pages?.page_title,
+    last_crawled_at: item.website_pages?.last_crawled_at,
+    analysis: {
+      overall_score: item.overall_score,
+      clarity_score: item.clarity_score,
+      tone_score: item.tone_score,
+      brevity_score: item.brevity_score,
+      avatar_alignment_score: item.avatar_alignment_score,
+      strengths: item.strengths || [],
+      weaknesses: item.weaknesses || [],
+      recommendations: item.recommendations || []
+    },
+    analyzed_at: item.analyzed_at,
+    analyzed_by_name: item.profiles?.name || 'System'
+  }));
+  
+  return {
+    items: sanitizeDataForPrompt(processedAnalysis),
+    result_count: processedAnalysis.length,
+    total_count: count || 0,
+    next_offset: processedAnalysis.length >= limit ? offset + limit : null
+  };
+}
+
 // Helper function to gather all Complete Offer inputs
 async function gatherGSOInputs(supabase: any, clientId: string) {
   const [avatars, services, channels, reports, client, marketingIdeas] = await Promise.all([
@@ -1305,6 +1819,212 @@ const tools = [
           }
         },
         required: ["stage", "data", "completeness"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_form_submissions",
+      description: "Get website form submissions (leads/inquiries) for the current client. Use this to analyze trends, identify follow-up needs, or answer questions about recent contact requests. Returns contact details, form content, submission times, and status.",
+      parameters: {
+        type: "object",
+        properties: {
+          status: { 
+            type: "string", 
+            enum: ["unread", "read", "responded", "archived"], 
+            description: "Filter by submission status" 
+          },
+          date_from: { 
+            type: "string", 
+            format: "date", 
+            description: "Filter submissions from this date (ISO format YYYY-MM-DD)" 
+          },
+          date_to: { 
+            type: "string", 
+            format: "date", 
+            description: "Filter submissions to this date (ISO format YYYY-MM-DD)" 
+          },
+          limit: { 
+            type: "number", 
+            description: "Number of results (max 50)", 
+            default: 20 
+          },
+          offset: { 
+            type: "number", 
+            description: "Offset for pagination", 
+            default: 0 
+          }
+        }
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_social_media_posts",
+      description: "Get social media posts from the content calendar. Use this to review posting schedule, content topics, and identify gaps or errors. Returns post details, status, platforms, scheduling info, and error flags.",
+      parameters: {
+        type: "object",
+        properties: {
+          status: {
+            type: "string",
+            enum: ["draft", "scheduled", "posted", "published", "failed"],
+            description: "Filter by post status"
+          },
+          platform: {
+            type: "string",
+            enum: ["facebook", "instagram", "linkedin", "twitter"],
+            description: "Filter by specific platform"
+          },
+          topic_category: {
+            type: "string",
+            description: "Filter by topic category"
+          },
+          date_from: {
+            type: "string",
+            format: "date",
+            description: "Filter posts from this date (ISO format YYYY-MM-DD)"
+          },
+          date_to: {
+            type: "string",
+            format: "date",
+            description: "Filter posts to this date (ISO format YYYY-MM-DD)"
+          },
+          limit: {
+            type: "number",
+            description: "Number of results (max 50)",
+            default: 20
+          },
+          offset: {
+            type: "number",
+            description: "Offset for pagination",
+            default: 0
+          }
+        }
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_social_post_analytics",
+      description: "Get performance analytics for published social media posts. Use this to identify top-performing content, analyze engagement trends, and compare platform performance. Returns impressions, reach, engagement rates, likes, comments, shares, and post context.",
+      parameters: {
+        type: "object",
+        properties: {
+          post_id: {
+            type: "string",
+            description: "Get analytics for specific post (optional)"
+          },
+          platform: {
+            type: "string",
+            enum: ["facebook", "instagram", "linkedin", "twitter"],
+            description: "Filter by platform"
+          },
+          date_from: {
+            type: "string",
+            format: "date",
+            description: "Filter posts from this date (ISO format YYYY-MM-DD)"
+          },
+          date_to: {
+            type: "string",
+            format: "date",
+            description: "Filter posts to this date (ISO format YYYY-MM-DD)"
+          },
+          sort_by: {
+            type: "string",
+            enum: ["published_at", "impressions", "engagement", "reach", "likes"],
+            description: "Sort results by metric (default: published_at)",
+            default: "published_at"
+          },
+          limit: {
+            type: "number",
+            description: "Number of results (max 50)",
+            default: 20
+          },
+          offset: {
+            type: "number",
+            description: "Offset for pagination",
+            default: 0
+          }
+        }
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_website_analytics",
+      description: "Get website traffic, visitor, and conversion analytics. Use this for overall site performance, page popularity, traffic sources, and content effectiveness. Supports different metric types: overview (summary), pages (top pages), sources (traffic sources), content (content performance).",
+      parameters: {
+        type: "object",
+        properties: {
+          metric_type: {
+            type: "string",
+            enum: ["overview", "pages", "sources", "content"],
+            description: "Type of analytics to retrieve",
+            default: "overview"
+          },
+          date_from: {
+            type: "string",
+            format: "date",
+            description: "Start date for analytics (ISO format YYYY-MM-DD). Defaults to 30 days ago."
+          },
+          date_to: {
+            type: "string",
+            format: "date",
+            description: "End date for analytics (ISO format YYYY-MM-DD). Defaults to today."
+          },
+          limit: {
+            type: "number",
+            description: "Number of results for pages/sources/content (max 50)",
+            default: 20
+          },
+          offset: {
+            type: "number",
+            description: "Offset for pagination",
+            default: 0
+          }
+        }
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_page_analysis",
+      description: "Get SEO and content quality analysis for website pages. Use this to identify pages needing optimization, review content scores, and get specific improvement recommendations. Returns overall scores, clarity/tone/brevity breakdowns, avatar alignment, strengths, weaknesses, and actionable recommendations.",
+      parameters: {
+        type: "object",
+        properties: {
+          page_id: {
+            type: "string",
+            description: "Get analysis for specific page (optional)"
+          },
+          min_score: {
+            type: "number",
+            description: "Filter pages with score >= this value (0-100)",
+            minimum: 0,
+            maximum: 100
+          },
+          max_score: {
+            type: "number",
+            description: "Filter pages with score <= this value (0-100)",
+            minimum: 0,
+            maximum: 100
+          },
+          limit: {
+            type: "number",
+            description: "Number of results (max 50)",
+            default: 20
+          },
+          offset: {
+            type: "number",
+            description: "Offset for pagination",
+            default: 0
+          }
+        }
       }
     }
   }
@@ -2076,10 +2796,15 @@ Keep navigation responses:
 Always acknowledge the user's question first, then provide guidance.
 
 You have access to:
-- Client information, services, and avatars
-- Tasks, reports, meetings, and tickets
-- Marketing channels and performance data
+- Client information, services, and customer avatars
+- Tasks, reports, meetings, and support tickets
+- Marketing channels, tools, and performance data
 - Assets and communication logs
+- Website form submissions (leads and inquiries)
+- Social media content calendar and posts
+- Social media performance analytics (impressions, engagement, reach)
+- Website analytics (traffic, visitors, sources, conversions)
+- Page content analysis (SEO scores, recommendations)
 
 UNDERSTANDING TIME CONTEXT
 - Today's date: ${new Date().toISOString().split('T')[0]}
@@ -2147,6 +2872,40 @@ When analyzing meetings:
   * Key decisions made (from decisions array)
   * Action items generated (from next_steps array)
   * Meeting frequency/cadence patterns
+
+When analyzing form submissions:
+- Highlight unread submissions needing follow-up
+- Identify patterns in inquiry types and timing
+- Compare current period to previous for growth trends
+- Suggest prioritization based on inquiry quality
+- Note response time gaps
+- Extract actual questions/requests from form fields
+
+When analyzing social media:
+- Review posting consistency (gaps, frequency)
+- Identify top-performing content by engagement rate
+- Compare performance across platforms
+- Analyze topic distribution and suggest balance
+- Flag posts with errors or scheduling issues
+- Recommend optimal posting patterns based on engagement data
+- Connect content topics to audience interests
+
+When analyzing website performance:
+- Summarize traffic trends (growth, decline, stability)
+- Identify top-performing pages and content
+- Analyze traffic sources and their quality
+- Calculate engagement metrics (time on site, pages per session)
+- Compare current period to previous for trend context
+- Highlight conversion opportunities (high traffic, potential for leads)
+- Connect traffic patterns to marketing activities
+
+When analyzing page content:
+- Prioritize pages by score (lowest = highest priority)
+- Connect weaknesses to specific recommendations
+- Assess avatar alignment for messaging effectiveness
+- Suggest quick wins (high-impact, low-effort improvements)
+- Consider traffic volume when prioritizing optimizations
+- Explain SEO/content quality impact in simple terms
 
 When analyzing marketing channels:
 - Interpret progress percentages:
@@ -2795,6 +3554,21 @@ ${historicalContext.join('\n\n')}
               break;
             case 'extract_launchpad_data':
               result = await extractLaunchpadData(supabaseClient, args, client_id, submission_id);
+              break;
+            case 'get_form_submissions':
+              result = await getFormSubmissions(supabaseClient, args, client_id, userRole);
+              break;
+            case 'get_social_media_posts':
+              result = await getSocialMediaPosts(supabaseClient, args, client_id);
+              break;
+            case 'get_social_post_analytics':
+              result = await getSocialPostAnalytics(supabaseClient, args, client_id);
+              break;
+            case 'get_website_analytics':
+              result = await getWebsiteAnalytics(supabaseClient, args, client_id);
+              break;
+            case 'get_page_analysis':
+              result = await getPageAnalysis(supabaseClient, args, client_id);
               break;
             default:
               result = { error: 'Unknown function' };
