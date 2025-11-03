@@ -93,7 +93,7 @@ export default function Analytics() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold">Analytics</h1>
-          <Button onClick={() => navigate('/settings?tab=analytics')}>
+          <Button onClick={() => navigate('/settings?tab=integrations')}>
             <Settings className="h-4 w-4 mr-2" />
             Setup Analytics
           </Button>
@@ -105,7 +105,7 @@ export default function Analytics() {
             <p className="text-muted-foreground max-w-md mx-auto">
               Generate a workspace key to start tracking website visitors
             </p>
-            <Button onClick={() => navigate('/settings?tab=analytics')}>
+            <Button onClick={() => navigate('/settings?tab=integrations')}>
               Go to Settings
             </Button>
           </CardContent>
@@ -120,7 +120,7 @@ export default function Analytics() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold">Analytics</h1>
-          <Button variant="outline" onClick={() => navigate('/settings?tab=analytics')}>
+          <Button variant="outline" onClick={() => navigate('/settings?tab=integrations')}>
             <Settings className="h-4 w-4 mr-2" />
             View Setup Instructions
           </Button>
@@ -132,7 +132,7 @@ export default function Analytics() {
             <p className="text-muted-foreground max-w-md mx-auto">
               Install the tracking code on your website to see analytics here
             </p>
-            <Button variant="outline" onClick={() => navigate('/settings?tab=analytics')}>
+            <Button variant="outline" onClick={() => navigate('/settings?tab=integrations')}>
               View Installation Instructions
             </Button>
           </CardContent>
@@ -156,7 +156,7 @@ export default function Analytics() {
               Live
             </Badge>
           )}
-          <Button variant="outline" onClick={() => navigate('/settings?tab=analytics')}>
+          <Button variant="outline" onClick={() => navigate('/settings?tab=integrations')}>
             <Settings className="h-4 w-4 mr-2" />
             Settings
           </Button>
