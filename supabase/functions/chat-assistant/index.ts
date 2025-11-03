@@ -1447,6 +1447,305 @@ async function getWebsiteAnalytics(supabase: any, params: any, clientId: string)
   }
 }
 
+// Draft a personalized follow-up email for a form submission
+async function draftEmail(supabase: any, params: any, clientId: string) {
+  try {
+    const { submission_id, tone = 'friendly', key_points = [] } = params;
+    
+    // Fetch the submission data
+    const { data: submission, error: subError } = await supabase
+      .from('website_form_submissions')
+      .select('*')
+      .eq('id', submission_id)
+      .eq('client_id', clientId)
+      .single();
+    
+    if (subError || !submission) {
+      throw new Error('Form submission not found');
+    }
+    
+    // Fetch client info
+    const { data: client, error: clientError } = await supabase
+      .from('clients')
+      .select('name, website_url')
+      .eq('id', clientId)
+      .single();
+    
+    if (clientError) throw clientError;
+    
+    // Parse form data
+    const formData = submission.form_data || {};
+    const recipientName = formData.name || submission.contact_name || 'there';
+    const recipientEmail = formData.email || submission.contact_email;
+    const message = formData.message || formData.comments || formData.project_details || '';
+    
+    // Build prompt for AI
+    const keyPointsText = key_points.length > 0 
+      ? `\n\nMake sure to address these key points:\n${key_points.map((p: string) => `- ${p}`).join('\n')}`
+      : '';
+    
+    const prompt = `You are writing a personalized follow-up email for ${client.name}.
+
+LEAD INFORMATION:
+- Name: ${recipientName}
+- Email: ${recipientEmail}
+- Submitted: ${new Date(submission.submitted_at).toLocaleDateString()}
+- Their message: "${message}"
+
+TONE: ${tone}
+
+REQUIREMENTS:
+- Keep it under 250 words
+- Be warm and professional
+- Reference their specific inquiry
+- Suggest next steps (call, consultation, meeting)
+- Include a clear call-to-action${keyPointsText}
+
+Generate ONLY a JSON response with this structure:
+{
+  "subject": "email subject line",
+  "body": "email body text"
+}
+
+Do not include any markdown formatting, greetings like "Here's the email:", or extra text. Just the JSON.`;
+
+    // Call Lovable AI
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'google/gemini-2.5-flash',
+        messages: [
+          { role: 'user', content: prompt }
+        ]
+      })
+    });
+    
+    if (!aiResponse.ok) {
+      throw new Error(`AI API error: ${aiResponse.status}`);
+    }
+    
+    const aiData = await aiResponse.json();
+    const content = aiData.choices?.[0]?.message?.content || '{}';
+    
+    // Parse JSON response
+    let emailDraft;
+    try {
+      emailDraft = JSON.parse(content);
+    } catch {
+      // Fallback if AI doesn't return proper JSON
+      emailDraft = {
+        subject: `Re: Your inquiry - ${client.name}`,
+        body: content
+      };
+    }
+    
+    return {
+      submission_id,
+      recipient_name: recipientName,
+      recipient_email: recipientEmail,
+      subject: emailDraft.subject,
+      body: emailDraft.body,
+      tone
+    };
+    
+  } catch (error: any) {
+    console.error('Draft email error:', error);
+    throw error;
+  }
+}
+
+// Create a task reminder to send a drafted email
+async function createEmailTask(supabase: any, params: any, clientId: string, userId: string) {
+  try {
+    const {
+      submission_id,
+      email_subject,
+      email_body,
+      recipient_email,
+      recipient_name,
+      due_date,
+      priority = 'medium'
+    } = params;
+    
+    // Verify submission exists
+    const { data: submission, error: subError } = await supabase
+      .from('website_form_submissions')
+      .select('submitted_at')
+      .eq('id', submission_id)
+      .eq('client_id', clientId)
+      .single();
+    
+    if (subError) throw new Error('Form submission not found');
+    
+    // Get default task column for client
+    const { data: column } = await supabase
+      .from('task_columns')
+      .select('id')
+      .eq('client_id', clientId)
+      .eq('key', 'to_do')
+      .single();
+    
+    const taskTitle = `Send email to ${recipient_name}`;
+    
+    // Format task description with email details
+    const taskDescription = `**Email Ready to Send:**
+
+**To:** ${recipient_email}
+**Subject:** ${email_subject}
+
+**Body:**
+${email_body}
+
+---
+*This email was drafted for form submission from ${recipient_name} on ${new Date(submission.submitted_at).toLocaleDateString()}*`;
+    
+    // Set due date (default to today if not provided)
+    const taskDueDate = due_date || new Date().toISOString().split('T')[0];
+    
+    // Create the task
+    const { data: task, error: taskError } = await supabase
+      .from('tasks')
+      .insert({
+        client_id: clientId,
+        title: taskTitle,
+        description: taskDescription,
+        status: 'to_do',
+        column_id: column?.id,
+        assignee_user_id: userId,
+        creator_user_id: userId,
+        priority,
+        due_date: taskDueDate,
+        metadata: {
+          type: 'email_followup',
+          submission_id,
+          recipient_email,
+          email_subject
+        }
+      })
+      .select()
+      .single();
+    
+    if (taskError) throw taskError;
+    
+    return {
+      success: true,
+      task_id: task.id,
+      task_title: taskTitle,
+      due_date: taskDueDate,
+      recipient_name,
+      recipient_email
+    };
+    
+  } catch (error: any) {
+    console.error('Create email task error:', error);
+    throw error;
+  }
+}
+
+// Create a general follow-up task from a form submission (non-email)
+async function createTaskFromSubmission(supabase: any, params: any, clientId: string, userId: string) {
+  try {
+    const {
+      submission_id,
+      title,
+      due_date,
+      assignee_id,
+      priority = 'medium',
+      notes
+    } = params;
+    
+    // Fetch submission data
+    const { data: submission, error: subError } = await supabase
+      .from('website_form_submissions')
+      .select('*')
+      .eq('id', submission_id)
+      .eq('client_id', clientId)
+      .single();
+    
+    if (subError) throw new Error('Form submission not found');
+    
+    const formData = submission.form_data || {};
+    const contactName = formData.name || submission.contact_name || 'Lead';
+    const projectType = formData.project_type || formData.service || 'inquiry';
+    
+    // Auto-generate title if not provided
+    const taskTitle = title || `Follow up with ${contactName} - ${projectType}`;
+    
+    // Calculate default due date (2 business days from now)
+    let defaultDueDate = new Date();
+    let daysAdded = 0;
+    while (daysAdded < 2) {
+      defaultDueDate.setDate(defaultDueDate.getDate() + 1);
+      const dayOfWeek = defaultDueDate.getDay();
+      if (dayOfWeek !== 0 && dayOfWeek !== 6) { // Skip weekends
+        daysAdded++;
+      }
+    }
+    
+    const taskDueDate = due_date || defaultDueDate.toISOString().split('T')[0];
+    
+    // Get default task column
+    const { data: column } = await supabase
+      .from('task_columns')
+      .select('id')
+      .eq('client_id', clientId)
+      .eq('key', 'to_do')
+      .single();
+    
+    // Build task description
+    let taskDescription = `Follow up on form submission from ${contactName}\n\n`;
+    taskDescription += `**Contact:** ${submission.contact_email || 'N/A'}\n`;
+    taskDescription += `**Submitted:** ${new Date(submission.submitted_at).toLocaleDateString()}\n`;
+    if (formData.message || formData.comments) {
+      taskDescription += `\n**Their message:**\n${formData.message || formData.comments}\n`;
+    }
+    if (notes) {
+      taskDescription += `\n**Notes:**\n${notes}`;
+    }
+    
+    // Create task
+    const { data: task, error: taskError } = await supabase
+      .from('tasks')
+      .insert({
+        client_id: clientId,
+        title: taskTitle,
+        description: taskDescription,
+        status: 'to_do',
+        column_id: column?.id,
+        assignee_user_id: assignee_id || userId,
+        creator_user_id: userId,
+        priority,
+        due_date: taskDueDate,
+        metadata: {
+          type: 'submission_followup',
+          submission_id
+        }
+      })
+      .select()
+      .single();
+    
+    if (taskError) throw taskError;
+    
+    return {
+      success: true,
+      task_id: task.id,
+      task_title: taskTitle,
+      due_date: taskDueDate,
+      assignee_name: assignee_id ? 'Team member' : 'You',
+      contact_name: contactName
+    };
+    
+  } catch (error: any) {
+    console.error('Create task from submission error:', error);
+    throw error;
+  }
+}
+
 // Get page content analysis (SEO scores, recommendations)
 async function getPageAnalysis(supabase: any, params: any, clientId: string) {
   let query = supabase
@@ -1663,6 +1962,118 @@ const tools = [
             }
           },
           required: []
+        }
+      }
+    },
+    {
+      type: "function",
+      function: {
+        name: "draft_email",
+        description: "Generate a personalized follow-up email for a form submission/lead. Use this when users ask to 'create an email', 'draft a response', 'write to [name]', or 'follow up with [lead]'. Returns a complete email with subject line and body that the user can review and edit.",
+        parameters: {
+          type: "object",
+          properties: {
+            submission_id: {
+              type: "string",
+              description: "The ID of the form submission to respond to (from get_form_submissions results)"
+            },
+            tone: {
+              type: "string",
+              enum: ["professional", "friendly", "urgent", "casual"],
+              description: "Tone of the email (default: friendly)",
+              default: "friendly"
+            },
+            key_points: {
+              type: "array",
+              items: { type: "string" },
+              description: "Optional: Specific points to address in the email (e.g., 'mention our recent kitchen remodel project', 'offer free consultation')"
+            }
+          },
+          required: ["submission_id"]
+        }
+      }
+    },
+    {
+      type: "function",
+      function: {
+        name: "create_email_task",
+        description: "Create a task reminder to send a drafted email. Use this when users want to save an email draft as a to-do item. The task includes the complete email (subject, body, recipient) so the user has everything ready when they go to send it. Automatically assigns to the current user. ONLY use this when user explicitly asks to create a task for the email.",
+        parameters: {
+          type: "object",
+          properties: {
+            submission_id: {
+              type: "string",
+              description: "The form submission this email is responding to"
+            },
+            email_subject: {
+              type: "string",
+              description: "The subject line of the drafted email"
+            },
+            email_body: {
+              type: "string",
+              description: "The complete body text of the email"
+            },
+            recipient_email: {
+              type: "string",
+              description: "Email address to send to"
+            },
+            recipient_name: {
+              type: "string",
+              description: "Name of the recipient"
+            },
+            due_date: {
+              type: "string",
+              format: "date",
+              description: "Optional: When to send the email (defaults to today)"
+            },
+            priority: {
+              type: "string",
+              enum: ["low", "medium", "high"],
+              description: "Task priority (default: medium)",
+              default: "medium"
+            }
+          },
+          required: ["submission_id", "email_subject", "email_body", "recipient_email", "recipient_name"]
+        }
+      }
+    },
+    {
+      type: "function",
+      function: {
+        name: "create_task_from_submission",
+        description: "Create a general follow-up task from a form submission (NOT for email drafts - use create_email_task for those). Use this when users want to add a lead to their task list for non-email follow-ups like 'remind me to call' or 'add to my tasks'. Auto-generates task details from the submission.",
+        parameters: {
+          type: "object",
+          properties: {
+            submission_id: {
+              type: "string",
+              description: "The form submission to create a task for"
+            },
+            title: {
+              type: "string",
+              description: "Optional: Custom task title (auto-generated if not provided)"
+            },
+            due_date: {
+              type: "string",
+              format: "date",
+              description: "Optional: When the task should be completed (defaults to 2 business days)"
+            },
+            assignee_id: {
+              type: "string",
+              description: "Optional: User to assign the task to (defaults to current user)"
+            },
+            priority: {
+              type: "string",
+              enum: ["low", "medium", "high"],
+              description: "Task priority (default: medium)",
+              default: "medium"
+            },
+            notes: {
+              type: "string",
+              description: "Optional: Additional context or instructions for the task"
+            }
+          },
+          required: ["submission_id"]
         }
       }
     },
@@ -3058,6 +3469,69 @@ When analyzing meetings:
 When analyzing form submissions:
 - Highlight unread submissions needing follow-up
 - Identify patterns in inquiry types and timing
+- Suggest creating follow-up tasks or drafting emails when appropriate
+
+**EMAIL DRAFTING WORKFLOW**
+
+When users ask to:
+- "Create an email for [name]"
+- "Draft a response to [lead]"
+- "Write a follow-up email"
+
+YOU MUST:
+1. Call get_form_submissions to find the lead (if not already in context)
+2. Call draft_email with the submission_id
+3. Display the drafted email clearly formatted
+4. Ask what they want to do with it:
+   - "Create a task to send this" → Call create_email_task
+   - "Make edits" → Provide suggestions or redraft with modifications
+   - "Just show me" → Done, no further action
+
+**Example Flow:**
+
+User: "Create an email for Robert Patrick"
+
+AI Actions:
+→ Call draft_email({ submission_id: "[Robert's ID]", tone: "friendly" })
+→ Display draft:
+
+---
+**Subject:** Re: Your Full Home Remodel Project
+
+**To:** robertwpatrick2022@gmail.com
+
+**Body:**
+Hi Robert,
+
+Thanks for reaching out about your home remodel project...
+
+[full email body]
+
+Best regards,
+[User Name]
+---
+
+Then ask: "Would you like me to create a task to send this email? I'll add it to your to-do list with all the details ready to go."
+
+**If user says yes:**
+→ Call create_email_task({
+    submission_id: "[id]",
+    email_subject: "[subject]",
+    email_body: "[body]",
+    recipient_email: "robertwpatrick2022@gmail.com",
+    recipient_name: "Robert Patrick"
+  })
+→ Confirm: "✅ Task created! I've added 'Send email to Robert Patrick' to your tasks with the complete email draft included. You can find it in your task list whenever you're ready to send."
+
+**IMPORTANT:**
+- Only create the task if user explicitly asks (don't do it automatically)
+- Task includes the FULL email draft so they have everything when sending
+- Task is assigned to current user (the person asking)
+- Default due date is today (email is ready to send)
+
+**For non-email follow-ups:**
+If users say "remind me to call" or "add to my tasks" WITHOUT an email draft:
+→ Use create_task_from_submission instead (generic task creation)
 - Compare current period to previous for growth trends
 - Suggest prioritization based on inquiry quality
 - Note response time gaps
@@ -3739,6 +4213,15 @@ ${historicalContext.join('\n\n')}
               break;
             case 'get_form_submissions':
               result = await getFormSubmissions(supabaseClient, args, client_id, userRole);
+              break;
+            case 'draft_email':
+              result = await draftEmail(supabaseClient, args, client_id);
+              break;
+            case 'create_email_task':
+              result = await createEmailTask(supabaseClient, args, client_id, user.id);
+              break;
+            case 'create_task_from_submission':
+              result = await createTaskFromSubmission(supabaseClient, args, client_id, user.id);
               break;
             case 'get_social_media_posts':
               result = await getSocialMediaPosts(supabaseClient, args, client_id);
