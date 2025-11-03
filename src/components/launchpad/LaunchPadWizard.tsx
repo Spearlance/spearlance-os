@@ -50,13 +50,27 @@ export function LaunchPadWizard() {
           completed_at: data.completed_at || {}
         } as LaunchPadSubmission);
         
-        // Check if welcome was completed
+        // Check if they've already started (has onboarding_mode OR has progressed past discovery)
+        const hasStarted = data.onboarding_mode || data.stage !== 'discovery';
         const completedAt = data.completed_at as Record<string, any> || {};
-        if (!completedAt.welcome) {
-          setShowModeSelector(true); // Show welcome screen
-        } else if (!data.onboarding_mode) {
-          setShowModeSelector(true); // Show mode selector if no mode chosen
+        
+        if (!hasStarted && !completedAt.welcome) {
+          // Brand new submission - show welcome screen
+          setShowModeSelector(true);
+        } else if (hasStarted && !data.onboarding_mode) {
+          // Started but no mode selected (edge case) - show mode selector
+          setShowModeSelector(true);
+        } else if (hasStarted && !completedAt.welcome) {
+          // Has mode and started but missing welcome timestamp - backfill it
+          console.log('[LaunchPad] Backfilling missing welcome timestamp');
+          await supabase
+            .from('launchpad_submissions')
+            .update({
+              completed_at: { ...completedAt, welcome: new Date().toISOString() } as any
+            })
+            .eq('id', data.id);
         }
+        // Otherwise, showModeSelector stays false and they continue where they left off
       } else {
         console.log('[LaunchPad] No submission found, showing welcome screen');
         // Show welcome screen for new submissions
@@ -214,7 +228,16 @@ export function LaunchPadWizard() {
 
   // Show mode selector if needed
   if (showModeSelector) {
-    return <LaunchPadModeSelector onSelectMode={handleModeSelect} />;
+    // Calculate progress if submission exists
+    let progress = 0;
+    if (submission) {
+      const completedAt = (submission.completed_at as Record<string, any>) || {};
+      if (completedAt.discovery) progress += 33;
+      if (completedAt.marketing) progress += 33;
+      if (completedAt.avatar) progress += 34;
+    }
+    
+    return <LaunchPadModeSelector onSelectMode={handleModeSelect} currentProgress={progress} />;
   }
 
   if (!submission) {

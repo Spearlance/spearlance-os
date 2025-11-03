@@ -5,9 +5,10 @@ import { CheckCircle2, Sparkles, Target, Users, Rocket } from "lucide-react";
 
 interface StageWelcomeProps {
   onStart: () => void;
+  currentProgress?: number;
 }
 
-export function StageWelcome({ onStart }: StageWelcomeProps) {
+export function StageWelcome({ onStart, currentProgress = 0 }: StageWelcomeProps) {
   return (
     <div className="max-w-4xl mx-auto space-y-8 py-8">
       {/* Hero Section */}
@@ -66,10 +67,15 @@ export function StageWelcome({ onStart }: StageWelcomeProps) {
       <Card className="p-6 bg-gradient-to-r from-primary/5 to-primary/10 border-primary/20">
         <div className="flex items-center justify-between mb-2">
           <span className="text-sm font-medium">Marketing Clarity Setup</span>
-          <span className="text-sm text-muted-foreground">0% → 100%</span>
+          <span className="text-sm text-muted-foreground">
+            {currentProgress}% → 100%
+          </span>
         </div>
         <div className="h-2 bg-background rounded-full overflow-hidden">
-          <div className="h-full w-0 bg-primary rounded-full transition-all duration-500" />
+          <div 
+            className="h-full bg-primary rounded-full transition-all duration-500"
+            style={{ width: `${currentProgress}%` }}
+          />
         </div>
       </Card>
 

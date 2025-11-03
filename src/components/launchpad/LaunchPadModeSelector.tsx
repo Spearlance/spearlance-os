@@ -7,13 +7,14 @@ import { useState } from "react";
 
 interface LaunchPadModeSelectorProps {
   onSelectMode: (mode: 'chat' | 'form') => void;
+  currentProgress?: number;
 }
 
-export function LaunchPadModeSelector({ onSelectMode }: LaunchPadModeSelectorProps) {
+export function LaunchPadModeSelector({ onSelectMode, currentProgress = 0 }: LaunchPadModeSelectorProps) {
   const [welcomeComplete, setWelcomeComplete] = useState(false);
 
   if (!welcomeComplete) {
-    return <StageWelcome onStart={() => setWelcomeComplete(true)} />;
+    return <StageWelcome onStart={() => setWelcomeComplete(true)} currentProgress={currentProgress} />;
   }
 
   return (
