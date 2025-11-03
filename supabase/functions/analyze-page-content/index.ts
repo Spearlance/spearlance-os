@@ -18,9 +18,9 @@ const constructPrompt = (page: any, avatar: any) => {
 **TARGET AVATAR:**
 - Name: ${avatar.avatar_name}
 - Demographics: ${avatar.demographics || 'Not specified'}
-- Pain Points: ${avatar.pain_points?.join(', ') || 'Not specified'}
-- Goals: ${avatar.goals?.join(', ') || 'Not specified'}
-- Preferred Tone: ${avatar.tone_preferences || 'Professional, helpful'}
+- Pain Points: ${avatar.pains || 'Not specified'}
+- Goals: ${avatar.goals || 'Not specified'}
+- Preferred Tone: ${avatar.tone_voice || 'Professional, helpful'}
 
 **GRADING CRITERIA:**
 
