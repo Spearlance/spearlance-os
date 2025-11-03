@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useClient } from "@/contexts/ClientContext";
 import { supabase } from "@/integrations/supabase/client";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
-import { Filter, X, Plus, ChevronLeft } from "lucide-react";
+import { Filter, X, Plus, ChevronLeft, Sparkles, Loader2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TaskDrawer } from "@/components/tasks/TaskDrawer";
 import { TemplateStageManager } from "@/components/tasks/TemplateStageManager";
@@ -13,6 +13,7 @@ import { TaskViewSelector } from "@/components/tasks/TaskViewSelector";
 import { TaskListView } from "@/components/tasks/TaskListView";
 import { TaskTableView } from "@/components/tasks/TaskTableView";
 import { WeeklyPlanView } from "@/components/tasks/WeeklyPlanView";
+import { RecommendedTasksDialog } from "@/components/tasks/RecommendedTasksDialog";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -58,6 +59,9 @@ export default function Tasks() {
   const [currentView, setCurrentView] = useState<"kanban" | "list" | "table" | "weekly">("kanban");
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [activeTab, setActiveTab] = useState("board");
+  const [showRecommendations, setShowRecommendations] = useState(false);
+  const [recommendations, setRecommendations] = useState<any[]>([]);
+  const [loadingRecommendations, setLoadingRecommendations] = useState(false);
   const [doneColumnExpanded, setDoneColumnExpanded] = useState(() => {
     const saved = localStorage.getItem(`kanban-done-expanded-${selectedClient?.id}`);
     return saved === 'true';
@@ -230,6 +234,38 @@ export default function Tasks() {
     if (data) {
       setMarketingChannels(data);
       console.log('Loaded channels:', data);
+    }
+  };
+
+  const loadRecommendations = async () => {
+    if (!selectedClient) return;
+    
+    setLoadingRecommendations(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('recommend-tasks', {
+        body: { client_id: selectedClient.id }
+      });
+      
+      if (error) throw error;
+      
+      setRecommendations(data.recommendations || []);
+      setShowRecommendations(true);
+      
+      if (data.recommendations?.length === 0) {
+        toast({
+          title: "No recommendations",
+          description: "No task recommendations found. Great job staying on top of everything!",
+        });
+      }
+    } catch (error) {
+      console.error('Error loading recommendations:', error);
+      toast({
+        title: "Failed to load recommendations",
+        description: error instanceof Error ? error.message : "An error occurred",
+        variant: "destructive"
+      });
+    } finally {
+      setLoadingRecommendations(false);
     }
   };
 
@@ -413,10 +449,29 @@ export default function Tasks() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Tasks</h1>
-        <Button onClick={() => setShowCreateDialog(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          New Task
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button 
+            variant="outline" 
+            onClick={loadRecommendations}
+            disabled={loadingRecommendations}
+          >
+            {loadingRecommendations ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Finding Tasks...
+              </>
+            ) : (
+              <>
+                <Sparkles className="mr-2 h-4 w-4" />
+                Find Recommended Tasks
+              </>
+            )}
+          </Button>
+          <Button onClick={() => setShowCreateDialog(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            New Task
+          </Button>
+        </div>
       </div>
 
       <Tabs defaultValue="board" value={activeTab} onValueChange={handleTabChange} className="space-y-6">
@@ -719,6 +774,16 @@ export default function Tasks() {
         open={showCreateDialog}
         onOpenChange={setShowCreateDialog}
         onSuccess={loadTasks}
+      />
+
+      <RecommendedTasksDialog
+        open={showRecommendations}
+        onOpenChange={setShowRecommendations}
+        recommendations={recommendations}
+        clientId={selectedClient?.id || ''}
+        onTaskAdded={loadTasks}
+        onRefresh={loadRecommendations}
+        isRefreshing={loadingRecommendations}
       />
     </div>
   );

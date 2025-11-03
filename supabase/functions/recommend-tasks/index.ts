@@ -1,0 +1,345 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+interface TaskRecommendation {
+  title: string;
+  description: string;
+  source: string;
+  priority: 'high' | 'normal' | 'low' | 'urgent';
+  suggested_due_date: string;
+  linked_entity_type: 'submission' | 'meeting' | 'communication' | 'social_post' | null;
+  linked_entity_id: string | null;
+}
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const { client_id } = await req.json();
+    
+    if (!client_id) {
+      throw new Error('client_id is required');
+    }
+
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    if (!LOVABLE_API_KEY) {
+      throw new Error('LOVABLE_API_KEY not configured');
+    }
+
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
+    console.log('Fetching data for client:', client_id);
+
+    // Fetch all data sources in parallel
+    const now = new Date();
+    const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const sevenDaysAhead = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+    const [
+      submissionsResult,
+      upcomingMeetingsResult,
+      recentMeetingsResult,
+      communicationsResult,
+      socialPostsResult,
+      existingTasksResult
+    ] = await Promise.all([
+      // Unresponded form submissions (last 14 days)
+      supabaseClient
+        .from('website_form_submissions')
+        .select('id, contact_name, form_type, submitted_at, status')
+        .eq('client_id', client_id)
+        .neq('status', 'responded')
+        .gte('submitted_at', fourteenDaysAgo.toISOString())
+        .order('submitted_at', { ascending: false })
+        .limit(10),
+
+      // Upcoming meetings (next 7 days) without notes
+      supabaseClient
+        .from('meetings')
+        .select('id, title, attendees, date_time, notes')
+        .eq('client_id', client_id)
+        .gte('date_time', now.toISOString())
+        .lte('date_time', sevenDaysAhead.toISOString())
+        .order('date_time', { ascending: true })
+        .limit(10),
+
+      // Recent meetings (past 7 days) - check if follow-up logged
+      supabaseClient
+        .from('meetings')
+        .select('id, title, attendees, date_time')
+        .eq('client_id', client_id)
+        .gte('date_time', sevenDaysAgo.toISOString())
+        .lt('date_time', now.toISOString())
+        .order('date_time', { ascending: false })
+        .limit(10),
+
+      // Communications needing follow-up (past 30 days)
+      supabaseClient
+        .from('communication_logs')
+        .select('id, contact_name, communication_type, date, notes, follow_up_required')
+        .eq('client_id', client_id)
+        .eq('follow_up_required', true)
+        .gte('date', thirtyDaysAgo.toISOString())
+        .order('date', { ascending: false })
+        .limit(10),
+
+      // Social media drafts and scheduled posts without media
+      supabaseClient
+        .from('social_media_posts')
+        .select('id, status, scheduled_for, content, media_url')
+        .eq('client_id', client_id)
+        .in('status', ['draft', 'scheduled'])
+        .order('scheduled_for', { ascending: true })
+        .limit(20),
+
+      // Existing tasks (to avoid duplicates)
+      supabaseClient
+        .from('tasks')
+        .select('id, title, status')
+        .eq('client_id', client_id)
+        .in('status', ['to_do', 'in_progress'])
+        .limit(50)
+    ]);
+
+    if (submissionsResult.error) throw submissionsResult.error;
+    if (upcomingMeetingsResult.error) throw upcomingMeetingsResult.error;
+    if (recentMeetingsResult.error) throw recentMeetingsResult.error;
+    if (communicationsResult.error) throw communicationsResult.error;
+    if (socialPostsResult.error) throw socialPostsResult.error;
+    if (existingTasksResult.error) throw existingTasksResult.error;
+
+    const submissions = submissionsResult.data || [];
+    const upcomingMeetings = upcomingMeetingsResult.data || [];
+    const recentMeetings = recentMeetingsResult.data || [];
+    const communications = communicationsResult.data || [];
+    const socialPosts = socialPostsResult.data || [];
+    const existingTasks = existingTasksResult.data || [];
+
+    // Filter social posts
+    const draftPosts = socialPosts.filter(p => p.status === 'draft');
+    const scheduledPostsWithoutMedia = socialPosts.filter(p => p.status === 'scheduled' && !p.media_url);
+
+    // Check recent meetings for follow-up communications
+    const recentMeetingsWithoutFollowup = [];
+    for (const meeting of recentMeetings) {
+      const { data: followupComms } = await supabaseClient
+        .from('communication_logs')
+        .select('id')
+        .eq('client_id', client_id)
+        .eq('meeting_id', meeting.id)
+        .gte('date', meeting.date_time)
+        .limit(1);
+      
+      if (!followupComms || followupComms.length === 0) {
+        recentMeetingsWithoutFollowup.push(meeting);
+      }
+    }
+
+    console.log('Data fetched:', {
+      submissions: submissions.length,
+      upcomingMeetings: upcomingMeetings.length,
+      recentMeetingsWithoutFollowup: recentMeetingsWithoutFollowup.length,
+      communications: communications.length,
+      draftPosts: draftPosts.length,
+      scheduledPostsWithoutMedia: scheduledPostsWithoutMedia.length,
+      existingTasks: existingTasks.length
+    });
+
+    // Calculate days ago helper
+    const daysAgo = (dateStr: string) => {
+      const date = new Date(dateStr);
+      const days = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+      return days;
+    };
+
+    const daysUntil = (dateStr: string) => {
+      const date = new Date(dateStr);
+      const days = Math.floor((date.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+      return days;
+    };
+
+    const formatDate = (dateStr: string) => {
+      return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    };
+
+    // Build AI prompt
+    const systemPrompt = `You are a task recommendation AI for a marketing agency. 
+Your job is to analyze recent client activity and suggest specific, actionable tasks.
+
+RULES:
+- Generate 5-10 task suggestions maximum
+- Each task must be specific and actionable (not vague)
+- Prioritize high-impact, time-sensitive items
+- Do NOT suggest tasks that already exist in the task list
+- Focus on follow-ups, deadlines, and opportunities being missed
+- Tasks should be completable within 1-2 hours each
+- Return ONLY valid JSON, no additional text
+
+GOOD EXAMPLES:
+✅ "Follow up with Robert Patrick about his home remodel inquiry (submitted 2 days ago)"
+✅ "Prepare agenda for client meeting with Sarah Johnson on Nov 5"
+✅ "Review and approve 3 pending social media posts for this week"
+
+BAD EXAMPLES:
+❌ "Work on marketing" (too vague)
+❌ "Update website" (too broad)
+❌ "Check emails" (not specific)
+
+Return JSON in this exact format:
+{
+  "recommendations": [
+    {
+      "title": "Task title (max 80 chars)",
+      "description": "Why this task is needed and what it involves (max 200 chars)",
+      "source": "Where this task came from (e.g., 'Form submission: Robert Patrick', 'Upcoming meeting')",
+      "priority": "urgent" | "high" | "normal" | "low",
+      "suggested_due_date": "YYYY-MM-DD",
+      "linked_entity_type": "submission" | "meeting" | "communication" | "social_post" | null,
+      "linked_entity_id": "uuid or null"
+    }
+  ]
+}`;
+
+    let userPrompt = 'CURRENT DATE: ' + now.toISOString().split('T')[0] + '\\n\\n';
+
+    if (submissions.length > 0) {
+      userPrompt += 'RECENT FORM SUBMISSIONS (Unresponded):\\n';
+      userPrompt += submissions.map(s => 
+        `- ${s.contact_name} (${s.form_type}) - submitted ${daysAgo(s.submitted_at)} days ago [ID: ${s.id}]`
+      ).join('\\n') + '\\n\\n';
+    }
+
+    if (upcomingMeetings.length > 0) {
+      userPrompt += 'UPCOMING MEETINGS (Next 7 days):\\n';
+      userPrompt += upcomingMeetings.map(m => 
+        `- "${m.title}" with ${m.attendees || 'TBD'} on ${formatDate(m.date_time)} (in ${daysUntil(m.date_time)} days) ${!m.notes || m.notes.trim() === '' ? '⚠️ No prep notes yet' : ''} [ID: ${m.id}]`
+      ).join('\\n') + '\\n\\n';
+    }
+
+    if (recentMeetingsWithoutFollowup.length > 0) {
+      userPrompt += 'RECENT MEETINGS (Past 7 days without follow-up):\\n';
+      userPrompt += recentMeetingsWithoutFollowup.map(m => 
+        `- "${m.title}" with ${m.attendees || 'unknown'} on ${formatDate(m.date_time)} (${daysAgo(m.date_time)} days ago) [ID: ${m.id}]`
+      ).join('\\n') + '\\n\\n';
+    }
+
+    if (communications.length > 0) {
+      userPrompt += 'COMMUNICATIONS NEEDING FOLLOW-UP:\\n';
+      userPrompt += communications.map(c => 
+        `- ${c.contact_name} (${c.communication_type}) on ${formatDate(c.date)} - "${c.notes?.substring(0, 50) || 'No notes'}" [ID: ${c.id}]`
+      ).join('\\n') + '\\n\\n';
+    }
+
+    if (draftPosts.length > 0 || scheduledPostsWithoutMedia.length > 0) {
+      userPrompt += 'SOCIAL MEDIA POSTS:\\n';
+
+      if (draftPosts.length > 0) {
+        userPrompt += `- ${draftPosts.length} draft posts awaiting review\\n`;
+      }
+      if (scheduledPostsWithoutMedia.length > 0) {
+        userPrompt += `- ${scheduledPostsWithoutMedia.length} scheduled posts missing images\\n`;
+      }
+      userPrompt += '\\n';
+    }
+
+    if (existingTasks.length > 0) {
+      userPrompt += 'EXISTING TASKS (Do NOT duplicate):\\n';
+      userPrompt += existingTasks.slice(0, 20).map(t => `- ${t.title}`).join('\\n') + '\\n\\n';
+    }
+
+    // Check if there's any data to analyze
+    const hasData = submissions.length > 0 || upcomingMeetings.length > 0 || 
+                    recentMeetingsWithoutFollowup.length > 0 || communications.length > 0 || 
+                    draftPosts.length > 0 || scheduledPostsWithoutMedia.length > 0;
+
+    if (!hasData) {
+      console.log('No data found to generate recommendations');
+      return new Response(
+        JSON.stringify({ 
+          success: true,
+          recommendations: [],
+          message: 'No recent activity found to generate task recommendations. Great job staying on top of everything!'
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    userPrompt += 'Generate task recommendations based on the above data. Focus on the most urgent and impactful tasks.';
+
+    console.log('Calling Lovable AI...');
+
+    // Call Lovable AI
+    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'google/gemini-2.5-flash',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt }
+        ],
+        response_format: { type: 'json_object' }
+      }),
+    });
+
+    if (!aiResponse.ok) {
+      const errorText = await aiResponse.text();
+      console.error('AI API error:', aiResponse.status, errorText);
+      throw new Error(`AI API error: ${aiResponse.status}`);
+    }
+
+    const aiResult = await aiResponse.json();
+    const content = aiResult.choices[0].message.content;
+    
+    console.log('AI response received');
+
+    let recommendations: TaskRecommendation[];
+    try {
+      const parsed = JSON.parse(content);
+      recommendations = parsed.recommendations || [];
+    } catch (parseError) {
+      console.error('Failed to parse AI response:', content);
+      throw new Error('Failed to parse AI response');
+    }
+
+    console.log(`Generated ${recommendations.length} recommendations`);
+
+    return new Response(
+      JSON.stringify({ 
+        success: true,
+        recommendations: recommendations,
+        count: recommendations.length
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+
+  } catch (error) {
+    console.error('Error in recommend-tasks:', error);
+    return new Response(
+      JSON.stringify({ 
+        error: error instanceof Error ? error.message : 'Unknown error',
+        success: false,
+        recommendations: []
+      }),
+      { 
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      }
+    );
+  }
+});
