@@ -1619,11 +1619,210 @@ const tools = [
       description: "Get basic information about the current client including name, status, and activity counts",
       parameters: { type: "object", properties: {}, required: [] }
     }
-  },
-  {
-    type: "function",
-    function: {
-      name: "get_meetings",
+    },
+    {
+      type: "function",
+      function: {
+        name: "assess_account_status",
+        description: "Get comprehensive account status including LaunchPad completion, setup progress, and readiness metrics for the current client",
+        parameters: {
+          type: "object",
+          properties: {},
+          required: []
+        }
+      }
+    },
+    {
+      type: "function",
+      function: {
+        name: "get_form_submissions",
+        description: "Get website form submissions, leads, inquiries, and contact form data for the current client. USE THIS TOOL when users ask about: 'form submissions', 'leads', 'inquiries', 'contact requests', 'website forms', 'recent submissions', 'new leads', 'form fills', or anything related to people contacting through the website. Returns contact details, form content, submission times, and status.",
+        parameters: {
+          type: "object",
+          properties: {
+            status: {
+              type: "string",
+              enum: ["unread", "read", "responded", "archived"],
+              description: "Filter by submission status"
+            },
+            date_from: {
+              type: "string",
+              description: "Start date for filtering (ISO 8601 format). Defaults to 30 days ago if not provided."
+            },
+            date_to: {
+              type: "string",
+              description: "End date for filtering (ISO 8601 format). Defaults to now if not provided."
+            },
+            limit: {
+              type: "number",
+              description: "Maximum number of submissions to return (default: 50)"
+            },
+            offset: {
+              type: "number",
+              description: "Number of submissions to skip for pagination (default: 0)"
+            }
+          },
+          required: []
+        }
+      }
+    },
+    {
+      type: "function",
+      function: {
+        name: "get_social_media_posts",
+        description: "Get social media posts from the content calendar for the current client",
+        parameters: {
+          type: "object",
+          properties: {
+            status: {
+              type: "string",
+              enum: ["draft", "scheduled", "posted", "published", "failed"],
+              description: "Filter by post status"
+            },
+            platform: {
+              type: "string",
+              enum: ["facebook", "instagram", "linkedin", "twitter"],
+              description: "Filter by social media platform"
+            },
+            date_from: {
+              type: "string",
+              description: "Start date for filtering (ISO 8601 format)"
+            },
+            date_to: {
+              type: "string",
+              description: "End date for filtering (ISO 8601 format)"
+            },
+            topic_category: {
+              type: "string",
+              description: "Filter by topic category"
+            },
+            limit: {
+              type: "number",
+              description: "Maximum number of posts to return (default: 50)"
+            },
+            offset: {
+              type: "number",
+              description: "Number of posts to skip for pagination (default: 0)"
+            }
+          },
+          required: []
+        }
+      }
+    },
+    {
+      type: "function",
+      function: {
+        name: "get_social_post_analytics",
+        description: "Get performance analytics for published social media posts",
+        parameters: {
+          type: "object",
+          properties: {
+            post_id: {
+              type: "string",
+              description: "Get analytics for a specific post (optional)"
+            },
+            platform: {
+              type: "string",
+              enum: ["facebook", "instagram", "linkedin", "twitter"],
+              description: "Filter by platform"
+            },
+            date_from: {
+              type: "string",
+              description: "Start date for filtering published posts (ISO 8601 format)"
+            },
+            date_to: {
+              type: "string",
+              description: "End date for filtering published posts (ISO 8601 format)"
+            },
+            sort_by: {
+              type: "string",
+              enum: ["impressions", "engagement", "reach", "likes", "published_at"],
+              description: "Sort results by metric (default: published_at descending)"
+            },
+            limit: {
+              type: "number",
+              description: "Maximum number of results to return (default: 50)"
+            },
+            offset: {
+              type: "number",
+              description: "Number of results to skip for pagination (default: 0)"
+            }
+          },
+          required: []
+        }
+      }
+    },
+    {
+      type: "function",
+      function: {
+        name: "get_website_analytics",
+        description: "Get website traffic, performance, and conversion metrics for the current client",
+        parameters: {
+          type: "object",
+          properties: {
+            metric_type: {
+              type: "string",
+              enum: ["overview", "pages", "sources", "content"],
+              description: "Type of analytics to retrieve: overview (summary metrics), pages (per-page performance), sources (traffic sources), content (content performance)"
+            },
+            date_from: {
+              type: "string",
+              description: "Start date for analytics period (ISO 8601 format). Defaults to 30 days ago."
+            },
+            date_to: {
+              type: "string",
+              description: "End date for analytics period (ISO 8601 format). Defaults to now."
+            },
+            limit: {
+              type: "number",
+              description: "Maximum number of results for pages/sources/content (default: 50)"
+            },
+            offset: {
+              type: "number",
+              description: "Number of results to skip for pagination (default: 0)"
+            }
+          },
+          required: ["metric_type"]
+        }
+      }
+    },
+    {
+      type: "function",
+      function: {
+        name: "get_page_analysis",
+        description: "Get SEO and content quality analysis for website pages",
+        parameters: {
+          type: "object",
+          properties: {
+            page_id: {
+              type: "string",
+              description: "Get analysis for a specific page (optional)"
+            },
+            min_score: {
+              type: "number",
+              description: "Filter by minimum overall score (0-100)"
+            },
+            max_score: {
+              type: "number",
+              description: "Filter by maximum overall score (0-100)"
+            },
+            limit: {
+              type: "number",
+              description: "Maximum number of results to return (default: 50)"
+            },
+            offset: {
+              type: "number",
+              description: "Number of results to skip for pagination (default: 0)"
+            }
+          },
+          required: []
+        }
+      }
+    },
+    {
+      type: "function",
+      function: {
+        name: "get_meetings",
       description: "Retrieve meetings for the current client with optional filters",
       parameters: {
         type: "object",
@@ -1789,14 +1988,6 @@ const tools = [
   {
     type: "function",
     function: {
-      name: "assess_account_status",
-      description: "Get comprehensive account status including LaunchPad progress, avatars, tasks, channels, reports, meetings, and assets. Use this when users ask 'what should I focus on', 'how are we doing', 'what do I do first', 'I'm stuck', 'help me get started', or need overall guidance and onboarding help.",
-      parameters: { type: "object", properties: {}, required: [] }
-    }
-  },
-  {
-    type: "function",
-    function: {
       name: "extract_launchpad_data",
       description: "Extract and save structured Launchpad onboarding data from user's natural language responses. Call this after every 2-3 meaningful user messages to persist data progressively.",
       parameters: {
@@ -1819,43 +2010,6 @@ const tools = [
           }
         },
         required: ["stage", "data", "completeness"]
-      }
-    }
-  },
-  {
-    type: "function",
-    function: {
-      name: "get_form_submissions",
-      description: "Get website form submissions (leads/inquiries) for the current client. Use this to analyze trends, identify follow-up needs, or answer questions about recent contact requests. Returns contact details, form content, submission times, and status.",
-      parameters: {
-        type: "object",
-        properties: {
-          status: { 
-            type: "string", 
-            enum: ["unread", "read", "responded", "archived"], 
-            description: "Filter by submission status" 
-          },
-          date_from: { 
-            type: "string", 
-            format: "date", 
-            description: "Filter submissions from this date (ISO format YYYY-MM-DD)" 
-          },
-          date_to: { 
-            type: "string", 
-            format: "date", 
-            description: "Filter submissions to this date (ISO format YYYY-MM-DD)" 
-          },
-          limit: { 
-            type: "number", 
-            description: "Number of results (max 50)", 
-            default: 20 
-          },
-          offset: { 
-            type: "number", 
-            description: "Offset for pagination", 
-            default: 0 
-          }
-        }
       }
     }
   },
@@ -2805,6 +2959,34 @@ You have access to:
 - Social media performance analytics (impressions, engagement, reach)
 - Website analytics (traffic, visitors, sources, conversions)
 - Page content analysis (SEO scores, recommendations)
+
+**CRITICAL: WHEN TO USE get_form_submissions TOOL**
+When user mentions ANY of these terms, YOU MUST call get_form_submissions():
+- "form submissions", "leads", "inquiries", "contact form", "contact requests"
+- "website forms", "recent submissions", "new leads", "form fills"
+- "people who contacted us", "trends in submissions", "new contacts"
+- "who should I follow up with", "unread submissions"
+
+DO NOT answer without calling the tool - even if you think there's no data!
+The tool queries the actual database. Never assume what's there.
+Default behavior: If no timeframe specified, use last 30 days (date_from: 30 days ago, date_to: today).
+
+FORM SUBMISSION QUERY EXAMPLES:
+✅ User: "Tell me about our recent website form submissions"
+   → Call: get_form_submissions({ date_from: "[30 days ago]", date_to: "[today]" })
+   
+✅ User: "Any new leads this week?"
+   → Call: get_form_submissions({ date_from: "[this Monday]", date_to: "[today]" })
+   
+✅ User: "What trends do you see in submissions?"
+   → Call: get_form_submissions({ date_from: "[60 days ago]" }) 
+   → Then compare periods and analyze patterns
+   
+✅ User: "Who should I follow up with?"
+   → Call: get_form_submissions({ status: "unread" })
+
+❌ WRONG: "I don't see any form submissions" (without calling tool)
+✅ RIGHT: Call tool first, then report actual results from database
 
 UNDERSTANDING TIME CONTEXT
 - Today's date: ${new Date().toISOString().split('T')[0]}
