@@ -201,17 +201,19 @@ export const useVisitorTimeline = (clientId: string, dateRange: DateRange) => {
       
       if (error) throw error;
       
-      // Aggregate by day
+      // Aggregate by day - normalize day format to yyyy-MM-dd
       const dayMap = new Map<string, any>();
       data?.forEach(row => {
-        const existing = dayMap.get(row.day) || {
-          day: row.day,
+        // Extract just the date part (yyyy-MM-dd) from the timestamp
+        const dayStr = format(new Date(row.day), 'yyyy-MM-dd');
+        const existing = dayMap.get(dayStr) || {
+          day: dayStr,
           visitors: 0,
           pageviews: 0,
         };
         
-        dayMap.set(row.day, {
-          day: row.day,
+        dayMap.set(dayStr, {
+          day: dayStr,
           visitors: existing.visitors + (row.unique_sessions || 0),
           pageviews: existing.pageviews + (row.total_pageviews || 0),
         });
