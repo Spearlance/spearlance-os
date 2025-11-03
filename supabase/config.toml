@@ -191,3 +191,21 @@ verify_jwt = true
 
 [functions.get-stripe-subscription-name]
 verify_jwt = true
+
+[functions.blog-generate-topics]
+verify_jwt = true
+
+[functions.blog-generate-outline]
+verify_jwt = true
+
+[functions.blog-generate-article]
+verify_jwt = true
+
+[functions.blog-generate-images]
+verify_jwt = true
+
+[functions.blog-publish-to-duda]
+verify_jwt = true
+
+[functions.blog-schedule-check]
+verify_jwt = false

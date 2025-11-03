@@ -102,6 +102,7 @@ const App = () => (
             <Route path="/website/form-submissions" element={<MainLayout><WebsiteFormSubmissions /></MainLayout>} />
             <Route path="/analytics" element={<MainLayout><Analytics /></MainLayout>} />
             <Route path="/seo" element={<MainLayout><SEO /></MainLayout>} />
+            <Route path="/blog-writer" element={<MainLayout><BlogWriter /></MainLayout>} />
             <Route path="/leads" element={<MainLayout><Leads /></MainLayout>} />
             <Route path="/admin/bug-reports" element={<MainLayout><AdminBugReports /></MainLayout>} />
             <Route path="/bug-reports" element={<MainLayout><MyBugReports /></MainLayout>} />

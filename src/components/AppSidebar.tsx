@@ -57,6 +57,7 @@ import {
   Lock,
   Bug,
   Search,
+  PenTool,
 } from "lucide-react";
 import { ReportBugDialog } from "@/components/support/ReportBugDialog";
 import { Button } from "@/components/ui/button";
@@ -107,6 +108,7 @@ const websiteSubItems = [
   { title: "Form Submissions", url: "/website/form-submissions", icon: FileText },
   { title: "Analytics", url: "/analytics", icon: TrendingUp },
   { title: "SEO", url: "/seo", icon: Search },
+  { title: "Blog Writer", url: "/blog-writer", icon: PenTool },
 ];
 
 export function AppSidebar() {
