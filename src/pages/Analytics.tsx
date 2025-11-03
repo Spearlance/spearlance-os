@@ -22,15 +22,15 @@ import {
   useAnalyticsStatus,
 } from "@/hooks/useAnalytics";
 import { PricingModal } from "@/components/billing/PricingModal";
-import { subDays } from "date-fns";
+import { subDays, startOfDay, endOfDay } from "date-fns";
 
 export default function Analytics() {
   const navigate = useNavigate();
   const { selectedClient } = useClient();
   const [pricingModalOpen, setPricingModalOpen] = useState(false);
   const [dateRange, setDateRange] = useState({
-    from: subDays(new Date(), 30),
-    to: new Date(),
+    from: startOfDay(subDays(new Date(), 30)),
+    to: endOfDay(new Date()),
   });
   const [comparisonEnabled, setComparisonEnabled] = useState(false);
 
