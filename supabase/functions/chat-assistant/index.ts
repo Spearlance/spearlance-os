@@ -1053,6 +1053,45 @@ function getCleanFormFields(data: Record<string, any> | null): Record<string, st
   return clean;
 }
 
+// Helper function: Extract message/project details from form data
+function extractMessageFromForm(data: Record<string, any> | null): string {
+  if (!data) return '';
+  
+  // Try common message field names (case-insensitive)
+  const messageFields = [
+    'message', 'Message', 'MESSAGE',
+    'comments', 'Comments', 'COMMENTS', 'comment', 'Comment',
+    'details', 'Details', 'DETAILS',
+    'project_details', 'Project Details', 'projectDetails',
+    'please explain your project', 'Please explain your project', 'Please Explain Your Project',
+    'explain your project', 'Explain your project',
+    'description', 'Description', 'DESCRIPTION',
+    'inquiry', 'Inquiry', 'INQUIRY',
+    'notes', 'Notes', 'NOTES',
+    'your message', 'Your Message',
+    'additional information', 'Additional Information'
+  ];
+  
+  for (const field of messageFields) {
+    if (data[field]) {
+      const msg = String(data[field]).trim();
+      if (msg.length > 0) return msg;
+    }
+  }
+  
+  // If no direct match, check all fields for anything that looks like a message
+  // (longer text fields that aren't email/phone/name)
+  for (const [key, value] of Object.entries(data)) {
+    if (typeof value !== 'string') continue;
+    const lowerKey = key.toLowerCase();
+    if (lowerKey.includes('email') || lowerKey.includes('phone') || lowerKey.includes('name')) continue;
+    const text = value.trim();
+    if (text.length > 20) return text; // Likely a message if it's substantial text
+  }
+  
+  return '';
+}
+
 // Helper function: Calculate time ago
 function formatTimeAgo(date: string): string {
   const now = new Date();
@@ -1473,13 +1512,34 @@ async function draftEmail(supabase: any, params: any, clientId: string) {
     
     if (clientError) throw clientError;
     
-    // Parse form data
-    const formData = submission.form_data || {};
-    const recipientName = formData.name || submission.contact_name || 'there';
-    const recipientEmail = formData.email || submission.contact_email;
-    const message = formData.message || formData.comments || formData.project_details || '';
+    // Parse form data using helper functions
+    const formData = parseFormData(submission.form_data);
+    const recipientName = extractNameFromForm(formData) || submission.contact_name || 'there';
+    const recipientEmail = extractEmailFromForm(formData) || submission.contact_email;
+    const recipientPhone = extractPhoneFromForm(formData);
+    const message = extractMessageFromForm(formData);
+    
+    // Validate required fields
+    if (!recipientEmail) {
+      return {
+        success: false,
+        error: 'missing_email',
+        message: 'The form submission does not contain an email address. Cannot draft email without recipient email.',
+        submission_id
+      };
+    }
+    
+    if (!message || message.trim().length < 10) {
+      return {
+        success: false,
+        error: 'missing_message',
+        message: 'The form submission does not contain enough project details to draft a personalized email.',
+        submission_id
+      };
+    }
     
     // Build prompt for AI
+    const contactInfo = recipientPhone ? `- Phone: ${recipientPhone}\n` : '';
     const keyPointsText = key_points.length > 0 
       ? `\n\nMake sure to address these key points:\n${key_points.map((p: string) => `- ${p}`).join('\n')}`
       : '';
@@ -1489,7 +1549,7 @@ async function draftEmail(supabase: any, params: any, clientId: string) {
 LEAD INFORMATION:
 - Name: ${recipientName}
 - Email: ${recipientEmail}
-- Submitted: ${new Date(submission.submitted_at).toLocaleDateString()}
+${contactInfo}- Submitted: ${new Date(submission.submitted_at).toLocaleDateString()}
 - Their message: "${message}"
 
 TONE: ${tone}
@@ -1545,6 +1605,7 @@ Do not include any markdown formatting, greetings like "Here's the email:", or e
     }
     
     return {
+      success: true,
       submission_id,
       recipient_name: recipientName,
       recipient_email: recipientEmail,
@@ -1555,7 +1616,12 @@ Do not include any markdown formatting, greetings like "Here's the email:", or e
     
   } catch (error: any) {
     console.error('Draft email error:', error);
-    throw error;
+    return {
+      success: false,
+      error: 'generation_failed',
+      message: error.message || 'Failed to generate email draft',
+      submission_id: params.submission_id
+    };
   }
 }
 
@@ -3481,8 +3547,12 @@ When users ask to:
 YOU MUST:
 1. Call get_form_submissions to find the lead (if not already in context)
 2. Call draft_email with the submission_id
-3. Display the drafted email clearly formatted
-4. Ask what they want to do with it:
+3. Check if draft_email returned success:
+   - If success=false with error='missing_email': Respond with "I couldn't find an email address in [Name]'s submission. The form data might be incomplete. Would you like me to show you what information we do have?"
+   - If success=false with error='missing_message': Respond with "[Name]'s submission doesn't include enough project details to write a personalized email. Would you like me to draft a generic inquiry response instead?"
+   - If success=false with error='generation_failed': Respond with "I ran into an issue generating the email draft. Let me try again, or I can help you write it manually if you'd like."
+4. If successful, display the drafted email clearly formatted
+5. Ask what they want to do with it:
    - "Create a task to send this" → Call create_email_task
    - "Make edits" → Provide suggestions or redraft with modifications
    - "Just show me" → Done, no further action
