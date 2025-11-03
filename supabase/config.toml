@@ -63,6 +63,9 @@ verify_jwt = true
 [functions.avatar-set-primary-image]
 verify_jwt = true
 
+[functions.avatar-generate-with-ai]
+verify_jwt = true
+
 [functions.launchpad-analyze]
 verify_jwt = true
 

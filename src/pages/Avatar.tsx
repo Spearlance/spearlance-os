@@ -13,6 +13,7 @@ import { format } from "date-fns";
 import { CreateAvatarDialog } from "@/components/avatar/CreateAvatarDialog";
 import { DuplicateAvatarDialog } from "@/components/avatar/DuplicateAvatarDialog";
 import { DeleteAvatarDialog } from "@/components/avatar/DeleteAvatarDialog";
+import { GenerateAvatarWithAIDialog } from "@/components/avatar/GenerateAvatarWithAIDialog";
 import { AvatarListItem } from "@/components/avatar/AvatarListItem";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -28,6 +29,7 @@ export default function Avatar() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [generateAIDialogOpen, setGenerateAIDialogOpen] = useState(false);
   const { toast } = useToast();
 
   const selectedAvatar = avatars.find(a => a.id === selectedAvatarId);
@@ -323,6 +325,47 @@ export default function Avatar() {
     document.body.removeChild(link);
   };
 
+  const handleGenerateWithAI = async (formData: {
+    avatarName?: string;
+    userPrompt?: string;
+    generateSummary: boolean;
+    generateImages: boolean;
+  }) => {
+    if (!selectedClient) return;
+    
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("avatar-generate-with-ai", {
+        body: {
+          client_id: selectedClient.id,
+          avatar_name: formData.avatarName || undefined,
+          user_prompt: formData.userPrompt || undefined,
+          generate_summary: formData.generateSummary,
+          generate_images: formData.generateImages,
+        },
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Avatar Generated!",
+        description: "Your AI-powered customer avatar has been created.",
+      });
+      
+      setGenerateAIDialogOpen(false);
+      await loadAvatars();
+      setSelectedAvatarId(data.avatar_id);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to generate avatar with AI",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const hasFormData = selectedAvatar?.demographics || selectedAvatar?.firmographics || selectedAvatar?.goals;
 
   return (
@@ -338,28 +381,42 @@ export default function Avatar() {
           />
         </div>
 
-        <div className="flex gap-2">
-          <Button onClick={() => setCreateDialogOpen(true)} size="sm" className="flex-1">
-            <Plus className="h-4 w-4 mr-1" />
-            New Avatar
-          </Button>
+        <div className="space-y-2">
+          <div className="flex gap-2">
+            <Button onClick={() => setCreateDialogOpen(true)} size="sm" className="flex-1">
+              <Plus className="h-4 w-4 mr-1" />
+              New Avatar
+            </Button>
+            <Button 
+              onClick={() => setGenerateAIDialogOpen(true)} 
+              size="sm" 
+              className="flex-1"
+            >
+              <Sparkles className="h-4 w-4 mr-1" />
+              Generate with AI
+            </Button>
+          </div>
           {selectedAvatarId && (
-            <>
+            <div className="flex gap-2">
               <Button 
                 onClick={() => setDuplicateDialogOpen(true)} 
                 size="sm"
                 variant="outline"
+                className="flex-1"
               >
-                <CopyPlus className="h-4 w-4" />
+                <CopyPlus className="h-4 w-4 mr-1" />
+                Duplicate
               </Button>
               <Button 
                 onClick={() => setDeleteDialogOpen(true)} 
                 size="sm"
                 variant="outline"
+                className="flex-1"
               >
-                <Trash2 className="h-4 w-4" />
+                <Trash2 className="h-4 w-4 mr-1" />
+                Delete
               </Button>
-            </>
+            </div>
           )}
         </div>
 
@@ -781,6 +838,12 @@ export default function Avatar() {
         onOpenChange={setDeleteDialogOpen}
         avatarName={selectedAvatar?.avatar_name || ""}
         onConfirm={handleDeleteAvatar}
+        loading={loading}
+      />
+      <GenerateAvatarWithAIDialog
+        open={generateAIDialogOpen}
+        onOpenChange={setGenerateAIDialogOpen}
+        onGenerate={handleGenerateWithAI}
         loading={loading}
       />
     </div>
