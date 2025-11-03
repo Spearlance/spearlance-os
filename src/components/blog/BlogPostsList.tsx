@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Eye, Edit, Trash2, ExternalLink, Calendar } from "lucide-react";
+import { Edit, Trash2, ExternalLink, Calendar, FileText } from "lucide-react";
 import { useClient } from "@/contexts/ClientContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -68,80 +68,105 @@ export function BlogPostsList({ status }: BlogPostsListProps) {
 
   if (loading) {
     return (
-      <div className="text-center py-12">
-        <p className="text-muted-foreground">Loading posts...</p>
+      <div className="flex items-center justify-center p-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
   }
 
   if (posts.length === 0) {
     return (
-      <Card className="p-12 text-center">
+      <div className="text-center p-12 border rounded-lg">
+        <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+        <p className="text-lg font-medium mb-2">No {status} posts yet</p>
         <p className="text-muted-foreground">
-          No {status} blog posts yet.
+          {status === 'draft' 
+            ? 'Create your first blog post to get started' 
+            : 'Publish a post to see it here'}
         </p>
-      </Card>
+      </div>
     );
   }
 
   return (
-    <div className="grid gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {posts.map((post) => (
-        <Card key={post.id} className="p-6">
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-2">
-                <h3 className="text-lg font-semibold">{post.title}</h3>
-                <Badge variant={status === 'published' ? 'default' : 'secondary'}>
-                  {status}
-                </Badge>
-              </div>
-              
-              <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
-                {post.excerpt}
-              </p>
-
-              <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                <span>{post.word_count || 0} words</span>
-                {post.seo_score && <span>SEO: {post.seo_score}/100</span>}
-                {post.readability_score && <span>Readability: {post.readability_score}/100</span>}
-                {post.scheduled_for && (
-                  <span className="flex items-center gap-1">
-                    <Calendar className="w-3 h-3" />
-                    {format(new Date(post.scheduled_for), 'MMM d, yyyy')}
-                  </span>
-                )}
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              {post.duda_publish_url && (
-                <Button size="sm" variant="ghost" asChild>
-                  <a href={post.duda_publish_url} target="_blank" rel="noopener noreferrer">
-                    <ExternalLink className="w-4 h-4" />
-                  </a>
-                </Button>
-              )}
-              <Button size="sm" variant="ghost">
-                <Edit className="w-4 h-4" />
-              </Button>
-              <Button 
-                size="sm" 
-                variant="ghost" 
-                onClick={() => handleDelete(post.id)}
-              >
-                <Trash2 className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
-
+        <Card key={post.id} className="hover:shadow-lg transition-shadow overflow-hidden">
           {post.featured_image_url && (
             <img 
               src={post.featured_image_url} 
               alt={post.featured_image_alt || post.title}
-              className="w-full h-48 object-cover rounded-lg mt-4"
+              className="w-full h-48 object-cover"
             />
           )}
+          <CardContent className="pt-6">
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-lg font-semibold mb-2 line-clamp-2">{post.title}</h3>
+                {post.excerpt && (
+                  <p className="text-sm text-muted-foreground line-clamp-3">{post.excerpt}</p>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2 flex-wrap">
+                <Badge variant="secondary" className="text-xs">
+                  {post.word_count || 0} words
+                </Badge>
+                {post.seo_score && (
+                  <Badge 
+                    variant={post.seo_score >= 80 ? "default" : "secondary"} 
+                    className="text-xs"
+                  >
+                    SEO: {post.seo_score}
+                  </Badge>
+                )}
+                {post.readability_score && (
+                  <Badge 
+                    variant={post.readability_score >= 80 ? "default" : "secondary"}
+                    className="text-xs"
+                  >
+                    Read: {post.readability_score}
+                  </Badge>
+                )}
+              </div>
+
+              {post.scheduled_for && (
+                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <Calendar className="w-3 h-3" />
+                  {format(new Date(post.scheduled_for), 'MMM d, yyyy')}
+                </div>
+              )}
+
+              <div className="flex items-center justify-between pt-2 border-t">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => console.log('Edit:', post.id)}
+                >
+                  <Edit className="h-4 w-4 mr-1" />
+                  Edit
+                </Button>
+                <div className="flex gap-1">
+                  {post.duda_publish_url && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => window.open(post.duda_publish_url, '_blank')}
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                    </Button>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleDelete(post.id)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </CardContent>
         </Card>
       ))}
     </div>
