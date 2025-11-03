@@ -46,6 +46,7 @@ import MyBugReports from "./pages/MyBugReports";
 import Analytics from "./pages/Analytics";
 import SEO from "./pages/SEO";
 import EmailTemplates from "./pages/admin/EmailTemplates";
+import BlogWriter from "./pages/BlogWriter";
 
 const queryClient = new QueryClient();
 

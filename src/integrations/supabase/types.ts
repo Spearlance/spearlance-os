@@ -495,6 +495,246 @@ export type Database = {
         }
         Relationships: []
       }
+      blog_post_revisions: {
+        Row: {
+          blog_post_id: string
+          content: string | null
+          created_at: string | null
+          created_by: string | null
+          featured_image_url: string | null
+          id: string
+          meta_description: string | null
+          notes: string | null
+          revision_number: number
+          title: string | null
+        }
+        Insert: {
+          blog_post_id: string
+          content?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          featured_image_url?: string | null
+          id?: string
+          meta_description?: string | null
+          notes?: string | null
+          revision_number: number
+          title?: string | null
+        }
+        Update: {
+          blog_post_id?: string
+          content?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          featured_image_url?: string | null
+          id?: string
+          meta_description?: string | null
+          notes?: string | null
+          revision_number?: number
+          title?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blog_post_revisions_blog_post_id_fkey"
+            columns: ["blog_post_id"]
+            isOneToOne: false
+            referencedRelation: "blog_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blog_post_revisions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      blog_posts: {
+        Row: {
+          ai_model: string | null
+          avatar_id: string | null
+          body_images: Json | null
+          client_id: string
+          content: string | null
+          created_at: string | null
+          created_by: string | null
+          duda_page_id: string | null
+          duda_publish_url: string | null
+          excerpt: string | null
+          featured_image_alt: string | null
+          featured_image_url: string | null
+          focus_keyword: string | null
+          generation_metadata: Json | null
+          generation_prompt: string | null
+          id: string
+          last_edited_by: string | null
+          meta_description: string | null
+          published_at: string | null
+          readability_score: number | null
+          scheduled_for: string | null
+          seo_score: number | null
+          slug: string
+          status: string | null
+          target_keywords: string[] | null
+          title: string
+          topic_category: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          ai_model?: string | null
+          avatar_id?: string | null
+          body_images?: Json | null
+          client_id: string
+          content?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          duda_page_id?: string | null
+          duda_publish_url?: string | null
+          excerpt?: string | null
+          featured_image_alt?: string | null
+          featured_image_url?: string | null
+          focus_keyword?: string | null
+          generation_metadata?: Json | null
+          generation_prompt?: string | null
+          id?: string
+          last_edited_by?: string | null
+          meta_description?: string | null
+          published_at?: string | null
+          readability_score?: number | null
+          scheduled_for?: string | null
+          seo_score?: number | null
+          slug: string
+          status?: string | null
+          target_keywords?: string[] | null
+          title: string
+          topic_category?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          ai_model?: string | null
+          avatar_id?: string | null
+          body_images?: Json | null
+          client_id?: string
+          content?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          duda_page_id?: string | null
+          duda_publish_url?: string | null
+          excerpt?: string | null
+          featured_image_alt?: string | null
+          featured_image_url?: string | null
+          focus_keyword?: string | null
+          generation_metadata?: Json | null
+          generation_prompt?: string | null
+          id?: string
+          last_edited_by?: string | null
+          meta_description?: string | null
+          published_at?: string | null
+          readability_score?: number | null
+          scheduled_for?: string | null
+          seo_score?: number | null
+          slug?: string
+          status?: string | null
+          target_keywords?: string[] | null
+          title?: string
+          topic_category?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blog_posts_avatar_id_fkey"
+            columns: ["avatar_id"]
+            isOneToOne: false
+            referencedRelation: "avatars"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blog_posts_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blog_posts_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blog_posts_last_edited_by_fkey"
+            columns: ["last_edited_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      blog_topics: {
+        Row: {
+          ai_generated: boolean | null
+          avatar_id: string | null
+          blog_post_id: string | null
+          client_id: string
+          created_at: string | null
+          description: string | null
+          id: string
+          keywords: string[] | null
+          priority: string | null
+          status: string | null
+          topic_title: string
+        }
+        Insert: {
+          ai_generated?: boolean | null
+          avatar_id?: string | null
+          blog_post_id?: string | null
+          client_id: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          keywords?: string[] | null
+          priority?: string | null
+          status?: string | null
+          topic_title: string
+        }
+        Update: {
+          ai_generated?: boolean | null
+          avatar_id?: string | null
+          blog_post_id?: string | null
+          client_id?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          keywords?: string[] | null
+          priority?: string | null
+          status?: string | null
+          topic_title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blog_topics_avatar_id_fkey"
+            columns: ["avatar_id"]
+            isOneToOne: false
+            referencedRelation: "avatars"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blog_topics_blog_post_id_fkey"
+            columns: ["blog_post_id"]
+            isOneToOne: false
+            referencedRelation: "blog_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blog_topics_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       brand_guides: {
         Row: {
           accent_color: string | null
