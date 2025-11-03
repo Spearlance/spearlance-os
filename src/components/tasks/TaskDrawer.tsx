@@ -51,6 +51,7 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
   const [showLinkChannelDialog, setShowLinkChannelDialog] = useState(false);
   const [availableChannels, setAvailableChannels] = useState<any[]>([]);
   const [subtasks, setSubtasks] = useState<any[]>([]);
+  const [taskColumns, setTaskColumns] = useState<any[]>([]);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -90,7 +91,19 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
     loadRelatedItems();
     loadCurrentAssignees();
     loadSubtasks();
-  }, [task.id]);
+    loadTaskColumns();
+    
+    // Listen for column updates
+    const handleColumnUpdate = () => {
+      loadTaskColumns();
+    };
+    
+    window.addEventListener('taskColumnsUpdated', handleColumnUpdate);
+    
+    return () => {
+      window.removeEventListener('taskColumnsUpdated', handleColumnUpdate);
+    };
+  }, [task.id, task.client_id]);
 
   const loadCurrentAssignees = async () => {
     const { data } = await supabase
@@ -185,6 +198,16 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
       .order("subtask_order", { ascending: true });
     
     setSubtasks(data || []);
+  };
+
+  const loadTaskColumns = async () => {
+    const { data } = await supabase
+      .from("task_columns")
+      .select("id, name, key, color")
+      .eq("client_id", task.client_id)
+      .order("display_order");
+    
+    setTaskColumns(data || []);
   };
 
   const loadAvailableAssets = async () => {
@@ -602,9 +625,25 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="to_do">To Do</SelectItem>
-                        <SelectItem value="in_progress">In Progress</SelectItem>
-                        <SelectItem value="done">Done</SelectItem>
+                        {taskColumns.length > 0 ? (
+                          taskColumns.map((column) => (
+                            <SelectItem key={column.key} value={column.key}>
+                              <div className="flex items-center gap-2">
+                                <div 
+                                  className="w-3 h-3 rounded-full" 
+                                  style={{ backgroundColor: column.color }}
+                                />
+                                {column.name}
+                              </div>
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <>
+                            <SelectItem value="to_do">To Do</SelectItem>
+                            <SelectItem value="in_progress">In Progress</SelectItem>
+                            <SelectItem value="done">Done</SelectItem>
+                          </>
+                        )}
                       </SelectContent>
                     </Select>
                   </div>
