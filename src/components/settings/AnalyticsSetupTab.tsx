@@ -6,35 +6,52 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Copy, Eye, EyeOff, RefreshCw, CheckCircle2, Circle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { useClient } from "@/contexts/ClientContext";
 import { formatDistanceToNow } from "date-fns";
 
-export function AnalyticsSetupTab() {
+interface AnalyticsSetupTabProps {
+  client: {
+    id: string;
+    name: string;
+    website_unlocked?: boolean;
+  };
+}
+
+export function AnalyticsSetupTab({ client }: AnalyticsSetupTabProps) {
   const { toast } = useToast();
-  const { selectedClient } = useClient();
   const [workspaceKey, setWorkspaceKey] = useState<string | null>(null);
   const [showKey, setShowKey] = useState(false);
   const [lastEventAt, setLastEventAt] = useState<Date | null>(null);
   const [isActive, setIsActive] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [currentClientId, setCurrentClientId] = useState<string>(client.id);
 
   useEffect(() => {
-    if (selectedClient) {
+    // Only reload if client actually changed
+    if (client.id !== currentClientId) {
+      setCurrentClientId(client.id);
+      // Clear old data immediately
+      setWorkspaceKey(null);
+      setLastEventAt(null);
+      setIsActive(false);
+      
+      // Load new client's data
       loadWorkspaceKey();
       checkConnectionStatus();
     }
-  }, [selectedClient]);
+  }, [client.id, currentClientId]);
 
   const loadWorkspaceKey = async () => {
-    if (!selectedClient) return;
+    if (!client?.id) return;
 
     const { data, error } = await supabase
       .from('analytics_workspace_keys')
       .select('workspace_key')
-      .eq('client_id', selectedClient.id)
+      .eq('client_id', client.id)
       .eq('active', true)
       .maybeSingle();
 
@@ -46,12 +63,12 @@ export function AnalyticsSetupTab() {
   };
 
   const checkConnectionStatus = async () => {
-    if (!selectedClient) return;
+    if (!client?.id) return;
 
     const { data, error } = await supabase
       .from('web_events')
       .select('received_at')
-      .eq('client_id', selectedClient.id)
+      .eq('client_id', client.id)
       .order('received_at', { ascending: false })
       .limit(1)
       .maybeSingle();
@@ -67,7 +84,14 @@ export function AnalyticsSetupTab() {
   };
 
   const generateWorkspaceKey = async () => {
-    if (!selectedClient) return;
+    if (!client?.id) {
+      toast({
+        title: "Error",
+        description: "No client selected",
+        variant: "destructive",
+      });
+      return;
+    }
 
     setLoading(true);
     try {
@@ -77,13 +101,13 @@ export function AnalyticsSetupTab() {
       await supabase
         .from('analytics_workspace_keys')
         .update({ active: false })
-        .eq('client_id', selectedClient.id);
+        .eq('client_id', client.id);
 
       // Create new key
       const { error } = await supabase
         .from('analytics_workspace_keys')
         .insert({
-          client_id: selectedClient.id,
+          client_id: client.id,
           workspace_key: newKey,
           active: true,
         });
@@ -91,6 +115,7 @@ export function AnalyticsSetupTab() {
       if (error) throw error;
 
       setWorkspaceKey(newKey);
+      setShowConfirmDialog(false);
       toast({
         title: "Workspace Key Generated",
         description: "Your analytics tracking key has been created",
@@ -453,6 +478,11 @@ export function AnalyticsSetupTab() {
           <CardTitle>Analytics Tracking Setup</CardTitle>
           <CardDescription>
             Generate a workspace key to start tracking website visitors
+            <div className="mt-2">
+              <Badge variant="outline" className="font-semibold">
+                Client: {client.name}
+              </Badge>
+            </div>
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -551,37 +581,51 @@ export function AnalyticsSetupTab() {
                 </Button>
                 <Button
                   variant="destructive"
-                  onClick={() => {
-                    if (confirm('Regenerating the key will break existing installations. Continue?')) {
-                      generateWorkspaceKey();
-                    }
-                  }}
+                  onClick={() => setShowConfirmDialog(true)}
+                  disabled={loading}
                 >
                   Regenerate Key
                 </Button>
               </div>
             </>
           ) : (
-            <div className="py-8 space-y-4">
-              <p className="text-muted-foreground">
-                No workspace key generated yet. Click below to create one.
+            <div className="text-center py-8">
+              <p className="text-muted-foreground mb-4">
+                No workspace key has been generated yet
               </p>
-              <div className="flex justify-start">
-                <Button onClick={generateWorkspaceKey} disabled={loading} size="default">
-                  {loading ? (
-                    <>
-                      <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                      Generating...
-                    </>
-                  ) : (
-                    'Generate Workspace Key'
-                  )}
-                </Button>
-              </div>
+              <Button onClick={() => setShowConfirmDialog(true)} disabled={loading}>
+                Generate Workspace Key
+              </Button>
             </div>
           )}
         </CardContent>
       </Card>
+
+      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Generate Workspace Key?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You are about to generate a new analytics workspace key for:
+              <div className="mt-3 p-3 bg-muted rounded-md">
+                <strong>{client.name}</strong>
+              </div>
+              {workspaceKey && (
+                <div className="mt-2 text-destructive font-semibold">
+                  Warning: This will deactivate any existing keys and break current installations.
+                </div>
+              )}
+              Are you sure you want to continue?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={generateWorkspaceKey} disabled={loading}>
+              {loading ? "Generating..." : "Yes, Generate Key"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

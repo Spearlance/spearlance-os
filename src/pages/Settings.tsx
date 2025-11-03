@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useClient } from "@/contexts/ClientContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -19,7 +19,7 @@ import { UserProfileTab } from "@/components/settings/UserProfileTab";
 import { AnalyticsSetupTab } from "@/components/settings/AnalyticsSetupTab";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { Clock, Copy, Info, Globe } from "lucide-react";
+import { Clock, Copy, Info, Globe, Loader2 } from "lucide-react";
 import { SocialAccountsManager } from "@/components/social/SocialAccountsManager";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -27,19 +27,29 @@ export default function Settings() {
   const [searchParams] = useSearchParams();
   const defaultTab = searchParams.get('tab') || 'profile';
   const { selectedClient, refreshClients } = useClient();
-  const [client, setClient] = useState<any>(null);
   const [userProfile, setUserProfile] = useState<any>(null);
   const [userRole, setUserRole] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [teamRefresh, setTeamRefresh] = useState(0);
   const [profileRefresh, setProfileRefresh] = useState(0);
   const [isPrimaryContact, setIsPrimaryContact] = useState(false);
+  const [isClientSwitching, setIsClientSwitching] = useState(false);
   const { toast } = useToast();
   const { isCalReady, isLoading: isCalLoading } = useCalReady();
+  const clientIdRef = useRef<string | null>(null);
 
+  // Detect client switching
   useEffect(() => {
-    if (selectedClient) {
-      setClient(selectedClient);
+    if (selectedClient && selectedClient.id !== clientIdRef.current) {
+      setIsClientSwitching(true);
+      clientIdRef.current = selectedClient.id;
+      
+      // Give React time to re-render with new client before allowing operations
+      const timer = setTimeout(() => {
+        setIsClientSwitching(false);
+      }, 100);
+      
+      return () => clearTimeout(timer);
     }
   }, [selectedClient]);
 
@@ -101,19 +111,28 @@ export default function Settings() {
     setLoading(false);
   };
 
-  const canEditClient = client && (userProfile?.role === 'admin' || userProfile?.role === 'fmm');
+  const canEditClient = selectedClient && (userProfile?.role === 'admin' || userProfile?.role === 'fmm');
   const showCalendarTab = userProfile?.role === 'fmm' || userProfile?.role === 'admin';
   const canManageTeam = userProfile?.role === 'admin' || userProfile?.role === 'fmm' || isPrimaryContact;
   const canViewBilling = userProfile?.role === 'admin' || (userProfile?.role === 'client' && isPrimaryContact);
-  const showAnalyticsTab = (userProfile?.role === 'admin' || userProfile?.role === 'fmm') && client?.website_unlocked;
+  const showAnalyticsTab = (userProfile?.role === 'admin' || userProfile?.role === 'fmm') && selectedClient?.website_unlocked;
 
   return (
     <div className="space-y-6">
+      {isClientSwitching && (
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="flex items-center gap-2">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <span>Switching client...</span>
+          </div>
+        </div>
+      )}
+      
       <div>
         <h1 className="text-3xl font-bold">Settings</h1>
       </div>
 
-      {!client && !userProfile ? (
+      {!selectedClient && !userProfile ? (
         <Card>
           <CardContent className="py-8">
             <p className="text-center text-muted-foreground">
@@ -125,11 +144,11 @@ export default function Settings() {
         <Tabs defaultValue={defaultTab} className="w-full">
           <TabsList>
             <TabsTrigger value="profile">Profile</TabsTrigger>
-            {client && <TabsTrigger value="general">General</TabsTrigger>}
-            {client && <TabsTrigger value="integrations">Integrations</TabsTrigger>}
-            {client && showCalendarTab && <TabsTrigger value="calendar">Calendar</TabsTrigger>}
-            {client && <TabsTrigger value="team">Team</TabsTrigger>}
-            {client && canViewBilling && <TabsTrigger value="billing">Billing</TabsTrigger>}
+            {selectedClient && <TabsTrigger value="general">General</TabsTrigger>}
+            {selectedClient && <TabsTrigger value="integrations">Integrations</TabsTrigger>}
+            {selectedClient && showCalendarTab && <TabsTrigger value="calendar">Calendar</TabsTrigger>}
+            {selectedClient && <TabsTrigger value="team">Team</TabsTrigger>}
+            {selectedClient && canViewBilling && <TabsTrigger value="billing">Billing</TabsTrigger>}
           </TabsList>
 
           <TabsContent value="profile" className="space-y-4">
@@ -158,13 +177,13 @@ export default function Settings() {
                     <div className="space-y-2">
                       <Label htmlFor="timezone">Timezone</Label>
                       <Select
-                        value={client?.timezone || 'America/New_York'}
+                        value={selectedClient?.timezone || 'America/New_York'}
                         onValueChange={async (value) => {
-                          if (client) {
+                          if (selectedClient) {
                             const { error } = await supabase
                               .from("clients")
                               .update({ timezone: value })
-                              .eq("id", client.id);
+                              .eq("id", selectedClient.id);
                             
                             if (error) {
                               toast({ title: "Error updating timezone", variant: "destructive" });
@@ -195,7 +214,7 @@ export default function Settings() {
           </TabsContent>
 
           <TabsContent value="general" className="space-y-4">
-          {client && (
+          {selectedClient && (
             <>
               <Card>
                 <CardHeader>
@@ -203,11 +222,10 @@ export default function Settings() {
                 </CardHeader>
                 <CardContent>
                   <ClientLogoUploader
-                    clientId={client.id}
-                    clientName={client.name}
-                    currentLogoUrl={client.logo_url}
+                    clientId={selectedClient.id}
+                    clientName={selectedClient.name}
+                    currentLogoUrl={selectedClient.logo_url}
                     onLogoUpdated={(newUrl) => {
-                      setClient({ ...client, logo_url: newUrl });
                       refreshClients();
                     }}
                   />
@@ -221,11 +239,11 @@ export default function Settings() {
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
                     <Label>Company Name</Label>
-                    <Input value={client.name} disabled />
+                    <Input value={selectedClient.name} disabled />
                   </div>
                   <div className="space-y-2">
                     <Label>Status</Label>
-                    <Input value={client.status} disabled />
+                    <Input value={selectedClient.status} disabled />
                   </div>
                 </CardContent>
               </Card>
@@ -236,8 +254,8 @@ export default function Settings() {
         <TabsContent value="integrations" className="space-y-4">
           <SocialAccountsManager />
 
-          {showAnalyticsTab && (
-            <AnalyticsSetupTab />
+          {showAnalyticsTab && selectedClient && (
+            <AnalyticsSetupTab client={selectedClient} />
           )}
         </TabsContent>
 
@@ -439,20 +457,20 @@ export default function Settings() {
           )}
         </TabsContent>
 
-        <TabsContent value="team" className="space-y-4">
-          {client && (
+          <TabsContent value="team" className="space-y-4">
+            {selectedClient && (
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>Team Members</CardTitle>
                 <InviteTeamMemberDialog 
-                  clientId={client.id}
+                  clientId={selectedClient.id}
                   canManageTeam={canManageTeam}
                   onInviteSuccess={() => setTeamRefresh(prev => prev + 1)}
                 />
               </CardHeader>
               <CardContent>
                 <TeamMembersList 
-                  clientId={client.id}
+                  clientId={selectedClient.id}
                   canManageTeam={canManageTeam}
                   refreshTrigger={teamRefresh}
                   userProfile={userProfile}
@@ -464,7 +482,7 @@ export default function Settings() {
 
         {canViewBilling && (
           <TabsContent value="billing" className="space-y-4">
-            {client && <BillingTab client={client} isAdmin={userRole === 'admin'} onUpdate={refreshClients} />}
+            {selectedClient && <BillingTab client={selectedClient} isAdmin={userRole === 'admin'} onUpdate={refreshClients} />}
           </TabsContent>
         )}
         </Tabs>
