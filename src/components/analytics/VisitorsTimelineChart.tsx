@@ -80,9 +80,9 @@ export function VisitorsTimelineChart({ data, isLoading }: VisitorsTimelineChart
             <Line 
               type="monotone" 
               dataKey="pageviews" 
-              stroke="hsl(var(--secondary))" 
+              stroke="hsl(142, 70%, 60%)" 
               strokeWidth={2}
-              dot={{ fill: 'hsl(var(--secondary))' }}
+              dot={{ fill: 'hsl(142, 70%, 60%)' }}
               name="Pageviews"
             />
           </LineChart>
