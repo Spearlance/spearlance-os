@@ -480,11 +480,11 @@ export default function Settings() {
           )}
         </TabsContent>
 
-        {canViewBilling && (
           <TabsContent value="billing" className="space-y-4">
-            {selectedClient && <BillingTab client={selectedClient} isAdmin={userRole === 'admin'} onUpdate={refreshClients} />}
+            {selectedClient && canViewBilling && (
+              <BillingTab client={selectedClient} isAdmin={userRole === 'admin'} onUpdate={refreshClients} />
+            )}
           </TabsContent>
-        )}
         </Tabs>
       )}
     </div>
