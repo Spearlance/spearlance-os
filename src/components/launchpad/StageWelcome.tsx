@@ -2,15 +2,15 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, Sparkles, Target, Users, Rocket } from "lucide-react";
-
 interface StageWelcomeProps {
   onStart: () => void;
   currentProgress?: number;
 }
-
-export function StageWelcome({ onStart, currentProgress = 0 }: StageWelcomeProps) {
-  return (
-    <div className="max-w-4xl mx-auto space-y-8 py-8">
+export function StageWelcome({
+  onStart,
+  currentProgress = 0
+}: StageWelcomeProps) {
+  return <div className="max-w-4xl mx-auto space-y-8 py-8">
       {/* Hero Section */}
       <div className="text-center space-y-4">
         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary mb-4">
@@ -72,10 +72,9 @@ export function StageWelcome({ onStart, currentProgress = 0 }: StageWelcomeProps
           </span>
         </div>
         <div className="h-2 bg-background rounded-full overflow-hidden">
-          <div 
-            className="h-full bg-primary rounded-full transition-all duration-500"
-            style={{ width: `${currentProgress}%` }}
-          />
+          <div className="h-full bg-primary rounded-full transition-all duration-500" style={{
+          width: `${currentProgress}%`
+        }} />
         </div>
       </Card>
 
@@ -83,33 +82,19 @@ export function StageWelcome({ onStart, currentProgress = 0 }: StageWelcomeProps
       <Card className="p-6 space-y-4">
         <h3 className="font-semibold text-lg">What You'll Get</h3>
         <div className="space-y-3">
-          {[
-            "AI-powered customer avatar that understands your ideal buyers",
-            "Personalized marketing strategy tailored to your business",
-            "Social media content plan with optimal posting schedule",
-            "Daily action plans to execute your marketing with confidence"
-          ].map((benefit, index) => (
-            <div key={index} className="flex items-start gap-3">
+          {["AI-powered customer avatar that understands your ideal buyers", "Personalized marketing strategy tailored to your business", "Social media content plan with optimal posting schedule", "Daily action plans to execute your marketing with confidence"].map((benefit, index) => <div key={index} className="flex items-start gap-3">
               <CheckCircle2 className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
               <span className="text-sm text-muted-foreground">{benefit}</span>
-            </div>
-          ))}
+            </div>)}
         </div>
       </Card>
 
       {/* CTA */}
       <div className="text-center space-y-4">
-        <Button 
-          onClick={onStart} 
-          size="lg"
-          className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 h-12 text-base"
-        >
-          Let's Get Started
-        </Button>
+        <Button onClick={onStart} size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 h-12 text-base">Continue with Launchpad</Button>
         <p className="text-xs text-muted-foreground">
           Takes about 10 minutes • Your progress is saved automatically
         </p>
       </div>
-    </div>
-  );
+    </div>;
 }
