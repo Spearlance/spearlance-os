@@ -2627,6 +2627,9 @@ export type Database = {
           client_id: string
           created_at: string | null
           id: string
+          match_confidence: number | null
+          match_reasoning: string | null
+          matched_avatar_id: string | null
           overall_score: number | null
           page_id: string
           recommendations: Json | null
@@ -2644,6 +2647,9 @@ export type Database = {
           client_id: string
           created_at?: string | null
           id?: string
+          match_confidence?: number | null
+          match_reasoning?: string | null
+          matched_avatar_id?: string | null
           overall_score?: number | null
           page_id: string
           recommendations?: Json | null
@@ -2661,6 +2667,9 @@ export type Database = {
           client_id?: string
           created_at?: string | null
           id?: string
+          match_confidence?: number | null
+          match_reasoning?: string | null
+          matched_avatar_id?: string | null
           overall_score?: number | null
           page_id?: string
           recommendations?: Json | null
@@ -2688,6 +2697,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "page_content_analysis_matched_avatar_id_fkey"
+            columns: ["matched_avatar_id"]
+            isOneToOne: false
+            referencedRelation: "avatars"
             referencedColumns: ["id"]
           },
           {

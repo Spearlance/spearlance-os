@@ -80,7 +80,14 @@ export const useAnalyzePage = () => {
         pageId = crawlData.page.id;
       }
 
-      // Step 3: Analyze content
+      // Step 3: Match avatar and analyze content
+      if (!avatarId) {
+        toast({
+          title: "Matching to customer avatar...",
+          description: "Finding the best avatar match for this content.",
+        });
+      }
+
       toast({
         title: "Analyzing content...",
         description: "AI is evaluating your page. This may take 30-60 seconds.",
@@ -103,9 +110,14 @@ export const useAnalyzePage = () => {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['page-analysis'] });
+      
+      const avatarInfo = data.matched_avatar_name 
+        ? ` (Matched to: ${data.matched_avatar_name})` 
+        : '';
+      
       toast({
         title: "Analysis Complete",
-        description: `Overall grade: ${getLetterGrade(data.overall_score)}`,
+        description: `Overall grade: ${getLetterGrade(data.overall_score)}${avatarInfo}`,
       });
     },
     onError: (error: any) => {

@@ -12,6 +12,9 @@ verify_jwt = true
 [functions.analyze-page-content]
 verify_jwt = true
 
+[functions.match-avatar-to-content]
+verify_jwt = true
+
 [functions.analyze-lead]
 verify_jwt = true
 

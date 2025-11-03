@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { CheckCircle2, AlertTriangle, Lightbulb, RefreshCw, X, BarChart3 } from "lucide-react";
+import { CheckCircle2, AlertTriangle, Lightbulb, RefreshCw, X, BarChart3, Sparkles } from "lucide-react";
 import { format } from "date-fns";
 
 interface Recommendation {
@@ -24,6 +24,9 @@ interface Analysis {
   weaknesses: string[];
   recommendations: Recommendation[];
   analyzed_at: string;
+  matched_avatar_id?: string;
+  match_confidence?: number;
+  match_reasoning?: string;
 }
 
 interface PageAnalysisDrawerProps {
@@ -99,6 +102,27 @@ export function PageAnalysisDrawer({
               <p className="text-xs text-muted-foreground mt-1">
                 Last crawled: {format(new Date(page.last_crawled_at), 'PPp')}
               </p>
+            )}
+            
+            {/* AI-Matched Avatar Info */}
+            {analysis.matched_avatar_id && analysis.match_confidence && (
+              <div className="bg-primary/5 rounded-lg p-3 space-y-1 mt-3">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-medium">AI-Matched Avatar</span>
+                </div>
+                <p className="text-sm">
+                  Content analyzed for avatar match
+                  <span className="ml-2 text-xs text-muted-foreground">
+                    ({Math.round(analysis.match_confidence * 100)}% confidence)
+                  </span>
+                </p>
+                {analysis.match_reasoning && (
+                  <p className="text-xs text-muted-foreground italic mt-1">
+                    {analysis.match_reasoning}
+                  </p>
+                )}
+              </div>
             )}
           </div>
 

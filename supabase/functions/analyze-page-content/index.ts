@@ -127,37 +127,74 @@ serve(async (req) => {
       throw new Error('Page not found');
     }
 
-    // Fetch avatar (use provided or get any avatar)
+    // Step 2: Fetch or match avatar
     let avatar;
-    if (avatar_id) {
-      // Use specific avatar if provided
-      const { data, error } = await supabase
+    let matchedAvatarData = null;
+
+    // If no avatar_id specified, use AI matching to find best avatar
+    if (!avatar_id) {
+      console.log('No avatar_id provided, using AI matching...');
+      
+      const { data: matchData, error: matchError } = await supabase.functions.invoke(
+        'match-avatar-to-content',
+        {
+          body: {
+            page_id: page_id,
+            client_id: page.client_id,
+            return_top_n: 1
+          }
+        }
+      );
+
+      if (matchError || !matchData.success) {
+        console.error('Avatar matching failed, falling back to first avatar:', matchError);
+        // Fallback: use first avatar with ai_summary
+        const { data: fallbackAvatar } = await supabase
+          .from('avatars')
+          .select('*')
+          .eq('client_id', page.client_id)
+          .not('ai_summary', 'is', null)
+          .limit(1)
+          .maybeSingle();
+        
+        avatar = fallbackAvatar;
+      } else {
+        console.log('AI matched avatar:', matchData.primary_avatar_id);
+        // Use AI-matched avatar
+        const { data: matchedAvatar } = await supabase
+          .from('avatars')
+          .select('*')
+          .eq('id', matchData.primary_avatar_id)
+          .single();
+        
+        avatar = matchedAvatar;
+        
+        // Store match data for database insert
+        if (matchData.all_matches && matchData.all_matches.length > 0) {
+          const primaryMatch = matchData.all_matches.find(
+            (m: any) => m.avatar_id === matchData.primary_avatar_id
+          );
+          matchedAvatarData = {
+            avatar_id: matchData.primary_avatar_id,
+            avatar_name: primaryMatch?.avatar_name,
+            confidence: primaryMatch?.confidence_score,
+            reasoning: primaryMatch?.reasoning
+          };
+        }
+      }
+    } else {
+      // Avatar explicitly specified
+      const { data: specifiedAvatar } = await supabase
         .from('avatars')
         .select('*')
         .eq('id', avatar_id)
-        .eq('client_id', page.client_id)
         .maybeSingle();
       
-      if (error) throw error;
-      avatar = data;
-    } else {
-      // Get any avatar for this client
-      const { data, error } = await supabase
-        .from('avatars')
-        .select('*')
-        .eq('client_id', page.client_id)
-        .limit(1)
-        .maybeSingle();
-      
-      if (error) throw error;
-      avatar = data;
+      avatar = specifiedAvatar;
     }
 
-    const avatarError = !avatar;
-
-    if (avatarError || !avatar) {
-      console.error('Avatar fetch error:', avatarError);
-      throw new Error('Avatar not found. Please create a customer avatar first.');
+    if (!avatar) {
+      throw new Error('Avatar not found. Please create a customer avatar in the Avatar section before analyzing content.');
     }
 
     console.log('Using avatar:', avatar.avatar_name);
@@ -212,6 +249,9 @@ serve(async (req) => {
         page_id,
         client_id: page.client_id,
         avatar_id: avatar.id,
+        matched_avatar_id: matchedAvatarData?.avatar_id || avatar.id,
+        match_confidence: matchedAvatarData?.confidence,
+        match_reasoning: matchedAvatarData?.reasoning,
         overall_score: Math.round(analysis.overall_score),
         clarity_score: Math.round(analysis.clarity_score),
         brevity_score: Math.round(analysis.brevity_score),
@@ -237,6 +277,7 @@ serve(async (req) => {
       JSON.stringify({
         success: true,
         analysis: analysisData,
+        matched_avatar_name: matchedAvatarData?.avatar_name
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
