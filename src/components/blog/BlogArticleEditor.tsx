@@ -1,0 +1,241 @@
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
+import { Loader2, Save, X, FileText, BarChart } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+
+interface BlogArticleEditorProps {
+  blogPostId: string;
+  initialContent?: string;
+  initialTitle?: string;
+  onSave?: () => void;
+  onCancel?: () => void;
+}
+
+export function BlogArticleEditor({ 
+  blogPostId, 
+  initialContent = '', 
+  initialTitle = '',
+  onSave,
+  onCancel 
+}: BlogArticleEditorProps) {
+  const [title, setTitle] = useState(initialTitle);
+  const [content, setContent] = useState(initialContent);
+  const [excerpt, setExcerpt] = useState('');
+  const [featuredImageUrl, setFeaturedImageUrl] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [metadata, setMetadata] = useState<any>(null);
+
+  useEffect(() => {
+    loadPost();
+  }, [blogPostId]);
+
+  const loadPost = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('blog_posts')
+        .select('*')
+        .eq('id', blogPostId)
+        .single();
+
+      if (error) throw error;
+
+      if (data) {
+        setTitle(data.title);
+        setContent(data.content || '');
+        setExcerpt(data.excerpt || '');
+        setFeaturedImageUrl(data.featured_image_url || '');
+        
+        // Calculate word count from content
+        const plainText = (data.content || '').replace(/<[^>]*>/g, '');
+        const wordCount = plainText.split(/\s+/).filter(word => word.length > 0).length;
+        
+        setMetadata({
+          word_count: wordCount,
+          seo_score: data.seo_score,
+          readability_score: data.readability_score,
+          status: data.status
+        });
+      }
+    } catch (error) {
+      console.error('Error loading post:', error);
+      toast.error("Failed to load post");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const calculateWordCount = (text: string) => {
+    // Remove HTML tags for accurate word count
+    const plainText = text.replace(/<[^>]*>/g, '');
+    return plainText.split(/\s+/).filter(word => word.length > 0).length;
+  };
+
+  const handleSave = async (publishNow = false) => {
+    setSaving(true);
+    try {
+      const wordCount = calculateWordCount(content);
+      
+      const { error } = await supabase
+        .from('blog_posts')
+        .update({
+          title,
+          content,
+          excerpt,
+          featured_image_url: featuredImageUrl || null,
+          status: publishNow ? 'published' : metadata?.status || 'draft',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', blogPostId);
+
+      if (error) throw error;
+
+      toast.success(publishNow ? "Article published!" : "Changes saved!");
+      onSave?.();
+    } catch (error) {
+      console.error('Error saving post:', error);
+      toast.error("Failed to save changes");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <Card className="p-6">
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </Card>
+    );
+  }
+
+  const currentWordCount = calculateWordCount(content);
+
+  return (
+    <div className="space-y-6">
+      {/* Metadata Bar */}
+      <Card className="p-4">
+        <div className="flex items-center justify-between flex-wrap gap-4">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <FileText className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-medium">{currentWordCount} words</span>
+            </div>
+            {metadata?.seo_score && (
+              <Badge variant={metadata.seo_score >= 80 ? "default" : "secondary"}>
+                <BarChart className="h-3 w-3 mr-1" />
+                SEO: {metadata.seo_score}/100
+              </Badge>
+            )}
+            {metadata?.readability_score && (
+              <Badge variant={metadata.readability_score >= 80 ? "default" : "secondary"}>
+                Read: {metadata.readability_score}/100
+              </Badge>
+            )}
+            <Badge variant="outline">{metadata?.status || 'draft'}</Badge>
+          </div>
+          
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleSave(false)}
+              disabled={saving}
+            >
+              {saving ? (
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Saving...</>
+              ) : (
+                <><Save className="h-4 w-4 mr-2" /> Save Draft</>
+              )}
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => handleSave(true)}
+              disabled={saving}
+            >
+              Publish
+            </Button>
+          </div>
+        </div>
+      </Card>
+
+      {/* Editor */}
+      <Card className="p-6">
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="title">Title</Label>
+            <Input
+              id="title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="text-2xl font-bold h-auto py-3"
+              placeholder="Article title..."
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="excerpt">Excerpt (optional)</Label>
+            <Textarea
+              id="excerpt"
+              value={excerpt}
+              onChange={(e) => setExcerpt(e.target.value)}
+              className="min-h-[80px]"
+              placeholder="Brief summary for previews..."
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="featuredImage">Featured Image URL (optional)</Label>
+            <Input
+              id="featuredImage"
+              value={featuredImageUrl}
+              onChange={(e) => setFeaturedImageUrl(e.target.value)}
+              placeholder="https://..."
+            />
+            {featuredImageUrl && (
+              <img 
+                src={featuredImageUrl} 
+                alt="Featured" 
+                className="w-full max-w-md h-48 object-cover rounded-lg"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                }}
+              />
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="content">Content</Label>
+            <Textarea
+              id="content"
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              className="min-h-[500px] font-mono text-sm"
+              placeholder="Write your article content here..."
+            />
+            <p className="text-xs text-muted-foreground">
+              Supports HTML formatting. Current word count: {currentWordCount}
+            </p>
+          </div>
+        </div>
+      </Card>
+
+      {/* Bottom Actions */}
+      {onCancel && (
+        <div className="flex justify-end gap-2">
+          <Button variant="outline" onClick={onCancel}>
+            <X className="h-4 w-4 mr-2" />
+            Cancel
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}

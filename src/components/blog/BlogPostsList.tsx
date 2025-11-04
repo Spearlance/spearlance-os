@@ -7,6 +7,8 @@ import { useClient } from "@/contexts/ClientContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { BlogArticleEditor } from "./BlogArticleEditor";
 
 interface BlogPostsListProps {
   status: 'draft' | 'published' | 'scheduled';
@@ -16,6 +18,7 @@ export function BlogPostsList({ status }: BlogPostsListProps) {
   const { selectedClient } = useClient();
   const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editingPostId, setEditingPostId] = useState<string | null>(null);
 
   useEffect(() => {
     loadPosts();
@@ -66,6 +69,15 @@ export function BlogPostsList({ status }: BlogPostsListProps) {
     }
   };
 
+  const handleEdit = (postId: string) => {
+    setEditingPostId(postId);
+  };
+
+  const handleEditorClose = () => {
+    setEditingPostId(null);
+    loadPosts();
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center p-12">
@@ -89,7 +101,25 @@ export function BlogPostsList({ status }: BlogPostsListProps) {
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <>
+      <Sheet open={!!editingPostId} onOpenChange={(open) => !open && handleEditorClose()}>
+        <SheetContent side="right" className="w-[90vw] max-w-[1400px] overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>Edit Blog Post</SheetTitle>
+          </SheetHeader>
+          <div className="mt-6">
+            {editingPostId && (
+              <BlogArticleEditor
+                blogPostId={editingPostId}
+                onSave={handleEditorClose}
+                onCancel={handleEditorClose}
+              />
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {posts.map((post) => (
         <Card key={post.id} className="hover:shadow-lg transition-shadow overflow-hidden">
           {post.featured_image_url && (
@@ -141,7 +171,7 @@ export function BlogPostsList({ status }: BlogPostsListProps) {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => console.log('Edit:', post.id)}
+                  onClick={() => handleEdit(post.id)}
                 >
                   <Edit className="h-4 w-4 mr-1" />
                   Edit
@@ -169,6 +199,7 @@ export function BlogPostsList({ status }: BlogPostsListProps) {
           </CardContent>
         </Card>
       ))}
-    </div>
+      </div>
+    </>
   );
 }

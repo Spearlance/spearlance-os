@@ -2,9 +2,7 @@ import { useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
+import { BlogArticleWizard } from "./BlogArticleWizard";
 
 interface BlogTopic {
   id: string;
@@ -27,48 +25,44 @@ interface BlogTopicDrawerProps {
 }
 
 export const BlogTopicDrawer = ({ topic, open, onOpenChange, onRefresh }: BlogTopicDrawerProps) => {
-  const [generating, setGenerating] = useState(false);
+  const [showWizard, setShowWizard] = useState(false);
 
   if (!topic) return null;
 
   const posts = topic.blog_posts ? (Array.isArray(topic.blog_posts) ? topic.blog_posts : [topic.blog_posts]) : [];
   const hasArticle = posts.length > 0 && posts[0];
 
-  const handleGenerateArticle = async () => {
-    setGenerating(true);
-    try {
-      const { error } = await supabase.functions.invoke('blog-generate-article', {
-        body: { 
-          topic_id: topic.id,
-          client_id: topic.client_id,
-          title: topic.topic_title,
-          meta_description: topic.summary,
-          keywords: topic.keywords || [],
-          avatar_id: topic.avatar_id
-        },
-      });
+  const handleStartWizard = () => {
+    setShowWizard(true);
+  };
 
-      if (error) throw error;
+  const handleWizardComplete = () => {
+    setShowWizard(false);
+    onRefresh();
+    onOpenChange(false);
+  };
 
-      toast.success("Article generated successfully!");
-      onRefresh();
-      onOpenChange(false);
-    } catch (error: any) {
-      console.error('Error generating article:', error);
-      toast.error(error.message || "Failed to generate article.");
-    } finally {
-      setGenerating(false);
-    }
+  const handleWizardCancel = () => {
+    setShowWizard(false);
   };
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-[400px] sm:w-[540px] overflow-y-auto">
+      <SheetContent side="right" className={showWizard ? "w-[90vw] max-w-[1400px]" : "w-[400px] sm:w-[540px]"} style={{ overflowY: 'auto' }}>
         <SheetHeader>
-          <SheetTitle>{topic.topic_title}</SheetTitle>
+          <SheetTitle>{showWizard ? 'Create Article' : topic.topic_title}</SheetTitle>
         </SheetHeader>
         
-        <div className="mt-6 space-y-4">
+        {showWizard ? (
+          <div className="mt-6">
+            <BlogArticleWizard
+              topic={topic}
+              onComplete={handleWizardComplete}
+              onCancel={handleWizardCancel}
+            />
+          </div>
+        ) : (
+          <div className="mt-6 space-y-4">
           <div className="flex items-center gap-2">
             <Badge variant="outline">{topic.category || 'General'}</Badge>
             <Badge>
@@ -107,15 +101,8 @@ export const BlogTopicDrawer = ({ topic, open, onOpenChange, onRefresh }: BlogTo
 
           <div className="flex gap-2">
             {!hasArticle && (
-              <Button
-                onClick={handleGenerateArticle}
-                disabled={generating}
-              >
-                {generating ? (
-                  <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Generating...</>
-                ) : (
-                  'Generate Article'
-                )}
+              <Button onClick={handleStartWizard}>
+                Generate Article
               </Button>
             )}
             <Button variant="outline" onClick={() => onOpenChange(false)}>
@@ -123,6 +110,7 @@ export const BlogTopicDrawer = ({ topic, open, onOpenChange, onRefresh }: BlogTo
             </Button>
           </div>
         </div>
+        )}
       </SheetContent>
     </Sheet>
   );
