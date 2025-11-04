@@ -81,17 +81,56 @@ serve(async (req) => {
       { data: brandVoice },
       { data: brandGuide },
       { data: avatar },
-      { data: aiPreferences }
+      { data: aiPreferences },
+      { data: analyzedPages }
     ] = await Promise.all([
       supabase.from('clients').select('*').eq('id', client_id).single(),
       supabase.from('brand_voice').select('*').eq('client_id', client_id).maybeSingle(),
       supabase.from('brand_guide').select('*').eq('client_id', client_id).maybeSingle(),
       avatar_id ? supabase.from('avatars').select('*').eq('id', avatar_id).maybeSingle() : Promise.resolve({ data: null }),
-      supabase.from('blog_ai_preferences').select('*').eq('client_id', client_id).maybeSingle()
+      supabase.from('blog_ai_preferences').select('*').eq('client_id', client_id).maybeSingle(),
+      supabase.from('website_pages')
+        .select('page_path, page_title, meta_description')
+        .eq('client_id', client_id)
+        .eq('is_indexable', true)
+        .not('page_path', 'like', '%my.duda.co%')
+        .not('page_path', 'like', '%edit.duda.co%')
+        .not('page_path', 'like', '%/editor/%')
+        .not('page_path', 'like', '%/preview/%')
+        .order('page_title')
     ]);
 
     if (!client) {
       throw new Error('Client not found');
+    }
+
+    // Format internal linking guidance
+    let internalLinkingGuidance = '';
+    if (analyzedPages && analyzedPages.length > 0) {
+      const pagesList = analyzedPages
+        .map(p => `- ${p.page_title || 'Untitled'}: ${p.page_path}${p.meta_description ? ` (${p.meta_description})` : ''}`)
+        .join('\n');
+      
+      internalLinkingGuidance = `
+INTERNAL LINKING - IMPORTANT:
+You may include internal links to these analyzed pages ONLY (and ONLY if contextually relevant):
+
+${pagesList}
+
+Rules for internal linking:
+1. ONLY link to pages in the list above
+2. ONLY create links when they add genuine value to the reader
+3. Use natural anchor text that describes what the reader will find
+4. Link to pages that are contextually relevant to the section you're writing
+5. Do NOT force links - if no page fits naturally, don't link
+6. Use HTML format: <a href="/page-path">anchor text</a>
+7. Maximum 2-3 internal links per article (unless it's a pillar/hub page)
+`;
+    } else {
+      internalLinkingGuidance = `
+INTERNAL LINKING:
+Do NOT include any internal links to other pages on the website. Focus on creating valuable standalone content.
+`;
     }
 
     let ctaText = '';
@@ -157,6 +196,8 @@ WRITING GUIDELINES:
 9. Use bullet points and lists where appropriate
 10. Include a clear introduction and conclusion
 
+${internalLinkingGuidance}
+
 FORMAT REQUIREMENTS:
 - Return as clean HTML with semantic markup
 - Use <h2> for main sections, <h3> for subsections
@@ -164,6 +205,8 @@ FORMAT REQUIREMENTS:
 - Use <ul> and <li> for unordered lists
 - Use <ol> and <li> for ordered lists
 - Use <strong> for emphasis
+- Use <a href="/path">text</a> for internal links (ONLY to provided pages, if any)
+- Do NOT create external links unless specifically requested
 - Mark image positions with: <!--IMAGE_PLACEHOLDER_1--> (number them sequentially)
 - Do NOT include the meta description in the HTML content
 
