@@ -21,6 +21,8 @@ serve(async (req) => {
       tone = 'professional'
     } = await req.json();
 
+    console.log('Request params:', { client_id, title, keywords, avatar_id, word_count });
+
     if (!client_id || !title) {
       throw new Error('client_id and title are required');
     }
@@ -30,16 +32,24 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Fetch brand context
+    console.log('Fetching client with id:', client_id);
     const { data: client, error: clientError } = await supabase
       .from('clients')
       .select('*, business_model(*)')
       .eq('id', client_id)
-      .single();
+      .maybeSingle();
 
-    if (clientError || !client) {
-      console.error('Client not found:', clientError);
-      throw new Error('Client not found');
+    if (clientError) {
+      console.error('Error fetching client:', clientError);
+      throw new Error(`Database error: ${clientError.message}`);
     }
+
+    if (!client) {
+      console.error('No client found with id:', client_id);
+      throw new Error(`No client found with id: ${client_id}`);
+    }
+    
+    console.log('Client found:', client.name);
 
     const { data: brandVoice } = await supabase
       .from('brand_voice')
