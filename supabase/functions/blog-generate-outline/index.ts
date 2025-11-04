@@ -30,11 +30,16 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Fetch brand context
-    const { data: client } = await supabase
+    const { data: client, error: clientError } = await supabase
       .from('clients')
       .select('*, business_model(*)')
       .eq('id', client_id)
       .single();
+
+    if (clientError || !client) {
+      console.error('Client not found:', clientError);
+      throw new Error('Client not found');
+    }
 
     const { data: brandVoice } = await supabase
       .from('brand_voice')
