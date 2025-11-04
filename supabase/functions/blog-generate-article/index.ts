@@ -63,7 +63,8 @@ serve(async (req) => {
       tone = 'professional',
       include_cta = true,
       cta_type = 'contact',
-      created_by
+      created_by,
+      personal_context
     } = await req.json();
 
     if (!client_id || !title) {
@@ -136,6 +137,11 @@ ARTICLE REQUIREMENTS:
 - Focus Keywords: ${keywords.join(', ')}
 - Meta Description: ${meta_description || 'Generate an engaging 150-160 character description'}
 - Tone: ${tone}
+
+${personal_context ? `\nPERSONAL STORIES & CONTEXT FOR THIS ARTICLE:
+${personal_context}
+
+IMPORTANT: Weave these real stories, examples, and specific details naturally throughout the article. Use them to illustrate points, provide proof, and make the content authentic. Don't just paste them - integrate them smoothly into the narrative.\n` : ''}
 
 ${outline ? `OUTLINE TO FOLLOW:\n${JSON.stringify(outline, null, 2)}` : ''}
 

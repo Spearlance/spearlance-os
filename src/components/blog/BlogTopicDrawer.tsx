@@ -152,12 +152,12 @@ export const BlogTopicDrawer = ({ topic, open, onOpenChange, onRefresh }: BlogTo
                 </div>
               </div>
 
-              {posts[0].excerpt && (
-                <div>
-                  <h3 className="text-sm font-semibold mb-2">Excerpt</h3>
-                  <p className="text-sm text-muted-foreground italic">{posts[0].excerpt}</p>
-                </div>
-              )}
+            {posts[0].excerpt && (
+              <div>
+                <h3 className="text-sm font-semibold mb-2">Story Context</h3>
+                <p className="text-sm text-muted-foreground whitespace-pre-wrap">{posts[0].excerpt}</p>
+              </div>
+            )}
 
               {posts[0].featured_image_url && (
                 <div>

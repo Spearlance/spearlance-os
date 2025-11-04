@@ -84,7 +84,8 @@ export function BlogArticleWizard({ topic, onComplete, onCancel }: BlogArticleWi
           keywords: topic.keywords || [],
           outline,
           avatar_id: topic.avatar_id,
-          created_by: user?.id
+          created_by: user?.id,
+          personal_context: outline?.personal_context || null
         }
       });
 

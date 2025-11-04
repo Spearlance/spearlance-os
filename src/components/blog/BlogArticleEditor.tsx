@@ -209,14 +209,17 @@ export function BlogArticleEditor({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="excerpt">Excerpt (optional)</Label>
+                <Label htmlFor="excerpt">Story Context & Personal Details (optional)</Label>
                 <Textarea
                   id="excerpt"
                   value={excerpt}
                   onChange={(e) => setExcerpt(e.target.value)}
-                  className="min-h-[80px]"
-                  placeholder="Brief summary for previews..."
+                  className="min-h-[150px]"
+                  placeholder="Add real stories, case studies, specific examples, statistics, or personal anecdotes you want included in this article. The more specific details you provide, the more authentic and unique the content will be."
                 />
+                <p className="text-xs text-muted-foreground">
+                  Examples: "Include the story about how we helped ABC Company reduce costs by 50%" or "Mention our founder's 15 years of experience in the industry" or "Reference our recent survey showing 80% of customers saw results in 30 days"
+                </p>
               </div>
 
               <div className="space-y-2">
