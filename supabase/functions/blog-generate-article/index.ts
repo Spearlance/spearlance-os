@@ -42,7 +42,7 @@ function calculateSEOScore(content: string, keywords: string[]): number {
   if (content.includes('<h2>')) score += 10;
   if (content.includes('<h3>')) score += 5;
   
-  return Math.min(score, 100);
+  return Math.min(score, 99.9);
 }
 
 serve(async (req) => {
