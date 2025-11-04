@@ -206,10 +206,10 @@ export function BlogWriterMain() {
                     <div className="flex-1">
                       <div>Generate All Topics ({strategyPostCount} posts)</div>
                       <div className="text-xs text-muted-foreground">
-                        {activeStrategy?.posting_frequency === 'weekdays' 
-                          ? 'Mon-Fri only' 
-                          : activeStrategy?.posting_frequency === 'weekly'
-                          ? 'Weekly'
+                        {activeStrategy?.posting_frequency === 'daily' 
+                          ? 'Every day' 
+                          : activeStrategy?.posting_frequency === 'weekdays'
+                          ? 'Mon-Fri only'
                           : activeStrategy?.posting_frequency === 'custom'
                           ? `${activeStrategy.selected_days?.length || 0} days/week`
                           : 'Based on strategy'}

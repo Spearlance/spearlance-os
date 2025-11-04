@@ -6,8 +6,10 @@ import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Toggle } from "@/components/ui/toggle";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, AlertCircle } from "lucide-react";
 
 interface BlogStrategyFormProps {
   clientId: string;
@@ -19,7 +21,8 @@ interface BlogStrategyFormProps {
 
 export function BlogStrategyForm({ clientId, month, year }: BlogStrategyFormProps) {
   const queryClient = useQueryClient();
-  const [postingFrequency, setPostingFrequency] = useState<string>("weekly");
+  const [postingFrequency, setPostingFrequency] = useState<'daily' | 'weekdays' | 'custom'>('daily');
+  const [selectedDays, setSelectedDays] = useState<number[]>([1, 2, 3, 4, 5, 6, 7]);
   const [contentMix, setContentMix] = useState({
     how_to: 30,
     case_studies: 20,
@@ -46,7 +49,8 @@ export function BlogStrategyForm({ clientId, month, year }: BlogStrategyFormProp
 
       if (error) throw error;
       if (data) {
-        setPostingFrequency(data.posting_frequency);
+        setPostingFrequency(data.posting_frequency as any);
+        setSelectedDays(data.selected_days || [1, 2, 3, 4, 5, 6, 7]);
         setContentMix(data.content_mix as any);
       }
       return data;
@@ -58,6 +62,7 @@ export function BlogStrategyForm({ clientId, month, year }: BlogStrategyFormProp
       const strategyData = {
         client_id: clientId,
         posting_frequency: postingFrequency,
+        selected_days: selectedDays,
         content_mix: contentMix,
         is_global: !month || !year,
         month: month || null,
@@ -90,6 +95,7 @@ export function BlogStrategyForm({ clientId, month, year }: BlogStrategyFormProp
   };
 
   const totalPercentage = Object.values(contentMix).reduce((sum, val) => sum + val, 0);
+  const postsPerMonth = selectedDays.length * 4;
 
   if (isLoading) {
     return (
@@ -104,22 +110,57 @@ export function BlogStrategyForm({ clientId, month, year }: BlogStrategyFormProp
   return (
     <Card className="p-6">
       <div className="space-y-6">
-        <div>
-          <h3 className="text-lg font-semibold mb-4">Posting Frequency</h3>
-          <RadioGroup value={postingFrequency} onValueChange={setPostingFrequency}>
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold">Posting Schedule</h3>
+          <RadioGroup 
+            value={postingFrequency} 
+            onValueChange={(v: any) => {
+              setPostingFrequency(v);
+              if (v === 'daily') setSelectedDays([1, 2, 3, 4, 5, 6, 7]);
+              if (v === 'weekdays') setSelectedDays([1, 2, 3, 4, 5]);
+            }}
+          >
             <div className="flex items-center space-x-2">
-              <RadioGroupItem value="weekly" id="weekly" />
-              <Label htmlFor="weekly">Weekly (4 posts per month)</Label>
+              <RadioGroupItem value="daily" id="daily" />
+              <Label htmlFor="daily" className="font-normal cursor-pointer">Every day (7 days/week)</Label>
             </div>
             <div className="flex items-center space-x-2">
-              <RadioGroupItem value="bi-weekly" id="bi-weekly" />
-              <Label htmlFor="bi-weekly">Bi-weekly (2 posts per month)</Label>
+              <RadioGroupItem value="weekdays" id="weekdays" />
+              <Label htmlFor="weekdays" className="font-normal cursor-pointer">Weekdays only (5 days/week)</Label>
             </div>
             <div className="flex items-center space-x-2">
-              <RadioGroupItem value="monthly" id="monthly" />
-              <Label htmlFor="monthly">Monthly (1 post per month)</Label>
+              <RadioGroupItem value="custom" id="custom" />
+              <Label htmlFor="custom" className="font-normal cursor-pointer">Custom schedule</Label>
             </div>
           </RadioGroup>
+
+          {postingFrequency === 'custom' && (
+            <div className="flex flex-wrap gap-2 pt-2">
+              {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, idx) => (
+                <Toggle
+                  key={day}
+                  pressed={selectedDays.includes(idx + 1)}
+                  onPressedChange={(pressed) => {
+                    if (pressed) {
+                      setSelectedDays([...selectedDays, idx + 1].sort((a, b) => a - b));
+                    } else {
+                      setSelectedDays(selectedDays.filter(d => d !== idx + 1));
+                    }
+                  }}
+                  className="min-w-[60px]"
+                >
+                  {day}
+                </Toggle>
+              ))}
+            </div>
+          )}
+
+          <Alert>
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              ~{postsPerMonth} posts per month based on your schedule
+            </AlertDescription>
+          </Alert>
         </div>
 
         <div>
@@ -204,7 +245,7 @@ export function BlogStrategyForm({ clientId, month, year }: BlogStrategyFormProp
 
         <Button
           onClick={() => saveStrategyMutation.mutate()}
-          disabled={totalPercentage !== 100 || saveStrategyMutation.isPending}
+          disabled={totalPercentage !== 100 || saveStrategyMutation.isPending || selectedDays.length === 0}
           className="w-full"
         >
           {saveStrategyMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
