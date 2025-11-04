@@ -68,20 +68,23 @@ export function BlogMonthlyGenerator({
       setProgress("Creating your blog calendar...");
       await new Promise(resolve => setTimeout(resolve, 500));
 
-      setIsComplete(true);
-      setProgress(`🎉 Success! ${data.topics_created} topics created for ${selectedMonthName}`);
+        setIsComplete(true);
+        setProgress(`🎉 Success! ${data.topics_created} topics created for ${selectedMonthName}`);
+        
+        toast.success(`Blog topics created!`, {
+          description: `${data.topics_created} topics ready for ${selectedMonthName}. Start creating articles!`,
+        });
 
-      toast.success(`Blog topics created!`, {
-        description: `${data.topics_created} topics ready for ${selectedMonthName}. Start creating articles!`,
-      });
-
-      setTimeout(() => {
+        // Call onComplete immediately to trigger refetch while success screen shows
         onComplete();
-        onOpenChange(false);
-        setIsComplete(false);
-        setIsGenerating(false);
-        setProgress("");
-      }, 2000);
+
+        // Close dialog after showing success for 2 seconds
+        setTimeout(() => {
+          onOpenChange(false);
+          setIsComplete(false);
+          setIsGenerating(false);
+          setProgress("");
+        }, 2000);
 
     } catch (error: any) {
       console.error('Error generating blog topics:', error);

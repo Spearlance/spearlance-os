@@ -95,7 +95,22 @@ export function BlogStrategyForm({ clientId, month, year }: BlogStrategyFormProp
   };
 
   const totalPercentage = Object.values(contentMix).reduce((sum, val) => sum + val, 0);
-  const postsPerMonth = selectedDays.length * 4;
+  
+  // Calculate actual posts per month based on selected days
+  const today = new Date();
+  const exampleMonth = today.getMonth();
+  const exampleYear = today.getFullYear();
+  const daysInExampleMonth = new Date(exampleYear, exampleMonth + 1, 0).getDate();
+  
+  let postsPerMonth = 0;
+  for (let day = 1; day <= daysInExampleMonth; day++) {
+    const date = new Date(exampleYear, exampleMonth, day);
+    const dayOfWeek = date.getDay();
+    const isoDayOfWeek = dayOfWeek === 0 ? 7 : dayOfWeek;
+    if (selectedDays.includes(isoDayOfWeek)) {
+      postsPerMonth++;
+    }
+  }
 
   if (isLoading) {
     return (

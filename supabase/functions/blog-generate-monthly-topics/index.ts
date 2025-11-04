@@ -165,7 +165,10 @@ serve(async (req) => {
       return date.toISOString().split('T')[0];
     });
 
-    const systemPrompt = `Generate ${numTopics} blog post topic ideas for ${monthName} ${year}.
+    const systemPrompt = `You are a professional content strategist. Generate EXACTLY ${numTopics} blog topic ideas.
+
+CRITICAL: You MUST generate exactly ${numTopics} topics, one for each of these dates in ${monthName} ${year}:
+${daysToGenerate.map(day => `- ${month}/${day}/${year}`).join('\n')}
 
 Client Context:
 - Business: ${client?.name || 'Unknown'}
@@ -174,11 +177,8 @@ Client Context:
 ${brandVoice?.tone ? `- Brand Tone: ${brandVoice.tone}` : ''}
 ${avatar?.avatar_name ? `- Target Audience: ${avatar.avatar_name}` : ''}
 
-Content Distribution:
+Content Distribution Required:
 ${Object.entries(topicCounts).map(([cat, count]) => `- ${count} ${cat.replace(/_/g, ' ')} post(s)`).join('\n')}
-
-Publishing Dates:
-The topics should be scheduled for these specific dates: ${suggestedDates.join(', ')}
 
 Content Type Guidelines:
 - how_to: Step-by-step guides teaching valuable skills
@@ -187,17 +187,17 @@ Content Type Guidelines:
 - best_practices: Expert tips and proven strategies
 - company_updates: Announcements, team highlights, new services
 
-Return a JSON array of exactly ${numTopics} objects with this structure:
+Return a JSON array of EXACTLY ${numTopics} objects (one per date listed above) with this structure:
 {
   "title": "Compelling SEO-optimized headline",
   "summary": "2-3 sentence description of what the article will cover",
   "category": "how_to|case_studies|industry_news|best_practices|company_updates",
   "keywords": ["keyword1", "keyword2", "keyword3"],
   "target_avatar": "${avatar?.avatar_name || 'general audience'}",
-  "suggested_publish_date": "YYYY-MM-DD (use dates from the list above)"
+  "suggested_publish_date": "YYYY-MM-DD (must be one of the dates from the list above)"
 }
 
-Make topics specific, actionable, and valuable. Ensure proper distribution across categories.`;
+Make topics specific, actionable, and valuable. Ensure proper distribution across categories matching the content distribution exactly.`;
 
     const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
@@ -229,12 +229,17 @@ Make topics specific, actionable, and valuable. Ensure proper distribution acros
     
     const topics = JSON.parse(topicsText);
 
-    if (!Array.isArray(topics) || topics.length !== numTopics) {
-      console.error('Invalid topics response:', topics);
-      throw new Error(`AI did not generate exactly ${numTopics} topics`);
+    if (!Array.isArray(topics)) {
+      console.error('Topics response is not an array:', topics);
+      throw new Error('AI did not return a valid array of topics');
     }
 
-    console.log(`Generated ${numTopics} topics successfully`);
+    if (topics.length !== numTopics) {
+      console.error(`Expected ${numTopics} topics but got ${topics.length}. Days to generate:`, daysToGenerate);
+      throw new Error(`AI generated ${topics.length} topics but expected ${numTopics}`);
+    }
+
+    console.log(`Generated ${numTopics} topics successfully for days:`, daysToGenerate);
 
     // Create batch record FIRST
     const { data: batch, error: batchError } = await supabase
