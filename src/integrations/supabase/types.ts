@@ -495,6 +495,50 @@ export type Database = {
         }
         Relationships: []
       }
+      blog_content_strategy: {
+        Row: {
+          client_id: string
+          content_mix: Json
+          created_at: string | null
+          id: string
+          is_global: boolean | null
+          month: number | null
+          posting_frequency: string
+          updated_at: string | null
+          year: number | null
+        }
+        Insert: {
+          client_id: string
+          content_mix?: Json
+          created_at?: string | null
+          id?: string
+          is_global?: boolean | null
+          month?: number | null
+          posting_frequency?: string
+          updated_at?: string | null
+          year?: number | null
+        }
+        Update: {
+          client_id?: string
+          content_mix?: Json
+          created_at?: string | null
+          id?: string
+          is_global?: boolean | null
+          month?: number | null
+          posting_frequency?: string
+          updated_at?: string | null
+          year?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blog_content_strategy_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       blog_post_revisions: {
         Row: {
           blog_post_id: string
@@ -567,17 +611,20 @@ export type Database = {
           generation_metadata: Json | null
           generation_prompt: string | null
           id: string
+          images_generated: boolean | null
           last_edited_by: string | null
           meta_description: string | null
           published_at: string | null
           readability_score: number | null
           scheduled_for: string | null
+          scheduled_publish_date: string | null
           seo_score: number | null
           slug: string
           status: string | null
           target_keywords: string[] | null
           title: string
           topic_category: string | null
+          topic_id: string | null
           updated_at: string | null
         }
         Insert: {
@@ -597,17 +644,20 @@ export type Database = {
           generation_metadata?: Json | null
           generation_prompt?: string | null
           id?: string
+          images_generated?: boolean | null
           last_edited_by?: string | null
           meta_description?: string | null
           published_at?: string | null
           readability_score?: number | null
           scheduled_for?: string | null
+          scheduled_publish_date?: string | null
           seo_score?: number | null
           slug: string
           status?: string | null
           target_keywords?: string[] | null
           title: string
           topic_category?: string | null
+          topic_id?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -627,17 +677,20 @@ export type Database = {
           generation_metadata?: Json | null
           generation_prompt?: string | null
           id?: string
+          images_generated?: boolean | null
           last_edited_by?: string | null
           meta_description?: string | null
           published_at?: string | null
           readability_score?: number | null
           scheduled_for?: string | null
+          scheduled_publish_date?: string | null
           seo_score?: number | null
           slug?: string
           status?: string | null
           target_keywords?: string[] | null
           title?: string
           topic_category?: string | null
+          topic_id?: string | null
           updated_at?: string | null
         }
         Relationships: [
@@ -669,6 +722,57 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "blog_posts_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "blog_topics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      blog_strategy_batches: {
+        Row: {
+          client_id: string
+          completed_at: string | null
+          created_at: string | null
+          id: string
+          month: number
+          topics_with_articles: number | null
+          topics_with_outlines: number | null
+          total_topics: number | null
+          year: number
+        }
+        Insert: {
+          client_id: string
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          month: number
+          topics_with_articles?: number | null
+          topics_with_outlines?: number | null
+          total_topics?: number | null
+          year: number
+        }
+        Update: {
+          client_id?: string
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          month?: number
+          topics_with_articles?: number | null
+          topics_with_outlines?: number | null
+          total_topics?: number | null
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blog_strategy_batches_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
         ]
       }
       blog_topics: {
@@ -676,6 +780,7 @@ export type Database = {
           ai_generated: boolean | null
           avatar_id: string | null
           blog_post_id: string | null
+          category: string | null
           client_id: string
           created_at: string | null
           description: string | null
@@ -683,12 +788,16 @@ export type Database = {
           keywords: string[] | null
           priority: string | null
           status: string | null
+          strategy_batch_id: string | null
+          suggested_publish_date: string | null
+          summary: string | null
           topic_title: string
         }
         Insert: {
           ai_generated?: boolean | null
           avatar_id?: string | null
           blog_post_id?: string | null
+          category?: string | null
           client_id: string
           created_at?: string | null
           description?: string | null
@@ -696,12 +805,16 @@ export type Database = {
           keywords?: string[] | null
           priority?: string | null
           status?: string | null
+          strategy_batch_id?: string | null
+          suggested_publish_date?: string | null
+          summary?: string | null
           topic_title: string
         }
         Update: {
           ai_generated?: boolean | null
           avatar_id?: string | null
           blog_post_id?: string | null
+          category?: string | null
           client_id?: string
           created_at?: string | null
           description?: string | null
@@ -709,6 +822,9 @@ export type Database = {
           keywords?: string[] | null
           priority?: string | null
           status?: string | null
+          strategy_batch_id?: string | null
+          suggested_publish_date?: string | null
+          summary?: string | null
           topic_title?: string
         }
         Relationships: [
@@ -731,6 +847,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blog_topics_strategy_batch_id_fkey"
+            columns: ["strategy_batch_id"]
+            isOneToOne: false
+            referencedRelation: "blog_strategy_batches"
             referencedColumns: ["id"]
           },
         ]
