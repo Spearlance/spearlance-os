@@ -35,7 +35,7 @@ serve(async (req) => {
     console.log('Fetching client with id:', client_id);
     const { data: client, error: clientError } = await supabase
       .from('clients')
-      .select('*, business_model(*)')
+      .select('*')
       .eq('id', client_id)
       .maybeSingle();
 
@@ -76,7 +76,6 @@ Pain Points: ${avatar.pain_points || 'Not specified'}`;
 
 BRAND CONTEXT:
 - Brand Voice: ${brandVoice?.tone_adjectives?.join(', ') || 'Professional'}
-- Industry: ${client.business_model?.industry || 'General'}
 ${avatarInfo}
 
 ARTICLE REQUIREMENTS:
