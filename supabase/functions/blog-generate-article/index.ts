@@ -227,6 +227,7 @@ Write the complete article now. Be natural, helpful, and engaging.`;
       .from('blog_posts')
       .insert({
         client_id,
+        topic_id: topic_id || null,
         title,
         slug,
         meta_description: extractedMeta || meta_description || excerpt,

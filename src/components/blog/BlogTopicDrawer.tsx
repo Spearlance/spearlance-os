@@ -3,6 +3,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { BlogArticleWizard } from "./BlogArticleWizard";
+import { BlogArticleEditor } from "./BlogArticleEditor";
 
 interface BlogTopic {
   id: string;
@@ -26,6 +27,7 @@ interface BlogTopicDrawerProps {
 
 export const BlogTopicDrawer = ({ topic, open, onOpenChange, onRefresh }: BlogTopicDrawerProps) => {
   const [showWizard, setShowWizard] = useState(false);
+  const [showEditor, setShowEditor] = useState(false);
 
   if (!topic) return null;
 
@@ -36,8 +38,18 @@ export const BlogTopicDrawer = ({ topic, open, onOpenChange, onRefresh }: BlogTo
     setShowWizard(true);
   };
 
+  const handleOpenEditor = () => {
+    setShowEditor(true);
+  };
+
   const handleWizardComplete = () => {
     setShowWizard(false);
+    onRefresh();
+    onOpenChange(false);
+  };
+
+  const handleEditorSave = () => {
+    setShowEditor(false);
     onRefresh();
     onOpenChange(false);
   };
@@ -46,11 +58,17 @@ export const BlogTopicDrawer = ({ topic, open, onOpenChange, onRefresh }: BlogTo
     setShowWizard(false);
   };
 
+  const handleEditorCancel = () => {
+    setShowEditor(false);
+  };
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className={showWizard ? "w-[90vw] max-w-[1400px]" : "w-[400px] sm:w-[540px]"} style={{ overflowY: 'auto' }}>
+      <SheetContent side="right" className={(showWizard || showEditor) ? "w-[90vw] max-w-[1400px]" : "w-[400px] sm:w-[540px]"} style={{ overflowY: 'auto' }}>
         <SheetHeader>
-          <SheetTitle>{showWizard ? 'Create Article' : topic.topic_title}</SheetTitle>
+          <SheetTitle>
+            {showWizard ? 'Create Article' : showEditor ? 'Edit Article' : topic.topic_title}
+          </SheetTitle>
         </SheetHeader>
         
         {showWizard ? (
@@ -59,6 +77,16 @@ export const BlogTopicDrawer = ({ topic, open, onOpenChange, onRefresh }: BlogTo
               topic={topic}
               onComplete={handleWizardComplete}
               onCancel={handleWizardCancel}
+            />
+          </div>
+        ) : showEditor && hasArticle ? (
+          <div className="mt-6">
+            <BlogArticleEditor
+              blogPostId={posts[0].id}
+              initialContent={posts[0].content}
+              initialTitle={posts[0].title}
+              onSave={handleEditorSave}
+              onCancel={handleEditorCancel}
             />
           </div>
         ) : (
@@ -100,9 +128,13 @@ export const BlogTopicDrawer = ({ topic, open, onOpenChange, onRefresh }: BlogTo
           )}
 
           <div className="flex gap-2">
-            {!hasArticle && (
+            {!hasArticle ? (
               <Button onClick={handleStartWizard}>
                 Generate Article
+              </Button>
+            ) : (
+              <Button onClick={handleOpenEditor}>
+                Edit Article
               </Button>
             )}
             <Button variant="outline" onClick={() => onOpenChange(false)}>
