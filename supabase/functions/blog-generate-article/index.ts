@@ -177,7 +177,7 @@ Write the complete article now. Be natural, helpful, and engaging.`;
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-5',
+        model: 'google/gemini-2.5-flash',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: 'Write the complete blog article now.' }
@@ -238,7 +238,7 @@ Write the complete article now. Be natural, helpful, and engaging.`;
         avatar_id: avatar_id || null,
         target_keywords: keywords,
         status: 'draft',
-        ai_model: 'claude-sonnet-4-5',
+        ai_model: 'google/gemini-2.5-flash',
         generation_prompt: systemPrompt,
         generation_metadata: {
           word_count: wordCount,
