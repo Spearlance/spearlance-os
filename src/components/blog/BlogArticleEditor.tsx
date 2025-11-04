@@ -150,34 +150,46 @@ export function BlogArticleEditor({
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         ) : (
-          <div className="space-y-6">
-            {/* Metadata Bar */}
-            <div className="flex items-center justify-between flex-wrap gap-4 p-4 bg-muted rounded-lg">
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <FileText className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm font-medium">{currentWordCount} words</span>
-                </div>
-                {metadata?.seo_score && (
-                  <Badge variant={metadata.seo_score >= 80 ? "default" : "secondary"}>
-                    <BarChart className="h-3 w-3 mr-1" />
-                    SEO: {metadata.seo_score}/100
-                  </Badge>
-                )}
-                {metadata?.readability_score && (
-                  <Badge variant={metadata.readability_score >= 80 ? "default" : "secondary"}>
-                    Read: {metadata.readability_score}/100
-                  </Badge>
-                )}
-                <Badge variant="outline">{metadata?.status || 'draft'}</Badge>
-              </div>
-              
-              <div className="flex gap-2">
+          <div className="flex gap-6 h-[calc(100vh-120px)] mt-6">
+            {/* Left Column - Full Height Editor */}
+            <div className="flex-1 flex flex-col">
+              <Tabs defaultValue="edit" className="flex-1 flex flex-col">
+                <TabsList className="grid w-full grid-cols-2 mb-4">
+                  <TabsTrigger value="edit">Edit</TabsTrigger>
+                  <TabsTrigger value="preview">Preview</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="edit" className="flex-1 data-[state=active]:flex flex-col">
+                  <div className="border rounded-md overflow-hidden flex-1">
+                    <ReactQuill
+                      theme="snow"
+                      value={content}
+                      onChange={setContent}
+                      modules={quillModules}
+                      formats={quillFormats}
+                      className="h-full bg-background"
+                      placeholder="Write your article content here..."
+                    />
+                  </div>
+                </TabsContent>
+                
+                <TabsContent value="preview" className="flex-1 overflow-y-auto p-6 border rounded-md bg-background data-[state=active]:block">
+                  <article 
+                    className="prose prose-sm max-w-none dark:prose-invert"
+                    dangerouslySetInnerHTML={{ __html: content }}
+                  />
+                </TabsContent>
+              </Tabs>
+            </div>
+
+            {/* Right Column - Metadata Sidebar */}
+            <div className="w-80 border-l pl-6 overflow-y-auto space-y-6">
+              {/* Action Buttons - Top */}
+              <div className="flex flex-col gap-2 sticky top-0 bg-background pb-4 border-b z-10">
                 <Button
-                  variant="outline"
-                  size="sm"
                   onClick={() => handleSave(false)}
                   disabled={saving}
+                  variant="outline"
                 >
                   {saving ? (
                     <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Saving...</>
@@ -186,44 +198,68 @@ export function BlogArticleEditor({
                   )}
                 </Button>
                 <Button
-                  size="sm"
                   onClick={() => handleSave(true)}
                   disabled={saving}
                 >
                   Publish
                 </Button>
               </div>
-            </div>
 
-            {/* Basic Fields */}
-            <div className="space-y-4">
+              {/* Metadata Badges */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-sm">
+                  <FileText className="h-4 w-4 text-muted-foreground" />
+                  <span className="font-medium">{currentWordCount} words</span>
+                </div>
+                {metadata?.seo_score && (
+                  <div className="flex items-center gap-2">
+                    <Badge variant={metadata.seo_score >= 80 ? "default" : "secondary"}>
+                      <BarChart className="h-3 w-3 mr-1" />
+                      SEO: {metadata.seo_score}/100
+                    </Badge>
+                  </div>
+                )}
+                {metadata?.readability_score && (
+                  <div className="flex items-center gap-2">
+                    <Badge variant={metadata.readability_score >= 80 ? "default" : "secondary"}>
+                      Read: {metadata.readability_score}/100
+                    </Badge>
+                  </div>
+                )}
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline">{metadata?.status || 'draft'}</Badge>
+                </div>
+              </div>
+
+              {/* Title Input */}
               <div className="space-y-2">
                 <Label htmlFor="title">Title</Label>
                 <Input
                   id="title"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  className="text-2xl font-bold h-auto py-3"
                   placeholder="Article title..."
                 />
               </div>
 
+              {/* Story Context */}
               <div className="space-y-2">
-                <Label htmlFor="excerpt">Story Context & Personal Details (optional)</Label>
+                <Label htmlFor="excerpt">Story Context & Personal Details</Label>
                 <Textarea
                   id="excerpt"
                   value={excerpt}
                   onChange={(e) => setExcerpt(e.target.value)}
-                  className="min-h-[150px]"
-                  placeholder="Add real stories, case studies, specific examples, statistics, or personal anecdotes you want included in this article. The more specific details you provide, the more authentic and unique the content will be."
+                  className="min-h-[200px]"
+                  placeholder="Add real stories, case studies, specific examples, statistics, or personal anecdotes you want included in this article."
                 />
                 <p className="text-xs text-muted-foreground">
-                  Examples: "Include the story about how we helped ABC Company reduce costs by 50%" or "Mention our founder's 15 years of experience in the industry" or "Reference our recent survey showing 80% of customers saw results in 30 days"
+                  The more specific details you provide, the more authentic and unique the content will be.
                 </p>
               </div>
 
+              {/* Featured Image */}
               <div className="space-y-2">
-                <Label htmlFor="featuredImage">Featured Image URL (optional)</Label>
+                <Label htmlFor="featuredImage">Featured Image URL</Label>
                 <Input
                   id="featuredImage"
                   value={featuredImageUrl}
@@ -234,61 +270,13 @@ export function BlogArticleEditor({
                   <img 
                     src={featuredImageUrl} 
                     alt="Featured" 
-                    className="w-full max-w-md h-48 object-cover rounded-lg"
+                    className="w-full h-32 object-cover rounded-lg"
                     onError={(e) => {
                       e.currentTarget.style.display = 'none';
                     }}
                   />
                 )}
               </div>
-            </div>
-
-            {/* Content Editor with Tabs */}
-            <Tabs defaultValue="edit" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="edit">Edit</TabsTrigger>
-                <TabsTrigger value="preview">Preview</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="edit" className="space-y-2">
-                <Label htmlFor="content">Content</Label>
-                <div className="border rounded-md overflow-hidden">
-                  <ReactQuill
-                    theme="snow"
-                    value={content}
-                    onChange={setContent}
-                    modules={quillModules}
-                    formats={quillFormats}
-                    className="min-h-[60vh] bg-background"
-                    placeholder="Write your article content here..."
-                  />
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Use the toolbar above to format your text. Current word count: {currentWordCount}
-                </p>
-              </TabsContent>
-              
-              <TabsContent value="preview" className="min-h-[60vh] p-6 border rounded-md bg-background">
-                <article 
-                  className="prose prose-sm max-w-none dark:prose-invert"
-                  dangerouslySetInnerHTML={{ __html: content }}
-                />
-              </TabsContent>
-            </Tabs>
-
-            {/* Bottom Actions */}
-            <div className="flex justify-end gap-2 pt-4 border-t">
-              <Button variant="outline" onClick={() => onOpenChange(false)}>
-                <X className="h-4 w-4 mr-2" />
-                Close
-              </Button>
-              <Button onClick={() => handleSave(false)} disabled={saving}>
-                {saving ? (
-                  <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Saving...</>
-                ) : (
-                  <><Save className="h-4 w-4 mr-2" /> Save Changes</>
-                )}
-              </Button>
             </div>
           </div>
         )}
