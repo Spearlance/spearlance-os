@@ -14,7 +14,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import ReactMarkdown from "react-markdown";
+import ReactQuill from "react-quill";
+import "react-quill/dist/quill.snow.css";
 
 interface BlogArticleEditorProps {
   blogPostId: string;
@@ -117,6 +118,25 @@ export function BlogArticleEditor({
   };
 
   const currentWordCount = calculateWordCount(content);
+
+  const quillModules = {
+    toolbar: [
+      [{ 'header': [1, 2, 3, false] }],
+      ['bold', 'italic', 'underline', 'strike'],
+      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+      ['blockquote', 'code-block'],
+      ['link', 'image'],
+      ['clean']
+    ]
+  };
+
+  const quillFormats = [
+    'header',
+    'bold', 'italic', 'underline', 'strike',
+    'list', 'bullet',
+    'blockquote', 'code-block',
+    'link', 'image'
+  ];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -229,22 +249,27 @@ export function BlogArticleEditor({
               
               <TabsContent value="edit" className="space-y-2">
                 <Label htmlFor="content">Content</Label>
-                <Textarea
-                  id="content"
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                  className="min-h-[500px] font-mono text-sm"
-                  placeholder="Write your article content here..."
-                />
+                <div className="border rounded-md overflow-hidden">
+                  <ReactQuill
+                    theme="snow"
+                    value={content}
+                    onChange={setContent}
+                    modules={quillModules}
+                    formats={quillFormats}
+                    className="min-h-[500px] bg-background"
+                    placeholder="Write your article content here..."
+                  />
+                </div>
                 <p className="text-xs text-muted-foreground">
-                  Supports HTML formatting. Current word count: {currentWordCount}
+                  Use the toolbar above to format your text. Current word count: {currentWordCount}
                 </p>
               </TabsContent>
               
               <TabsContent value="preview" className="min-h-[500px] p-6 border rounded-md bg-background">
-                <article className="prose prose-sm max-w-none dark:prose-invert">
-                  <ReactMarkdown>{content}</ReactMarkdown>
-                </article>
+                <article 
+                  className="prose prose-sm max-w-none dark:prose-invert"
+                  dangerouslySetInnerHTML={{ __html: content }}
+                />
               </TabsContent>
             </Tabs>
 
