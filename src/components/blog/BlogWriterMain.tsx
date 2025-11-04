@@ -47,7 +47,7 @@ export function BlogWriterMain() {
       const endDate = new Date(selectedYear, selectedMonth, 0);
       const { data, error } = await supabase
         .from('blog_topics')
-        .select('*, blog_posts(*)')
+        .select('*, blog_posts!blog_posts_topic_id_fkey(*)')
         .eq('client_id', selectedClient.id)
         .gte('suggested_publish_date', startDate.toISOString())
         .lte('suggested_publish_date', endDate.toISOString())
