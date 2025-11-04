@@ -63,33 +63,24 @@ export const BlogTopicDrawer = ({ topic, open, onOpenChange, onRefresh }: BlogTo
   };
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className={(showWizard || showEditor) ? "w-[90vw] max-w-[1400px]" : "w-[400px] sm:w-[540px]"} style={{ overflowY: 'auto' }}>
-        <SheetHeader>
-          <SheetTitle>
-            {showWizard ? 'Create Article' : showEditor ? 'Edit Article' : topic.topic_title}
-          </SheetTitle>
-        </SheetHeader>
-        
-        {showWizard ? (
-          <div className="mt-6">
-            <BlogArticleWizard
-              topic={topic}
-              onComplete={handleWizardComplete}
-              onCancel={handleWizardCancel}
-            />
-          </div>
-        ) : showEditor && hasArticle ? (
-          <div className="mt-6">
-            <BlogArticleEditor
-              blogPostId={posts[0].id}
-              initialContent={posts[0].content}
-              initialTitle={posts[0].title}
-              onSave={handleEditorSave}
-              onCancel={handleEditorCancel}
-            />
-          </div>
-        ) : (
+    <>
+      <Sheet open={open} onOpenChange={onOpenChange}>
+        <SheetContent side="right" className={showWizard ? "w-[90vw] max-w-[1400px]" : "w-[400px] sm:w-[540px]"} style={{ overflowY: 'auto' }}>
+          <SheetHeader>
+            <SheetTitle>
+              {showWizard ? 'Create Article' : topic.topic_title}
+            </SheetTitle>
+          </SheetHeader>
+          
+          {showWizard ? (
+            <div className="mt-6">
+              <BlogArticleWizard
+                topic={topic}
+                onComplete={handleWizardComplete}
+                onCancel={handleWizardCancel}
+              />
+            </div>
+          ) : (
           <div className="mt-6 space-y-4">
           <div className="flex items-center gap-2">
             <Badge variant="outline">{topic.category || 'General'}</Badge>
@@ -141,9 +132,22 @@ export const BlogTopicDrawer = ({ topic, open, onOpenChange, onRefresh }: BlogTo
               Close
             </Button>
           </div>
-        </div>
-        )}
-      </SheetContent>
-    </Sheet>
+          </div>
+          )}
+        </SheetContent>
+      </Sheet>
+
+      {/* Editor Dialog - rendered separately from Sheet */}
+      {hasArticle && (
+        <BlogArticleEditor
+          blogPostId={posts[0].id}
+          initialContent={posts[0].content}
+          initialTitle={posts[0].title}
+          open={showEditor}
+          onOpenChange={setShowEditor}
+          onSave={handleEditorSave}
+        />
+      )}
+    </>
   );
 };

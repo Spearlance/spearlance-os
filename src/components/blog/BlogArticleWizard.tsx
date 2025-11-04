@@ -252,8 +252,9 @@ export function BlogArticleWizard({ topic, onComplete, onCancel }: BlogArticleWi
           blogPostId={blogPostId}
           initialContent={article.content}
           initialTitle={article.title}
+          open={true}
+          onOpenChange={(open) => !open && onCancel()}
           onSave={onComplete}
-          onCancel={onCancel}
         />
       )}
 

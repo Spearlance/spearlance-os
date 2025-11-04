@@ -7,7 +7,6 @@ import { useClient } from "@/contexts/ClientContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { BlogArticleEditor } from "./BlogArticleEditor";
 
 interface BlogPostsListProps {
@@ -102,22 +101,14 @@ export function BlogPostsList({ status }: BlogPostsListProps) {
 
   return (
     <>
-      <Sheet open={!!editingPostId} onOpenChange={(open) => !open && handleEditorClose()}>
-        <SheetContent side="right" className="w-[90vw] max-w-[1400px] overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle>Edit Blog Post</SheetTitle>
-          </SheetHeader>
-          <div className="mt-6">
-            {editingPostId && (
-              <BlogArticleEditor
-                blogPostId={editingPostId}
-                onSave={handleEditorClose}
-                onCancel={handleEditorClose}
-              />
-            )}
-          </div>
-        </SheetContent>
-      </Sheet>
+      {editingPostId && (
+        <BlogArticleEditor
+          blogPostId={editingPostId}
+          open={true}
+          onOpenChange={(open) => !open && handleEditorClose()}
+          onSave={handleEditorClose}
+        />
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {posts.map((post) => (

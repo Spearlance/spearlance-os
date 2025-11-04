@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
@@ -8,21 +7,31 @@ import { Label } from "@/components/ui/label";
 import { Loader2, Save, X, FileText, BarChart } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import ReactMarkdown from "react-markdown";
 
 interface BlogArticleEditorProps {
   blogPostId: string;
   initialContent?: string;
   initialTitle?: string;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   onSave?: () => void;
-  onCancel?: () => void;
 }
 
 export function BlogArticleEditor({ 
   blogPostId, 
   initialContent = '', 
   initialTitle = '',
-  onSave,
-  onCancel 
+  open,
+  onOpenChange,
+  onSave
 }: BlogArticleEditorProps) {
   const [title, setTitle] = useState(initialTitle);
   const [content, setContent] = useState(initialContent);
@@ -98,6 +107,7 @@ export function BlogArticleEditor({
 
       toast.success(publishNow ? "Article published!" : "Changes saved!");
       onSave?.();
+      onOpenChange(false);
     } catch (error) {
       console.error('Error saving post:', error);
       toast.error("Failed to save changes");
@@ -106,136 +116,155 @@ export function BlogArticleEditor({
     }
   };
 
-  if (loading) {
-    return (
-      <Card className="p-6">
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      </Card>
-    );
-  }
-
   const currentWordCount = calculateWordCount(content);
 
   return (
-    <div className="space-y-6">
-      {/* Metadata Bar */}
-      <Card className="p-4">
-        <div className="flex items-center justify-between flex-wrap gap-4">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <FileText className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm font-medium">{currentWordCount} words</span>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Edit Article</DialogTitle>
+        </DialogHeader>
+
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {/* Metadata Bar */}
+            <div className="flex items-center justify-between flex-wrap gap-4 p-4 bg-muted rounded-lg">
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">{currentWordCount} words</span>
+                </div>
+                {metadata?.seo_score && (
+                  <Badge variant={metadata.seo_score >= 80 ? "default" : "secondary"}>
+                    <BarChart className="h-3 w-3 mr-1" />
+                    SEO: {metadata.seo_score}/100
+                  </Badge>
+                )}
+                {metadata?.readability_score && (
+                  <Badge variant={metadata.readability_score >= 80 ? "default" : "secondary"}>
+                    Read: {metadata.readability_score}/100
+                  </Badge>
+                )}
+                <Badge variant="outline">{metadata?.status || 'draft'}</Badge>
+              </div>
+              
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleSave(false)}
+                  disabled={saving}
+                >
+                  {saving ? (
+                    <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Saving...</>
+                  ) : (
+                    <><Save className="h-4 w-4 mr-2" /> Save Draft</>
+                  )}
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() => handleSave(true)}
+                  disabled={saving}
+                >
+                  Publish
+                </Button>
+              </div>
             </div>
-            {metadata?.seo_score && (
-              <Badge variant={metadata.seo_score >= 80 ? "default" : "secondary"}>
-                <BarChart className="h-3 w-3 mr-1" />
-                SEO: {metadata.seo_score}/100
-              </Badge>
-            )}
-            {metadata?.readability_score && (
-              <Badge variant={metadata.readability_score >= 80 ? "default" : "secondary"}>
-                Read: {metadata.readability_score}/100
-              </Badge>
-            )}
-            <Badge variant="outline">{metadata?.status || 'draft'}</Badge>
-          </div>
-          
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handleSave(false)}
-              disabled={saving}
-            >
-              {saving ? (
-                <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Saving...</>
-              ) : (
-                <><Save className="h-4 w-4 mr-2" /> Save Draft</>
-              )}
-            </Button>
-            <Button
-              size="sm"
-              onClick={() => handleSave(true)}
-              disabled={saving}
-            >
-              Publish
-            </Button>
-          </div>
-        </div>
-      </Card>
 
-      {/* Editor */}
-      <Card className="p-6">
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="title">Title</Label>
-            <Input
-              id="title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="text-2xl font-bold h-auto py-3"
-              placeholder="Article title..."
-            />
-          </div>
+            {/* Basic Fields */}
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="title">Title</Label>
+                <Input
+                  id="title"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  className="text-2xl font-bold h-auto py-3"
+                  placeholder="Article title..."
+                />
+              </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="excerpt">Excerpt (optional)</Label>
-            <Textarea
-              id="excerpt"
-              value={excerpt}
-              onChange={(e) => setExcerpt(e.target.value)}
-              className="min-h-[80px]"
-              placeholder="Brief summary for previews..."
-            />
-          </div>
+              <div className="space-y-2">
+                <Label htmlFor="excerpt">Excerpt (optional)</Label>
+                <Textarea
+                  id="excerpt"
+                  value={excerpt}
+                  onChange={(e) => setExcerpt(e.target.value)}
+                  className="min-h-[80px]"
+                  placeholder="Brief summary for previews..."
+                />
+              </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="featuredImage">Featured Image URL (optional)</Label>
-            <Input
-              id="featuredImage"
-              value={featuredImageUrl}
-              onChange={(e) => setFeaturedImageUrl(e.target.value)}
-              placeholder="https://..."
-            />
-            {featuredImageUrl && (
-              <img 
-                src={featuredImageUrl} 
-                alt="Featured" 
-                className="w-full max-w-md h-48 object-cover rounded-lg"
-                onError={(e) => {
-                  e.currentTarget.style.display = 'none';
-                }}
-              />
-            )}
-          </div>
+              <div className="space-y-2">
+                <Label htmlFor="featuredImage">Featured Image URL (optional)</Label>
+                <Input
+                  id="featuredImage"
+                  value={featuredImageUrl}
+                  onChange={(e) => setFeaturedImageUrl(e.target.value)}
+                  placeholder="https://..."
+                />
+                {featuredImageUrl && (
+                  <img 
+                    src={featuredImageUrl} 
+                    alt="Featured" 
+                    className="w-full max-w-md h-48 object-cover rounded-lg"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  />
+                )}
+              </div>
+            </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="content">Content</Label>
-            <Textarea
-              id="content"
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              className="min-h-[500px] font-mono text-sm"
-              placeholder="Write your article content here..."
-            />
-            <p className="text-xs text-muted-foreground">
-              Supports HTML formatting. Current word count: {currentWordCount}
-            </p>
-          </div>
-        </div>
-      </Card>
+            {/* Content Editor with Tabs */}
+            <Tabs defaultValue="edit" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="edit">Edit</TabsTrigger>
+                <TabsTrigger value="preview">Preview</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="edit" className="space-y-2">
+                <Label htmlFor="content">Content</Label>
+                <Textarea
+                  id="content"
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  className="min-h-[500px] font-mono text-sm"
+                  placeholder="Write your article content here..."
+                />
+                <p className="text-xs text-muted-foreground">
+                  Supports HTML formatting. Current word count: {currentWordCount}
+                </p>
+              </TabsContent>
+              
+              <TabsContent value="preview" className="min-h-[500px] p-6 border rounded-md bg-background">
+                <article className="prose prose-sm max-w-none dark:prose-invert">
+                  <ReactMarkdown>{content}</ReactMarkdown>
+                </article>
+              </TabsContent>
+            </Tabs>
 
-      {/* Bottom Actions */}
-      {onCancel && (
-        <div className="flex justify-end gap-2">
-          <Button variant="outline" onClick={onCancel}>
-            <X className="h-4 w-4 mr-2" />
-            Cancel
-          </Button>
-        </div>
-      )}
-    </div>
+            {/* Bottom Actions */}
+            <div className="flex justify-end gap-2 pt-4 border-t">
+              <Button variant="outline" onClick={() => onOpenChange(false)}>
+                <X className="h-4 w-4 mr-2" />
+                Close
+              </Button>
+              <Button onClick={() => handleSave(false)} disabled={saving}>
+                {saving ? (
+                  <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Saving...</>
+                ) : (
+                  <><Save className="h-4 w-4 mr-2" /> Save Changes</>
+                )}
+              </Button>
+            </div>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 }
