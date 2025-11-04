@@ -1,12 +1,12 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { toast } from "sonner";
-import { Calendar as CalendarIcon, Loader2, Sparkles, FileText } from "lucide-react";
+import { useState } from "react";
 import { format } from "date-fns";
+import { Calendar, CheckCircle2, AlertCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import spearlanceLogo from '@/assets/spearlance-logo.png';
 
 interface BlogMonthlyGeneratorProps {
   clientId: string;
@@ -29,172 +29,169 @@ export function BlogMonthlyGenerator({
   month,
   year,
   generationType,
-  existingTopicDates,
-  expectedPostCount,
+  existingTopicDates = [],
+  expectedPostCount = 0,
   activeStrategy
 }: BlogMonthlyGeneratorProps) {
-  const queryClient = useQueryClient();
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [isComplete, setIsComplete] = useState(false);
+  const [progress, setProgress] = useState<string>("");
+  
+  const selectedMonthName = new Date(year, month - 1).toLocaleString('default', { month: 'long' });
 
-  const { data: batch, isLoading: batchLoading } = useQuery({
-    queryKey: ["blog-batch", clientId, month, year],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("blog_strategy_batches")
-        .select("*")
-        .eq("client_id", clientId)
-        .eq("month", month)
-        .eq("year", year)
-        .maybeSingle();
+  const handleGenerate = async () => {
+    setIsGenerating(true);
+    
+    if (generationType === 'all') {
+      setProgress(`Generating all ${expectedPostCount} blog topics...`);
+    } else {
+      const existingCount = existingTopicDates.filter(date => {
+        const d = new Date(date);
+        return d.getMonth() + 1 === month && d.getFullYear() === year;
+      }).length;
+      const missingCount = expectedPostCount - existingCount;
+      setProgress(`Generating ${missingCount} topics for missing days...`);
+    }
 
-      if (error) throw error;
-      return data;
-    },
-  });
-
-  const { data: topics, isLoading: topicsLoading } = useQuery({
-    queryKey: ["blog-topics", clientId, month, year],
-    queryFn: async () => {
-      const startDate = new Date(year, month - 1, 1).toISOString();
-      const endDate = new Date(year, month, 0).toISOString();
-
-      const { data, error } = await supabase
-        .from("blog_topics")
-        .select("*, blog_posts(*)")
-        .eq("client_id", clientId)
-        .gte("suggested_publish_date", startDate)
-        .lte("suggested_publish_date", endDate)
-        .order("suggested_publish_date");
-
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!batch,
-  });
-
-  const generateTopicsMutation = useMutation({
-    mutationFn: async () => {
-      const { data, error } = await supabase.functions.invoke("blog-generate-monthly-topics", {
-        body: { client_id: clientId, month, year },
+    try {
+      const { data, error } = await supabase.functions.invoke('blog-generate-monthly-topics', {
+        body: { 
+          client_id: clientId,
+          month,
+          year,
+          generation_type: generationType,
+        },
       });
 
       if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["blog-batch", clientId] });
-      queryClient.invalidateQueries({ queryKey: ["blog-topics", clientId] });
-      toast.success("Blog topics generated successfully!");
-      onComplete();
-    },
-    onError: (error) => {
-      console.error("Error generating topics:", error);
-      toast.error("Failed to generate topics");
-    },
-  });
 
-  const isLoading = batchLoading || topicsLoading;
+      setProgress("Creating your blog calendar...");
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      setIsComplete(true);
+      setProgress(`🎉 Success! ${data.topics_created} topics created for ${selectedMonthName}`);
+
+      toast.success(`Blog topics created!`, {
+        description: `${data.topics_created} topics ready for ${selectedMonthName}. Start creating articles!`,
+      });
+
+      setTimeout(() => {
+        onComplete();
+        onOpenChange(false);
+        setIsComplete(false);
+        setIsGenerating(false);
+        setProgress("");
+      }, 2000);
+
+    } catch (error: any) {
+      console.error('Error generating blog topics:', error);
+      toast.error("Generation Failed", {
+        description: error.message || "Failed to generate blog topics. Please try again.",
+      });
+      setIsGenerating(false);
+      setProgress("");
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Generate Blog Topics for {format(new Date(year, month - 1), "MMMM yyyy")}</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            <Calendar className="h-5 w-5" />
+            {generationType === 'all' ? `Generate All Topics (${expectedPostCount})` : 'Fill Missing Days'}
+          </DialogTitle>
         </DialogHeader>
-        
-        <div className="space-y-6">
 
-          {isLoading ? (
-            <Card className="p-8">
-              <div className="flex items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-              </div>
-            </Card>
-          ) : !batch ? (
-            <Card className="p-8 text-center">
-              <Sparkles className="h-12 w-12 mx-auto mb-4 text-primary" />
-              <h3 className="text-lg font-semibold mb-2">No topics generated yet</h3>
-              <p className="text-sm text-muted-foreground mb-6">
-                Generate blog topics for {format(new Date(year, month - 1), "MMMM yyyy")} based on your content strategy
+        <div className="space-y-4 py-4">
+          {!isGenerating && !isComplete && (
+            <>
+              {generationType === 'all' && existingTopicDates.length > 0 && (
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    This will replace all existing topics for {selectedMonthName}. This action cannot be undone.
+                  </AlertDescription>
+                </Alert>
+              )}
+              
+              {generationType === 'missing' && (
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    {(() => {
+                      const existingCount = existingTopicDates.filter(date => {
+                        const d = new Date(date);
+                        return d.getMonth() + 1 === month && d.getFullYear() === year;
+                      }).length;
+                      const missingCount = expectedPostCount - existingCount;
+                      return `${missingCount} topics will be generated for days without content. Existing topics will be kept.`;
+                    })()}
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              <p className="text-sm text-muted-foreground">
+                {generationType === 'all' 
+                  ? `Create your entire blog content calendar for ${selectedMonthName} in seconds! We'll generate:`
+                  : `Fill in the gaps in your ${selectedMonthName} calendar! We'll generate:`}
               </p>
-              <Button
-                onClick={() => generateTopicsMutation.mutate()}
-                disabled={generateTopicsMutation.isPending}
-              >
-                {generateTopicsMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                <Sparkles className="mr-2 h-4 w-4" />
-                Generate Topics
-              </Button>
-            </Card>
-          ) : (
-            <div className="space-y-4">
-              <Card className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium">
-                      {batch.total_topics} topics for {format(new Date(year, month - 1), "MMMM yyyy")}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {batch.topics_with_articles} with articles • {batch.total_topics - batch.topics_with_articles} pending
-                    </p>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => generateTopicsMutation.mutate()}
-                    disabled={generateTopicsMutation.isPending}
-                  >
-                    {generateTopicsMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Regenerate
-                  </Button>
-                </div>
-              </Card>
+              
+              <ul className="text-sm space-y-2 text-muted-foreground">
+                <li className="flex items-start gap-2">
+                  <span className="text-primary mt-0.5">✓</span>
+                  <span><strong>{expectedPostCount} blog topics</strong> tailored to your brand and audience</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-primary mt-0.5">✓</span>
+                  <span><strong>Smart distribution</strong> across content categories</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-primary mt-0.5">✓</span>
+                  <span><strong>SEO-optimized keywords</strong> for each topic</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-primary mt-0.5">✓</span>
+                  <span><strong>Strategy-based scheduling</strong> based on your content plan</span>
+                </li>
+              </ul>
+              
+              <p className="text-sm text-muted-foreground">
+                After generation, you can create full articles with one click!
+              </p>
+            </>
+          )}
 
-              <div className="grid gap-4">
-                {topics?.map((topic) => (
-                  <Card key={topic.id} className="p-4">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1 space-y-2">
-                        <div className="flex items-center gap-2">
-                          <h4 className="font-semibold">{topic.topic_title}</h4>
-                          <Badge variant="secondary" className="text-xs">
-                            {topic.category?.replace(/_/g, " ")}
-                          </Badge>
-                        </div>
-                        <p className="text-sm text-muted-foreground">{topic.summary}</p>
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <CalendarIcon className="h-3 w-3" />
-                          {topic.suggested_publish_date && format(new Date(topic.suggested_publish_date), "MMM d, yyyy")}
-                        </div>
-                        {topic.keywords && topic.keywords.length > 0 && (
-                          <div className="flex flex-wrap gap-1">
-                            {topic.keywords.map((keyword: string) => (
-                              <Badge key={keyword} variant="outline" className="text-xs">
-                                {keyword}
-                              </Badge>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex gap-2">
-                        {topic.blog_posts && Array.isArray(topic.blog_posts) && topic.blog_posts.length > 0 ? (
-                          <Badge variant="default" className="gap-1">
-                            <FileText className="h-3 w-3" />
-                            Article Ready
-                          </Badge>
-                        ) : (
-                          <Button size="sm" variant="outline">
-                            <FileText className="mr-2 h-4 w-4" />
-                            Generate Article
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  </Card>
-                ))}
-              </div>
+          {(isGenerating || isComplete) && (
+            <div className="flex flex-col items-center justify-center py-8 space-y-4">
+              {isComplete ? (
+                <CheckCircle2 className="h-16 w-16 text-green-500 animate-in zoom-in duration-300" />
+              ) : (
+                <div className="h-16 w-16 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center animate-pulse">
+                  <img 
+                    src={spearlanceLogo} 
+                    alt="Generating topics"
+                    className="h-10 w-10"
+                  />
+                </div>
+              )}
+              <p className="text-sm text-center text-muted-foreground animate-pulse">
+                {progress}
+              </p>
             </div>
           )}
         </div>
+
+        {!isGenerating && !isComplete && (
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => onOpenChange(false)} className="flex-1">
+              Cancel
+            </Button>
+            <Button onClick={handleGenerate} className="flex-1">
+              Generate {selectedMonthName} Plan
+            </Button>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );

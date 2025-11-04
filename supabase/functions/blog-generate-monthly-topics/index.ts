@@ -24,7 +24,7 @@ serve(async (req) => {
       throw new Error('Unauthorized');
     }
 
-    const { client_id, month, year } = await req.json();
+    const { client_id, month, year, generation_type = 'all' } = await req.json();
 
     if (!client_id || !month || !year) {
       throw new Error('Missing required parameters');
@@ -41,7 +41,7 @@ serve(async (req) => {
       throw new Error('Invalid year. Can only plan for current year or next year');
     }
 
-    console.log('Generating monthly blog topics for client:', client_id, 'month:', month, 'year:', year);
+    console.log('Generating monthly blog topics for client:', client_id, 'month:', month, 'year:', year, 'type:', generation_type);
 
     // Fetch strategy (month-specific first, fallback to global)
     const { data: strategy } = await supabase
@@ -53,15 +53,77 @@ serve(async (req) => {
       .limit(1)
       .maybeSingle();
 
+    // Get existing topics for this month to handle 'missing' generation type
+    const { data: existingTopics } = await supabase
+      .from('blog_topics')
+      .select('suggested_publish_date')
+      .eq('client_id', client_id)
+      .gte('suggested_publish_date', `${year}-${String(month).padStart(2, '0')}-01`)
+      .lte('suggested_publish_date', `${year}-${String(month).padStart(2, '0')}-31`);
+
+    // If generation_type is 'all', delete existing batch and topics first
+    if (generation_type === 'all') {
+      // Delete existing batch for this month/year
+      const { data: existingBatch } = await supabase
+        .from('blog_strategy_batches')
+        .select('id')
+        .eq('client_id', client_id)
+        .eq('month', month)
+        .eq('year', year)
+        .maybeSingle();
+
+      if (existingBatch) {
+        await supabase
+          .from('blog_strategy_batches')
+          .delete()
+          .eq('id', existingBatch.id);
+      }
+
+      // Delete existing topics
+      await supabase
+        .from('blog_topics')
+        .delete()
+        .eq('client_id', client_id)
+        .gte('suggested_publish_date', `${year}-${String(month).padStart(2, '0')}-01`)
+        .lte('suggested_publish_date', `${year}-${String(month).padStart(2, '0')}-31`);
+    }
+
+    // Calculate the days to generate topics for
+    const selectedDays: number[] = strategy?.selected_days || [];
+    const daysInMonth = new Date(year, month, 0).getDate();
+    let daysToGenerate: number[] = [];
+    
+    for (let day = 1; day <= daysInMonth; day++) {
+      const date = new Date(year, month - 1, day);
+      const dayOfWeek = date.getDay();
+      const isoDayOfWeek = dayOfWeek === 0 ? 7 : dayOfWeek;
+      
+      if (selectedDays.includes(isoDayOfWeek)) {
+        daysToGenerate.push(day);
+      }
+    }
+
+    // If generation_type is 'missing', filter out days that already have topics
+    if (generation_type === 'missing' && existingTopics) {
+      const existingDays = new Set(
+        existingTopics.map(t => new Date(t.suggested_publish_date).getDate())
+      );
+      daysToGenerate = daysToGenerate.filter(day => !existingDays.has(day));
+    }
+    
+    console.log('Selected weekdays:', selectedDays);
+    console.log('Days to generate:', daysToGenerate);
+
+    const numTopics = daysToGenerate.length;
+    
+    if (numTopics === 0) {
+      throw new Error('No days to generate topics for');
+    }
+
     const postingFrequency = strategy?.posting_frequency || 'weekly';
     const contentMix = strategy?.content_mix || {
       how_to: 30, case_studies: 20, industry_news: 15, best_practices: 20, company_updates: 15
     };
-
-    // Calculate number of posts based on frequency
-    let numTopics = 4; // weekly = 4 posts/month
-    if (postingFrequency === 'bi-weekly') numTopics = 2;
-    if (postingFrequency === 'monthly') numTopics = 1;
 
     // Fetch client data for context
     const { data: client } = await supabase
@@ -97,6 +159,12 @@ serve(async (req) => {
 
     const monthName = new Date(year, month - 1).toLocaleString('default', { month: 'long' });
 
+    // Generate dates for each topic based on daysToGenerate
+    const suggestedDates = daysToGenerate.map(day => {
+      const date = new Date(year, month - 1, day);
+      return date.toISOString().split('T')[0];
+    });
+
     const systemPrompt = `Generate ${numTopics} blog post topic ideas for ${monthName} ${year}.
 
 Client Context:
@@ -108,6 +176,9 @@ ${avatar?.avatar_name ? `- Target Audience: ${avatar.avatar_name}` : ''}
 
 Content Distribution:
 ${Object.entries(topicCounts).map(([cat, count]) => `- ${count} ${cat.replace(/_/g, ' ')} post(s)`).join('\n')}
+
+Publishing Dates:
+The topics should be scheduled for these specific dates: ${suggestedDates.join(', ')}
 
 Content Type Guidelines:
 - how_to: Step-by-step guides teaching valuable skills
@@ -123,7 +194,7 @@ Return a JSON array of exactly ${numTopics} objects with this structure:
   "category": "how_to|case_studies|industry_news|best_practices|company_updates",
   "keywords": ["keyword1", "keyword2", "keyword3"],
   "target_avatar": "${avatar?.avatar_name || 'general audience'}",
-  "suggested_publish_date": "YYYY-MM-DD (spread throughout the month)"
+  "suggested_publish_date": "YYYY-MM-DD (use dates from the list above)"
 }
 
 Make topics specific, actionable, and valuable. Ensure proper distribution across categories.`;
