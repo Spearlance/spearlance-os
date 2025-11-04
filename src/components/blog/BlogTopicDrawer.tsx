@@ -15,6 +15,8 @@ interface BlogTopic {
   status: string;
   client_id: string;
   blog_posts: any;
+  keywords?: string[];
+  avatar_id?: string | null;
 }
 
 interface BlogTopicDrawerProps {
@@ -36,7 +38,14 @@ export const BlogTopicDrawer = ({ topic, open, onOpenChange, onRefresh }: BlogTo
     setGenerating(true);
     try {
       const { error } = await supabase.functions.invoke('blog-generate-article', {
-        body: { topic_id: topic.id },
+        body: { 
+          topic_id: topic.id,
+          client_id: topic.client_id,
+          title: topic.topic_title,
+          meta_description: topic.summary,
+          keywords: topic.keywords || [],
+          avatar_id: topic.avatar_id
+        },
       });
 
       if (error) throw error;
