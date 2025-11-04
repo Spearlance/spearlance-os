@@ -140,7 +140,7 @@ export function BlogArticleEditor({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="left" className="w-[80vw] max-w-none h-full overflow-y-auto p-6">
+      <SheetContent side="left" className="!w-[95vw] !max-w-none h-full overflow-y-auto p-6">
         <SheetHeader>
           <SheetTitle>Edit Article</SheetTitle>
         </SheetHeader>
