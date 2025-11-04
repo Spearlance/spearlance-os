@@ -8,13 +8,13 @@ import { toast } from "sonner";
 
 interface BlogTopic {
   id: string;
-  title: string;
+  topic_title: string;
   summary: string | null;
   category: string | null;
   suggested_publish_date: string;
   status: string;
   client_id: string;
-  blog_posts: Array<{ id: string; status: string; title: string; }>;
+  blog_posts: any;
 }
 
 interface BlogTopicDrawerProps {
@@ -29,7 +29,8 @@ export const BlogTopicDrawer = ({ topic, open, onOpenChange, onRefresh }: BlogTo
 
   if (!topic) return null;
 
-  const hasArticle = topic.blog_posts && topic.blog_posts.length > 0;
+  const posts = topic.blog_posts ? (Array.isArray(topic.blog_posts) ? topic.blog_posts : [topic.blog_posts]) : [];
+  const hasArticle = posts.length > 0 && posts[0];
 
   const handleGenerateArticle = async () => {
     setGenerating(true);
@@ -55,7 +56,7 @@ export const BlogTopicDrawer = ({ topic, open, onOpenChange, onRefresh }: BlogTo
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent className="max-h-[90vh]">
         <DrawerHeader>
-          <DrawerTitle>{topic.title}</DrawerTitle>
+          <DrawerTitle>{topic.topic_title}</DrawerTitle>
         </DrawerHeader>
         
         <div className="p-6 space-y-4 overflow-y-auto">
@@ -63,8 +64,8 @@ export const BlogTopicDrawer = ({ topic, open, onOpenChange, onRefresh }: BlogTo
             <Badge variant="outline">{topic.category || 'General'}</Badge>
             <Badge>
               {hasArticle ? (
-                topic.blog_posts[0].status === 'published' ? '✓ Published' :
-                topic.blog_posts[0].status === 'scheduled' ? '⏰ Scheduled' :
+                posts[0].status === 'published' ? '✓ Published' :
+                posts[0].status === 'scheduled' ? '⏰ Scheduled' :
                 '📝 Draft'
               ) : 'Idea Only'}
             </Badge>
@@ -91,7 +92,7 @@ export const BlogTopicDrawer = ({ topic, open, onOpenChange, onRefresh }: BlogTo
           {hasArticle && (
             <div>
               <h3 className="text-sm font-semibold mb-2">Article</h3>
-              <p className="text-sm text-muted-foreground">{topic.blog_posts[0].title}</p>
+              <p className="text-sm text-muted-foreground">{posts[0].title}</p>
             </div>
           )}
 

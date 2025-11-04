@@ -8,13 +8,13 @@ import { parseUTCDate } from "@/lib/utils";
 
 interface BlogTopic {
   id: string;
-  title: string;
+  topic_title: string;
   summary: string | null;
   category: string | null;
   suggested_publish_date: string;
   status: string;
   client_id: string;
-  blog_posts: Array<{ id: string; status: string; title: string }>;
+  blog_posts: any;
 }
 
 interface BlogWeeklyCalendarViewProps {
@@ -66,15 +66,18 @@ export const BlogWeeklyCalendarView = ({
   }, {} as Record<string, BlogTopic[]>);
 
   const getStatusInfo = (topic: BlogTopic) => {
-    if (topic.blog_posts?.length > 0) {
-      const post = topic.blog_posts[0];
-      if (post.status === 'published') {
-        return { label: '✓ Published', color: 'bg-green-500/20 text-green-700 border-green-300' };
+    if (topic.blog_posts) {
+      const posts = Array.isArray(topic.blog_posts) ? topic.blog_posts : [topic.blog_posts];
+      if (posts.length > 0 && posts[0]) {
+        const post = posts[0];
+        if (post.status === 'published') {
+          return { label: '✓ Published', color: 'bg-green-500/20 text-green-700 border-green-300' };
+        }
+        if (post.status === 'scheduled') {
+          return { label: '⏰ Scheduled', color: 'bg-blue-500/20 text-blue-700 border-blue-300' };
+        }
+        return { label: '📝 Draft', color: 'bg-indigo-500/20 text-indigo-700 border-indigo-300' };
       }
-      if (post.status === 'scheduled') {
-        return { label: '⏰ Scheduled', color: 'bg-blue-500/20 text-blue-700 border-blue-300' };
-      }
-      return { label: '📝 Draft', color: 'bg-indigo-500/20 text-indigo-700 border-indigo-300' };
     }
     
     return { label: 'Idea', color: 'bg-muted text-muted-foreground border-muted' };
@@ -140,7 +143,7 @@ export const BlogWeeklyCalendarView = ({
                         <div className="space-y-2">
                           <div className="flex items-start justify-between gap-2">
                             <span className="text-xs font-medium line-clamp-2">
-                              {topic.title}
+                              {topic.topic_title}
                             </span>
                             <Badge variant="outline" className="text-[10px] shrink-0">
                               {statusInfo.label}

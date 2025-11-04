@@ -12,13 +12,13 @@ import { BlogTopicDrawer } from "./BlogTopicDrawer";
 
 interface BlogTopic {
   id: string;
-  title: string;
+  topic_title: string;
   summary: string | null;
   category: string | null;
   suggested_publish_date: string;
   status: string;
   client_id: string;
-  blog_posts: Array<{ id: string; status: string; title: string }>;
+  blog_posts: any;
 }
 
 interface BlogCalendarTableProps {
@@ -100,11 +100,14 @@ export const BlogCalendarTable = ({
   };
 
   const getTopicStatus = (topic: BlogTopic) => {
-    if (topic.blog_posts?.length > 0) {
-      const post = topic.blog_posts[0];
-      if (post.status === 'published') return "published";
-      if (post.status === 'scheduled') return "scheduled";
-      return "draft";
+    if (topic.blog_posts) {
+      const posts = Array.isArray(topic.blog_posts) ? topic.blog_posts : [topic.blog_posts];
+      if (posts.length > 0 && posts[0]) {
+        const post = posts[0];
+        if (post.status === 'published') return "published";
+        if (post.status === 'scheduled') return "scheduled";
+        return "draft";
+      }
     }
     return "idea";
   };
@@ -259,7 +262,7 @@ export const BlogCalendarTable = ({
                     </TableCell>
                     <TableCell>
                       <div>
-                        <div className="font-medium">{topic.title}</div>
+                        <div className="font-medium">{topic.topic_title}</div>
                         {topic.summary && (
                           <div className="text-xs text-muted-foreground line-clamp-1">
                             {topic.summary}

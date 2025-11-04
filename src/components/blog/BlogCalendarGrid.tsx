@@ -8,13 +8,13 @@ import { parseUTCDate } from "@/lib/utils";
 
 interface BlogTopic {
   id: string;
-  title: string;
+  topic_title: string;
   summary: string | null;
   category: string | null;
   suggested_publish_date: string;
   status: string;
   client_id: string;
-  blog_posts: Array<{ id: string; status: string; title: string }>;
+  blog_posts: any;
 }
 
 interface BlogCalendarGridProps {
@@ -51,22 +51,28 @@ export const BlogCalendarGrid = ({
   }, {} as Record<number, BlogTopic[]>);
 
   const getStatusColor = (topic: BlogTopic) => {
-    if (topic.blog_posts?.length > 0) {
-      const post = topic.blog_posts[0];
-      if (post.status === 'published') return 'bg-green-500/20 text-green-700 border-green-300';
-      if (post.status === 'scheduled') return 'bg-blue-500/20 text-blue-700 border-blue-300';
-      return 'bg-indigo-500/20 text-indigo-700 border-indigo-300'; // Draft
+    if (topic.blog_posts) {
+      const posts = Array.isArray(topic.blog_posts) ? topic.blog_posts : [topic.blog_posts];
+      if (posts.length > 0 && posts[0]) {
+        const post = posts[0];
+        if (post.status === 'published') return 'bg-green-500/20 text-green-700 border-green-300';
+        if (post.status === 'scheduled') return 'bg-blue-500/20 text-blue-700 border-blue-300';
+        return 'bg-indigo-500/20 text-indigo-700 border-indigo-300'; // Draft
+      }
     }
     
     return 'bg-muted text-muted-foreground border-muted';
   };
 
   const getStatusIcon = (topic: BlogTopic) => {
-    if (topic.blog_posts?.length > 0) {
-      const post = topic.blog_posts[0];
-      if (post.status === 'published') return '✓';
-      if (post.status === 'scheduled') return '⏰';
-      return '📝';
+    if (topic.blog_posts) {
+      const posts = Array.isArray(topic.blog_posts) ? topic.blog_posts : [topic.blog_posts];
+      if (posts.length > 0 && posts[0]) {
+        const post = posts[0];
+        if (post.status === 'published') return '✓';
+        if (post.status === 'scheduled') return '⏰';
+        return '📝';
+      }
     }
     
     return '';
@@ -108,7 +114,7 @@ export const BlogCalendarGrid = ({
             >
               <div className="flex items-center justify-between gap-1">
                 <div className="text-xs font-medium truncate flex-1">
-                  {topic.title}
+                  {topic.topic_title}
                 </div>
                 {getStatusIcon(topic) && (
                   <span className="text-sm">{getStatusIcon(topic)}</span>

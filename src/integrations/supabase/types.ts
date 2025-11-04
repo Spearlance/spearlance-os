@@ -504,6 +504,7 @@ export type Database = {
           is_global: boolean | null
           month: number | null
           posting_frequency: string
+          selected_days: number[] | null
           updated_at: string | null
           year: number | null
         }
@@ -515,6 +516,7 @@ export type Database = {
           is_global?: boolean | null
           month?: number | null
           posting_frequency?: string
+          selected_days?: number[] | null
           updated_at?: string | null
           year?: number | null
         }
@@ -526,6 +528,7 @@ export type Database = {
           is_global?: boolean | null
           month?: number | null
           posting_frequency?: string
+          selected_days?: number[] | null
           updated_at?: string | null
           year?: number | null
         }
