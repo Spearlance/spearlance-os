@@ -140,7 +140,7 @@ export function BlogArticleEditor({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-[95vw] w-full max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Edit Article</DialogTitle>
         </DialogHeader>
@@ -256,7 +256,7 @@ export function BlogArticleEditor({
                     onChange={setContent}
                     modules={quillModules}
                     formats={quillFormats}
-                    className="min-h-[500px] bg-background"
+                    className="min-h-[60vh] bg-background"
                     placeholder="Write your article content here..."
                   />
                 </div>
@@ -265,7 +265,7 @@ export function BlogArticleEditor({
                 </p>
               </TabsContent>
               
-              <TabsContent value="preview" className="min-h-[500px] p-6 border rounded-md bg-background">
+              <TabsContent value="preview" className="min-h-[60vh] p-6 border rounded-md bg-background">
                 <article 
                   className="prose prose-sm max-w-none dark:prose-invert"
                   dangerouslySetInnerHTML={{ __html: content }}

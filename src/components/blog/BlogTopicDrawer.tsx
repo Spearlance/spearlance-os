@@ -34,6 +34,11 @@ export const BlogTopicDrawer = ({ topic, open, onOpenChange, onRefresh }: BlogTo
   const posts = topic.blog_posts ? (Array.isArray(topic.blog_posts) ? topic.blog_posts : [topic.blog_posts]) : [];
   const hasArticle = posts.length > 0 && posts[0];
 
+  const calculateWordCount = (html: string) => {
+    const text = html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+    return text ? text.split(' ').length : 0;
+  };
+
   const handleStartWizard = () => {
     setShowWizard(true);
   };
@@ -112,19 +117,68 @@ export const BlogTopicDrawer = ({ topic, open, onOpenChange, onRefresh }: BlogTo
           </div>
 
           {hasArticle && (
-            <div>
-              <h3 className="text-sm font-semibold mb-2">Article</h3>
-              <p className="text-sm text-muted-foreground">{posts[0].title}</p>
-            </div>
+            <>
+              <div>
+                <h3 className="text-sm font-semibold mb-2">Article Details</h3>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Title:</span>
+                    <span className="font-medium text-right max-w-[280px] truncate">{posts[0].title}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Word Count:</span>
+                    <span className="font-medium">{calculateWordCount(posts[0].content || '')} words</span>
+                  </div>
+                  {posts[0].seo_score && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">SEO Score:</span>
+                      <span className="font-medium">{posts[0].seo_score}/100</span>
+                    </div>
+                  )}
+                  {posts[0].readability_score && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Readability:</span>
+                      <span className="font-medium">{posts[0].readability_score}/100</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Created:</span>
+                    <span className="font-medium">{new Date(posts[0].created_at).toLocaleDateString()}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Updated:</span>
+                    <span className="font-medium">{new Date(posts[0].updated_at).toLocaleDateString()}</span>
+                  </div>
+                </div>
+              </div>
+
+              {posts[0].excerpt && (
+                <div>
+                  <h3 className="text-sm font-semibold mb-2">Excerpt</h3>
+                  <p className="text-sm text-muted-foreground italic">{posts[0].excerpt}</p>
+                </div>
+              )}
+
+              {posts[0].featured_image_url && (
+                <div>
+                  <h3 className="text-sm font-semibold mb-2">Featured Image</h3>
+                  <img 
+                    src={posts[0].featured_image_url} 
+                    alt="Featured" 
+                    className="w-full h-32 object-cover rounded-lg border"
+                  />
+                </div>
+              )}
+            </>
           )}
 
-          <div className="flex gap-2">
+          <div className="flex gap-2 pt-2 border-t">
             {!hasArticle ? (
-              <Button onClick={handleStartWizard}>
+              <Button onClick={handleStartWizard} className="flex-1">
                 Generate Article
               </Button>
             ) : (
-              <Button onClick={handleOpenEditor}>
+              <Button onClick={handleOpenEditor} className="flex-1">
                 Edit Article
               </Button>
             )}
