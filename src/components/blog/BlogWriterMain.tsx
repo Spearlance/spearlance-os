@@ -307,10 +307,7 @@ export function BlogWriterMain() {
         clientId={selectedClient.id}
         open={showMonthlyWizard}
         onOpenChange={setShowMonthlyWizard}
-        onComplete={() => {
-          setShowMonthlyWizard(false);
-          refetch();
-        }}
+        onComplete={refetch}
         month={selectedMonth}
         year={selectedYear}
         generationType={generationType}
