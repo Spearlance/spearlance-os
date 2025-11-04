@@ -495,6 +495,53 @@ export type Database = {
         }
         Relationships: []
       }
+      blog_ai_preferences: {
+        Row: {
+          brand_voice: string | null
+          client_id: string
+          content_guidelines: string | null
+          created_at: string
+          id: string
+          industry_context: string | null
+          preferred_keywords: string[] | null
+          target_audience: string | null
+          topics_to_avoid: string | null
+          updated_at: string
+        }
+        Insert: {
+          brand_voice?: string | null
+          client_id: string
+          content_guidelines?: string | null
+          created_at?: string
+          id?: string
+          industry_context?: string | null
+          preferred_keywords?: string[] | null
+          target_audience?: string | null
+          topics_to_avoid?: string | null
+          updated_at?: string
+        }
+        Update: {
+          brand_voice?: string | null
+          client_id?: string
+          content_guidelines?: string | null
+          created_at?: string
+          id?: string
+          industry_context?: string | null
+          preferred_keywords?: string[] | null
+          target_audience?: string | null
+          topics_to_avoid?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blog_ai_preferences_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: true
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       blog_content_strategy: {
         Row: {
           client_id: string

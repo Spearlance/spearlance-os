@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { BlogStrategyForm } from "./BlogStrategyForm";
 import { BlogMonthlyGenerator } from "./BlogMonthlyGenerator";
+import { BlogAIPreferencesForm } from "./BlogAIPreferencesForm";
 import { BlogPostsList } from "./BlogPostsList";
 import { BlogCalendarTable } from "./BlogCalendarTable";
 import { BlogCalendarGrid } from "./BlogCalendarGrid";
@@ -269,7 +270,7 @@ export function BlogWriterMain() {
           <Alert>
             <Info className="h-4 w-4" />
             <AlertDescription>
-              Set your default posting strategy here. The AI will use these settings when generating blog topics.
+              Configure your posting strategy and provide context to help the AI generate better blog content.
             </AlertDescription>
           </Alert>
           
@@ -280,6 +281,8 @@ export function BlogWriterMain() {
             </p>
             <BlogStrategyForm clientId={selectedClient.id} />
           </Card>
+
+          <BlogAIPreferencesForm clientId={selectedClient.id} />
         </TabsContent>
       </Tabs>
 
