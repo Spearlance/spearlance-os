@@ -62,25 +62,41 @@ export function BlogWriterMain() {
     queryKey: ['active-blog-strategy', selectedClient?.id, selectedMonth, selectedYear],
     queryFn: async () => {
       if (!selectedClient) return null;
-      const { data } = await supabase
+      
+      // First try to get month-specific strategy
+      const { data: monthSpecific } = await supabase
         .from('blog_content_strategy')
         .select('*')
         .eq('client_id', selectedClient.id)
-        .or(`and(is_global.eq.false,month.eq.${selectedMonth},year.eq.${selectedYear}),is_global.eq.true`)
-        .order('is_global', { ascending: true })
-        .limit(1)
+        .eq('is_global', false)
+        .eq('month', selectedMonth)
+        .eq('year', selectedYear)
         .maybeSingle();
-      return data;
+      
+      if (monthSpecific) return monthSpecific;
+      
+      // Fallback to global strategy
+      const { data: global } = await supabase
+        .from('blog_content_strategy')
+        .select('*')
+        .eq('client_id', selectedClient.id)
+        .eq('is_global', true)
+        .maybeSingle();
+      
+      return global;
     },
     enabled: !!selectedClient,
   });
 
   const strategyPostCount = useMemo(() => {
+    // If no strategy or no selected days, return 0 to indicate no strategy configured
+    if (!activeStrategy?.selected_days || activeStrategy.selected_days.length === 0) {
+      return 0;
+    }
+    
     const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate();
-    
-    if (!activeStrategy?.selected_days) return daysInMonth;
-    
     let count = 0;
+    
     for (let day = 1; day <= daysInMonth; day++) {
       const date = new Date(selectedYear, selectedMonth - 1, day);
       const dayOfWeek = date.getDay();
@@ -205,15 +221,16 @@ export function BlogWriterMain() {
                   }}>
                     <Sparkles className="h-4 w-4 mr-2" />
                     <div className="flex-1">
-                      <div>Generate All Topics ({strategyPostCount} posts)</div>
+                      <div>
+                        Generate All Topics
+                        {strategyPostCount > 0 ? ` (${strategyPostCount} posts)` : ''}
+                      </div>
                       <div className="text-xs text-muted-foreground">
-                        {activeStrategy?.posting_frequency === 'daily' 
-                          ? 'Every day' 
-                          : activeStrategy?.posting_frequency === 'weekdays'
-                          ? 'Mon-Fri only'
-                          : activeStrategy?.posting_frequency === 'custom'
-                          ? `${activeStrategy.selected_days?.length || 0} days/week`
-                          : 'Based on strategy'}
+                        {!activeStrategy ? 'Configure strategy first' :
+                         strategyPostCount === 0 ? 'No posting days selected' :
+                         activeStrategy.posting_frequency === 'daily' ? 'Every day' :
+                         activeStrategy.posting_frequency === 'weekdays' ? 'Mon-Fri only' :
+                         activeStrategy.selected_days ? `${strategyPostCount} days/month` : ''}
                       </div>
                     </div>
                   </DropdownMenuItem>

@@ -135,7 +135,7 @@ export const BlogCalendarTable = ({
     return dayTopics.some(t => ['draft', 'scheduled', 'published'].includes(getTopicStatus(t)));
   }).length;
 
-  const totalDays = expectedPostCount ?? allDays.length;
+  const totalDays = expectedPostCount && expectedPostCount > 0 ? expectedPostCount : allDays.length;
   const progressPercent = totalDays > 0 ? Math.round((daysWithReadyPosts / totalDays) * 100) : 0;
 
   return (
