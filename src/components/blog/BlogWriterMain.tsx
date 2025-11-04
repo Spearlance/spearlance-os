@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useClient } from "@/contexts/ClientContext";
-import { MainLayout } from "@/components/MainLayout";
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -109,201 +109,195 @@ export function BlogWriterMain() {
 
   if (clientLoading) {
     return (
-      <MainLayout>
-        <div className="flex items-center justify-center h-screen">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-        </div>
-      </MainLayout>
+      <div className="flex items-center justify-center h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
     );
   }
 
   if (!selectedClient) {
     return (
-      <MainLayout>
-        <Alert>
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            Please select a client to manage their blog content.
-          </AlertDescription>
-        </Alert>
-      </MainLayout>
+      <Alert>
+        <AlertCircle className="h-4 w-4" />
+        <AlertDescription>
+          Please select a client to manage their blog content.
+        </AlertDescription>
+      </Alert>
     );
   }
 
   return (
-    <MainLayout>
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">AI Blog Writer</h1>
-          <p className="text-muted-foreground mt-2">
-            Plan your content strategy, generate topics in bulk, and create SEO-optimized articles
-          </p>
-        </div>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold">AI Blog Writer</h1>
+        <p className="text-muted-foreground mt-2">
+          Plan your content strategy, generate topics in bulk, and create SEO-optimized articles
+        </p>
+      </div>
 
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
-          <TabsList>
-            <TabsTrigger value="planner">Planner</TabsTrigger>
-            <TabsTrigger value="drafts">
-              Drafts
-              {draftsCount !== undefined && draftsCount > 0 && (
-                <Badge variant="secondary" className="ml-2">
-                  {draftsCount}
-                </Badge>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="strategy">Strategy</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="planner" className="space-y-6">
-            <div className="flex items-center gap-4 flex-wrap">
-              <div className="flex items-center gap-2">
-                <select
-                  value={selectedMonth}
-                  onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
-                  className="px-3 py-2 border rounded-md bg-background"
-                >
-                  {Array.from({ length: 12 }, (_, i) => i + 1).map(month => (
-                    <option key={month} value={month}>
-                      {new Date(2025, month - 1).toLocaleString('default', { month: 'long' })}
-                    </option>
-                  ))}
-                </select>
-                <select
-                  value={selectedYear}
-                  onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-                  className="px-3 py-2 border rounded-md bg-background"
-                >
-                  <option value={currentYear}>{currentYear}</option>
-                  <option value={currentYear + 1}>{currentYear + 1}</option>
-                </select>
-              </div>
-
-              <CalendarViewSelector value={viewType} onChange={setViewType} />
-
-              <div className="ml-auto flex items-center gap-2">
-                {monthlyTopics && monthlyTopics.length > 0 && (
-                  <Badge variant="secondary">
-                    {monthlyTopics.length}/{strategyPostCount} planned
-                  </Badge>
-                )}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button size="lg">
-                      <PlusCircle className="h-4 w-4 mr-2" />
-                      Create Blog Posts
-                      <ChevronDown className="h-4 w-4 ml-2" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-64">
-                    <DropdownMenuItem onClick={() => toast.info("Manual post creation coming soon")}>
-                      <FileText className="h-4 w-4 mr-2" />
-                      <div className="flex-1">
-                        <div>Write Single Post</div>
-                        <div className="text-xs text-muted-foreground">Manual creation</div>
-                      </div>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => {
-                      setGenerationType('all');
-                      setShowMonthlyWizard(true);
-                    }}>
-                      <Sparkles className="h-4 w-4 mr-2" />
-                      <div className="flex-1">
-                        <div>Generate All Topics ({strategyPostCount} posts)</div>
-                        <div className="text-xs text-muted-foreground">
-                          {activeStrategy?.posting_frequency === 'weekdays' 
-                            ? 'Mon-Fri only' 
-                            : activeStrategy?.posting_frequency === 'weekly'
-                            ? 'Weekly'
-                            : activeStrategy?.posting_frequency === 'custom'
-                            ? `${activeStrategy.selected_days?.length || 0} days/week`
-                            : 'Based on strategy'}
-                        </div>
-                      </div>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => {
-                      setGenerationType('missing');
-                      setShowMonthlyWizard(true);
-                    }}>
-                      <PlusCircle className="h-4 w-4 mr-2" />
-                      <div className="flex-1">
-                        <div>Fill Missing Days</div>
-                        <div className="text-xs text-muted-foreground">Strategy days only</div>
-                      </div>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
+        <TabsList>
+          <TabsTrigger value="planner">Planner</TabsTrigger>
+          <TabsTrigger value="drafts">
+            Drafts
+            {draftsCount !== undefined && draftsCount > 0 && (
+              <Badge variant="secondary" className="ml-2">
+                {draftsCount}
+              </Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="strategy">Strategy</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="planner" className="space-y-6">
+          <div className="flex items-center gap-4 flex-wrap">
+            <div className="flex items-center gap-2">
+              <select
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+                className="px-3 py-2 border rounded-md bg-background"
+              >
+                {Array.from({ length: 12 }, (_, i) => i + 1).map(month => (
+                  <option key={month} value={month}>
+                    {new Date(2025, month - 1).toLocaleString('default', { month: 'long' })}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                className="px-3 py-2 border rounded-md bg-background"
+              >
+                <option value={currentYear}>{currentYear}</option>
+                <option value={currentYear + 1}>{currentYear + 1}</option>
+              </select>
             </div>
 
-            {viewType === 'table' && (
-              <BlogCalendarTable 
-                topics={monthlyTopics || []} 
-                onRefresh={refetch}
-                selectedMonth={selectedMonth}
-                selectedYear={selectedYear}
-                expectedPostCount={strategyPostCount}
-              />
-            )}
-            
-            {viewType === 'monthly' && (
-              <BlogCalendarGrid 
-                topics={monthlyTopics || []} 
-                onRefresh={refetch}
-                selectedMonth={selectedMonth}
-                selectedYear={selectedYear}
-                activeStrategy={activeStrategy}
-              />
-            )}
-            
-            {viewType === 'weekly' && (
-              <BlogWeeklyCalendarView 
-                topics={monthlyTopics || []} 
-                onRefresh={refetch}
-                selectedMonth={selectedMonth}
-                selectedYear={selectedYear}
-              />
-            )}
-          </TabsContent>
-          
-          <TabsContent value="drafts" className="space-y-6">
-            <BlogPostsList status="draft" />
-          </TabsContent>
-          
-          <TabsContent value="strategy" className="space-y-6">
-            <Alert>
-              <Info className="h-4 w-4" />
-              <AlertDescription>
-                Set your default posting strategy here. The AI will use these settings when generating blog topics.
-              </AlertDescription>
-            </Alert>
-            
-            <Card className="p-6">
-              <h2 className="text-xl font-semibold mb-4">Content Strategy</h2>
-              <p className="text-sm text-muted-foreground mb-6">
-                Define your posting frequency and content mix to generate perfectly balanced blog topics
-              </p>
-              <BlogStrategyForm clientId={selectedClient.id} />
-            </Card>
-          </TabsContent>
-        </Tabs>
+            <CalendarViewSelector value={viewType} onChange={setViewType} />
 
-        <BlogMonthlyGenerator 
-          clientId={selectedClient.id}
-          open={showMonthlyWizard}
-          onOpenChange={setShowMonthlyWizard}
-          onComplete={() => {
-            setShowMonthlyWizard(false);
-            refetch();
-          }}
-          month={selectedMonth}
-          year={selectedYear}
-          generationType={generationType}
-          existingTopicDates={monthlyTopics?.map(t => t.suggested_publish_date) || []}
-          expectedPostCount={strategyPostCount}
-          activeStrategy={activeStrategy}
-        />
-      </div>
-    </MainLayout>
+            <div className="ml-auto flex items-center gap-2">
+              {monthlyTopics && monthlyTopics.length > 0 && (
+                <Badge variant="secondary">
+                  {monthlyTopics.length}/{strategyPostCount} planned
+                </Badge>
+              )}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button size="lg">
+                    <PlusCircle className="h-4 w-4 mr-2" />
+                    Create Blog Posts
+                    <ChevronDown className="h-4 w-4 ml-2" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-64">
+                  <DropdownMenuItem onClick={() => toast.info("Manual post creation coming soon")}>
+                    <FileText className="h-4 w-4 mr-2" />
+                    <div className="flex-1">
+                      <div>Write Single Post</div>
+                      <div className="text-xs text-muted-foreground">Manual creation</div>
+                    </div>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => {
+                    setGenerationType('all');
+                    setShowMonthlyWizard(true);
+                  }}>
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    <div className="flex-1">
+                      <div>Generate All Topics ({strategyPostCount} posts)</div>
+                      <div className="text-xs text-muted-foreground">
+                        {activeStrategy?.posting_frequency === 'weekdays' 
+                          ? 'Mon-Fri only' 
+                          : activeStrategy?.posting_frequency === 'weekly'
+                          ? 'Weekly'
+                          : activeStrategy?.posting_frequency === 'custom'
+                          ? `${activeStrategy.selected_days?.length || 0} days/week`
+                          : 'Based on strategy'}
+                      </div>
+                    </div>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => {
+                    setGenerationType('missing');
+                    setShowMonthlyWizard(true);
+                  }}>
+                    <PlusCircle className="h-4 w-4 mr-2" />
+                    <div className="flex-1">
+                      <div>Fill Missing Days</div>
+                      <div className="text-xs text-muted-foreground">Strategy days only</div>
+                    </div>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
+
+          {viewType === 'table' && (
+            <BlogCalendarTable 
+              topics={monthlyTopics || []} 
+              onRefresh={refetch}
+              selectedMonth={selectedMonth}
+              selectedYear={selectedYear}
+              expectedPostCount={strategyPostCount}
+            />
+          )}
+          
+          {viewType === 'monthly' && (
+            <BlogCalendarGrid 
+              topics={monthlyTopics || []} 
+              onRefresh={refetch}
+              selectedMonth={selectedMonth}
+              selectedYear={selectedYear}
+              activeStrategy={activeStrategy}
+            />
+          )}
+          
+          {viewType === 'weekly' && (
+            <BlogWeeklyCalendarView 
+              topics={monthlyTopics || []} 
+              onRefresh={refetch}
+              selectedMonth={selectedMonth}
+              selectedYear={selectedYear}
+            />
+          )}
+        </TabsContent>
+        
+        <TabsContent value="drafts" className="space-y-6">
+          <BlogPostsList status="draft" />
+        </TabsContent>
+        
+        <TabsContent value="strategy" className="space-y-6">
+          <Alert>
+            <Info className="h-4 w-4" />
+            <AlertDescription>
+              Set your default posting strategy here. The AI will use these settings when generating blog topics.
+            </AlertDescription>
+          </Alert>
+          
+          <Card className="p-6">
+            <h2 className="text-xl font-semibold mb-4">Content Strategy</h2>
+            <p className="text-sm text-muted-foreground mb-6">
+              Define your posting frequency and content mix to generate perfectly balanced blog topics
+            </p>
+            <BlogStrategyForm clientId={selectedClient.id} />
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      <BlogMonthlyGenerator 
+        clientId={selectedClient.id}
+        open={showMonthlyWizard}
+        onOpenChange={setShowMonthlyWizard}
+        onComplete={() => {
+          setShowMonthlyWizard(false);
+          refetch();
+        }}
+        month={selectedMonth}
+        year={selectedYear}
+        generationType={generationType}
+        existingTopicDates={monthlyTopics?.map(t => t.suggested_publish_date) || []}
+        expectedPostCount={strategyPostCount}
+        activeStrategy={activeStrategy}
+      />
+    </div>
   );
 }
