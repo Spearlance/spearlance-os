@@ -80,11 +80,13 @@ serve(async (req) => {
       { data: brandVoice },
       { data: brandGuide },
       { data: avatar },
+      { data: aiPreferences }
     ] = await Promise.all([
       supabase.from('clients').select('*, business_model(*)').eq('id', client_id).single(),
       supabase.from('brand_voice').select('*').eq('client_id', client_id).maybeSingle(),
       supabase.from('brand_guide').select('*').eq('client_id', client_id).maybeSingle(),
-      avatar_id ? supabase.from('avatars').select('*').eq('id', avatar_id).single() : Promise.resolve({ data: null })
+      avatar_id ? supabase.from('avatars').select('*').eq('id', avatar_id).single() : Promise.resolve({ data: null }),
+      supabase.from('blog_ai_preferences').select('*').eq('client_id', client_id).maybeSingle()
     ]);
 
     let ctaText = '';
@@ -103,17 +105,28 @@ serve(async (req) => {
         break;
     }
 
+    // Extract keywords from services
+    const serviceKeywords = client.business_model?.services 
+      ? client.business_model.services.split(',').map((s: string) => s.trim()) 
+      : [];
+
     const systemPrompt = `You are an expert blog writer creating content for ${client.name}.
 
 BRAND CONTEXT:
+- Brand Story: ${client.brand_story || 'Not specified'}
 - Brand Voice: ${brandVoice?.tone_adjectives?.join(', ') || 'Professional and approachable'}
 - Brand Personality: ${brandVoice?.personality_traits?.join(', ') || 'Knowledgeable and helpful'}
 - Aesthetic: ${brandGuide?.brand_aesthetic || 'Modern and clean'}
 - Industry: ${client.business_model?.industry || 'General'}
+- Services: ${client.business_model?.services || 'Not specified'}
+- Key Service Keywords: ${serviceKeywords.join(', ')}
 ${avatar ? `\nTarget Avatar: ${avatar.name}
 - ${avatar.summary}
 - Pain Points: ${avatar.pain_points || 'General business challenges'}
 - Goals: ${avatar.goals || 'Business growth'}` : ''}
+
+${aiPreferences?.topics_to_avoid ? `TOPICS TO AVOID:\n${aiPreferences.topics_to_avoid}\n` : ''}
+${aiPreferences?.custom_instructions ? `ADDITIONAL INSTRUCTIONS:\n${aiPreferences.custom_instructions}\n` : ''}
 
 ARTICLE REQUIREMENTS:
 - Title: ${title}

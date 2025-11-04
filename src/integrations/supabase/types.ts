@@ -497,38 +497,26 @@ export type Database = {
       }
       blog_ai_preferences: {
         Row: {
-          brand_voice: string | null
           client_id: string
-          content_guidelines: string | null
           created_at: string
+          custom_instructions: string | null
           id: string
-          industry_context: string | null
-          preferred_keywords: string[] | null
-          target_audience: string | null
           topics_to_avoid: string | null
           updated_at: string
         }
         Insert: {
-          brand_voice?: string | null
           client_id: string
-          content_guidelines?: string | null
           created_at?: string
+          custom_instructions?: string | null
           id?: string
-          industry_context?: string | null
-          preferred_keywords?: string[] | null
-          target_audience?: string | null
           topics_to_avoid?: string | null
           updated_at?: string
         }
         Update: {
-          brand_voice?: string | null
           client_id?: string
-          content_guidelines?: string | null
           created_at?: string
+          custom_instructions?: string | null
           id?: string
-          industry_context?: string | null
-          preferred_keywords?: string[] | null
-          target_audience?: string | null
           topics_to_avoid?: string | null
           updated_at?: string
         }

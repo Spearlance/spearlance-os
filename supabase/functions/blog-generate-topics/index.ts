@@ -43,9 +43,15 @@ serve(async (req) => {
 
     const { data: avatars } = await avatarQuery;
 
-    // Fetch brand voice
+    // Fetch brand voice and AI preferences
     const { data: brandVoice } = await supabase
       .from('brand_voice')
+      .select('*')
+      .eq('client_id', client_id)
+      .maybeSingle();
+
+    const { data: aiPreferences } = await supabase
+      .from('blog_ai_preferences')
       .select('*')
       .eq('client_id', client_id)
       .maybeSingle();
@@ -60,16 +66,26 @@ serve(async (req) => {
 
     const recentTitles = recentPosts?.map(p => p.title).join('\n- ') || 'None yet';
 
+    // Extract keywords from services
+    const serviceKeywords = client.business_model?.services 
+      ? client.business_model.services.split(',').map((s: string) => s.trim()) 
+      : [];
+
     // Build AI prompt
     const systemPrompt = `You are a content strategist for ${client.name}.
 
 BUSINESS CONTEXT:
 - Industry: ${client.business_model?.industry || 'Not specified'}
 - Services: ${client.business_model?.services || 'Not specified'}
+- Brand Story: ${client.brand_story || 'Not specified'}
 - Target Audience: ${avatars?.map(a => `${a.name}: ${a.summary}`).join('\n') || 'General audience'}
 - Brand Voice: ${brandVoice?.tone_adjectives?.join(', ') || 'Professional'}
+- Key Service Keywords: ${serviceKeywords.join(', ')}
 ${industry_focus ? `\n- Industry Focus: ${industry_focus}` : ''}
 ${content_type ? `\n- Content Type: ${content_type}` : ''}
+
+${aiPreferences?.topics_to_avoid ? `TOPICS TO AVOID:\n${aiPreferences.topics_to_avoid}\n` : ''}
+${aiPreferences?.custom_instructions ? `ADDITIONAL INSTRUCTIONS:\n${aiPreferences.custom_instructions}\n` : ''}
 
 RECENT BLOG TOPICS (to avoid duplicates):
 - ${recentTitles}
