@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Copy, Eye, EyeOff, RefreshCw, CheckCircle2, Circle } from "lucide-react";
+import { Copy, Eye, EyeOff, RefreshCw, CheckCircle2, Circle, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDistanceToNow } from "date-fns";
@@ -17,6 +17,7 @@ interface AnalyticsSetupTabProps {
     id: string;
     name: string;
     website_unlocked?: boolean;
+    website_url?: string | null;
   };
 }
 
@@ -29,6 +30,8 @@ export function AnalyticsSetupTab({ client }: AnalyticsSetupTabProps) {
   const [loading, setLoading] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [currentClientId, setCurrentClientId] = useState<string>(client.id);
+  const [websiteUrl, setWebsiteUrl] = useState<string>(client.website_url || '');
+  const [isUpdatingUrl, setIsUpdatingUrl] = useState(false);
 
   useEffect(() => {
     // Only reload if client actually changed
@@ -38,6 +41,7 @@ export function AnalyticsSetupTab({ client }: AnalyticsSetupTabProps) {
       setWorkspaceKey(null);
       setLastEventAt(null);
       setIsActive(false);
+      setWebsiteUrl(client.website_url || '');
       
       // Load new client's data
       loadWorkspaceKey();
@@ -83,11 +87,58 @@ export function AnalyticsSetupTab({ client }: AnalyticsSetupTabProps) {
     }
   };
 
+  const updateWebsiteUrl = async () => {
+    if (!client?.id || !websiteUrl.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter a valid website URL",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsUpdatingUrl(true);
+    try {
+      const { error } = await supabase
+        .from('clients')
+        .update({ website_url: websiteUrl.trim() })
+        .eq('id', client.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Website URL Saved",
+        description: "You can now generate a workspace key",
+      });
+
+      // Update local client object
+      client.website_url = websiteUrl.trim();
+    } catch (error) {
+      console.error('Error updating website URL:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save website URL",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUpdatingUrl(false);
+    }
+  };
+
   const generateWorkspaceKey = async () => {
     if (!client?.id) {
       toast({
         title: "Error",
         description: "No client selected",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!client.website_url) {
+      toast({
+        title: "Error",
+        description: "Please add a website URL first",
         variant: "destructive",
       });
       return;
@@ -473,6 +524,43 @@ export function AnalyticsSetupTab({ client }: AnalyticsSetupTabProps) {
 
   return (
     <div className="space-y-6">
+      {!client.website_url && (
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Website URL Required</AlertTitle>
+          <AlertDescription>
+            <p className="mb-4">
+              A website URL is required to validate analytics events and prevent unauthorized tracking.
+              Please enter the website URL below before generating a workspace key.
+            </p>
+            <div className="space-y-3">
+              <div>
+                <Label htmlFor="website-url">Website URL</Label>
+                <div className="flex gap-2 mt-2">
+                  <Input
+                    id="website-url"
+                    type="url"
+                    placeholder="https://example.com"
+                    value={websiteUrl}
+                    onChange={(e) => setWebsiteUrl(e.target.value)}
+                    disabled={isUpdatingUrl}
+                  />
+                  <Button 
+                    onClick={updateWebsiteUrl} 
+                    disabled={isUpdatingUrl || !websiteUrl.trim()}
+                  >
+                    {isUpdatingUrl ? "Saving..." : "Save"}
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  This URL will be used to validate incoming analytics events
+                </p>
+              </div>
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
+      
       <Card>
         <CardHeader>
           <CardTitle>Analytics Tracking Setup</CardTitle>
@@ -593,9 +681,17 @@ export function AnalyticsSetupTab({ client }: AnalyticsSetupTabProps) {
               <p className="text-muted-foreground mb-4">
                 No workspace key has been generated yet
               </p>
-              <Button onClick={() => setShowConfirmDialog(true)} disabled={loading}>
+              <Button 
+                onClick={() => setShowConfirmDialog(true)} 
+                disabled={loading || !client.website_url}
+              >
                 Generate Workspace Key
               </Button>
+              {!client.website_url && (
+                <p className="text-xs text-muted-foreground mt-2">
+                  Please add a website URL above to generate a key
+                </p>
+              )}
             </div>
           )}
         </CardContent>
