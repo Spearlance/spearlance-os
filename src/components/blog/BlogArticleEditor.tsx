@@ -8,11 +8,11 @@ import { Loader2, Save, X, FileText, BarChart } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
@@ -139,11 +139,11 @@ export function BlogArticleEditor({
   ];
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[95vw] w-full max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Edit Article</DialogTitle>
-        </DialogHeader>
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent side="left" className="w-[80vw] max-w-none h-full overflow-y-auto p-6">
+        <SheetHeader>
+          <SheetTitle>Edit Article</SheetTitle>
+        </SheetHeader>
 
         {loading ? (
           <div className="flex items-center justify-center py-12">
@@ -292,7 +292,7 @@ export function BlogArticleEditor({
             </div>
           </div>
         )}
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   );
 }
