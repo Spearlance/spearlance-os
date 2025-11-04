@@ -13,6 +13,8 @@ interface BlogStrategyFormProps {
   clientId: string;
   month?: number;
   year?: number;
+  isGlobal?: boolean;
+  onSaved?: () => void;
 }
 
 export function BlogStrategyForm({ clientId, month, year }: BlogStrategyFormProps) {

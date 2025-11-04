@@ -13,6 +13,15 @@ import { cn } from "@/lib/utils";
 
 interface BlogMonthlyGeneratorProps {
   clientId: string;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onComplete: () => void;
+  month: number;
+  year: number;
+  generationType: 'all' | 'missing';
+  existingTopicDates: string[];
+  expectedPostCount: number;
+  activeStrategy: any;
 }
 
 export function BlogMonthlyGenerator({ clientId }: BlogMonthlyGeneratorProps) {
