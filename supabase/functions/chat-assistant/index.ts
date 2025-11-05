@@ -1883,6 +1883,104 @@ async function createGeneralTask(supabase: any, params: any, clientId: string, u
   }
 }
 
+// Update an existing task
+async function updateTask(supabase: any, params: any, clientId: string, userId: string) {
+  try {
+    const {
+      task_id,
+      title,
+      description,
+      due_date,
+      assignee_id,
+      priority,
+      status
+    } = params;
+    
+    if (!task_id) {
+      throw new Error('Task ID is required');
+    }
+    
+    // Verify task exists and belongs to client
+    const { data: existingTask, error: fetchError } = await supabase
+      .from('tasks')
+      .select('id, title, client_id, assignee_user_id')
+      .eq('id', task_id)
+      .eq('client_id', clientId)
+      .single();
+    
+    if (fetchError || !existingTask) {
+      throw new Error('Task not found or access denied');
+    }
+    
+    // Build update object with only provided fields
+    const updates: any = {};
+    
+    if (title !== undefined) updates.title = title.trim();
+    if (description !== undefined) updates.description = description;
+    if (due_date !== undefined) updates.due_date = due_date;
+    if (priority !== undefined) updates.priority = priority;
+    if (status !== undefined) {
+      updates.status = status;
+      // Get the column_id for the new status
+      const { data: column } = await supabase
+        .from('task_columns')
+        .select('id')
+        .eq('client_id', clientId)
+        .eq('key', status)
+        .single();
+      if (column) {
+        updates.column_id = column.id;
+      }
+    }
+    if (assignee_id !== undefined) updates.assignee_user_id = assignee_id;
+    
+    // Ensure we have something to update
+    if (Object.keys(updates).length === 0) {
+      throw new Error('No fields to update');
+    }
+    
+    // Update the task
+    const { data: updatedTask, error: updateError } = await supabase
+      .from('tasks')
+      .update(updates)
+      .eq('id', task_id)
+      .select()
+      .single();
+    
+    if (updateError) throw updateError;
+    
+    // Get assignee name if changed
+    let assigneeName = null;
+    if (assignee_id && assignee_id !== existingTask.assignee_user_id) {
+      if (assignee_id === userId) {
+        assigneeName = 'You';
+      } else {
+        const { data: assignee } = await supabase
+          .from('profiles')
+          .select('name')
+          .eq('id', assignee_id)
+          .single();
+        assigneeName = assignee?.name || 'Team member';
+      }
+    }
+    
+    return {
+      success: true,
+      task_id: updatedTask.id,
+      task_title: updatedTask.title,
+      updated_fields: Object.keys(updates),
+      new_assignee: assigneeName,
+      new_status: status,
+      new_priority: priority,
+      new_due_date: due_date
+    };
+    
+  } catch (error: any) {
+    console.error('Update task error:', error);
+    throw error;
+  }
+}
+
 // Search and retrieve tasks with flexible filtering
 async function getTasks(supabase: any, params: any, clientId: string, userId: string) {
   try {
@@ -2420,6 +2518,50 @@ const tools = [
             }
           },
           required: []
+        }
+      }
+    },
+    {
+      type: "function",
+      function: {
+        name: "update_task",
+        description: "Update an existing task's details. Use this when users want to modify a task they've already created or found. Examples: 'Change the due date of task X to next Friday', 'Mark the budget task as done', 'Assign the website task to Sarah', 'Change priority to high'. You must first use get_tasks to find the task_id before updating.",
+        parameters: {
+          type: "object",
+          properties: {
+            task_id: {
+              type: "string",
+              description: "The UUID of the task to update (get this from get_tasks first)"
+            },
+            title: {
+              type: "string",
+              description: "Optional: New task title"
+            },
+            description: {
+              type: "string",
+              description: "Optional: New task description or notes"
+            },
+            due_date: {
+              type: "string",
+              format: "date",
+              description: "Optional: New due date (YYYY-MM-DD format)"
+            },
+            assignee_id: {
+              type: "string",
+              description: "Optional: New assignee user ID (get from get_team_members)"
+            },
+            priority: {
+              type: "string",
+              enum: ["low", "medium", "high"],
+              description: "Optional: New priority level"
+            },
+            status: {
+              type: "string",
+              enum: ["to_do", "in_progress", "done"],
+              description: "Optional: New task status (use 'done' to mark complete)"
+            }
+          },
+          required: ["task_id"]
         }
       }
     },
@@ -4627,6 +4769,9 @@ ${historicalContext.join('\n\n')}
               break;
             case 'get_tasks':
               result = await getTasks(supabaseClient, args, client_id, user.id);
+              break;
+            case 'update_task':
+              result = await updateTask(supabaseClient, args, client_id, user.id);
               break;
             case 'get_social_media_posts':
               result = await getSocialMediaPosts(supabaseClient, args, client_id);
