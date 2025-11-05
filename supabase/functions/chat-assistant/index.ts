@@ -1820,14 +1820,6 @@ async function createGeneralTask(supabase: any, params: any, clientId: string, u
       throw new Error('Task title is required');
     }
     
-    // Get default task column for the specified status
-    const { data: column } = await supabase
-      .from('task_columns')
-      .select('id')
-      .eq('client_id', clientId)
-      .eq('key', status)
-      .single();
-    
     // Calculate default due date (tomorrow) if not provided
     const defaultDueDate = new Date();
     defaultDueDate.setDate(defaultDueDate.getDate() + 1);
@@ -1841,7 +1833,6 @@ async function createGeneralTask(supabase: any, params: any, clientId: string, u
         title: title.trim(),
         description: description || null,
         status,
-        column_id: column?.id,
         assignee_user_id: assignee_id || userId,
         creator_user_id: userId,
         priority,
@@ -1919,19 +1910,7 @@ async function updateTask(supabase: any, params: any, clientId: string, userId: 
     if (description !== undefined) updates.description = description;
     if (due_date !== undefined) updates.due_date = due_date;
     if (priority !== undefined) updates.priority = priority;
-    if (status !== undefined) {
-      updates.status = status;
-      // Get the column_id for the new status
-      const { data: column } = await supabase
-        .from('task_columns')
-        .select('id')
-        .eq('client_id', clientId)
-        .eq('key', status)
-        .single();
-      if (column) {
-        updates.column_id = column.id;
-      }
-    }
+    if (status !== undefined) updates.status = status;
     if (assignee_id !== undefined) updates.assignee_user_id = assignee_id;
     
     // Ensure we have something to update
