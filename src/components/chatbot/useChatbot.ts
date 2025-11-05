@@ -392,21 +392,74 @@ export const useChatbot = () => {
       
       if (err.name === 'AbortError') {
         console.log('Request aborted');
+        // Mark the user message as failed
+        setMessages(prev => {
+          const updated = [...prev];
+          const userMsgIndex = updated.findIndex(m => 
+            m.role === 'user' && 
+            m.content === content.trim() && 
+            !m.failed
+          );
+          if (userMsgIndex !== -1) {
+            updated[userMsgIndex] = {
+              ...updated[userMsgIndex],
+              failed: true,
+              errorMessage: 'Request timed out. Please try again.'
+            };
+          }
+          return updated;
+        });
         setError('Request was cancelled or timed out.');
         return;
       }
 
       console.error('Chat error:', err);
+      
+      // Mark the user message as failed with specific error
+      setMessages(prev => {
+        const updated = [...prev];
+        const userMsgIndex = updated.findIndex(m => 
+          m.role === 'user' && 
+          m.content === content.trim() && 
+          !m.failed
+        );
+        if (userMsgIndex !== -1) {
+          updated[userMsgIndex] = {
+            ...updated[userMsgIndex],
+            failed: true,
+            errorMessage: err.message || 'Failed to send message'
+          };
+        }
+        return updated;
+      });
+      
       setError(err.message);
       toast({
         title: "Error",
-        description: "Failed to communicate with assistant. Please try again.",
+        description: "Failed to communicate with assistant. Click retry to try again.",
         variant: "destructive"
       });
     } finally {
       setIsLoading(false);
       abortControllerRef.current = null;
     }
+  };
+
+  const retryMessage = async (messageContent: string) => {
+    // Remove the failed flag from the message first
+    setMessages(prev => 
+      prev.map(m => 
+        m.content === messageContent && m.failed 
+          ? { ...m, failed: false, errorMessage: undefined }
+          : m
+      )
+    );
+    
+    // Clear any existing error state
+    setError(null);
+    
+    // Resend the message using existing sendMessage logic
+    await sendMessage(messageContent);
   };
 
   const clearMessages = () => {
@@ -445,6 +498,7 @@ export const useChatbot = () => {
     clearMessages,
     createNewConversation,
     archiveConversation,
-    cancelRequest
+    cancelRequest,
+    retryMessage,
   };
 };

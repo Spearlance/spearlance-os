@@ -30,7 +30,8 @@ export const ChatbotWidget = () => {
     sendMessage, 
     clearMessages,
     createNewConversation,
-    archiveConversation
+    archiveConversation,
+    retryMessage,
   } = useChatbot();
   
   const [isCreatingConversation, setIsCreatingConversation] = useState(false);
@@ -220,9 +221,9 @@ export const ChatbotWidget = () => {
               </Alert>
             )}
 
-            {messages.map((message, index) => (
-              <ChatMessage key={index} message={message} />
-            ))}
+              {messages.map((message, index) => (
+                <ChatMessage key={index} message={message} onRetry={retryMessage} />
+              ))}
 
             {isLoading && messages.length > 0 && messages[messages.length - 1]?.role === 'user' && (
               <TypingIndicator />

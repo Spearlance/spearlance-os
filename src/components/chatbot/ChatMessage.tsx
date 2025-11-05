@@ -1,6 +1,6 @@
 import { ChatMessage as ChatMessageType } from './types';
 import { format } from 'date-fns';
-import { Calendar, Save } from 'lucide-react';
+import { Calendar, Save, RefreshCw, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -15,9 +15,10 @@ import { supabase } from '@/integrations/supabase/client';
 
 interface ChatMessageProps {
   message: ChatMessageType;
+  onRetry?: (content: string) => void;
 }
 
-export const ChatMessage = ({ message }: ChatMessageProps) => {
+export const ChatMessage = ({ message, onRetry }: ChatMessageProps) => {
   // Guard against undefined content
   if (!message || !message.content) {
     console.error('ChatMessage received invalid message:', message);
@@ -151,9 +152,18 @@ export const ChatMessage = ({ message }: ChatMessageProps) => {
         <div className={cn(
           "rounded-lg px-4 py-2.5 shadow-sm",
           isUser 
-            ? "bg-primary text-primary-foreground" 
+            ? message.failed
+              ? "bg-destructive/10 border border-destructive/50 text-foreground"
+              : "bg-primary text-primary-foreground"
             : "bg-card border border-border"
         )}>
+          {isUser && message.failed && (
+            <div className="flex items-center gap-2 mb-2 text-xs text-destructive">
+              <AlertCircle className="h-3 w-3" />
+              <span>{message.errorMessage || 'Failed to send'}</span>
+            </div>
+          )}
+          
           {isUser ? (
             <div className="text-sm whitespace-pre-wrap break-words">
               {message.content}
@@ -243,6 +253,20 @@ export const ChatMessage = ({ message }: ChatMessageProps) => {
               >
                 <Save className="h-4 w-4 mr-2" />
                 Save Offer
+              </Button>
+            </div>
+          )}
+          
+          {isUser && message.failed && onRetry && (
+            <div className="mt-3 pt-3 border-t border-destructive/20">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="w-full text-destructive hover:bg-destructive/10 border-destructive/50"
+                onClick={() => onRetry(message.content)}
+              >
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Retry Message
               </Button>
             </div>
           )}

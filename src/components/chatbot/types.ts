@@ -16,6 +16,8 @@ export interface ChatMessage {
   content: string;
   timestamp: Date;
   data?: any; // Structured data for cards
+  failed?: boolean; // Flag to indicate message send failure
+  errorMessage?: string; // Specific error message for this failed message
 }
 
 export interface PersistedChatMessage {
