@@ -1804,6 +1804,85 @@ async function createTaskFromSubmission(supabase: any, params: any, clientId: st
   }
 }
 
+// Create a general-purpose task (not tied to submissions)
+async function createGeneralTask(supabase: any, params: any, clientId: string, userId: string) {
+  try {
+    const {
+      title,
+      description,
+      due_date,
+      assignee_id,
+      priority = 'medium',
+      status = 'to_do'
+    } = params;
+    
+    if (!title || title.trim().length === 0) {
+      throw new Error('Task title is required');
+    }
+    
+    // Get default task column for the specified status
+    const { data: column } = await supabase
+      .from('task_columns')
+      .select('id')
+      .eq('client_id', clientId)
+      .eq('key', status)
+      .single();
+    
+    // Calculate default due date (tomorrow) if not provided
+    const defaultDueDate = new Date();
+    defaultDueDate.setDate(defaultDueDate.getDate() + 1);
+    const taskDueDate = due_date || defaultDueDate.toISOString().split('T')[0];
+    
+    // Create task
+    const { data: task, error: taskError } = await supabase
+      .from('tasks')
+      .insert({
+        client_id: clientId,
+        title: title.trim(),
+        description: description || null,
+        status,
+        column_id: column?.id,
+        assignee_user_id: assignee_id || userId,
+        creator_user_id: userId,
+        priority,
+        due_date: taskDueDate,
+        metadata: {
+          type: 'general',
+          created_via: 'chatbot'
+        }
+      })
+      .select()
+      .single();
+    
+    if (taskError) throw taskError;
+    
+    // Get assignee name if different from creator
+    let assigneeName = 'You';
+    if (assignee_id && assignee_id !== userId) {
+      const { data: assignee } = await supabase
+        .from('profiles')
+        .select('name')
+        .eq('id', assignee_id)
+        .single();
+      assigneeName = assignee?.name || 'Team member';
+    }
+    
+    return {
+      success: true,
+      task_id: task.id,
+      task_title: task.title,
+      due_date: taskDueDate,
+      assignee_name: assigneeName,
+      priority: task.priority,
+      status: task.status
+    };
+    
+  } catch (error: any) {
+    console.error('Create general task error:', error);
+    throw error;
+  }
+}
+
 // Get page content analysis (SEO scores, recommendations)
 async function getPageAnalysis(supabase: any, params: any, clientId: string) {
   let query = supabase
@@ -2132,6 +2211,48 @@ const tools = [
             }
           },
           required: ["submission_id"]
+        }
+      }
+    },
+    {
+      type: "function",
+      function: {
+        name: "create_general_task",
+        description: "Create any type of task for the client. Use this when users ask to create tasks that are NOT related to form submissions/leads (for those, use create_task_from_submission). Examples: 'Create a task to review Q4 budget', 'Add a task to update website copy', 'Remind me to call the vendor next week'. This is the most flexible task creation tool.",
+        parameters: {
+          type: "object",
+          properties: {
+            title: {
+              type: "string",
+              description: "The task title/name. Be clear and actionable (e.g., 'Review Q4 marketing budget' not just 'Budget')"
+            },
+            description: {
+              type: "string",
+              description: "Optional: Detailed description, notes, or instructions for the task"
+            },
+            due_date: {
+              type: "string",
+              format: "date",
+              description: "Optional: When the task should be completed (YYYY-MM-DD format). Defaults to tomorrow if not provided."
+            },
+            assignee_id: {
+              type: "string",
+              description: "Optional: User ID to assign the task to. Defaults to the current user if not provided."
+            },
+            priority: {
+              type: "string",
+              enum: ["low", "medium", "high"],
+              description: "Task priority level (default: medium)",
+              default: "medium"
+            },
+            status: {
+              type: "string",
+              enum: ["to_do", "in_progress", "done"],
+              description: "Initial task status (default: to_do)",
+              default: "to_do"
+            }
+          },
+          required: ["title"]
         }
       }
     },
@@ -4333,6 +4454,9 @@ ${historicalContext.join('\n\n')}
               break;
             case 'create_task_from_submission':
               result = await createTaskFromSubmission(supabaseClient, args, client_id, user.id);
+              break;
+            case 'create_general_task':
+              result = await createGeneralTask(supabaseClient, args, client_id, user.id);
               break;
             case 'get_social_media_posts':
               result = await getSocialMediaPosts(supabaseClient, args, client_id);
