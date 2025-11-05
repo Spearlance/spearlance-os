@@ -1519,45 +1519,34 @@ async function draftEmail(supabase: any, params: any, clientId: string) {
     const recipientPhone = extractPhoneFromForm(formData);
     const message = extractMessageFromForm(formData);
     
-    // Validate required fields
-    if (!recipientEmail) {
-      return {
-        success: false,
-        error: 'missing_email',
-        message: 'The form submission does not contain an email address. Cannot draft email without recipient email.',
-        submission_id
-      };
-    }
+    // Check data availability (but don't block - work with what we have)
+    const hasEmail = !!recipientEmail;
+    const hasDetailedMessage = message && message.trim().length >= 10;
     
-    if (!message || message.trim().length < 10) {
-      return {
-        success: false,
-        error: 'missing_message',
-        message: 'The form submission does not contain enough project details to draft a personalized email.',
-        submission_id
-      };
-    }
-    
-    // Build prompt for AI
+    // Build prompt for AI that adapts to available data
     const contactInfo = recipientPhone ? `- Phone: ${recipientPhone}\n` : '';
     const keyPointsText = key_points.length > 0 
       ? `\n\nMake sure to address these key points:\n${key_points.map((p: string) => `- ${p}`).join('\n')}`
       : '';
     
-    const prompt = `You are writing a personalized follow-up email for ${client.name}.
+    const prompt = `You are writing a follow-up email for ${client.name}.
 
 LEAD INFORMATION:
 - Name: ${recipientName}
-- Email: ${recipientEmail}
+${recipientEmail ? `- Email: ${recipientEmail}` : '- Email: [TO BE PROVIDED]'}
 ${contactInfo}- Submitted: ${new Date(submission.submitted_at).toLocaleDateString()}
-- Their message: "${message}"
+${hasDetailedMessage ? `- Their message: "${message}"` : '- Form submission received with minimal details'}
 
 TONE: ${tone}
+
+${hasDetailedMessage 
+  ? `Write a personalized response referencing their specific inquiry.` 
+  : `Write a friendly email asking them to share more details about their project needs.`}
 
 REQUIREMENTS:
 - Keep it under 250 words
 - Be warm and professional
-- Reference their specific inquiry
+${hasDetailedMessage ? '- Reference their specific inquiry' : '- Ask about their project needs and goals'}
 - Suggest next steps (call, consultation, meeting)
 - Include a clear call-to-action${keyPointsText}
 
@@ -1604,14 +1593,17 @@ Do not include any markdown formatting, greetings like "Here's the email:", or e
       };
     }
     
+    // Always return success with whatever we drafted
     return {
       success: true,
       submission_id,
       recipient_name: recipientName,
-      recipient_email: recipientEmail,
+      recipient_email: recipientEmail || '[EMAIL NEEDED]',
       subject: emailDraft.subject,
       body: emailDraft.body,
-      tone
+      tone,
+      has_email: hasEmail,
+      has_details: hasDetailedMessage
     };
     
   } catch (error: any) {
@@ -2035,7 +2027,7 @@ const tools = [
       type: "function",
       function: {
         name: "draft_email",
-        description: "Generate a personalized follow-up email for a form submission/lead. Use this when users ask to 'create an email', 'draft a response', 'write to [name]', or 'follow up with [lead]'. Returns a complete email with subject line and body that the user can review and edit.",
+        description: "Generate a personalized follow-up email for a form submission/lead. This function is RESILIENT and works with partial data - it will draft something useful even if the email address is missing or project details are minimal. ALWAYS call this function when users want to draft emails. The response includes 'has_email' and 'has_details' flags - handle limitations naturally by presenting the draft and offering next steps. Use when users ask to 'create an email', 'draft a response', 'write to [name]', or 'follow up with [lead]'.",
         parameters: {
           type: "object",
           properties: {
@@ -3540,71 +3532,111 @@ When analyzing form submissions:
 - Identify patterns in inquiry types and timing
 - Suggest creating follow-up tasks or drafting emails when appropriate
 
-**EMAIL DRAFTING WORKFLOW**
+**EMAIL DRAFTING WORKFLOW - INTELLIGENT & PROACTIVE**
 
-When users ask to:
-- "Create an email for [name]"
-- "Draft a response to [lead]"
-- "Write a follow-up email"
+When users ask to create/draft an email:
 
-YOU MUST:
-1. Call get_form_submissions to find the lead (if not already in context)
-2. Call draft_email with the submission_id
-3. Check if draft_email returned success:
-   - If success=false with error='missing_email': Respond with "I couldn't find an email address in [Name]'s submission. The form data might be incomplete. Would you like me to show you what information we do have?"
-   - If success=false with error='missing_message': Respond with "[Name]'s submission doesn't include enough project details to write a personalized email. Would you like me to draft a generic inquiry response instead?"
-   - If success=false with error='generation_failed': Respond with "I ran into an issue generating the email draft. Let me try again, or I can help you write it manually if you'd like."
-4. If successful, display the drafted email clearly formatted
-5. Ask what they want to do with it:
-   - "Create a task to send this" → Call create_email_task
-   - "Make edits" → Provide suggestions or redraft with modifications
-   - "Just show me" → Done, no further action
+**STEP 1: GATHER CONTEXT AUTOMATICALLY**
+- If user mentions a name: Call get_form_submissions with search query to find their submission
+- If user says "for that lead" or "for them": Use the most recent submission from previous context
+- If user doesn't specify: Assume they want the most recent unread submission
+- NEVER ask for submission IDs - find them automatically
 
-**Example Flow:**
+**STEP 2: HANDLE AMBIGUITY NATURALLY**
+- Multiple submissions match: "I found 3 leads named Sarah. Which one? (Sarah Johnson - kitchen remodel, Sarah Lee - bathroom renovation, Sarah Smith - deck project)"
+- No submissions found: "I don't see any recent form submissions for [name]. Want to check a different name or draft a general template?"
 
-User: "Create an email for Robert Patrick"
+**STEP 3: ALWAYS DRAFT WITH AVAILABLE DATA**
+- Call draft_email with the submission_id
+- The function works with whatever data exists (even if email/details are missing)
+- Check response flags: has_email and has_details
 
-AI Actions:
-→ Call draft_email({ submission_id: "[Robert's ID]", tone: "friendly" })
-→ Display draft:
+**STEP 4: HANDLE EDGE CASES INVISIBLY**
+NEVER expose technical limitations. Always provide value.
+
+If has_email=false:
+✅ "Here's a draft for [Name]. I noticed the form didn't capture an email address - you'll need to add that when you send:
+
+[show subject and body]
+
+Want me to create a task reminder to follow up with [Name]?"
+
+If has_details=false:
+✅ "I've drafted an email to [Name] asking about their project needs since the form didn't capture many details:
+
+[show email body that asks for more info]
+
+This is a great way to start the conversation!"
+
+If both missing:
+✅ "Let me draft a template for you. What key points should I include about [client business]?"
+
+**EXAMPLE FLOWS:**
+
+User: "Create an email for Kyle"
+AI: [Calls get_form_submissions(search_query="Kyle") automatically]
+    [Calls draft_email with Kyle's submission_id]
+    
+"Here's a draft for Kyle's website design inquiry:
+
+**Subject:** Re: Website Design Project
+**To:** kyle@example.com
+
+Hi Kyle,
+
+Thanks for reaching out about your website design project...
+
+[full email]
+
+Want me to create a task to send this?"
 
 ---
-**Subject:** Re: Your Full Home Remodel Project
 
-**To:** robertwpatrick2022@gmail.com
+User: "Draft an email for that lead from yesterday"
+AI: [Calls get_form_submissions(date_from=yesterday) automatically]
+    [Identifies most recent submission]
+    [Calls draft_email]
+    
+"Found yesterday's lead - here's a draft for Sarah's bathroom renovation inquiry:
 
-**Body:**
-Hi Robert,
+[shows email]
 
-Thanks for reaching out about your home remodel project...
+Should I add this to your tasks?"
 
-[full email body]
+**PROACTIVE TASK SUGGESTIONS**
 
-Best regards,
-[User Name]
----
+After showing a drafted email, intelligently suggest:
+- "Want me to create a task to send this?" (if has_email=true)
+- "Want me to create a task reminder to find [Name]'s email and send this?" (if has_email=false)
+- "Should I add a follow-up task for next week if they don't respond?"
 
-Then ask: "Would you like me to create a task to send this email? I'll add it to your to-do list with all the details ready to go."
+Only actually create the task if user explicitly agrees.
 
-**If user says yes:**
-→ Call create_email_task({
-    submission_id: "[id]",
-    email_subject: "[subject]",
-    email_body: "[body]",
-    recipient_email: "robertwpatrick2022@gmail.com",
-    recipient_name: "Robert Patrick"
-  })
-→ Confirm: "✅ Task created! I've added 'Send email to Robert Patrick' to your tasks with the complete email draft included. You can find it in your task list whenever you're ready to send."
+**INTELLIGENT DATA RETRIEVAL PATTERNS**
 
-**IMPORTANT:**
-- Only create the task if user explicitly asks (don't do it automatically)
-- Task includes the FULL email draft so they have everything when sending
-- Task is assigned to current user (the person asking)
-- Default due date is today (email is ready to send)
+Pattern: "How many leads this week?"
+→ Automatically call get_form_submissions with date filter
+→ Respond: "You have 5 new leads this week. Want me to draft emails for any of them?"
 
-**For non-email follow-ups:**
-If users say "remind me to call" or "add to my tasks" WITHOUT an email draft:
-→ Use create_task_from_submission instead (generic task creation)
+Pattern: "Show me recent submissions"
+→ Call get_form_submissions immediately
+→ Present insights and offer actions
+
+Pattern: "What tasks are due today?"
+→ Call search_tasks with today filter
+→ Show results with context
+
+NEVER say:
+❌ "I need the submission ID"
+❌ "Please provide more information"
+❌ "I can't do that without..."
+❌ "Sorry, there's not enough data"
+
+ALWAYS say:
+✅ "Let me check that for you..." [retrieves data]
+✅ "I found 3 leads from this week..."
+✅ "Here's what I've drafted with the info available..."
+✅ "I can help with that! [takes action]"
 - Compare current period to previous for growth trends
 - Suggest prioritization based on inquiry quality
 - Note response time gaps
