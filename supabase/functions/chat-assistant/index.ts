@@ -1640,14 +1640,6 @@ async function createEmailTask(supabase: any, params: any, clientId: string, use
     
     if (subError) throw new Error('Form submission not found');
     
-    // Get default task column for client
-    const { data: column } = await supabase
-      .from('task_columns')
-      .select('id')
-      .eq('client_id', clientId)
-      .eq('key', 'to_do')
-      .single();
-    
     const taskTitle = `Send email to ${recipient_name}`;
     
     // Format task description with email details
@@ -1673,17 +1665,10 @@ ${email_body}
         title: taskTitle,
         description: taskDescription,
         status: 'to_do',
-        column_id: column?.id,
         assignee_user_id: userId,
         creator_user_id: userId,
         priority,
-        due_date: taskDueDate,
-        metadata: {
-          type: 'email_followup',
-          submission_id,
-          recipient_email,
-          email_subject
-        }
+        due_date: taskDueDate
       })
       .select()
       .single();
@@ -1747,14 +1732,6 @@ async function createTaskFromSubmission(supabase: any, params: any, clientId: st
     
     const taskDueDate = due_date || defaultDueDate.toISOString().split('T')[0];
     
-    // Get default task column
-    const { data: column } = await supabase
-      .from('task_columns')
-      .select('id')
-      .eq('client_id', clientId)
-      .eq('key', 'to_do')
-      .single();
-    
     // Build task description
     let taskDescription = `Follow up on form submission from ${contactName}\n\n`;
     taskDescription += `**Contact:** ${submission.contact_email || 'N/A'}\n`;
@@ -1774,15 +1751,10 @@ async function createTaskFromSubmission(supabase: any, params: any, clientId: st
         title: taskTitle,
         description: taskDescription,
         status: 'to_do',
-        column_id: column?.id,
         assignee_user_id: assignee_id || userId,
         creator_user_id: userId,
         priority,
-        due_date: taskDueDate,
-        metadata: {
-          type: 'submission_followup',
-          submission_id
-        }
+        due_date: taskDueDate
       })
       .select()
       .single();
@@ -1836,11 +1808,7 @@ async function createGeneralTask(supabase: any, params: any, clientId: string, u
         assignee_user_id: assignee_id || userId,
         creator_user_id: userId,
         priority,
-        due_date: taskDueDate,
-        metadata: {
-          type: 'general',
-          created_via: 'chatbot'
-        }
+        due_date: taskDueDate
       })
       .select()
       .single();
@@ -3842,6 +3810,46 @@ You have access to:
 - Page content analysis (SEO scores, recommendations)
 
 ## TASK CREATION - INSTANT AND FRICTION-FREE
+
+## SPECIAL PATTERN: "Most Recent" Shortcuts
+
+**If user says "create a task for/about the most recent [thing]":**
+
+1. ✅ SILENTLY retrieve the thing (no questions)
+2. ✅ IMMEDIATELY create the task with details
+3. ✅ Confirm with a brief message
+
+**Examples:**
+
+User: "Remind me to contact the most recent form submission"
+AI: ✅ Calls get_form_submissions({ limit: 1, unread_only: false })
+    ✅ IMMEDIATELY calls create_general_task({ title: "Contact [Name] from form", description: "[contact details]", due_date: tomorrow, assignee_id: current_user_id })
+    "Done! I've added a task to contact [Name] from your most recent form submission. Set for tomorrow. 📋"
+
+User: "Create a task for the last person who submitted the form"
+AI: ✅ Retrieves submission silently
+    ✅ Creates task immediately
+    "Task created! 'Follow up with [Name]' is on your list for tomorrow."
+
+User: "Add a reminder about the newest lead"
+AI: ✅ Calls get_form_submissions({ limit: 1, unread_only: false })
+    ✅ Creates task with contact info in description
+    "Done! Task to contact [Name] is set for tomorrow with their details in the notes."
+
+**DO NOT:**
+❌ Ask "Would you like me to check all submissions?"
+❌ Ask "Shall I assign it to anyone?"
+❌ Ask "What should the task title be?"
+❌ Show submission details and wait for confirmation
+❌ Ask if they want unread or all submissions
+
+**DO:**
+✅ Retrieve + create in ONE smooth flow
+✅ Use sensible defaults (due tomorrow, assign to requesting user, auto-generate title)
+✅ Include contact details in task description automatically
+✅ Give brief confirmation with key details
+
+---
 
 **CRITICAL: If user says ANY of these phrases, IMMEDIATELY use create_general_task:**
 - "create a task"
