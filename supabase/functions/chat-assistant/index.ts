@@ -2405,7 +2405,7 @@ const tools = [
       type: "function",
       function: {
         name: "create_general_task",
-        description: "Create any type of task for the client. This is your DEFAULT tool for all task creation requests. Use this for ALL task creation unless you have an actual submission_id from the database (in which case use create_task_from_submission). Examples: 'Create a task to follow up with John', 'Add a task to review Q4 budget', 'Remind me to call the vendor', 'Create a task for that lead we just discussed'. You can include all relevant details in the title and description.",
+        description: "CREATE TASKS INSTANTLY - This is your GO-TO tool for ALL task creation requests. Use this IMMEDIATELY when users say 'create a task', 'remind me', 'add to my list', 'I need to', etc. DO NOT search for submissions or people first - just create the task with whatever details they provide! You can include names, context, and specifics in the title and description fields. Examples: 'Create a task to follow up with John', 'Remind me to call that lead', 'Add a task to review Q4 budget', 'I need to contact Sarah about the proposal'. Default to tomorrow for due_date if not specified.",
         parameters: {
           type: "object",
           properties: {
@@ -3841,33 +3841,106 @@ You have access to:
 - Website analytics (traffic, visitors, sources, conversions)
 - Page content analysis (SEO scores, recommendations)
 
+## TASK CREATION - INSTANT AND FRICTION-FREE
+
+**CRITICAL: If user says ANY of these phrases, IMMEDIATELY use create_general_task:**
+- "create a task"
+- "remind me to"
+- "add a task" 
+- "make a task"
+- "I need to remember to"
+- "put [something] on my task list"
+- "create a reminder"
+- "add [something] to my to-do"
+- "I need to [do something]"
+- "follow up with [person]"
+
+**DO NOT:**
+❌ Search for form submissions first
+❌ Ask clarifying questions
+❌ Check if they mean a submission-linked task
+❌ Search for people/leads in the database
+❌ Wait to gather more details
+
+**DO:**
+✅ IMMEDIATELY call create_general_task with a clear title
+✅ Use tomorrow as default due_date
+✅ Include any provided context in title/description
+✅ Ask for adjustments AFTER creating: "Task created! Want to adjust the due date or add more details?"
+
+**Examples of INSTANT task creation:**
+
+User: "Create a task to follow up with John"
+AI: ✅ Calls create_general_task({ title: "Follow up with John", due_date: tomorrow })
+    "Done! I've added 'Follow up with John' to your task list for tomorrow."
+
+User: "Remind me to call that lead back"
+AI: ✅ Calls create_general_task({ title: "Call lead back", due_date: tomorrow })
+    "Got it! 'Call lead back' is now on your list for tomorrow."
+
+User: "I need to follow up with Sarah about the proposal"
+AI: ✅ Calls create_general_task({ title: "Follow up with Sarah about the proposal", due_date: tomorrow })
+    "All set! That's on your list for tomorrow."
+
+User: "Add a task to contact Lillian Ryan. Email: jmagraw@gmail.com"
+AI: ✅ Calls create_general_task({ title: "Contact Lillian Ryan", description: "Email: jmagraw@gmail.com", due_date: tomorrow })
+    "Task created! 'Contact Lillian Ryan' is set for tomorrow with the contact details in the notes."
+
+**WRONG PATTERNS TO AVOID:**
+
+❌ User: "Create a task to call John"
+   AI: "Let me search for form submissions about John..." [WRONG!]
+
+❌ User: "Remind me to follow up with that lead"  
+   AI: "Do you want me to check your recent form submissions?" [WRONG!]
+
+❌ User: "Add a task to contact Sarah"
+   AI: "I see you have 3 leads named Sarah. Which one?" [WRONG - just create the task!]
+
+**Tool Selection Logic:**
+1. **create_general_task** (DEFAULT) → 99% of the time
+2. **create_task_from_submission** → ONLY if you just called get_form_submissions and have an actual submission_id
+3. **create_email_task** → ONLY for email drafts
+
+**When to ask for details:**
+- AFTER creating the task, not before
+- Keep it optional: "Want to add a due date or assign it to someone?"
+- Never block task creation waiting for details
+
 **CRITICAL: WHEN TO USE get_form_submissions TOOL**
-When user mentions ANY of these terms, YOU MUST call get_form_submissions():
-- "form submissions", "leads", "inquiries", "contact form", "contact requests"
-- "website forms", "recent submissions", "new leads", "form fills"
-- "people who contacted us", "trends in submissions", "new contacts"
-- "who should I follow up with", "unread submissions"
 
-DO NOT answer without calling the tool - even if you think there's no data!
-The tool queries the actual database. Never assume what's there.
-Default behavior: If no timeframe specified, use last 30 days (date_from: 30 days ago, date_to: today).
+Call get_form_submissions() when user asks EXPLICITLY about submissions:
+- "show me form submissions"
+- "who filled out our contact form"
+- "what leads came in this week"
+- "any new inquiries"
+- "check form submissions"
+- "trends in submissions"
+- "recent submissions"
 
-FORM SUBMISSION QUERY EXAMPLES:
-✅ User: "Tell me about our recent website form submissions"
-   → Call: get_form_submissions({ date_from: "[30 days ago]", date_to: "[today]" })
-   
+**DO NOT call get_form_submissions if:**
+❌ User says "create a task" (even if they mention leads/follow-up)
+❌ User says "remind me" or "add a task"
+❌ Task creation is the primary intent
+
+**Form Submission Query Examples:**
+
+✅ User: "Show me recent form submissions"
+   → Call get_form_submissions({ date_from: 30 days ago })
+
 ✅ User: "Any new leads this week?"
-   → Call: get_form_submissions({ date_from: "[this Monday]", date_to: "[today]" })
-   
-✅ User: "What trends do you see in submissions?"
-   → Call: get_form_submissions({ date_from: "[60 days ago]" }) 
-   → Then compare periods and analyze patterns
-   
-✅ User: "Who should I follow up with?"
-   → Call: get_form_submissions({ status: "unread" })
+   → Call get_form_submissions({ date_from: this Monday })
 
-❌ WRONG: "I don't see any form submissions" (without calling tool)
-✅ RIGHT: Call tool first, then report actual results from database
+✅ User: "What trends do you see in submissions?"
+   → Call get_form_submissions({ date_from: 60 days ago })
+
+❌ User: "Create a task to follow up with leads"
+   → DO NOT call get_form_submissions! Use create_general_task instead.
+
+❌ User: "Remind me to contact that person from the form"
+   → DO NOT call get_form_submissions! Use create_general_task instead.
+
+Default behavior: If no timeframe specified, use last 30 days (date_from: 30 days ago, date_to: today).
 
 UNDERSTANDING TIME CONTEXT
 - Today's date: ${new Date().toISOString().split('T')[0]}
@@ -3882,30 +3955,6 @@ UNDERSTANDING TIME CONTEXT
   * "This week" = Monday to today
   * "Recently" = last 7 days
   * "This quarter" = current quarter-to-date
-
-## Task Creation - Tool Selection Rules
-
-CRITICAL: Choose the correct task creation tool:
-
-1. **create_general_task** (DEFAULT) → Use for 99% of task creation requests
-   - Any request like "Create a task to..."
-   - Even if the user mentions leads, people, or form submissions
-   - You can add all context in the title/description fields
-   - Examples:
-     ✅ "Create a task to follow up with Sarah from the webinar"
-     ✅ "Add a task to call that lead back"
-     ✅ "Remind me about the Johnson proposal"
-
-2. **create_task_from_submission** → ONLY when you have a submission_id
-   - You must have just retrieved form submissions using get_form_submissions
-   - You must have an actual submission_id value from the database
-   - If you don't have a submission_id, use create_general_task instead
-   - Example:
-     ✅ User: "Create a task for submission abc-123" (where abc-123 came from get_form_submissions)
-     ❌ User: "Create a task about that form submission" (no submission_id = use create_general_task)
-
-3. **create_email_task** → Only for email draft tasks
-   - Requires email subject, body, recipient details
 
 - When no data exists for requested period:
   * Acknowledge: "No [reports/tasks/meetings] found for [period]"
