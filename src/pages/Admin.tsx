@@ -18,6 +18,7 @@ import { EditClientDialog } from "@/components/admin/EditClientDialog";
 import { Admin2FABanner } from "@/components/admin/Admin2FABanner";
 import { DeleteUserDialog } from "@/components/admin/DeleteUserDialog";
 import { DeleteClientDialog } from "@/components/admin/DeleteClientDialog";
+import { FeatureFlagManager } from "@/components/admin/FeatureFlagManager";
 
 export default function Admin() {
   const navigate = useNavigate();
@@ -302,6 +303,10 @@ export default function Admin() {
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="users">User Management</TabsTrigger>
           <TabsTrigger value="clients">Client Management</TabsTrigger>
+          <TabsTrigger value="features">
+            <Settings className="h-4 w-4 mr-2" />
+            Feature Flags
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
@@ -616,6 +621,20 @@ export default function Admin() {
                   })}
                 </TableBody>
               </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="features" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Feature Flag Management</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Toggle application features on or off without code changes. Changes take effect immediately for all users.
+              </p>
+            </CardHeader>
+            <CardContent>
+              <FeatureFlagManager onFlagsUpdated={loadData} />
             </CardContent>
           </Card>
         </TabsContent>

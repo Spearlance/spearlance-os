@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { CalProvider } from "@/components/CalProvider";
+import { FeatureFlagProvider } from "@/contexts/FeatureFlagContext";
 import { MainLayout } from "@/components/MainLayout";
 import Dashboard from "./pages/Dashboard";
 import Auth from "./pages/Auth";
@@ -53,11 +54,12 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <CalProvider>
-          <Routes>
+      <FeatureFlagProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <CalProvider>
+            <Routes>
             <Route path="/auth" element={<Auth />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/set-password" element={<SetPassword />} />
@@ -109,9 +111,10 @@ const App = () => (
             <Route path="/calendar/callback" element={<CalendarCallback />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<MainLayout><NotFound /></MainLayout>} />
-          </Routes>
-        </CalProvider>
-      </BrowserRouter>
+            </Routes>
+          </CalProvider>
+        </BrowserRouter>
+      </FeatureFlagProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );

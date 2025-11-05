@@ -1881,6 +1881,39 @@ export type Database = {
           },
         ]
       }
+      feature_flags: {
+        Row: {
+          category: string
+          created_at: string | null
+          description: string | null
+          enabled: boolean
+          id: string
+          key: string
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          category?: string
+          created_at?: string | null
+          description?: string | null
+          enabled?: boolean
+          id?: string
+          key: string
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          description?: string | null
+          enabled?: boolean
+          id?: string
+          key?: string
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       front_webhook_logs: {
         Row: {
           client_id: string | null

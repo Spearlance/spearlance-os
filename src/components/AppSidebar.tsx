@@ -2,6 +2,7 @@ import { NavLink, useNavigate } from "react-router-dom";
 import { useClient } from "@/contexts/ClientContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
+import { useFeatureFlags } from "@/contexts/FeatureFlagContext";
 import {
   Sidebar,
   SidebarContent,
@@ -108,7 +109,7 @@ const websiteSubItems = [
   { title: "Form Submissions", url: "/website/form-submissions", icon: FileText },
   { title: "Analytics", url: "/analytics", icon: TrendingUp },
   { title: "SEO", url: "/seo", icon: Search },
-  // { title: "Blog Writer", url: "/blog-writer", icon: PenTool }, // Hidden while in development
+  { title: "Blog Writer", url: "/blog-writer", icon: PenTool },
 ];
 
 export function AppSidebar() {
@@ -117,6 +118,7 @@ export function AppSidebar() {
   const { selectedClient, setSelectedClient, clients } = useClient();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { isEnabled } = useFeatureFlags();
   const [userRole, setUserRole] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
   const [brandContentOpen, setBrandContentOpen] = useState(false);
@@ -226,9 +228,10 @@ export function AppSidebar() {
 
               {menuItems.slice(1, 3)
                 .filter((item) => {
-                  // Hide Launchpad if completed
-                  if (item.title === "Launchpad" && isComplete) {
-                    return false;
+                  // Filter Launchpad by feature flag
+                  if (item.title === "Launchpad") {
+                    if (!isEnabled('launchpad')) return false;
+                    if (isComplete) return false;
                   }
                   return true;
                 })
@@ -276,7 +279,14 @@ export function AppSidebar() {
                   {!collapsed && (
                     <CollapsibleContent>
                       <SidebarMenuSub>
-                        {brandContentSubItems.map((subItem) => (
+                        {brandContentSubItems
+                          .filter((subItem) => {
+                            if (subItem.url === '/social-media') return isEnabled('social_media');
+                            if (subItem.url === '/brand/guide') return isEnabled('brand_guide');
+                            if (subItem.url === '/brand/moodboard') return isEnabled('mood_board');
+                            return true;
+                          })
+                          .map((subItem) => (
                           <SidebarMenuSubItem key={subItem.title}>
                             <SidebarMenuSubButton asChild>
                               <NavLink to={subItem.url} end className={getNavClass}>
@@ -312,7 +322,12 @@ export function AppSidebar() {
                   {!collapsed && (
                     <CollapsibleContent>
                       <SidebarMenuSub>
-                        {marketingSubItems.map((subItem) => (
+                        {marketingSubItems
+                          .filter((subItem) => {
+                            if (subItem.url === '/marketing/flow') return isEnabled('marketing_flow');
+                            return true;
+                          })
+                          .map((subItem) => (
                           <SidebarMenuSubItem key={subItem.title}>
                             <SidebarMenuSubButton asChild>
                               <NavLink to={subItem.url} end className={getNavClass}>
@@ -350,7 +365,14 @@ export function AppSidebar() {
                       {!collapsed && (
                         <CollapsibleContent>
                           <SidebarMenuSub>
-                            {websiteSubItems.map((subItem) => (
+                            {websiteSubItems
+                              .filter((subItem) => {
+                                if (subItem.url === '/blog-writer') return isEnabled('blog_writer');
+                                if (subItem.url === '/analytics') return isEnabled('analytics');
+                                if (subItem.url === '/seo') return isEnabled('seo');
+                                return true;
+                              })
+                              .map((subItem) => (
                               <SidebarMenuSubItem key={subItem.title}>
                                 {subItem.external && selectedClient?.site_id ? (
                                   <SidebarMenuSubButton asChild>
@@ -429,6 +451,10 @@ export function AppSidebar() {
                         <SidebarMenuSub>
                 {clientCommunicationSubItems
                   .filter((subItem) => {
+                    // Filter by feature flags
+                    if (subItem.url === '/meetings') {
+                      if (!isEnabled('meetings')) return false;
+                    }
                     // Hide "Logs" from non-FMM/Admin users
                     if (subItem.title === "Logs") {
                       return userRole === "admin" || userRole === "fmm";
@@ -473,7 +499,12 @@ export function AppSidebar() {
                   {!collapsed && (
                     <CollapsibleContent>
                       <SidebarMenuSub>
-                        {helpSupportSubItems.map((subItem) => (
+                        {helpSupportSubItems
+                          .filter((subItem) => {
+                            if (subItem.url === '/support') return isEnabled('support_tickets');
+                            return true;
+                          })
+                          .map((subItem) => (
                           <SidebarMenuSubItem key={subItem.title}>
                             <SidebarMenuSubButton asChild>
                               <NavLink to={subItem.url} end className={getNavClass}>
