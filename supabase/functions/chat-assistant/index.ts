@@ -1883,6 +1883,116 @@ async function createGeneralTask(supabase: any, params: any, clientId: string, u
   }
 }
 
+// Search and retrieve tasks with flexible filtering
+async function getTasks(supabase: any, params: any, clientId: string, userId: string) {
+  try {
+    const {
+      status,
+      priority,
+      assignee_id,
+      assigned_to_me,
+      keyword,
+      due_date_from,
+      due_date_to,
+      overdue,
+      limit = 20,
+      offset = 0
+    } = params;
+    
+    // Build base query
+    let query = supabase
+      .from('tasks')
+      .select(`
+        id, title, description, status, priority, due_date, 
+        created_at, updated_at,
+        assignee:profiles!tasks_assignee_user_id_fkey(id, name, email),
+        creator:profiles!tasks_creator_user_id_fkey(id, name, email)
+      `, { count: 'exact' })
+      .eq('client_id', clientId)
+      .is('parent_task_id', null); // Exclude subtasks by default
+    
+    // Apply filters
+    if (status) {
+      query = query.eq('status', status);
+    }
+    
+    if (priority) {
+      query = query.eq('priority', priority);
+    }
+    
+    if (assignee_id) {
+      query = query.eq('assignee_user_id', assignee_id);
+    }
+    
+    if (assigned_to_me) {
+      query = query.eq('assignee_user_id', userId);
+    }
+    
+    if (keyword) {
+      query = query.or(`title.ilike.%${keyword}%,description.ilike.%${keyword}%`);
+    }
+    
+    if (due_date_from) {
+      query = query.gte('due_date', due_date_from);
+    }
+    
+    if (due_date_to) {
+      query = query.lte('due_date', due_date_to);
+    }
+    
+    if (overdue) {
+      const today = new Date().toISOString().split('T')[0];
+      query = query.lt('due_date', today).neq('status', 'done');
+    }
+    
+    // Sort by priority (urgent first), then due date (soonest first)
+    query = query
+      .order('priority', { ascending: false })
+      .order('due_date', { ascending: true, nullsFirst: false })
+      .range(offset, offset + Math.min(limit, 50) - 1);
+    
+    const { data: tasks, error, count } = await query;
+    
+    if (error) throw error;
+    
+    // Format tasks with human-readable info
+    const formattedTasks = tasks?.map((task: any) => {
+      const today = new Date().toISOString().split('T')[0];
+      const isOverdue = task.due_date && task.due_date < today && task.status !== 'done';
+      
+      return {
+        id: task.id,
+        title: task.title,
+        description: task.description,
+        status: task.status,
+        priority: task.priority,
+        due_date: task.due_date,
+        assignee_name: task.assignee?.name || 'Unassigned',
+        assignee_id: task.assignee?.id,
+        creator_name: task.creator?.name || 'Unknown',
+        created_at: task.created_at,
+        updated_at: task.updated_at,
+        is_overdue: isOverdue
+      };
+    }) || [];
+    
+    const nextOffset = offset + formattedTasks.length < (count || 0) 
+      ? offset + formattedTasks.length 
+      : null;
+    
+    return {
+      items: formattedTasks,
+      result_count: formattedTasks.length,
+      total_count: count || 0,
+      next_offset: nextOffset
+    };
+    
+  } catch (error: any) {
+    console.error('Get tasks error:', error);
+    throw error;
+  }
+}
+
 // Get page content analysis (SEO scores, recommendations)
 async function getPageAnalysis(supabase: any, params: any, clientId: string) {
   let query = supabase
@@ -2253,6 +2363,63 @@ const tools = [
             }
           },
           required: ["title"]
+        }
+      }
+    },
+    {
+      type: "function",
+      function: {
+        name: "get_tasks",
+        description: "Search and retrieve tasks for the current client. Use this when users ask about their tasks, task status, assignments, or need to find specific tasks. Examples: 'What tasks do I have?', 'Show high priority tasks', 'Find tasks assigned to John', 'What's overdue?', 'Search for budget tasks'. Returns detailed task information including assignees, due dates, status, and priority.",
+        parameters: {
+          type: "object",
+          properties: {
+            status: {
+              type: "string",
+              enum: ["to_do", "in_progress", "done"],
+              description: "Filter by task status"
+            },
+            priority: {
+              type: "string",
+              enum: ["low", "medium", "high"],
+              description: "Filter by task priority"
+            },
+            assignee_id: {
+              type: "string",
+              description: "Filter by assigned user ID (use with get_team_members to find user IDs)"
+            },
+            assigned_to_me: {
+              type: "boolean",
+              description: "Show only tasks assigned to the current user (shortcut filter)"
+            },
+            keyword: {
+              type: "string",
+              description: "Search for keyword in task title or description"
+            },
+            due_date_from: {
+              type: "string",
+              format: "date",
+              description: "Filter tasks due on or after this date (YYYY-MM-DD)"
+            },
+            due_date_to: {
+              type: "string",
+              format: "date",
+              description: "Filter tasks due on or before this date (YYYY-MM-DD)"
+            },
+            overdue: {
+              type: "boolean",
+              description: "Show only overdue tasks (past due date and not done)"
+            },
+            limit: {
+              type: "number",
+              description: "Maximum number of tasks to return (default: 20, max: 50)"
+            },
+            offset: {
+              type: "number",
+              description: "Number of tasks to skip for pagination (default: 0)"
+            }
+          },
+          required: []
         }
       }
     },
@@ -4457,6 +4624,9 @@ ${historicalContext.join('\n\n')}
               break;
             case 'create_general_task':
               result = await createGeneralTask(supabaseClient, args, client_id, user.id);
+              break;
+            case 'get_tasks':
+              result = await getTasks(supabaseClient, args, client_id, user.id);
               break;
             case 'get_social_media_posts':
               result = await getSocialMediaPosts(supabaseClient, args, client_id);
