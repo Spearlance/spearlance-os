@@ -12,6 +12,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import spearlanceLogo from '@/assets/spearlance-logo-white.png';
+import spearlanceLogoGreen from '@/assets/spearlance-logo.png';
 
 export const ChatbotWidget = () => {
   const { selectedClient } = useClient();
@@ -196,7 +197,11 @@ export const ChatbotWidget = () => {
           <ScrollArea className="flex-1 p-4">
             {messages.length === 0 && !isLoading && (
               <div className="flex flex-col items-center justify-center h-full text-center p-8">
-                <Sparkles className="h-12 w-12 text-muted-foreground mb-4" />
+                <img 
+                  src={spearlanceLogoGreen} 
+                  alt="Spearlance AI" 
+                  className="h-12 w-12 mb-4"
+                />
                 <h3 className="font-semibold mb-2">SpearlanceAI</h3>
                 <p className="text-sm text-muted-foreground mb-4">
                   Your expert co-pilot for {selectedClient?.name}
