@@ -2662,6 +2662,9 @@ const tools = [
 ];
 
 serve(async (req) => {
+  const requestStartTime = Date.now();
+  console.log(`[${new Date().toISOString()}] Chat request received`);
+  
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -4102,6 +4105,9 @@ ${historicalContext.join('\n\n')}
     // Add current conversation messages
     contextualMessages.push(...messages);
 
+    console.log(`[${new Date().toISOString()}] Starting AI request for client ${client_id}`);
+    const apiStartTime = Date.now();
+    
     // Call Lovable AI with function calling
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -4118,10 +4124,13 @@ ${historicalContext.join('\n\n')}
     });
 
     if (!response.ok) {
+      const apiDuration = Date.now() - apiStartTime;
       const errorText = await response.text();
-      console.error('Lovable AI error:', response.status, errorText);
+      console.error(`[${new Date().toISOString()}] Lovable AI error after ${apiDuration}ms:`, response.status, errorText);
       throw new Error(`Lovable AI error: ${response.status}`);
     }
+    
+    console.log(`[${new Date().toISOString()}] AI response received, starting streaming (${Date.now() - apiStartTime}ms)`);
 
     // Two-phase function calling: collect functions, execute them, then get final response
     const reader = response.body?.getReader();
@@ -4506,8 +4515,13 @@ ${historicalContext.join('\n\n')}
     }
 
   } catch (error: any) {
-    console.error('Chat assistant error:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    const totalDuration = Date.now() - requestStartTime;
+    console.error(`[${new Date().toISOString()}] Chat assistant error after ${totalDuration}ms:`, error);
+    
+    return new Response(JSON.stringify({ 
+      error: error.message || 'An error occurred',
+      details: error.toString()
+    }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });

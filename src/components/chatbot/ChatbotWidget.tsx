@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { MessageSquare, Archive, ChevronDown, Sparkles } from 'lucide-react';
@@ -33,6 +33,8 @@ export const ChatbotWidget = () => {
     archiveConversation
   } = useChatbot();
   
+  const [isCreatingConversation, setIsCreatingConversation] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -89,18 +91,30 @@ export const ChatbotWidget = () => {
             </SheetDescription>
             
             <div className="pt-2 flex gap-2">
-              <DropdownMenu>
+              <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="sm" className="flex-1 justify-between">
                     <span>Previous Chats</span>
                     <ChevronDown className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-[300px]">
+                <DropdownMenuContent align="start" className="w-[300px] z-50 bg-background">
                   <DropdownMenuLabel>Your Conversations</DropdownMenuLabel>
-                  <DropdownMenuItem onClick={createNewConversation}>
+                  <DropdownMenuItem 
+                    disabled={isCreatingConversation}
+                    onClick={async (e) => {
+                      e.preventDefault();
+                      setDropdownOpen(false);
+                      setIsCreatingConversation(true);
+                      
+                      await new Promise(resolve => setTimeout(resolve, 150));
+                      
+                      await createNewConversation();
+                      setIsCreatingConversation(false);
+                    }}
+                  >
                     <MessageSquare className="h-4 w-4 mr-2" />
-                    Start New Conversation
+                    {isCreatingConversation ? "Creating..." : "Start New Conversation"}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   

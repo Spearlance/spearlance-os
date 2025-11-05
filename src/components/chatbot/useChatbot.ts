@@ -263,6 +263,18 @@ export const useChatbot = () => {
 
     abortControllerRef.current = new AbortController();
 
+    // Set up timeout for AI response
+    const timeoutId = setTimeout(() => {
+      abortControllerRef.current?.abort();
+      setError("Request timed out. The AI is taking longer than expected.");
+      setIsLoading(false);
+      toast({
+        title: "Timeout",
+        description: "AI response took too long. Please try again.",
+        variant: "destructive"
+      });
+    }, 30000); // 30 seconds
+
     try {
       const { data: { session } } = await supabase.auth.getSession();
       
@@ -373,9 +385,14 @@ export const useChatbot = () => {
       assistantMessage.content = assistantContent;
       await saveMessage(assistantMessage, conversationId);
 
+      clearTimeout(timeoutId);
+
     } catch (err: any) {
+      clearTimeout(timeoutId);
+      
       if (err.name === 'AbortError') {
         console.log('Request aborted');
+        setError('Request was cancelled or timed out.');
         return;
       }
 
