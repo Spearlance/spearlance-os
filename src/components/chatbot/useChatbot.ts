@@ -143,11 +143,6 @@ export const useChatbot = () => {
       setConversations(prev => [data, ...prev]);
       setMessages([]);
 
-      toast({
-        title: "New Conversation",
-        description: "Started a new conversation.",
-      });
-
       return data.id;
     } catch (err: any) {
       console.error('Error creating conversation:', err);
