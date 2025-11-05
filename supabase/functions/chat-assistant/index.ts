@@ -2386,7 +2386,7 @@ const tools = [
       type: "function",
       function: {
         name: "create_task_from_submission",
-        description: "Create a general follow-up task from a form submission (NOT for email drafts - use create_email_task for those). Use this when users want to add a lead to their task list for non-email follow-ups like 'remind me to call' or 'add to my tasks'. Auto-generates task details from the submission.",
+        description: "Create a task directly linked to an existing form submission record in the database. ONLY use this tool when you have retrieved an actual submission_id from get_form_submissions. Do NOT use this for general task creation requests, even if the user mentions leads or form submissions - use create_general_task instead.",
         parameters: {
           type: "object",
           properties: {
@@ -2426,7 +2426,7 @@ const tools = [
       type: "function",
       function: {
         name: "create_general_task",
-        description: "Create any type of task for the client. Use this when users ask to create tasks that are NOT related to form submissions/leads (for those, use create_task_from_submission). Examples: 'Create a task to review Q4 budget', 'Add a task to update website copy', 'Remind me to call the vendor next week'. This is the most flexible task creation tool.",
+        description: "Create any type of task for the client. This is your DEFAULT tool for all task creation requests. Use this for ALL task creation unless you have an actual submission_id from the database (in which case use create_task_from_submission). Examples: 'Create a task to follow up with John', 'Add a task to review Q4 budget', 'Remind me to call the vendor', 'Create a task for that lead we just discussed'. You can include all relevant details in the title and description.",
         parameters: {
           type: "object",
           properties: {
@@ -3903,6 +3903,30 @@ UNDERSTANDING TIME CONTEXT
   * "This week" = Monday to today
   * "Recently" = last 7 days
   * "This quarter" = current quarter-to-date
+
+## Task Creation - Tool Selection Rules
+
+CRITICAL: Choose the correct task creation tool:
+
+1. **create_general_task** (DEFAULT) → Use for 99% of task creation requests
+   - Any request like "Create a task to..."
+   - Even if the user mentions leads, people, or form submissions
+   - You can add all context in the title/description fields
+   - Examples:
+     ✅ "Create a task to follow up with Sarah from the webinar"
+     ✅ "Add a task to call that lead back"
+     ✅ "Remind me about the Johnson proposal"
+
+2. **create_task_from_submission** → ONLY when you have a submission_id
+   - You must have just retrieved form submissions using get_form_submissions
+   - You must have an actual submission_id value from the database
+   - If you don't have a submission_id, use create_general_task instead
+   - Example:
+     ✅ User: "Create a task for submission abc-123" (where abc-123 came from get_form_submissions)
+     ❌ User: "Create a task about that form submission" (no submission_id = use create_general_task)
+
+3. **create_email_task** → Only for email draft tasks
+   - Requires email subject, body, recipient details
 
 - When no data exists for requested period:
   * Acknowledge: "No [reports/tasks/meetings] found for [period]"
