@@ -1500,6 +1500,9 @@ async function draftEmail(supabase: any, params: any, clientId: string) {
       .single();
     
     if (subError || !submission) {
+      if (params._flagged_submission_id) {
+        throw new Error('Submission not found: The submission_id provided does not exist or is not from your recent results. Call get_form_submissions first to retrieve valid submission IDs, then use the ID from those results.');
+      }
       throw new Error('Form submission not found');
     }
     
@@ -1638,7 +1641,12 @@ async function createEmailTask(supabase: any, params: any, clientId: string, use
       .eq('client_id', clientId)
       .single();
     
-    if (subError) throw new Error('Form submission not found');
+    if (subError || !submission) {
+      if (params._flagged_submission_id) {
+        throw new Error('Submission not found: The submission_id provided does not exist. Use get_form_submissions to retrieve valid submission IDs first.');
+      }
+      throw new Error('Form submission not found');
+    }
     
     const taskTitle = `Send email to ${recipient_name}`;
     
@@ -1710,7 +1718,12 @@ async function createTaskFromSubmission(supabase: any, params: any, clientId: st
       .eq('client_id', clientId)
       .single();
     
-    if (subError) throw new Error('Form submission not found');
+    if (subError || !submission) {
+      if (params._flagged_submission_id) {
+        throw new Error('Submission not found: The submission_id provided does not exist in recent results. Call get_form_submissions first to find the correct submission ID.');
+      }
+      throw new Error('Form submission not found');
+    }
     
     const formData = submission.form_data || {};
     const contactName = formData.name || submission.contact_name || 'Lead';
@@ -2276,7 +2289,7 @@ const tools = [
           properties: {
             submission_id: {
               type: "string",
-              description: "The ID of the form submission to respond to (from get_form_submissions results)"
+              description: "The ID of the form submission to respond to. CRITICAL: Only use submission_id values you have JUST retrieved from get_form_submissions. NEVER generate or guess submission IDs. If user says 'that lead' or 'that submission', extract the ID from your most recent get_form_submissions result. If you don't have it, call get_form_submissions first."
             },
             tone: {
               type: "string",
@@ -2304,7 +2317,7 @@ const tools = [
           properties: {
             submission_id: {
               type: "string",
-              description: "The form submission this email is responding to"
+              description: "The form submission this email is responding to. CRITICAL: Must be a valid submission_id from a recent get_form_submissions call. Do not generate or guess IDs."
             },
             email_subject: {
               type: "string",
@@ -2348,7 +2361,7 @@ const tools = [
           properties: {
             submission_id: {
               type: "string",
-              description: "The form submission to create a task for"
+              description: "The form submission to create a task for. CRITICAL: Must be a valid submission_id from a recent get_form_submissions call. If user references 'that submission' or 'that lead', extract from your most recent get_form_submissions result. If unknown, call get_form_submissions first."
             },
             title: {
               type: "string",
@@ -3685,16 +3698,27 @@ IMPORTANT: When creating tasks:
 - If user says "remind me" or "create a task for me", OMIT assignee_id entirely (it defaults to you)
 - NEVER use client_id as assignee_id - they are completely different types of IDs
 
-CRITICAL: When updating tasks based on user's contextual references:
-- User says "that task", "the task", "it" → Extract task_id from YOUR MOST RECENT function result
-- NEVER generate or guess a task_id - they are UUIDs returned by functions
-- If you don't have the task_id, call get_tasks first to find it
-- Example correct flow:
-  1. User: "remind me to call John" → You call create_general_task → Get back task_id: "abc-123"
-  2. User: "assign that to Sarah" → You call update_task with task_id: "abc-123" (from step 1)
-- Example WRONG flow:
-  1. User: "remind me to call John" → You call create_general_task → Get back task_id: "abc-123"
-  2. User: "assign that to Sarah" → You call update_task with task_id: "xyz-789" ❌ HALLUCINATED!
+CRITICAL: When referencing entities based on user's contextual references:
+- User says "that task", "the task" → Extract task_id from YOUR MOST RECENT get_tasks or create_general_task result
+- User says "that lead", "that submission", "the form" → Extract submission_id from YOUR MOST RECENT get_form_submissions result
+- User says "that meeting" → Extract meeting_id from YOUR MOST RECENT get_meetings result
+- User says "that report" → Extract report_id from YOUR MOST RECENT get_reports result
+- NEVER generate or guess any ID - they are UUIDs returned by functions
+- If you don't have the ID, call the appropriate get_* function first to retrieve it
+
+Example correct flows:
+1. User: "remind me to call John" → You call create_general_task → Get back task_id: "abc-123"
+2. User: "assign that to Sarah" → You call update_task with task_id: "abc-123" (from step 1) ✓
+
+1. User: "show me recent leads" → You call get_form_submissions → Get back submission_id: "abc-123"
+2. User: "draft an email to that lead" → You call draft_email with submission_id: "abc-123" (from step 1) ✓
+
+Example WRONG flows:
+1. User: "remind me to call John" → You call create_general_task → Get back task_id: "abc-123"
+2. User: "assign that to Sarah" → You call update_task with task_id: "xyz-789" ❌ HALLUCINATED!
+
+1. User: "show me recent leads" → You call get_form_submissions → Get back submission_id: "abc-123"
+2. User: "draft an email to that lead" → You call draft_email with submission_id: "xyz-789" ❌ HALLUCINATED!
 
 ${userContext}
 
@@ -5739,6 +5763,43 @@ ${historicalContext.join('\n\n')}
             }
           }
 
+          // Validate submission_id for submission-related operations
+          if (fc.name === 'draft_email' || 
+              fc.name === 'create_email_task' || 
+              fc.name === 'create_task_from_submission') {
+            
+            if (!args.submission_id) {
+              console.error(`[Validation] ${fc.name} called without submission_id`);
+              continue; // Skip this function call
+            }
+            
+            // Check if submission_id looks valid (UUID format)
+            const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+            if (!uuidRegex.test(args.submission_id)) {
+              console.error(`[Validation] Invalid submission_id format in ${fc.name}:`, args.submission_id);
+              continue;
+            }
+            
+            // Check if this submission_id exists in recent function results
+            const recentSubmissionIds = toolMessages
+              .filter(m => m.role === 'tool')
+              .map(m => {
+                try {
+                  const result = JSON.parse(m.content);
+                  // Extract submission IDs from get_form_submissions results
+                  return result.submissions?.map((s: any) => s.id) || [];
+                } catch { return []; }
+              })
+              .flat();
+            
+            // If AI is trying to use a submission_id that wasn't in recent results, flag it
+            if (recentSubmissionIds.length > 0 && !recentSubmissionIds.includes(args.submission_id)) {
+              console.warn(`[Validation] AI using submission_id ${args.submission_id} not found in recent results`);
+              console.log('[Validation] Recent submission IDs:', recentSubmissionIds);
+              args._flagged_submission_id = true;
+            }
+          }
+
           // Execute the appropriate function
           switch (fc.name) {
             case 'get_client_info':
@@ -5964,6 +6025,34 @@ ${historicalContext.join('\n\n')}
             `Would you like me to show your recent tasks first so I can update the correct one?`;
         }
       }
+
+      // Submission-Related Function Validation
+      const submissionFunctions = ['draft_email', 'create_email_task', 'create_task_from_submission'];
+      
+      submissionFunctions.forEach(funcName => {
+        if (functionResults[funcName]?.called && !functionResults[funcName]?.succeeded) {
+          const errorMsg = functionResults[funcName]?.error || '';
+          
+          if (errorMsg.includes('Submission not found')) {
+            console.error(`[Validation] ${funcName} failed - submission not found`);
+            
+            // Remove false claims
+            assistantMessage = assistantMessage.replace(
+              /(?:✅|✓|Done!|Here's).*(?:email|draft|task).*(?:for|to|about).*(?:submission|lead)/gi,
+              ''
+            );
+            assistantMessage = assistantMessage.replace(
+              /Subject:.*\n.*To:.*\n/gs,  // Remove email formatting
+              ''
+            );
+            
+            // Add helpful error message
+            assistantMessage += `\n\n⚠️ I wasn't able to process that submission because I couldn't find it in the system. ` +
+              `When you refer to "that lead" or "that submission", I need to have just retrieved it. ` +
+              `Would you like me to show your recent form submissions first?`;
+          }
+        }
+      });
       
       for (const pattern of hallucinationPatterns) {
         const messageMatchesPattern = pattern.triggers.some(trigger => 
