@@ -1698,7 +1698,7 @@ async function createTaskFromSubmission(supabase: any, params: any, clientId: st
       title,
       due_date,
       assignee_id,
-      priority = 'medium',
+      priority = 'normal',
       notes
     } = params;
     
@@ -1784,7 +1784,7 @@ async function createGeneralTask(supabase: any, params: any, clientId: string, u
       description,
       due_date,
       assignee_id,
-      priority = 'medium',
+      priority = 'normal',
       status = 'to_do'
     } = params;
     
@@ -2320,9 +2320,9 @@ const tools = [
             },
             priority: {
               type: "string",
-              enum: ["low", "medium", "high"],
-              description: "Task priority (default: medium)",
-              default: "medium"
+              enum: ["low", "normal", "high", "urgent"],
+              description: "Task priority (default: normal)",
+              default: "normal"
             }
           },
           required: ["submission_id", "email_subject", "email_body", "recipient_email", "recipient_name"]
@@ -2356,9 +2356,9 @@ const tools = [
             },
             priority: {
               type: "string",
-              enum: ["low", "medium", "high"],
-              description: "Task priority (default: medium)",
-              default: "medium"
+              enum: ["low", "normal", "high", "urgent"],
+              description: "Task priority (default: normal)",
+              default: "normal"
             },
             notes: {
               type: "string",
@@ -2396,9 +2396,9 @@ const tools = [
             },
             priority: {
               type: "string",
-              enum: ["low", "medium", "high"],
-              description: "Task priority level (default: medium)",
-              default: "medium"
+              enum: ["low", "normal", "high", "urgent"],
+              description: "Task priority level (default: normal)",
+              default: "normal"
             },
             status: {
               type: "string",
@@ -3961,6 +3961,14 @@ AI Process:
 ✅ DO use the create_general_task FUNCTION to actually create the task
 ✅ DO wait for the function result before confirming
 ✅ DO verify the function succeeded before saying "Done!"
+
+**CRITICAL ERROR HANDLING:**
+After calling ANY function that creates or updates data (create_general_task, create_email_task, update_task, etc.):
+- Check if result.error exists
+- If result.error: "I encountered an issue: [specific error]. Let me help you fix this."
+- If result.success or result.data: Only then confirm success
+- NEVER claim success if the function returned an error
+- If the error is about invalid enum values, suggest the correct options to the user
 
 **EDGE CASES:**
 
@@ -5612,6 +5620,9 @@ ${historicalContext.join('\n\n')}
     // End of Hallucination Prevention Layer
     // ============================================================================
 
+    // Track function execution results for post-execution validation
+    const functionResults: Record<string, { called: boolean; succeeded: boolean; error: string | null }> = {};
+
     // Phase 2: Execute functions and make second API call if needed
     if (functionCallsArray.length > 0) {
       // Execute all function calls
@@ -5713,6 +5724,16 @@ ${historicalContext.join('\n\n')}
 
           console.log(`Function ${fc.name} result:`, result);
 
+          // Track execution status
+          const hasError = result?.error != null;
+          functionResults[fc.name] = {
+            called: true,
+            succeeded: !hasError,
+            error: hasError ? (result.error || 'Unknown error') : null
+          };
+
+          console.log(`[Function Tracking] ${fc.name} - Success: ${!hasError}`);
+
           // Log the tool call
           await logToolCall(
             supabaseClient,
@@ -5727,6 +5748,13 @@ ${historicalContext.join('\n\n')}
           console.error(`Function ${fc.name} error:`, err);
           error = err.message;
           result = { error: err.message };
+
+          // Track failure
+          functionResults[fc.name] = {
+            called: true,
+            succeeded: false,
+            error: err.message
+          };
 
           await logToolCall(
             supabaseClient,
@@ -5746,6 +5774,112 @@ ${historicalContext.join('\n\n')}
           content: JSON.stringify(result)
         });
       }
+
+      // ============================================================================
+      // POST-EXECUTION VALIDATION: Check function success
+      // ============================================================================
+      console.log('[Post-Execution Validation] Checking function execution results...');
+      
+      const hallucinationPatterns = [
+        {
+          name: 'Task Creation Claims',
+          triggers: [
+            /✅\s*done[!]?/i,
+            /task\s+(is\s+)?(created|set|ready)/i,
+            /i've\s+(created|set up|added)\s+(?:a\s+)?task/i,
+            /'[^']+'\s+is\s+on\s+your\s+task\s+list/i
+          ],
+          requiredFunction: 'create_general_task',
+          errorMessage: 'AI claimed task creation without calling create_general_task or function failed'
+        },
+        {
+          name: 'Email Task Claims',
+          triggers: [
+            /email\s+task\s+(created|ready)/i,
+            /i've\s+(created|set up)\s+an?\s+email\s+task/i
+          ],
+          requiredFunction: 'create_email_task',
+          errorMessage: 'AI claimed email task creation without calling create_email_task or function failed'
+        },
+        {
+          name: 'Task Update Claims',
+          triggers: [
+            /task\s+(?:has\s+been\s+)?updated/i,
+            /i've\s+updated\s+the\s+task/i
+          ],
+          requiredFunction: 'update_task',
+          errorMessage: 'AI claimed task update without calling update_task or function failed'
+        }
+      ];
+
+      let postExecutionWarnings: string[] = [];
+      
+      for (const pattern of hallucinationPatterns) {
+        const messageMatchesPattern = pattern.triggers.some(trigger => 
+          trigger.test(assistantMessage)
+        );
+
+        if (messageMatchesPattern) {
+          const functionSucceeded = functionResults[pattern.requiredFunction]?.succeeded === true;
+          const functionError = functionResults[pattern.requiredFunction]?.error;
+
+          if (!functionSucceeded && functionError) {
+            console.error(`[Post-Execution Validation] FUNCTION FAILURE: ${pattern.name} - ${functionError}`);
+            postExecutionWarnings.push(`${pattern.requiredFunction} failed: ${functionError}`);
+
+            // Remove success claims
+            assistantMessage = assistantMessage.replace(
+              /(?:✅|📋)?\s*(?:done!?|task\s+(?:is\s+)?(?:created|set|ready|updated))[.!]?\s*/gi,
+              ''
+            );
+            assistantMessage = assistantMessage.replace(
+              /(?:i've|i have)\s+(?:created|set up|added|updated)[^.!]+[.!]/gi,
+              ''
+            );
+            assistantMessage = assistantMessage.replace(
+              /'[^']+'\s+is\s+on\s+your\s+task\s+list[.!]?/gi,
+              ''
+            );
+
+            // Append error message
+            if (!assistantMessage.includes('encountered an issue')) {
+              assistantMessage += `\n\n⚠️ I encountered an issue: ${functionError}`;
+              
+              // Add helpful hint for enum errors
+              if (functionError.toLowerCase().includes('invalid input value') || 
+                  functionError.toLowerCase().includes('enum')) {
+                assistantMessage += '\n\nIt looks like there was an issue with the priority or status value. Let me help you with the correct options.';
+              }
+            }
+          }
+        }
+      }
+
+      if (postExecutionWarnings.length > 0) {
+        console.error('[Post-Execution Validation] FAILURES DETECTED:', postExecutionWarnings);
+        
+        // Log to database
+        try {
+          await supabaseClient.from('chat_tool_calls').insert({
+            user_id: user.id,
+            client_id: client_id,
+            tool_name: 'FUNCTION_FAILURE_DETECTED',
+            tool_args: { 
+              warnings: postExecutionWarnings,
+              function_results: functionResults
+            },
+            result_count: postExecutionWarnings.length
+          });
+        } catch (logError) {
+          console.error('[Post-Execution Validation] Failed to log failures:', logError);
+        }
+      } else {
+        console.log('[Post-Execution Validation] ✓ All functions succeeded');
+      }
+      
+      // ============================================================================
+      // End of Post-Execution Validation
+      // ============================================================================
 
       // Build messages with function results
       const messagesWithResults = [
