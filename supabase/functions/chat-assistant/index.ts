@@ -5493,6 +5493,27 @@ ${historicalContext.join('\n\n')}
         ],
         requiredFunction: 'any',
         errorMessage: 'AI claimed completion without any function call'
+      },
+      {
+        name: 'Email Draft Claims',
+        triggers: [
+          /(?:drafted|created|generated)\s+(?:an?\s+)?email/i,
+          /email\s+(?:is\s+)?(?:drafted|ready|generated)/i,
+          /(?:i've|i have)\s+(?:drafted|written)\s+(?:an?\s+)?email/i,
+          /here'?s?\s+(?:a|the)\s+(?:draft|email)/i
+        ],
+        requiredFunction: 'draft_email',
+        errorMessage: 'AI claimed email draft without calling draft_email'
+      },
+      {
+        name: 'Submission Task Creation Claims',
+        triggers: [
+          /created\s+(?:a\s+)?task\s+for\s+(?:the\s+)?submission/i,
+          /task\s+from\s+submission/i,
+          /linked\s+(?:a\s+)?task\s+to/i
+        ],
+        requiredFunction: 'create_task_from_submission',
+        errorMessage: 'AI claimed submission task creation without calling create_task_from_submission'
       }
     ];
 
@@ -5561,10 +5582,16 @@ ${historicalContext.join('\n\n')}
 
     // Additional validation: Check for data retrieval claims
     const dataRetrievalClaims = [
-      /(?:here (?:are|is)|found)\s+(?:\d+\s+)?(?:leads?|submissions?|forms?|tickets?|meetings?|posts?)/i,
+      /(?:here (?:are|is)|found)\s+(?:\d+\s+)?(?:leads?|submissions?|forms?|tickets?|meetings?|posts?|tasks?)/i,
       /showing\s+(?:\d+\s+)?(?:results?|items?)/i,
-      /(?:retrieved|fetched|loaded)\s+(?:\d+\s+)?(?:items?|records?)/i
+      /(?:retrieved|fetched|loaded)\s+(?:\d+\s+)?(?:items?|records?)/i,
+      /\d+\s+(?:leads?|submissions?|forms?|tickets?|meetings?|posts?|tasks?)\s+(?:found|this\s+week)/i,
+      /total\s+of\s+\d+/i
     ];
+
+    // Extract claimed count from message
+    const countMatch = assistantMessage.match(/(?:here (?:are|is)|found|showing|total of)\s+(\d+)/i);
+    const claimedCount = countMatch ? parseInt(countMatch[1]) : null;
 
     const claimsDataRetrieval = dataRetrievalClaims.some(pattern => pattern.test(assistantMessage));
     if (claimsDataRetrieval) {
@@ -5587,6 +5614,8 @@ ${historicalContext.join('\n\n')}
         );
         assistantMessage += "\n\nI'll need to retrieve that data first. What specific information are you looking for?";
         messageModified = true;
+      } else if (claimedCount !== null) {
+        console.log(`[Validation] Data retrieval claimed count: ${claimedCount}`);
       }
     }
 
@@ -5621,7 +5650,7 @@ ${historicalContext.join('\n\n')}
     // ============================================================================
 
     // Track function execution results for post-execution validation
-    const functionResults: Record<string, { called: boolean; succeeded: boolean; error: string | null }> = {};
+    const functionResults: Record<string, { called: boolean; succeeded: boolean; error: string | null; data?: any }> = {};
 
     // Phase 2: Execute functions and make second API call if needed
     if (functionCallsArray.length > 0) {
@@ -5729,7 +5758,8 @@ ${historicalContext.join('\n\n')}
           functionResults[fc.name] = {
             called: true,
             succeeded: !hasError,
-            error: hasError ? (result.error || 'Unknown error') : null
+            error: hasError ? (result.error || 'Unknown error') : null,
+            data: hasError ? null : result  // Store successful result data for validation
           };
 
           console.log(`[Function Tracking] ${fc.name} - Success: ${!hasError}`);
@@ -5753,7 +5783,8 @@ ${historicalContext.join('\n\n')}
           functionResults[fc.name] = {
             called: true,
             succeeded: false,
-            error: err.message
+            error: err.message,
+            data: null
           };
 
           await logToolCall(
@@ -5809,6 +5840,25 @@ ${historicalContext.join('\n\n')}
           ],
           requiredFunction: 'update_task',
           errorMessage: 'AI claimed task update without calling update_task or function failed'
+        },
+        {
+          name: 'Email Draft Claims',
+          triggers: [
+            /here'?s?\s+(?:a|the)\s+(?:draft|email)/i,
+            /email\s+(?:draft\s+)?(?:is\s+)?ready/i,
+            /(?:subject|to):\s*[^\n]+/i  // Email formatting detected
+          ],
+          requiredFunction: 'draft_email',
+          errorMessage: 'AI claimed email draft without calling draft_email or function failed'
+        },
+        {
+          name: 'Submission Task Claims',
+          triggers: [
+            /task.*submission\s+(?:is\s+)?created/i,
+            /created.*task.*submission/i
+          ],
+          requiredFunction: 'create_task_from_submission',
+          errorMessage: 'AI claimed submission task creation without calling create_task_from_submission or function failed'
         }
       ];
 
@@ -5841,14 +5891,28 @@ ${historicalContext.join('\n\n')}
               ''
             );
 
-            // Append error message
+            // Append error message with function-specific hints
             if (!assistantMessage.includes('encountered an issue')) {
               assistantMessage += `\n\n⚠️ I encountered an issue: ${functionError}`;
               
-              // Add helpful hint for enum errors
-              if (functionError.toLowerCase().includes('invalid input value') || 
-                  functionError.toLowerCase().includes('enum')) {
-                assistantMessage += '\n\nIt looks like there was an issue with the priority or status value. Let me help you with the correct options.';
+              // Function-specific error hints
+              if (pattern.requiredFunction === 'draft_email') {
+                if (functionError.includes('submission not found')) {
+                  assistantMessage += '\n\nI need a valid form submission ID to draft an email. Try asking me to "show recent leads" first.';
+                } else if (functionError.includes('no email')) {
+                  assistantMessage += '\n\nThis submission doesn\'t have an email address on file.';
+                }
+              } else if (pattern.requiredFunction === 'create_general_task') {
+                if (functionError.toLowerCase().includes('invalid input value') || 
+                    functionError.toLowerCase().includes('enum')) {
+                  assistantMessage += '\n\nValid priorities are: low, normal, high, urgent. Let me know which you prefer.';
+                }
+              } else if (['get_form_submissions', 'get_tickets', 'get_meetings', 'search_tasks', 
+                          'get_social_media_posts', 'get_communication_logs', 'get_tasks'].includes(pattern.requiredFunction)) {
+                assistantMessage += '\n\nTry refining your search criteria or check if you have permission to access this data.';
+              } else if (functionError.toLowerCase().includes('invalid input value') || 
+                         functionError.toLowerCase().includes('enum')) {
+                assistantMessage += '\n\nIt looks like there was an issue with the value provided. Let me help you with the correct options.';
               }
             }
           }
@@ -5875,6 +5939,95 @@ ${historicalContext.join('\n\n')}
         }
       } else {
         console.log('[Post-Execution Validation] ✓ All functions succeeded');
+      }
+
+      // ============================================================================
+      // Data Retrieval Success Validation
+      // ============================================================================
+      
+      const dataFunctions = ['get_form_submissions', 'get_tickets', 'get_meetings', 
+                             'get_tasks', 'search_tasks', 'get_social_media_posts', 'get_communication_logs'];
+
+      const dataFunctionCalled = functionCallsArray.some(fc => dataFunctions.includes(fc.name));
+
+      if (dataFunctionCalled) {
+        // Check if any data function failed
+        const failedDataFunctions = dataFunctions.filter(fname => 
+          functionResults[fname]?.called && !functionResults[fname]?.succeeded
+        );
+
+        if (failedDataFunctions.length > 0) {
+          console.error('[Data Validation] Data retrieval failed:', failedDataFunctions);
+          
+          // Remove data display claims
+          assistantMessage = assistantMessage.replace(
+            /(?:here (?:are|is)|found)\s+\d+\s+[^.!]+[.!]/gi,
+            ''
+          );
+          assistantMessage = assistantMessage.replace(
+            /📨.*?(?=\n\n|$)/gs,  // Remove formatted data displays
+            ''
+          );
+          assistantMessage = assistantMessage.replace(
+            /🆕.*?(?=\n\n|$)/gs,  // Remove list items
+            ''
+          );
+          
+          const errorMsg = functionResults[failedDataFunctions[0]]?.error || 'Unknown error';
+          if (!assistantMessage.includes('couldn\'t retrieve')) {
+            assistantMessage += `\n\n⚠️ I couldn't retrieve that data: ${errorMsg}`;
+          }
+        } else {
+          // Check for count mismatches (claimed vs actual)
+          const claimedCountMatch = assistantMessage.match(/(?:found|showing|here (?:are|is))\s+(\d+)/i);
+          if (claimedCountMatch) {
+            const claimedCount = parseInt(claimedCountMatch[1]);
+            
+            // Get actual count from successful function results
+            for (const fname of dataFunctions) {
+              if (functionResults[fname]?.succeeded) {
+                try {
+                  // The result is stored in the function results
+                  const resultData = functionResults[fname]?.data;
+                  
+                  if (resultData) {
+                    const actualCount = resultData.items?.length || 
+                                      resultData.submissions?.length || 
+                                      resultData.tickets?.length || 
+                                      resultData.tasks?.length || 
+                                      resultData.meetings?.length ||
+                                      resultData.posts?.length ||
+                                      resultData.logs?.length || 0;
+                    
+                    if (actualCount === 0 && claimedCount > 0) {
+                      console.error(`[Data Validation] Count mismatch: Claimed ${claimedCount}, found 0`);
+                      assistantMessage = assistantMessage.replace(
+                        /(?:here (?:are|is)|found)\s+\d+\s+[^.!]+[.!]/gi,
+                        `I searched but didn't find any matching items.`
+                      );
+                      assistantMessage = assistantMessage.replace(
+                        /📨.*?(?=\n\n|$)/gs,
+                        ''
+                      );
+                      assistantMessage = assistantMessage.replace(
+                        /🆕.*?(?=\n\n|$)/gs,
+                        ''
+                      );
+                    } else if (Math.abs(actualCount - claimedCount) > 2) {
+                      // Allow small differences for "showing top X" scenarios
+                      console.warn(`[Data Validation] Significant count mismatch: Claimed ${claimedCount}, actual ${actualCount}`);
+                    } else {
+                      console.log(`[Data Validation] ✓ Count verified: ${actualCount} items`);
+                    }
+                  }
+                } catch (e) {
+                  console.error('[Data Validation] Error checking count:', e);
+                }
+                break;
+              }
+            }
+          }
+        }
       }
       
       // ============================================================================
