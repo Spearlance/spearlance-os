@@ -5429,6 +5429,189 @@ ${historicalContext.join('\n\n')}
       console.log('[Function Calls]:', functionCallsArray.map(fc => fc.name).join(', '));
     }
 
+    // ============================================================================
+    // HALLUCINATION PREVENTION: Post-Processing Validation Layer
+    // ============================================================================
+    console.log('[Validation] Starting hallucination detection...');
+    
+    interface HallucinationPattern {
+      name: string;
+      triggers: RegExp[];
+      requiredFunction: string;
+      errorMessage: string;
+    }
+
+    const hallucinationPatterns: HallucinationPattern[] = [
+      {
+        name: 'Task Creation Claims',
+        triggers: [
+          /(?:created|made|set up|added|scheduled)\s+(?:a\s+)?(?:task|reminder|to-?do)/i,
+          /task\s+(?:is\s+)?(?:created|set|ready|done)/i,
+          /(?:i've|i have)\s+(?:created|set up|added)\s+(?:a\s+)?task/i,
+          /done!.*task/i,
+          /✅.*task/i,
+          /📋.*(?:created|set|ready)/i
+        ],
+        requiredFunction: 'create_general_task',
+        errorMessage: 'AI claimed task creation without calling create_general_task'
+      },
+      {
+        name: 'Email Task Claims',
+        triggers: [
+          /(?:created|set up)\s+(?:an?\s+)?email\s+task/i,
+          /task\s+to\s+email/i,
+          /email\s+task\s+(?:is\s+)?(?:created|ready|set)/i
+        ],
+        requiredFunction: 'create_email_task',
+        errorMessage: 'AI claimed email task creation without calling create_email_task'
+      },
+      {
+        name: 'Task Update Claims',
+        triggers: [
+          /(?:updated|changed|modified)\s+(?:the\s+)?task/i,
+          /task\s+(?:is\s+)?(?:updated|marked|changed)/i,
+          /(?:i've|i have)\s+(?:updated|marked|changed)\s+(?:the\s+)?task/i
+        ],
+        requiredFunction: 'update_task',
+        errorMessage: 'AI claimed task update without calling update_task'
+      },
+      {
+        name: 'Generic Success Without Action',
+        triggers: [
+          /^done!?\s*$/i,
+          /^all set!?\s*$/i,
+          /^completed!?\s*$/i,
+          /^✅\s*$/
+        ],
+        requiredFunction: 'any',
+        errorMessage: 'AI claimed completion without any function call'
+      }
+    ];
+
+    let validationWarnings: string[] = [];
+    let messageModified = false;
+
+    // Check each pattern
+    for (const pattern of hallucinationPatterns) {
+      const messageMatchesPattern = pattern.triggers.some(trigger => 
+        trigger.test(assistantMessage)
+      );
+
+      if (messageMatchesPattern) {
+        console.log(`[Validation] Detected pattern: ${pattern.name}`);
+        
+        // Check if required function was called
+        const functionWasCalled = pattern.requiredFunction === 'any'
+          ? functionCallsArray.length > 0
+          : functionCallsArray.some(fc => fc.name === pattern.requiredFunction);
+
+        if (!functionWasCalled) {
+          console.error(`[Validation] HALLUCINATION DETECTED: ${pattern.errorMessage}`);
+          validationWarnings.push(pattern.errorMessage);
+
+          // Modify the message to remove false claims
+          if (pattern.name === 'Task Creation Claims') {
+            assistantMessage = assistantMessage.replace(
+              /(?:✅|📋)?\s*(?:done!?|task\s+(?:is\s+)?(?:created|set|ready))[.!]?\s*/gi,
+              ''
+            );
+            assistantMessage = assistantMessage.replace(
+              /(?:i've|i have)\s+(?:created|set up|added)\s+(?:a\s+)?task\s+to\s+[^.!]+[.!]/gi,
+              'I can help you create a task for that.'
+            );
+            messageModified = true;
+            
+            // Add helpful correction
+            if (assistantMessage.trim().length < 20) {
+              assistantMessage = "I understand you want to create a task. Could you provide more details about what the task should include?";
+            } else {
+              assistantMessage += "\n\nTo create this as a task, please confirm the details you'd like me to include.";
+            }
+          } else if (pattern.name === 'Email Task Claims') {
+            assistantMessage = assistantMessage.replace(
+              /(?:i've|i have)\s+(?:created|set up)\s+(?:an?\s+)?email\s+task[^.!]*[.!]/gi,
+              ''
+            );
+            messageModified = true;
+            assistantMessage += "\n\nWould you like me to create an email task for this?";
+          } else if (pattern.name === 'Task Update Claims') {
+            assistantMessage = assistantMessage.replace(
+              /(?:i've|i have)\s+(?:updated|marked|changed)\s+(?:the\s+)?task[^.!]*[.!]/gi,
+              ''
+            );
+            messageModified = true;
+            assistantMessage += "\n\nTo update this task, I'll need you to confirm the changes.";
+          } else if (pattern.name === 'Generic Success Without Action') {
+            assistantMessage = "I'm ready to help! What would you like me to do?";
+            messageModified = true;
+          }
+        } else {
+          console.log(`[Validation] ✓ Pattern verified: ${pattern.requiredFunction} was called`);
+        }
+      }
+    }
+
+    // Additional validation: Check for data retrieval claims
+    const dataRetrievalClaims = [
+      /(?:here (?:are|is)|found)\s+(?:\d+\s+)?(?:leads?|submissions?|forms?|tickets?|meetings?|posts?)/i,
+      /showing\s+(?:\d+\s+)?(?:results?|items?)/i,
+      /(?:retrieved|fetched|loaded)\s+(?:\d+\s+)?(?:items?|records?)/i
+    ];
+
+    const claimsDataRetrieval = dataRetrievalClaims.some(pattern => pattern.test(assistantMessage));
+    if (claimsDataRetrieval) {
+      const dataRetrievalFunctions = [
+        'get_form_submissions', 'get_tickets', 'get_meetings', 'search_tasks',
+        'get_social_media_posts', 'get_communication_logs', 'get_tasks'
+      ];
+      
+      const dataFunctionCalled = functionCallsArray.some(fc => 
+        dataRetrievalFunctions.includes(fc.name)
+      );
+
+      if (!dataFunctionCalled) {
+        console.error('[Validation] HALLUCINATION: Claimed data retrieval without calling data functions');
+        validationWarnings.push('AI claimed data retrieval without calling data functions');
+        
+        assistantMessage = assistantMessage.replace(
+          /(?:here (?:are|is)|found)\s+\d+\s+[^.!]+[.!]/gi,
+          ''
+        );
+        assistantMessage += "\n\nI'll need to retrieve that data first. What specific information are you looking for?";
+        messageModified = true;
+      }
+    }
+
+    // Log validation results
+    if (validationWarnings.length > 0) {
+      console.error('[Validation] HALLUCINATIONS DETECTED:', validationWarnings);
+      console.log('[Validation] Original message modified:', messageModified);
+      console.log('[Validation] Corrected message:', assistantMessage);
+      
+      // Log to database for monitoring
+      try {
+        await supabaseClient.from('chat_tool_calls').insert({
+          user_id: user.id,
+          client_id: client_id,
+          tool_name: 'HALLUCINATION_DETECTED',
+          tool_args: { 
+            warnings: validationWarnings,
+            original_message_preview: assistantMessage.substring(0, 200),
+            function_calls: functionCallsArray.map(fc => fc.name)
+          },
+          result_count: validationWarnings.length
+        });
+      } catch (logError) {
+        console.error('[Validation] Failed to log hallucination:', logError);
+      }
+    } else {
+      console.log('[Validation] ✓ No hallucinations detected');
+    }
+    
+    // ============================================================================
+    // End of Hallucination Prevention Layer
+    // ============================================================================
+
     // Phase 2: Execute functions and make second API call if needed
     if (functionCallsArray.length > 0) {
       // Execute all function calls
