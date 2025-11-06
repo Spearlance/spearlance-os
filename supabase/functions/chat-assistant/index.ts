@@ -1873,6 +1873,10 @@ async function updateTask(supabase: any, params: any, clientId: string, userId: 
       .single();
     
     if (fetchError || !existingTask) {
+      // Check if this was a flagged task_id from validation
+      if (params._flagged_task_id) {
+        throw new Error('Task not found: The task_id provided does not exist. This usually means you need to retrieve the correct task_id first. Try calling get_tasks with appropriate filters, or use the task_id from your most recent create_general_task result.');
+      }
       throw new Error('Task not found or access denied');
     }
     
@@ -3680,6 +3684,17 @@ IMPORTANT: When creating tasks:
 - DO NOT pass assignee_id unless you have explicitly retrieved a valid user_id from the profiles table
 - If user says "remind me" or "create a task for me", OMIT assignee_id entirely (it defaults to you)
 - NEVER use client_id as assignee_id - they are completely different types of IDs
+
+CRITICAL: When updating tasks based on user's contextual references:
+- User says "that task", "the task", "it" → Extract task_id from YOUR MOST RECENT function result
+- NEVER generate or guess a task_id - they are UUIDs returned by functions
+- If you don't have the task_id, call get_tasks first to find it
+- Example correct flow:
+  1. User: "remind me to call John" → You call create_general_task → Get back task_id: "abc-123"
+  2. User: "assign that to Sarah" → You call update_task with task_id: "abc-123" (from step 1)
+- Example WRONG flow:
+  1. User: "remind me to call John" → You call create_general_task → Get back task_id: "abc-123"
+  2. User: "assign that to Sarah" → You call update_task with task_id: "xyz-789" ❌ HALLUCINATED!
 
 ${userContext}
 
@@ -5690,6 +5705,40 @@ ${historicalContext.join('\n\n')}
             }
           }
 
+          // Validate task_id for update operations
+          if (fc.name === 'update_task') {
+            if (!args.task_id) {
+              console.error('[Validation] update_task called without task_id');
+              continue; // Skip this function call
+            }
+            
+            // Check if task_id looks valid (UUID format)
+            const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+            if (!uuidRegex.test(args.task_id)) {
+              console.error('[Validation] Invalid task_id format:', args.task_id);
+              continue;
+            }
+            
+            // Check if this task_id exists in recent function results
+            const recentTaskIds = toolMessages
+              .filter(m => m.role === 'tool')
+              .map(m => {
+                try {
+                  const result = JSON.parse(m.content);
+                  return result.task_id || result.items?.map((t: any) => t.id) || [];
+                } catch { return []; }
+              })
+              .flat();
+            
+            // If AI is trying to use a task_id that wasn't in recent results, warn it
+            if (recentTaskIds.length > 0 && !recentTaskIds.includes(args.task_id)) {
+              console.warn(`[Validation] AI using task_id ${args.task_id} not found in recent results`);
+              console.log('[Validation] Recent task IDs:', recentTaskIds);
+              // Don't block it, but flag for enhanced error message
+              args._flagged_task_id = true;
+            }
+          }
+
           // Execute the appropriate function
           switch (fc.name) {
             case 'get_client_info':
@@ -5882,10 +5931,39 @@ ${historicalContext.join('\n\n')}
           ],
           requiredFunction: 'create_task_from_submission',
           errorMessage: 'AI claimed submission task creation without calling create_task_from_submission or function failed'
+        },
+        {
+          name: 'Task Update Claims',
+          triggers: [
+            /(?:✅|✓|done!).*(?:assigned|updated|changed).*task/i,
+            /task.*(?:assigned|updated|changed)/i
+          ],
+          requiredFunction: 'update_task',
+          errorMessage: 'AI claimed task update without calling update_task or function failed'
         }
       ];
 
       let postExecutionWarnings: string[] = [];
+      
+      // Update Task Validation
+      if (functionResults['update_task']?.called && !functionResults['update_task']?.succeeded) {
+        const errorMsg = functionResults['update_task']?.error || '';
+        
+        if (errorMsg.includes('Task not found')) {
+          console.error('[Validation] update_task failed - task not found');
+          
+          // Remove false claims of task updates
+          assistantMessage = assistantMessage.replace(
+            /(?:✅|✓|Done!).*(?:assigned|updated|changed).*task/gi,
+            ''
+          );
+          
+          // Add helpful error message
+          assistantMessage += `\n\n⚠️ I wasn't able to update that task because I couldn't find it in the system. ` +
+            `When you refer to "that task" or "the task", I need to have just created it or retrieved it. ` +
+            `Would you like me to show your recent tasks first so I can update the correct one?`;
+        }
+      }
       
       for (const pattern of hallucinationPatterns) {
         const messageMatchesPattern = pattern.triggers.some(trigger => 
