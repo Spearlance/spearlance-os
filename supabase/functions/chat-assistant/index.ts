@@ -1813,7 +1813,12 @@ async function createGeneralTask(supabase: any, params: any, clientId: string, u
       .select()
       .single();
     
-    if (taskError) throw taskError;
+    if (taskError) {
+      if (taskError.code === '23503' && taskError.message.includes('assignee_user_id_fkey')) {
+        throw new Error('Invalid assignee: The user ID provided does not exist in the profiles table. Use get_team_members to find valid user IDs, or omit assignee_id to assign to yourself.');
+      }
+      throw taskError;
+    }
     
     // Get assignee name if different from creator
     let assigneeName = 'You';
@@ -2392,7 +2397,7 @@ const tools = [
             },
             assignee_id: {
               type: "string",
-              description: "Optional: User ID to assign the task to. Defaults to the current user if not provided."
+              description: "Optional: User ID (from profiles table) to assign the task to. IMPORTANT: Only provide this if you have explicitly retrieved a user_id using get_team_members or similar function. NEVER use client_id here. If user says 'remind me' or 'for me', OMIT this field entirely to default to current user."
             },
             priority: {
               type: "string",
@@ -3666,9 +3671,15 @@ When writing creative, reference these frameworks. Cite the source framework whe
       `You are SpearlanceAI, a Senior-Level Marketing Strategist and friendly co-pilot for ${client_id}.
 
 Context you always have:
-- client_id: ${client_id}
+- client_id: ${client_id} (this is the ORGANIZATION/BUSINESS ID, never use as assignee_id)
+- current_user_id: ${user.id} (this is YOUR user ID, automatically used for task creation)
 - user_role: ${userRole}
 - today: ${new Date().toISOString().split('T')[0]}
+
+IMPORTANT: When creating tasks:
+- DO NOT pass assignee_id unless you have explicitly retrieved a valid user_id from the profiles table
+- If user says "remind me" or "create a task for me", OMIT assignee_id entirely (it defaults to you)
+- NEVER use client_id as assignee_id - they are completely different types of IDs
 
 ${userContext}
 
@@ -5666,6 +5677,18 @@ ${historicalContext.join('\n\n')}
 
         try {
           const args = JSON.parse(fc.arguments);
+
+          // Validate assignee_id is not client_id
+          if (fc.name === 'create_general_task' || 
+              fc.name === 'create_task_from_submission' || 
+              fc.name === 'create_email_task') {
+            
+            if (args.assignee_id === client_id) {
+              console.error(`[Validation] AI incorrectly used client_id as assignee_id in ${fc.name}`);
+              console.log('[Validation] Removing assignee_id to default to current user');
+              delete args.assignee_id; // Remove the incorrect assignee_id
+            }
+          }
 
           // Execute the appropriate function
           switch (fc.name) {
