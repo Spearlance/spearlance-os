@@ -90,6 +90,18 @@ export default function MarketingProfile() {
     words_to_avoid: ""
   });
 
+  // Brand story editing states
+  const [editingBrandStory, setEditingBrandStory] = useState(false);
+  const [savingBrandStory, setSavingBrandStory] = useState(false);
+  const [brandStoryForm, setBrandStoryForm] = useState({
+    executive_summary: "",
+    key_themes: [] as string[],
+    pain_points: [] as string[],
+    value_propositions: [] as string[],
+    target_audience_insights: "",
+    marketing_angles: [] as string[]
+  });
+
   // Competitor states
   const [competitors, setCompetitors] = useState<any[]>([]);
   const [loadingCompetitors, setLoadingCompetitors] = useState(true);
@@ -159,6 +171,20 @@ export default function MarketingProfile() {
       });
     }
   }, [discoveryData]);
+
+  // Initialize brand story form
+  useEffect(() => {
+    if (summary) {
+      setBrandStoryForm({
+        executive_summary: summary.executive_summary || "",
+        key_themes: summary.key_themes || [],
+        pain_points: summary.pain_points || [],
+        value_propositions: summary.value_propositions || [],
+        target_audience_insights: summary.target_audience_insights || "",
+        marketing_angles: summary.marketing_angles || []
+      });
+    }
+  }, [summary]);
 
   const loadQuarterlyGoals = async () => {
     if (!selectedClient) return;
@@ -539,6 +565,80 @@ export default function MarketingProfile() {
     } finally {
       setSavingBrandVoice(false);
     }
+  };
+
+  const handleSaveBrandStory = async () => {
+    if (!selectedClient) return;
+
+    setSavingBrandStory(true);
+    
+    try {
+      // Fetch current brand voice data to preserve other fields
+      const { data: currentData } = await supabase
+        .from("client_brand_voice")
+        .select("*")
+        .eq("client_id", selectedClient.id)
+        .maybeSingle();
+
+      // Merge the updated story summary with existing data
+      const updatedSummary = {
+        executive_summary: brandStoryForm.executive_summary.trim() || null,
+        key_themes: brandStoryForm.key_themes.filter(t => t.trim()),
+        pain_points: brandStoryForm.pain_points.filter(p => p.trim()),
+        value_propositions: brandStoryForm.value_propositions.filter(v => v.trim()),
+        target_audience_insights: brandStoryForm.target_audience_insights.trim() || null,
+        marketing_angles: brandStoryForm.marketing_angles.filter(a => a.trim())
+      };
+
+      const { error } = await supabase
+        .from("client_brand_voice")
+        .upsert({
+          client_id: selectedClient.id,
+          story_summary: updatedSummary,
+          // Preserve existing fields
+          tone: currentData?.tone,
+          words_to_avoid: currentData?.words_to_avoid,
+          story_recording_url: currentData?.story_recording_url,
+          story_recording_asset_id: currentData?.story_recording_asset_id,
+          story_transcript: currentData?.story_transcript,
+          story_completed: currentData?.story_completed,
+        }, {
+          onConflict: 'client_id'
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Brand story updated successfully",
+      });
+      
+      setEditingBrandStory(false);
+      await loadProfileData();
+    } catch (error: any) {
+      console.error("Error updating brand story:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update brand story",
+        variant: "destructive",
+      });
+    } finally {
+      setSavingBrandStory(false);
+    }
+  };
+
+  const handleCancelBrandStoryEdit = () => {
+    if (summary) {
+      setBrandStoryForm({
+        executive_summary: summary.executive_summary || "",
+        key_themes: summary.key_themes || [],
+        pain_points: summary.pain_points || [],
+        value_propositions: summary.value_propositions || [],
+        target_audience_insights: summary.target_audience_insights || "",
+        marketing_angles: summary.marketing_angles || []
+      });
+    }
+    setEditingBrandStory(false);
   };
 
   const loadProfileData = async () => {
@@ -1731,84 +1831,211 @@ export default function MarketingProfile() {
                   <CardTitle>Brand Story</CardTitle>
                   <CardDescription>Your origin story and what makes you different</CardDescription>
                 </div>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => setStoryModalOpen(true)}
-                >
-                  {discoveryData.story?.completed ? (
+                <div className="flex gap-2">
+                  {editingBrandStory ? (
                     <>
-                      <Edit className="h-4 w-4 mr-2" />
-                      Update Story
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleCancelBrandStoryEdit}
+                        disabled={savingBrandStory}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={handleSaveBrandStory}
+                        disabled={savingBrandStory}
+                      >
+                        {savingBrandStory ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Saving...
+                          </>
+                        ) : (
+                          "Save Changes"
+                        )}
+                      </Button>
                     </>
                   ) : (
-                    <>Record Story</>
+                    <>
+                      {discoveryData.story?.completed && summary && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setEditingBrandStory(true)}
+                        >
+                          <Edit className="h-4 w-4 mr-2" />
+                          Edit
+                        </Button>
+                      )}
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => setStoryModalOpen(true)}
+                      >
+                        {discoveryData.story?.completed ? "Re-record" : "Record Story"}
+                      </Button>
+                    </>
                   )}
-                </Button>
+                </div>
               </div>
             </CardHeader>
             <CardContent>
               {discoveryData.story?.completed && summary ? (
                 <div className="space-y-6">
-                  {summary.executive_summary && (
-                    <div>
-                      <h4 className="font-semibold mb-2">Executive Summary</h4>
-                      <p className="text-sm text-muted-foreground">{summary.executive_summary}</p>
+                  {editingBrandStory ? (
+                    // EDITING MODE
+                    <div className="space-y-6">
+                      <div>
+                        <Label htmlFor="executive_summary">Executive Summary</Label>
+                        <Textarea
+                          id="executive_summary"
+                          value={brandStoryForm.executive_summary}
+                          onChange={(e) => setBrandStoryForm({
+                            ...brandStoryForm,
+                            executive_summary: e.target.value
+                          })}
+                          placeholder="Summarize your brand story..."
+                          rows={4}
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="key_themes">Key Themes (one per line)</Label>
+                        <Textarea
+                          id="key_themes"
+                          value={brandStoryForm.key_themes.join("\n")}
+                          onChange={(e) => setBrandStoryForm({
+                            ...brandStoryForm,
+                            key_themes: e.target.value.split("\n").filter(t => t.trim())
+                          })}
+                          placeholder="Enter key themes, one per line..."
+                          rows={4}
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="pain_points">Pain Points (one per line)</Label>
+                        <Textarea
+                          id="pain_points"
+                          value={brandStoryForm.pain_points.join("\n")}
+                          onChange={(e) => setBrandStoryForm({
+                            ...brandStoryForm,
+                            pain_points: e.target.value.split("\n").filter(p => p.trim())
+                          })}
+                          placeholder="Enter pain points, one per line..."
+                          rows={4}
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="value_propositions">Value Propositions (one per line)</Label>
+                        <Textarea
+                          id="value_propositions"
+                          value={brandStoryForm.value_propositions.join("\n")}
+                          onChange={(e) => setBrandStoryForm({
+                            ...brandStoryForm,
+                            value_propositions: e.target.value.split("\n").filter(v => v.trim())
+                          })}
+                          placeholder="Enter value propositions, one per line..."
+                          rows={4}
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="target_audience_insights">Target Audience Insights</Label>
+                        <Textarea
+                          id="target_audience_insights"
+                          value={brandStoryForm.target_audience_insights}
+                          onChange={(e) => setBrandStoryForm({
+                            ...brandStoryForm,
+                            target_audience_insights: e.target.value
+                          })}
+                          placeholder="Describe your target audience..."
+                          rows={4}
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="marketing_angles">Marketing Angles (one per line)</Label>
+                        <Textarea
+                          id="marketing_angles"
+                          value={brandStoryForm.marketing_angles.join("\n")}
+                          onChange={(e) => setBrandStoryForm({
+                            ...brandStoryForm,
+                            marketing_angles: e.target.value.split("\n").filter(a => a.trim())
+                          })}
+                          placeholder="Enter marketing angles, one per line..."
+                          rows={4}
+                        />
+                      </div>
                     </div>
+                  ) : (
+                    // VIEW MODE
+                    <>
+                      {summary.executive_summary && (
+                        <div>
+                          <h4 className="font-semibold mb-2">Executive Summary</h4>
+                          <p className="text-sm text-muted-foreground">{summary.executive_summary}</p>
+                        </div>
+                      )}
+
+                      {summary.key_themes && summary.key_themes.length > 0 && (
+                        <div>
+                          <h4 className="font-semibold mb-2">Key Themes</h4>
+                          <ul className="list-disc list-inside space-y-1 text-sm">
+                            {summary.key_themes.map((theme: string, i: number) => (
+                              <li key={i}>{theme}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {summary.pain_points && summary.pain_points.length > 0 && (
+                        <div>
+                          <h4 className="font-semibold mb-2">Pain Points</h4>
+                          <ul className="list-disc list-inside space-y-1 text-sm">
+                            {summary.pain_points.map((point: string, i: number) => (
+                              <li key={i}>{point}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {summary.value_propositions && summary.value_propositions.length > 0 && (
+                        <div>
+                          <h4 className="font-semibold mb-2">Value Propositions</h4>
+                          <ul className="list-disc list-inside space-y-1 text-sm">
+                            {summary.value_propositions.map((prop: string, i: number) => (
+                              <li key={i}>{prop}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {summary.target_audience_insights && (
+                        <div>
+                          <h4 className="font-semibold mb-2">Target Audience Insights</h4>
+                          <p className="text-sm text-muted-foreground">{summary.target_audience_insights}</p>
+                        </div>
+                      )}
+
+                      {summary.marketing_angles && summary.marketing_angles.length > 0 && (
+                        <div>
+                          <h4 className="font-semibold mb-2">Marketing Angles</h4>
+                          <ul className="list-disc list-inside space-y-1 text-sm">
+                            {summary.marketing_angles.map((angle: string, i: number) => (
+                              <li key={i}>{angle}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </>
                   )}
 
-                  {summary.key_themes && summary.key_themes.length > 0 && (
-                    <div>
-                      <h4 className="font-semibold mb-2">Key Themes</h4>
-                      <ul className="list-disc list-inside space-y-1 text-sm">
-                        {summary.key_themes.map((theme: string, i: number) => (
-                          <li key={i}>{theme}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {summary.pain_points && summary.pain_points.length > 0 && (
-                    <div>
-                      <h4 className="font-semibold mb-2">Pain Points</h4>
-                      <ul className="list-disc list-inside space-y-1 text-sm">
-                        {summary.pain_points.map((point: string, i: number) => (
-                          <li key={i}>{point}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {summary.value_propositions && summary.value_propositions.length > 0 && (
-                    <div>
-                      <h4 className="font-semibold mb-2">Value Propositions</h4>
-                      <ul className="list-disc list-inside space-y-1 text-sm">
-                        {summary.value_propositions.map((prop: string, i: number) => (
-                          <li key={i}>{prop}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {summary.target_audience_insights && (
-                    <div>
-                      <h4 className="font-semibold mb-2">Target Audience Insights</h4>
-                      <p className="text-sm text-muted-foreground">{summary.target_audience_insights}</p>
-                    </div>
-                  )}
-
-                  {summary.marketing_angles && summary.marketing_angles.length > 0 && (
-                    <div>
-                      <h4 className="font-semibold mb-2">Marketing Angles</h4>
-                      <ul className="list-disc list-inside space-y-1 text-sm">
-                        {summary.marketing_angles.map((angle: string, i: number) => (
-                          <li key={i}>{angle}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {transcript && (
+                  {/* Keep transcript collapsible - not editable */}
+                  {!editingBrandStory && transcript && (
                     <Collapsible>
                       <CollapsibleTrigger className="flex items-center gap-2 text-sm font-medium hover:underline">
                         <ChevronDown className="h-4 w-4" />
