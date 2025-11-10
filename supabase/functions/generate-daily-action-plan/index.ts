@@ -63,10 +63,10 @@ serve(async (req) => {
     ] = await Promise.all([
       supabaseClient.from('clients').select('name, industry, brand_name, website_url, primary_contact_name, primary_contact_email').eq('id', client_id).single(),
       supabaseClient.from('tasks').select('title, status, priority, due_date, created_at').eq('client_id', client_id),
-      supabaseClient.from('quarterly_goals').select('title, progress, start_date, end_date').eq('client_id', client_id),
+      supabaseClient.from('quarterly_goals').select('goal_text, status, quarter, year, created_at').eq('client_id', client_id),
       supabaseClient.from('marketing_ideas').select('title, idea_type, status').eq('client_id', client_id).eq('status', 'approved'),
       supabaseClient.from('services').select('name, description, key_benefits').eq('client_id', client_id),
-      supabaseClient.from('meetings').select('title, date_time, summary').eq('client_id', client_id).gte('date_time', new Date().toISOString()).limit(5),
+      supabaseClient.from('meetings').select('date_time, summary, attendees, status').eq('client_id', client_id).gte('date_time', new Date().toISOString()).limit(5),
       supabaseClient.from('avatars').select('avatar_name, demographics, goals, pains').eq('client_id', client_id).limit(5),
       supabaseClient.from('assets').select('id, type').eq('client_id', client_id),
       supabaseClient
@@ -202,7 +202,7 @@ CURRENT TASKS:
 - Total tasks: ${tasks.filter(t => t.status !== 'done').length}
 
 QUARTERLY GOALS:
-${goals.length > 0 ? goals.map(g => `- ${g.title} (${g.progress || 0}% complete)`).join('\n') : '- No active goals set'}
+${goals.length > 0 ? goals.map(g => `- ${g.goal_text} (Status: ${g.status}, Q${g.quarter} ${g.year})`).join('\n') : '- No active goals set'}
 
 MARKETING IDEAS (Approved but not executed):
 ${marketingIdeas.length > 0 ? marketingIdeas.slice(0, 5).map(i => `- ${i.title} (${i.idea_type})`).join('\n') : '- No approved ideas pending execution'}
@@ -214,7 +214,8 @@ UPCOMING MEETINGS:
 ${meetings.length > 0 ? meetings.map(m => {
   const meetingDate = new Date(m.date_time);
   const daysUntil = Math.ceil((meetingDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-  return `- ${m.title} in ${daysUntil} days (${meetingDate.toLocaleDateString()})`;
+  const meetingLabel = m.attendees || 'Meeting';
+  return `- ${meetingLabel} in ${daysUntil} days (${meetingDate.toLocaleDateString()})`;
 }).join('\n') : '- No upcoming meetings scheduled'}
 
 MARKETING FLOW STATUS:
@@ -237,7 +238,7 @@ ${!profileCompleteness.hasEconomics ? '❌ Economics undefined (AOV, LTV, revenu
 ${!profileCompleteness.hasCurrentState ? '❌ Current State not documented (what\'s working/not working)' : '✅ Current State documented'}
 ${!profileCompleteness.hasBrandVoice ? '❌ Brand Voice not defined (tone, style)' : '✅ Brand Voice defined'}
 ${!profileCompleteness.hasServices ? '❌ No services defined' : `✅ ${services.length} service(s) defined`}
-${!profileCompleteness.hasGoals ? '❌ No quarterly goals set' : `✅ ${goals.length} goal(s) set`}
+${!profileCompleteness.hasGoals ? '❌ No quarterly goals set' : `✅ ${goals.length} goal(s) set (${goals.map(g => `${g.goal_text}: ${g.status}`).join(', ')})`}
 ${!profileCompleteness.hasAvatars ? '❌ No customer avatars defined' : `✅ ${avatars.length} avatar(s) defined`}
 ${!profileCompleteness.hasCompetitors ? '❌ No competitors documented' : `✅ ${competitors.length} competitor(s) documented`}
 
@@ -276,29 +277,61 @@ Important:
   * /brand/assets - For brand assets and files
 - NEVER use routes like /goals, /quarterly-goals, /services, /competitors - these all live in /marketing/profile`;
 
-    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt }
-        ],
-        response_format: { type: 'json_object' }
-      }),
-    });
+    // Retry logic for AI API calls
+    async function callAIWithRetry(maxRetries = 3) {
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+          console.log(`[AI Call] Attempt ${attempt}/${maxRetries}`);
+          
+          const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              model: 'google/gemini-2.5-flash',
+              messages: [
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: userPrompt }
+              ],
+              response_format: { type: 'json_object' }
+            }),
+          });
 
-    if (!aiResponse.ok) {
-      const errorText = await aiResponse.text();
-      console.error('AI API error:', aiResponse.status, errorText);
-      throw new Error(`AI generation failed: ${aiResponse.status}`);
+          if (aiResponse.ok) {
+            return await aiResponse.json();
+          }
+
+          const errorText = await aiResponse.text();
+          console.error(`[AI Call] Attempt ${attempt} failed: ${aiResponse.status}`, errorText);
+
+          // Don't retry on 4xx errors (bad request)
+          if (aiResponse.status >= 400 && aiResponse.status < 500) {
+            throw new Error(`AI request error: ${aiResponse.status} - ${errorText}`);
+          }
+
+          // Retry on 5xx errors (server issues)
+          if (attempt < maxRetries) {
+            const waitTime = Math.min(1000 * Math.pow(2, attempt), 8000);
+            console.log(`[AI Call] Retrying in ${waitTime}ms...`);
+            await new Promise(resolve => setTimeout(resolve, waitTime));
+            continue;
+          }
+
+          throw new Error(`AI generation failed after ${maxRetries} attempts: ${aiResponse.status}`);
+          
+        } catch (error) {
+          if (attempt === maxRetries) throw error;
+          
+          const waitTime = Math.min(1000 * Math.pow(2, attempt), 8000);
+          console.log(`[AI Call] Error on attempt ${attempt}, retrying in ${waitTime}ms...`, error);
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+        }
+      }
     }
 
-    const aiData = await aiResponse.json();
+    const aiData = await callAIWithRetry();
     const generatedPlan = JSON.parse(aiData.choices[0].message.content);
 
     console.log('✅ Action plan generated');
@@ -340,6 +373,96 @@ Important:
 
   } catch (error) {
     console.error('Error generating action plan:', error);
+    
+    // If AI generation fails, provide a basic fallback plan
+    if (error instanceof Error && error.message.includes('AI generation failed')) {
+      console.log('🔄 Generating fallback action plan...');
+      
+      try {
+        const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+        const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+        const supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
+        
+        const { client_id } = await req.json();
+        
+        // Fetch minimal data for fallback
+        const [tasksData] = await Promise.all([
+          supabaseClient.from('tasks').select('title, status, priority, due_date, created_at').eq('client_id', client_id)
+        ]);
+        
+        const tasks = tasksData.data || [];
+        const now = new Date();
+        const overdueTasks = tasks.filter(t => t.due_date && new Date(t.due_date) < now && t.status !== 'done');
+        const highPriorityTasks = tasks.filter(t => t.priority === 'high' && t.status === 'to_do');
+        
+        const fallbackActions = [];
+        
+        // Add overdue tasks if any
+        if (overdueTasks.length > 0) {
+          fallbackActions.push({
+            title: `Complete ${overdueTasks.length} overdue task${overdueTasks.length > 1 ? 's' : ''}`,
+            description: `You have ${overdueTasks.length} task(s) past their due date that need attention.`,
+            reason: "Overdue tasks can block progress and impact deadlines",
+            link: "/tasks",
+            priority: "urgent"
+          });
+        }
+        
+        // Add high priority tasks
+        if (highPriorityTasks.length > 0) {
+          fallbackActions.push({
+            title: `Work on ${highPriorityTasks.length} high-priority task${highPriorityTasks.length > 1 ? 's' : ''}`,
+            description: "Focus on your most important tasks today.",
+            reason: "High-priority tasks drive key outcomes",
+            link: "/tasks",
+            priority: "important"
+          });
+        }
+        
+        // Add default action if no specific actions
+        if (fallbackActions.length === 0) {
+          fallbackActions.push({
+            title: "Review your marketing profile",
+            description: "Complete your marketing profile to unlock personalized recommendations.",
+            reason: "A complete profile enables better daily action plans",
+            link: "/marketing/profile",
+            priority: "important"
+          });
+        }
+        
+        // Save fallback plan
+        const today = new Date().toISOString().split('T')[0];
+        const { data: fallbackPlan } = await supabaseClient
+          .from('daily_action_plans')
+          .upsert({
+            client_id,
+            plan_date: today,
+            priority_actions: fallbackActions,
+            context_summary: "Action plan generated with fallback logic due to temporary AI service issues.",
+            data_snapshot: {
+              tasks_count: tasks.length,
+              overdue_count: overdueTasks.length
+            },
+            generated_at: new Date().toISOString()
+          }, {
+            onConflict: 'client_id,plan_date'
+          })
+          .select()
+          .single();
+        
+        if (fallbackPlan) {
+          console.log('✅ Fallback action plan generated and saved');
+          return new Response(
+            JSON.stringify(fallbackPlan),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+      } catch (fallbackError) {
+        console.error('Fallback plan generation failed:', fallbackError);
+      }
+    }
+    
+    // Original error handling continues...
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
     return new Response(
       JSON.stringify({ error: errorMessage }),
