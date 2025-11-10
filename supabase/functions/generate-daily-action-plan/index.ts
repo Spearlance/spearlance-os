@@ -332,7 +332,14 @@ Important:
     }
 
     const aiData = await callAIWithRetry();
-    const generatedPlan = JSON.parse(aiData.choices[0].message.content);
+    
+    // Strip markdown code fences if present (AI sometimes adds them despite response_format)
+    let content = aiData.choices[0].message.content;
+    if (content.includes('```')) {
+      content = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+    }
+    
+    const generatedPlan = JSON.parse(content);
 
     console.log('✅ Action plan generated');
 
