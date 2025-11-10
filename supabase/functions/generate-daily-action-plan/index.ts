@@ -335,8 +335,15 @@ Important:
     
     // Strip markdown code fences if present (AI sometimes adds them despite response_format)
     let content = aiData.choices[0].message.content;
+    console.log('📝 Raw AI response (first 200 chars):', content.substring(0, 200));
+    
+    // Remove code fences - handle both actual newlines and literal \n strings
     if (content.includes('```')) {
-      content = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+      content = content
+        .replace(/```json\s*/g, '')  // Remove ```json with any whitespace
+        .replace(/```\s*/g, '')       // Remove closing ``` with any whitespace
+        .trim();
+      console.log('🧹 After fence removal (first 200 chars):', content.substring(0, 200));
     }
     
     const generatedPlan = JSON.parse(content);
