@@ -98,10 +98,10 @@ serve(async (req) => {
       // Social media drafts and scheduled posts without media
       supabaseClient
         .from('social_media_posts')
-        .select('id, status, scheduled_for, content, media_url')
+        .select('id, status, scheduled_date, caption_text, image_url')
         .eq('client_id', client_id)
         .in('status', ['draft', 'scheduled'])
-        .order('scheduled_for', { ascending: true })
+        .order('scheduled_date', { ascending: true })
         .limit(20),
 
       // Existing tasks (to avoid duplicates)
@@ -129,7 +129,7 @@ serve(async (req) => {
 
     // Filter social posts
     const draftPosts = socialPosts.filter(p => p.status === 'draft');
-    const scheduledPostsWithoutMedia = socialPosts.filter(p => p.status === 'scheduled' && !p.media_url);
+    const scheduledPostsWithoutMedia = socialPosts.filter(p => p.status === 'scheduled' && !p.image_url);
 
     // Check recent meetings for follow-up communications
     const recentMeetingsWithoutFollowup = [];
