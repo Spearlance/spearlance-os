@@ -132,15 +132,21 @@ serve(async (req) => {
     const scheduledPostsWithoutMedia = socialPosts.filter(p => p.status === 'scheduled' && !p.image_url);
 
     // Check recent meetings for follow-up communications
-    const recentMeetingsWithoutFollowup = [];
+    const recentMeetingsWithoutFollowup: any[] = [];
     for (const meeting of recentMeetings) {
-      const { data: followupComms } = await supabaseClient
+      const { data: followupComms, error: followupError } = await supabaseClient
         .from('communication_logs')
         .select('id')
         .eq('client_id', client_id)
-        .eq('meeting_id', meeting.id)
-        .gte('date', meeting.date_time)
+        // Any communication created after the meeting counts as a follow-up
+        .gte('created_at', meeting.date_time)
         .limit(1);
+
+      if (followupError) {
+        console.error('Error checking follow-up communications for meeting', meeting.id, followupError);
+        // Fail open: don't block the whole function because of this one meeting
+        continue;
+      }
       
       if (!followupComms || followupComms.length === 0) {
         recentMeetingsWithoutFollowup.push(meeting);
@@ -338,9 +344,27 @@ Return JSON in this exact format:
 
   } catch (error) {
     console.error('Error in recommend-tasks:', error);
+
+    let message = 'Unknown error';
+    if (error instanceof Error) {
+      message = error.message;
+    } else if (error && typeof error === 'object') {
+      // Supabase/Postgrest errors are plain objects with .message
+      const maybeMessage = (error as any).message;
+      if (typeof maybeMessage === 'string') {
+        message = maybeMessage;
+      } else {
+        try {
+          message = JSON.stringify(error);
+        } catch {
+          // keep 'Unknown error'
+        }
+      }
+    }
+
     return new Response(
       JSON.stringify({ 
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: message,
         success: false,
         recommendations: []
       }),
