@@ -51,7 +51,7 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
   const [showLinkChannelDialog, setShowLinkChannelDialog] = useState(false);
   const [availableChannels, setAvailableChannels] = useState<any[]>([]);
   const [subtasks, setSubtasks] = useState<any[]>([]);
-  const [taskColumns, setTaskColumns] = useState<any[]>([]);
+  const [taskColumns, setTaskColumns] = useState<Array<{ id: string; name: string; key: string; color: string; mapped_status: 'to_do' | 'in_progress' | 'done' }>>([]);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -203,7 +203,7 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
   const loadTaskColumns = async () => {
     const { data } = await supabase
       .from("task_columns")
-      .select("id, name, key, color")
+      .select("id, name, key, color, mapped_status")
       .eq("client_id", task.client_id)
       .order("display_order");
     
@@ -620,14 +620,33 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
                 <div className="grid grid-cols-3 gap-3">
                   <div className="space-y-2">
                     <Label>Status</Label>
-                    <Select value={status} onValueChange={setStatus}>
+                    <Select value={status} onValueChange={(value) => {
+                      // Find the column and use its mapped_status for database update
+                      const selectedColumn = taskColumns.find(col => col.mapped_status === value);
+                      setStatus(selectedColumn ? selectedColumn.mapped_status : value);
+                    }}>
                       <SelectTrigger>
-                        <SelectValue />
+                        <SelectValue>
+                          {taskColumns.length > 0 ? (
+                            (() => {
+                              const currentColumn = taskColumns.find(col => col.mapped_status === status);
+                              return currentColumn ? (
+                                <div className="flex items-center gap-2">
+                                  <div 
+                                    className="w-3 h-3 rounded-full" 
+                                    style={{ backgroundColor: currentColumn.color }}
+                                  />
+                                  {currentColumn.name}
+                                </div>
+                              ) : status;
+                            })()
+                          ) : status}
+                        </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
                         {taskColumns.length > 0 ? (
                           taskColumns.map((column) => (
-                            <SelectItem key={column.key} value={column.key}>
+                            <SelectItem key={column.key} value={column.mapped_status}>
                               <div className="flex items-center gap-2">
                                 <div 
                                   className="w-3 h-3 rounded-full" 
