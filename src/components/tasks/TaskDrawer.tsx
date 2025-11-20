@@ -60,6 +60,19 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
   const { toast } = useToast();
   const navigate = useNavigate();
 
+  // Normalize editedTask.status based on column_id to prevent enum errors
+  useEffect(() => {
+    if (!taskColumns.length || !editedTask.column_id) return;
+
+    const col = taskColumns.find(c => c.id === editedTask.column_id);
+    if (col && editedTask.status !== col.mapped_status) {
+      setEditedTask(prev => ({
+        ...prev,
+        status: col.mapped_status,
+      }));
+    }
+  }, [taskColumns, editedTask.column_id]);
+
   // Helper function to extract meeting title from summary
   const extractMeetingTitle = (summary: string): string => {
     // Check if summary starts with markdown heading

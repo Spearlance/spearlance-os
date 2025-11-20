@@ -431,7 +431,8 @@ export default function Tasks() {
       : [...tasks[destination.droppableId]];
 
     const [movedTask] = sourceColumn.splice(source.index, 1);
-    movedTask.status = destination.droppableId as string;
+    movedTask.status = destTaskColumn.mapped_status;
+    movedTask.column_id = destTaskColumn.id;
     destColumn.splice(destination.index, 0, movedTask);
 
     setTasks({
@@ -445,7 +446,7 @@ export default function Tasks() {
       .from("tasks")
       .update({ 
         status: destTaskColumn.mapped_status,
-        column_id: destination.droppableId
+        column_id: destTaskColumn.id
       })
       .eq("id", draggableId);
 
