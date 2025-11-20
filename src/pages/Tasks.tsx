@@ -35,6 +35,7 @@ interface Task {
   linked_channel_id: string | null;
   color?: string;
   parent_task_id?: string | null;
+  column_id?: string;
   assignees?: Array<{ id: string; name: string; avatar_url?: string }>;
   tags?: Array<{ id: string; name: string; color: string }>;
   subtask_count?: number;
@@ -278,6 +279,7 @@ export default function Tasks() {
       .from("tasks")
       .select(`
         *,
+        column_id,
         profiles:assignee_user_id (name)
       `)
       .eq("client_id", selectedClient.id)
@@ -384,18 +386,25 @@ export default function Tasks() {
       grouped[col.key] = [];
     });
 
-    // Group tasks by finding the column with matching mapped_status
+    // Group tasks by column_id
     enrichedTasks.forEach((task: any) => {
-      // Find the column(s) that map to this task's status
-      const matchingColumns = taskColumns.filter(col => col.mapped_status === task.status);
-      
-      if (matchingColumns.length > 0) {
-        // If multiple columns map to the same status, put in the first one
-        // (This is a design decision - could be handled differently)
-        const targetColumn = matchingColumns[0];
-        grouped[targetColumn.key].push(task);
+      if (task.column_id) {
+        // Find the column by ID
+        const targetColumn = taskColumns.find(col => col.id === task.column_id);
+        if (targetColumn) {
+          grouped[targetColumn.key].push(task);
+        } else {
+          console.warn(`Task "${task.title}" has column_id "${task.column_id}" which doesn't match any column`);
+        }
       } else {
-        console.warn(`Task "${task.title}" has status "${task.status}" which doesn't match any column's mapped_status`);
+        // Fallback: match by status for tasks without column_id
+        const matchingColumns = taskColumns.filter(col => col.mapped_status === task.status);
+        if (matchingColumns.length > 0) {
+          const targetColumn = matchingColumns[0];
+          grouped[targetColumn.key].push(task);
+        } else {
+          console.warn(`Task "${task.title}" has status "${task.status}" which doesn't match any column's mapped_status`);
+        }
       }
     });
 
@@ -431,10 +440,13 @@ export default function Tasks() {
       [destination.droppableId]: destColumn,
     });
 
-    // Update task with the mapped_status from the destination column
+    // Update task with both status and column_id
     const { error } = await supabase
       .from("tasks")
-      .update({ status: destTaskColumn.mapped_status })
+      .update({ 
+        status: destTaskColumn.mapped_status,
+        column_id: destination.droppableId
+      })
       .eq("id", draggableId);
 
     if (error) {

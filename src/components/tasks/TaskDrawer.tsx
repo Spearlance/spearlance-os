@@ -31,12 +31,17 @@ interface TaskDrawerProps {
 }
 
 export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = false }: TaskDrawerProps) {
-  const [title, setTitle] = useState(task.title);
-  const [description, setDescription] = useState(task.description || "");
-  const [status, setStatus] = useState(task.status);
-  const [priority, setPriority] = useState(task.priority);
-  const [dueDate, setDueDate] = useState(task.due_date || "");
-  const [color, setColor] = useState(task.color || "#6B7280");
+  const [editedTask, setEditedTask] = useState({
+    title: task.title,
+    description: task.description || '',
+    status: task.status,
+    priority: task.priority || 'medium',
+    due_date: task.due_date || '',
+    color: task.color || '',
+    recurring_schedule: task.recurring_schedule || '',
+    linked_channel_id: task.linked_channel_id || '',
+    column_id: task.column_id || '',
+  });
   const [comments, setComments] = useState<any[]>([]);
   const [newComment, setNewComment] = useState("");
   const [users, setUsers] = useState<any[]>([]);
@@ -407,12 +412,13 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
     const { error: taskError } = await supabase
       .from("tasks")
       .update({
-        title,
-        description,
-        status,
-        priority,
-        due_date: dueDate || null,
-        color,
+        title: editedTask.title,
+        description: editedTask.description || null,
+        status: editedTask.status,
+        priority: editedTask.priority,
+        due_date: editedTask.due_date || null,
+        color: editedTask.color || null,
+        column_id: editedTask.column_id || null,
       })
       .eq("id", task.id);
 
@@ -605,14 +611,14 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label>Title</Label>
-                  <Input value={title} onChange={(e) => setTitle(e.target.value)} />
+                  <Input value={editedTask.title} onChange={(e) => setEditedTask({ ...editedTask, title: e.target.value })} />
                 </div>
 
                 <div className="space-y-2">
                   <Label>Description</Label>
                   <Textarea 
-                    value={description} 
-                    onChange={(e) => setDescription(e.target.value)}
+                    value={editedTask.description} 
+                    onChange={(e) => setEditedTask({ ...editedTask, description: e.target.value })}
                     rows={4}
                   />
                 </div>
@@ -620,16 +626,24 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
                 <div className="grid grid-cols-3 gap-3">
                   <div className="space-y-2">
                     <Label>Status</Label>
-                    <Select value={status} onValueChange={(value) => {
-                      // Find the column and use its mapped_status for database update
-                      const selectedColumn = taskColumns.find(col => col.mapped_status === value);
-                      setStatus(selectedColumn ? selectedColumn.mapped_status : value);
-                    }}>
+                    <Select 
+                      value={editedTask.column_id || editedTask.status} 
+                      onValueChange={(columnId) => {
+                        const selectedColumn = taskColumns.find(col => col.id === columnId);
+                        if (selectedColumn) {
+                          setEditedTask({ 
+                            ...editedTask, 
+                            status: selectedColumn.mapped_status,
+                            column_id: columnId
+                          });
+                        }
+                      }}
+                    >
                       <SelectTrigger>
                         <SelectValue>
                           {taskColumns.length > 0 ? (
                             (() => {
-                              const currentColumn = taskColumns.find(col => col.mapped_status === status);
+                              const currentColumn = taskColumns.find(col => col.id === editedTask.column_id);
                               return currentColumn ? (
                                 <div className="flex items-center gap-2">
                                   <div 
@@ -638,15 +652,15 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
                                   />
                                   {currentColumn.name}
                                 </div>
-                              ) : status;
+                              ) : editedTask.status;
                             })()
-                          ) : status}
+                          ) : editedTask.status}
                         </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
                         {taskColumns.length > 0 ? (
                           taskColumns.map((column) => (
-                            <SelectItem key={column.key} value={column.mapped_status}>
+                            <SelectItem key={column.id} value={column.id}>
                               <div className="flex items-center gap-2">
                                 <div 
                                   className="w-3 h-3 rounded-full" 
@@ -669,7 +683,7 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
 
                   <div className="space-y-2">
                     <Label>Priority</Label>
-                    <Select value={priority} onValueChange={setPriority}>
+                    <Select value={editedTask.priority} onValueChange={(value) => setEditedTask({ ...editedTask, priority: value })}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -686,8 +700,8 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
                     <Label>Due Date</Label>
                     <Input 
                       type="date" 
-                      value={dueDate} 
-                      onChange={(e) => setDueDate(e.target.value)}
+                      value={editedTask.due_date} 
+                      onChange={(e) => setEditedTask({ ...editedTask, due_date: e.target.value })}
                     />
                   </div>
                 </div>
@@ -709,7 +723,7 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
                         <Button variant="outline" className="w-full h-10 px-2">
                           <div 
                             className="h-6 w-full rounded border-2 border-background" 
-                            style={{ backgroundColor: color }}
+                            style={{ backgroundColor: editedTask.color }}
                           />
                         </Button>
                       </PopoverTrigger>
@@ -720,10 +734,10 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
                               key={colorOption}
                               type="button"
                               className={`h-8 w-8 rounded-md border-2 transition-all hover:scale-110 ${
-                                color === colorOption ? "border-primary ring-2 ring-primary/20" : "border-transparent"
+                                editedTask.color === colorOption ? "border-primary ring-2 ring-primary/20" : "border-transparent"
                               }`}
                               style={{ backgroundColor: colorOption }}
-                              onClick={() => setColor(colorOption)}
+                              onClick={() => setEditedTask({ ...editedTask, color: colorOption })}
                               aria-label={`Select color ${colorOption}`}
                             />
                           ))}
