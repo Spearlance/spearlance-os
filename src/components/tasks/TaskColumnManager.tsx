@@ -28,6 +28,7 @@ export function TaskColumnManager() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [editColor, setEditColor] = useState("");
+  const [editMappedStatus, setEditMappedStatus] = useState<'to_do' | 'in_progress' | 'done'>('in_progress');
   const [isSavingEdit, setIsSavingEdit] = useState(false);
   const [showAddNew, setShowAddNew] = useState(false);
   const [newColumnName, setNewColumnName] = useState("");
@@ -128,6 +129,13 @@ export function TaskColumnManager() {
 
     const tempId = `temp-${Date.now()}`;
 
+    // Auto-select mapped status based on column name
+    const inferredMappedStatus = key === 'done' || newColumnName.toLowerCase().includes('done') || newColumnName.toLowerCase().includes('complete')
+      ? 'done'
+      : key === 'to_do' || newColumnName.toLowerCase().includes('todo') || newColumnName.toLowerCase().includes('backlog')
+      ? 'to_do'
+      : 'in_progress';
+
     const newColumn: PendingColumn = {
       tempId,
       client_id: selectedClient.id,
@@ -136,6 +144,7 @@ export function TaskColumnManager() {
       color: newColumnColor,
       display_order: newOrder,
       is_default: false,
+      mapped_status: inferredMappedStatus,
     };
 
     setPendingChanges(prev => ({
@@ -168,6 +177,7 @@ export function TaskColumnManager() {
     setEditingId(column.id);
     setEditName(column.name);
     setEditColor(column.color || "#6B7280");
+    setEditMappedStatus(column.mapped_status);
   };
 
   const handleSaveEdit = async () => {
@@ -180,7 +190,8 @@ export function TaskColumnManager() {
         .from("task_columns")
         .update({ 
           name: editName.trim(), 
-          color: editColor 
+          color: editColor,
+          mapped_status: editMappedStatus
         })
         .eq("id", editingId);
 
@@ -189,14 +200,14 @@ export function TaskColumnManager() {
       // Update local columns display
       setColumns(prev => prev.map(col => 
         col.id === editingId 
-          ? { ...col, name: editName.trim(), color: editColor }
+          ? { ...col, name: editName.trim(), color: editColor, mapped_status: editMappedStatus }
           : col
       ));
 
       // Update original columns to reflect saved state
       setOriginalColumns(prev => prev.map(col => 
         col.id === editingId 
-          ? { ...col, name: editName.trim(), color: editColor }
+          ? { ...col, name: editName.trim(), color: editColor, mapped_status: editMappedStatus }
           : col
       ));
 
@@ -545,6 +556,16 @@ export function TaskColumnManager() {
                                         {opt.label}
                                       </option>
                                     ))}
+                                  </select>
+                                  <select
+                                    value={editMappedStatus}
+                                    onChange={(e) => setEditMappedStatus(e.target.value as 'to_do' | 'in_progress' | 'done')}
+                                    className="px-3 py-2 border rounded-md bg-background"
+                                    title="Database status this column maps to"
+                                  >
+                                    <option value="to_do">To Do</option>
+                                    <option value="in_progress">In Progress</option>
+                                    <option value="done">Done</option>
                                   </select>
                                    <Button 
                                      size="sm" 

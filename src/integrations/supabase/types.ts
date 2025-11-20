@@ -4013,6 +4013,7 @@ export type Database = {
           id: string
           is_default: boolean | null
           key: string
+          mapped_status: Database["public"]["Enums"]["task_status"] | null
           name: string
           updated_at: string | null
         }
@@ -4024,6 +4025,7 @@ export type Database = {
           id?: string
           is_default?: boolean | null
           key: string
+          mapped_status?: Database["public"]["Enums"]["task_status"] | null
           name: string
           updated_at?: string | null
         }
@@ -4035,6 +4037,7 @@ export type Database = {
           id?: string
           is_default?: boolean | null
           key?: string
+          mapped_status?: Database["public"]["Enums"]["task_status"] | null
           name?: string
           updated_at?: string | null
         }

@@ -46,7 +46,7 @@ interface Task {
 
 export default function Tasks() {
   const { selectedClient } = useClient();
-  const [taskColumns, setTaskColumns] = useState<Array<{ id: string; name: string; key: string; color: string }>>([]);
+  const [taskColumns, setTaskColumns] = useState<Array<{ id: string; name: string; key: string; color: string; mapped_status: 'to_do' | 'in_progress' | 'done' }>>([]);
   const [tasks, setTasks] = useState<Record<string, Task[]>>({});
   const [allTasks, setAllTasks] = useState<Task[]>([]);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -163,7 +163,7 @@ export default function Tasks() {
 
     const { data, error } = await supabase
       .from("task_columns")
-      .select("id, name, key, color")
+      .select("id, name, key, color, mapped_status")
       .eq("client_id", selectedClient.id)
       .order("display_order");
 
@@ -384,11 +384,18 @@ export default function Tasks() {
       grouped[col.key] = [];
     });
 
+    // Group tasks by finding the column with matching mapped_status
     enrichedTasks.forEach((task: any) => {
-      if (grouped[task.status]) {
-        grouped[task.status].push(task);
+      // Find the column(s) that map to this task's status
+      const matchingColumns = taskColumns.filter(col => col.mapped_status === task.status);
+      
+      if (matchingColumns.length > 0) {
+        // If multiple columns map to the same status, put in the first one
+        // (This is a design decision - could be handled differently)
+        const targetColumn = matchingColumns[0];
+        grouped[targetColumn.key].push(task);
       } else {
-        console.warn(`Task "${task.title}" has status "${task.status}" which doesn't match any current column`);
+        console.warn(`Task "${task.title}" has status "${task.status}" which doesn't match any column's mapped_status`);
       }
     });
 
@@ -401,6 +408,13 @@ export default function Tasks() {
 
     if (!destination) return;
     if (source.droppableId === destination.droppableId && source.index === destination.index) return;
+
+    // Find the destination column to get its mapped_status
+    const destTaskColumn = taskColumns.find(col => col.key === destination.droppableId);
+    if (!destTaskColumn) {
+      toast({ title: "Error: Invalid column", variant: "destructive" });
+      return;
+    }
 
     const sourceColumn = [...tasks[source.droppableId]];
     const destColumn = source.droppableId === destination.droppableId 
@@ -417,9 +431,10 @@ export default function Tasks() {
       [destination.droppableId]: destColumn,
     });
 
+    // Update task with the mapped_status from the destination column
     const { error } = await supabase
       .from("tasks")
-      .update({ status: destination.droppableId as any })
+      .update({ status: destTaskColumn.mapped_status })
       .eq("id", draggableId);
 
     if (error) {
