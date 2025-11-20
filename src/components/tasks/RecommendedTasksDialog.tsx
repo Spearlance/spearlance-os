@@ -52,6 +52,15 @@ export function RecommendedTasksDialog({
         throw new Error('User not authenticated');
       }
 
+      // Get the "To Do" column ID
+      const { data: toDoColumn } = await supabase
+        .from('task_columns')
+        .select('id')
+        .eq('client_id', clientId)
+        .eq('mapped_status', 'to_do')
+        .limit(1)
+        .single();
+
       const { error } = await supabase
         .from('tasks')
         .insert({
@@ -60,14 +69,16 @@ export function RecommendedTasksDialog({
           description: recommendation.description,
           status: 'to_do',
           priority: recommendation.priority,
-          due_date: recommendation.suggested_due_date,
+          due_date: null,
           creator_user_id: user.id,
-          assignee_user_id: user.id,
+          assignee_user_id: null,
+          column_id: toDoColumn?.id || null,
           metadata: {
             source: 'ai_recommendation',
             original_source: recommendation.source,
             linked_entity_type: recommendation.linked_entity_type,
-            linked_entity_id: recommendation.linked_entity_id
+            linked_entity_id: recommendation.linked_entity_id,
+            suggested_due_date: recommendation.suggested_due_date
           }
         });
       
@@ -102,20 +113,31 @@ export function RecommendedTasksDialog({
         throw new Error('User not authenticated');
       }
 
+      // Get the "To Do" column ID
+      const { data: toDoColumn } = await supabase
+        .from('task_columns')
+        .select('id')
+        .eq('client_id', clientId)
+        .eq('mapped_status', 'to_do')
+        .limit(1)
+        .single();
+
       const tasksToInsert = recommendations.map(rec => ({
         client_id: clientId,
         title: rec.title,
         description: rec.description,
         status: 'to_do' as const,
         priority: rec.priority,
-        due_date: rec.suggested_due_date,
+        due_date: null,
         creator_user_id: user.id,
-        assignee_user_id: user.id,
+        assignee_user_id: null,
+        column_id: toDoColumn?.id || null,
         metadata: {
           source: 'ai_recommendation',
           original_source: rec.source,
           linked_entity_type: rec.linked_entity_type,
-          linked_entity_id: rec.linked_entity_id
+          linked_entity_id: rec.linked_entity_id,
+          suggested_due_date: rec.suggested_due_date
         }
       }));
       
