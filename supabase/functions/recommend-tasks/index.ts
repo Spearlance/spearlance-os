@@ -185,7 +185,7 @@ serve(async (req) => {
 Your job is to analyze recent client activity and suggest specific, actionable tasks.
 
 RULES:
-- Generate 5-10 task suggestions maximum
+- Generate 3-5 task suggestions maximum
 - Each task must be specific and actionable (not vague)
 - Prioritize high-impact, time-sensitive items
 - Do NOT suggest tasks that already exist in the task list
@@ -193,15 +193,24 @@ RULES:
 - Tasks should be completable within 1-2 hours each
 - Return ONLY valid JSON, no additional text
 
+AGGREGATION RULES:
+- When there are 3+ similar items (form submissions, draft posts, etc.), create ONE aggregated task
+- Example: "Follow up with 4 recent form submissions from this week" instead of 4 separate tasks
+- Only create individual tasks for particularly urgent items (>7 days old, VIP contact, etc.)
+- Ensure variety: mix submissions, meetings, social posts, communications - don't focus on just one type
+- Maximum 1-2 tasks per data source category
+
 GOOD EXAMPLES:
-✅ "Follow up with Robert Patrick about his home remodel inquiry (submitted 2 days ago)"
+✅ "Follow up with 4 recent form submissions (submitted 2-5 days ago)"
 ✅ "Prepare agenda for client meeting with Sarah Johnson on Nov 5"
 ✅ "Review and approve 3 pending social media posts for this week"
+✅ "Send follow-up emails for 2 meetings from last week"
 
 BAD EXAMPLES:
 ❌ "Work on marketing" (too vague)
 ❌ "Update website" (too broad)
 ❌ "Check emails" (not specific)
+❌ Creating 4 separate "Follow up with..." tasks for form submissions
 
 Return JSON in this exact format:
 {
@@ -221,31 +230,31 @@ Return JSON in this exact format:
     let userPrompt = 'CURRENT DATE: ' + now.toISOString().split('T')[0] + '\\n\\n';
 
     if (submissions.length > 0) {
-      userPrompt += 'RECENT FORM SUBMISSIONS (Unresponded):\\n';
+      userPrompt += `RECENT FORM SUBMISSIONS (${submissions.length} unresponded in past 14 days):\n`;
       userPrompt += submissions.map(s => {
         const firstName = s.form_data?.['First Name'] || s.form_data?.['first_name'] || '';
         const lastName = s.form_data?.['Last Name'] || s.form_data?.['last_name'] || '';
         const contactName = `${firstName} ${lastName}`.trim() || 'Unknown';
         return `- ${contactName} (${s.form_name}) - submitted ${daysAgo(s.submitted_at)} days ago [ID: ${s.id}]`;
-      }).join('\\n') + '\\n\\n';
+      }).join('\n') + '\n\n';
     }
 
     if (upcomingMeetings.length > 0) {
-      userPrompt += 'UPCOMING MEETINGS (Next 7 days):\\n';
+      userPrompt += `UPCOMING MEETINGS (${upcomingMeetings.length} in next 7 days):\n`;
       userPrompt += upcomingMeetings.map(m => 
         `- ${m.attendees || 'TBD'} on ${formatDate(m.date_time)} (in ${daysUntil(m.date_time)} days) ${!m.summary || m.summary.trim() === '' ? '⚠️ No prep notes yet' : ''} [ID: ${m.id}]`
-      ).join('\\n') + '\\n\\n';
+      ).join('\n') + '\n\n';
     }
 
     if (recentMeetingsWithoutFollowup.length > 0) {
-      userPrompt += 'RECENT MEETINGS (Past 7 days without follow-up):\\n';
+      userPrompt += `RECENT MEETINGS (${recentMeetingsWithoutFollowup.length} without follow-up in past 7 days):\n`;
       userPrompt += recentMeetingsWithoutFollowup.map(m => 
         `- ${m.attendees || 'unknown'} on ${formatDate(m.date_time)} (${daysAgo(m.date_time)} days ago) [ID: ${m.id}]`
-      ).join('\\n') + '\\n\\n';
+      ).join('\n') + '\n\n';
     }
 
     if (communications.length > 0) {
-      userPrompt += 'COMMUNICATIONS NEEDING FOLLOW-UP:\\n';
+      userPrompt += `COMMUNICATIONS NEEDING FOLLOW-UP (${communications.length} pending):\n`;
       userPrompt += communications.map(c => {
         const getContactName = (participants: any) => {
           if (!participants || participants.length === 0) return 'Unknown';
@@ -253,7 +262,7 @@ Return JSON in this exact format:
           return contact?.name || 'Unknown';
         };
         return `- ${getContactName(c.participants)} (${c.type}) on ${formatDate(c.created_at)} - "${c.internal_notes?.substring(0, 50) || c.subject_line?.substring(0, 50) || 'No notes'}" [ID: ${c.id}]`;
-      }).join('\\n') + '\\n\\n';
+      }).join('\n') + '\n\n';
     }
 
     if (draftPosts.length > 0 || scheduledPostsWithoutMedia.length > 0) {
@@ -290,6 +299,7 @@ Return JSON in this exact format:
       );
     }
 
+    userPrompt += 'IMPORTANT: Group similar items into single aggregated tasks. Create diverse recommendations across different categories.\n\n';
     userPrompt += 'Generate task recommendations based on the above data. Focus on the most urgent and impactful tasks.';
 
     console.log('Calling Lovable AI...');
