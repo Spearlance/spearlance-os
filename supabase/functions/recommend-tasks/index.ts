@@ -58,17 +58,17 @@ serve(async (req) => {
       // Unresponded form submissions (last 14 days)
       supabaseClient
         .from('website_form_submissions')
-        .select('id, contact_name, form_type, submitted_at, status')
+        .select('id, form_name, form_data, submitted_at, status')
         .eq('client_id', client_id)
         .neq('status', 'responded')
         .gte('submitted_at', fourteenDaysAgo.toISOString())
         .order('submitted_at', { ascending: false })
         .limit(10),
 
-      // Upcoming meetings (next 7 days) without notes
+      // Upcoming meetings (next 7 days)
       supabaseClient
         .from('meetings')
-        .select('id, title, attendees, date_time, notes')
+        .select('id, attendees, date_time, summary, next_steps')
         .eq('client_id', client_id)
         .gte('date_time', now.toISOString())
         .lte('date_time', sevenDaysAhead.toISOString())
@@ -78,7 +78,7 @@ serve(async (req) => {
       // Recent meetings (past 7 days) - check if follow-up logged
       supabaseClient
         .from('meetings')
-        .select('id, title, attendees, date_time')
+        .select('id, attendees, date_time, summary')
         .eq('client_id', client_id)
         .gte('date_time', sevenDaysAgo.toISOString())
         .lt('date_time', now.toISOString())
@@ -88,11 +88,11 @@ serve(async (req) => {
       // Communications needing follow-up (past 30 days)
       supabaseClient
         .from('communication_logs')
-        .select('id, contact_name, communication_type, date, notes, follow_up_required')
+        .select('id, type, subject_line, participants, internal_notes, tags, created_at')
         .eq('client_id', client_id)
-        .eq('follow_up_required', true)
-        .gte('date', thirtyDaysAgo.toISOString())
-        .order('date', { ascending: false })
+        .contains('tags', ['follow-up-required'])
+        .gte('created_at', thirtyDaysAgo.toISOString())
+        .order('created_at', { ascending: false })
         .limit(10),
 
       // Social media drafts and scheduled posts without media
@@ -216,30 +216,38 @@ Return JSON in this exact format:
 
     if (submissions.length > 0) {
       userPrompt += 'RECENT FORM SUBMISSIONS (Unresponded):\\n';
-      userPrompt += submissions.map(s => 
-        `- ${s.contact_name} (${s.form_type}) - submitted ${daysAgo(s.submitted_at)} days ago [ID: ${s.id}]`
-      ).join('\\n') + '\\n\\n';
+      userPrompt += submissions.map(s => {
+        const firstName = s.form_data?.['First Name'] || s.form_data?.['first_name'] || '';
+        const lastName = s.form_data?.['Last Name'] || s.form_data?.['last_name'] || '';
+        const contactName = `${firstName} ${lastName}`.trim() || 'Unknown';
+        return `- ${contactName} (${s.form_name}) - submitted ${daysAgo(s.submitted_at)} days ago [ID: ${s.id}]`;
+      }).join('\\n') + '\\n\\n';
     }
 
     if (upcomingMeetings.length > 0) {
       userPrompt += 'UPCOMING MEETINGS (Next 7 days):\\n';
       userPrompt += upcomingMeetings.map(m => 
-        `- "${m.title}" with ${m.attendees || 'TBD'} on ${formatDate(m.date_time)} (in ${daysUntil(m.date_time)} days) ${!m.notes || m.notes.trim() === '' ? '⚠️ No prep notes yet' : ''} [ID: ${m.id}]`
+        `- ${m.attendees || 'TBD'} on ${formatDate(m.date_time)} (in ${daysUntil(m.date_time)} days) ${!m.summary || m.summary.trim() === '' ? '⚠️ No prep notes yet' : ''} [ID: ${m.id}]`
       ).join('\\n') + '\\n\\n';
     }
 
     if (recentMeetingsWithoutFollowup.length > 0) {
       userPrompt += 'RECENT MEETINGS (Past 7 days without follow-up):\\n';
       userPrompt += recentMeetingsWithoutFollowup.map(m => 
-        `- "${m.title}" with ${m.attendees || 'unknown'} on ${formatDate(m.date_time)} (${daysAgo(m.date_time)} days ago) [ID: ${m.id}]`
+        `- ${m.attendees || 'unknown'} on ${formatDate(m.date_time)} (${daysAgo(m.date_time)} days ago) [ID: ${m.id}]`
       ).join('\\n') + '\\n\\n';
     }
 
     if (communications.length > 0) {
       userPrompt += 'COMMUNICATIONS NEEDING FOLLOW-UP:\\n';
-      userPrompt += communications.map(c => 
-        `- ${c.contact_name} (${c.communication_type}) on ${formatDate(c.date)} - "${c.notes?.substring(0, 50) || 'No notes'}" [ID: ${c.id}]`
-      ).join('\\n') + '\\n\\n';
+      userPrompt += communications.map(c => {
+        const getContactName = (participants: any) => {
+          if (!participants || participants.length === 0) return 'Unknown';
+          const contact = participants.find((p: any) => p.role === 'from' || p.role === 'recipient');
+          return contact?.name || 'Unknown';
+        };
+        return `- ${getContactName(c.participants)} (${c.type}) on ${formatDate(c.created_at)} - "${c.internal_notes?.substring(0, 50) || c.subject_line?.substring(0, 50) || 'No notes'}" [ID: ${c.id}]`;
+      }).join('\\n') + '\\n\\n';
     }
 
     if (draftPosts.length > 0 || scheduledPostsWithoutMedia.length > 0) {
