@@ -4236,6 +4236,7 @@ export type Database = {
           assignee_user_id: string | null
           client_id: string
           color: string | null
+          column_id: string | null
           created_at: string | null
           creator_user_id: string | null
           description: string | null
@@ -4262,6 +4263,7 @@ export type Database = {
           assignee_user_id?: string | null
           client_id: string
           color?: string | null
+          column_id?: string | null
           created_at?: string | null
           creator_user_id?: string | null
           description?: string | null
@@ -4288,6 +4290,7 @@ export type Database = {
           assignee_user_id?: string | null
           client_id?: string
           color?: string | null
+          column_id?: string | null
           created_at?: string | null
           creator_user_id?: string | null
           description?: string | null
@@ -4322,6 +4325,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_column_id_fkey"
+            columns: ["column_id"]
+            isOneToOne: false
+            referencedRelation: "task_columns"
             referencedColumns: ["id"]
           },
           {
