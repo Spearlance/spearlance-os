@@ -122,26 +122,39 @@ export default function Tasks() {
     return () => window.removeEventListener('taskColumnsUpdated', handleColumnsUpdate);
   }, [selectedClient]);
 
-  // Re-group tasks whenever taskColumns changes
+  // Re-group tasks whenever taskColumns or allTasks changes
   useEffect(() => {
-    if (taskColumns.length > 0 && allTasks.length > 0) {
-      console.log("Re-grouping tasks for columns:", taskColumns.map(c => c.key));
-      const grouped: Record<string, Task[]> = {};
-      taskColumns.forEach(col => {
-        grouped[col.key] = [];
-      });
-      
-      allTasks.forEach((task: any) => {
-        if (grouped[task.status]) {
-          grouped[task.status].push(task);
+    if (taskColumns.length === 0 || allTasks.length === 0) return;
+
+    console.log("Re-grouping tasks for columns:", taskColumns.map(c => c.key));
+    const grouped: Record<string, Task[]> = {};
+    taskColumns.forEach(col => {
+      grouped[col.key] = [];
+    });
+
+    allTasks.forEach((task: any) => {
+      if (task.column_id) {
+        // Group by column_id (primary method)
+        const targetColumn = taskColumns.find(col => col.id === task.column_id);
+        if (targetColumn) {
+          grouped[targetColumn.key].push(task);
         } else {
-          console.warn(`Task ${task.id} has status "${task.status}" which doesn't match any column`);
+          console.warn(`Task "${task.title}" has column_id "${task.column_id}" which doesn't match any column`);
         }
-      });
-      
-      setTasks(grouped);
-      console.log("Tasks re-grouped:", Object.entries(grouped).map(([key, tasks]) => `${key}: ${tasks.length} tasks`).join(', '));
-    }
+      } else {
+        // Fallback: group by mapped_status for tasks without column_id
+        const matchingColumns = taskColumns.filter(col => col.mapped_status === task.status);
+        if (matchingColumns.length > 0) {
+          const targetColumn = matchingColumns[0];
+          grouped[targetColumn.key].push(task);
+        } else {
+          console.warn(`Task "${task.title}" has status "${task.status}" which doesn't match any column's mapped_status`);
+        }
+      }
+    });
+
+    setTasks(grouped);
+    console.log("Tasks re-grouped:", Object.entries(grouped).map(([key, tasks]) => `${key}: ${tasks.length} tasks`).join(', '));
   }, [taskColumns, allTasks]);
 
   const loadUserRole = async () => {
