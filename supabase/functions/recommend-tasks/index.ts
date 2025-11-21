@@ -194,11 +194,12 @@ RULES:
 - Return ONLY valid JSON, no additional text
 
 AGGREGATION RULES:
-- When there are 3+ similar items (form submissions, draft posts, etc.), create ONE aggregated task
+- When there are 3+ similar items (form submissions, draft posts, scheduled posts, communications), create ONE aggregated task
 - Example: "Follow up with 4 recent form submissions from this week" instead of 4 separate tasks
+- EXCEPTION: Meeting next_steps are NOT aggregated - each distinct action item becomes its own task
 - Only create individual tasks for particularly urgent items (>7 days old, VIP contact, etc.)
-- Ensure variety: mix submissions, meetings, social posts, communications - don't focus on just one type
-- Maximum 1-2 tasks per data source category
+- Ensure variety across data sources: don't create tasks only from one category
+- Maximum 1-2 aggregated tasks per data source category (forms, posts, communications)
 
 PROJECT MANAGEMENT MINDSET:
 - Think like a Project Manager and Client Success Manager
@@ -210,11 +211,13 @@ PROJECT MANAGEMENT MINDSET:
 - Flag risks: deadlines approaching, deliverables not started, etc.
 
 MEETING ANALYSIS RULES:
-- If a meeting has next_steps listed, create specific tasks for each actionable item
+- If a meeting has next_steps listed, create a SEPARATE specific task for EACH distinct actionable item
+- Do NOT aggregate meeting action items together - each should be its own task
 - If next_steps are vague ("follow up"), make them specific with context from the summary
 - If a meeting summary mentions deliverables or decisions, ensure tasks exist to execute them
 - For recent meetings (<3 days old), prioritize creating tasks from next_steps immediately
 - Look for patterns: repeated topics without progress = create escalation/review task
+- It's okay to generate 3-5 tasks from a single meeting if there are that many action items
 
 GOOD EXAMPLES:
 ✅ "Follow up with 4 recent form submissions (submitted 2-5 days ago)"
@@ -225,6 +228,9 @@ GOOD EXAMPLES:
 ✅ "Send follow-up email with pricing options mentioned in discovery call"
 ✅ "Schedule content review session (next step from Monday's meeting)"
 ✅ "Draft proposal for social media strategy outlined in meeting notes"
+✅ "Update job schema markup on service pages (from Weekly Marketing Meeting)"
+✅ "Implement internal linking strategy between blog posts (from Weekly Marketing Meeting)"
+✅ "Create location-specific landing pages for new markets (from Weekly Marketing Meeting)"
 
 BAD EXAMPLES:
 ❌ "Work on marketing" (too vague)
@@ -338,8 +344,8 @@ Return JSON in this exact format:
       );
     }
 
-    userPrompt += 'IMPORTANT: Group similar items into single aggregated tasks. Create diverse recommendations across different categories.\n\n';
-    userPrompt += 'CRITICAL: Analyze meeting summaries and next_steps deeply. Extract specific action items from next_steps. Identify implicit commitments from summaries. Think proactively about what needs to happen next to keep projects moving forward.\n\n';
+    userPrompt += 'IMPORTANT: Group similar items (form submissions, social posts, communications) into single aggregated tasks. Create diverse recommendations across different categories.\n\n';
+    userPrompt += 'CRITICAL: For meetings - create a SEPARATE task for EACH distinct action item from next_steps. Do NOT combine multiple meeting action items into one task. Analyze meeting summaries deeply to extract specific tasks. Identify implicit commitments. Think proactively about what needs to happen next to keep projects moving forward.\n\n';
     userPrompt += 'Generate task recommendations based on the above data. Focus on the most urgent and impactful tasks.';
 
     console.log('Calling Lovable AI...');
