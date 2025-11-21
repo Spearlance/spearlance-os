@@ -75,10 +75,10 @@ serve(async (req) => {
         .order('date_time', { ascending: true })
         .limit(10),
 
-      // Recent meetings (past 7 days) - check if follow-up logged
+      // Recent meetings (past 7 days) - analyze ALL for action items
       supabaseClient
         .from('meetings')
-        .select('id, attendees, date_time, summary')
+        .select('id, attendees, date_time, summary, next_steps')
         .eq('client_id', client_id)
         .gte('date_time', sevenDaysAgo.toISOString())
         .lt('date_time', now.toISOString())
@@ -200,11 +200,31 @@ AGGREGATION RULES:
 - Ensure variety: mix submissions, meetings, social posts, communications - don't focus on just one type
 - Maximum 1-2 tasks per data source category
 
+PROJECT MANAGEMENT MINDSET:
+- Think like a Project Manager and Client Success Manager
+- Extract explicit action items from meeting next_steps
+- Identify implicit commitments from meeting summaries
+- Anticipate gaps: what follow-through is missing?
+- Proactively suggest tasks to keep projects moving forward
+- Consider dependencies: what needs to happen before other things can proceed?
+- Flag risks: deadlines approaching, deliverables not started, etc.
+
+MEETING ANALYSIS RULES:
+- If a meeting has next_steps listed, create specific tasks for each actionable item
+- If next_steps are vague ("follow up"), make them specific with context from the summary
+- If a meeting summary mentions deliverables or decisions, ensure tasks exist to execute them
+- For recent meetings (<3 days old), prioritize creating tasks from next_steps immediately
+- Look for patterns: repeated topics without progress = create escalation/review task
+
 GOOD EXAMPLES:
 ✅ "Follow up with 4 recent form submissions (submitted 2-5 days ago)"
 ✅ "Prepare agenda for client meeting with Sarah Johnson on Nov 5"
 ✅ "Review and approve 3 pending social media posts for this week"
 ✅ "Send follow-up emails for 2 meetings from last week"
+✅ "Create project timeline for website redesign discussed in meeting with [Client]"
+✅ "Send follow-up email with pricing options mentioned in discovery call"
+✅ "Schedule content review session (next step from Monday's meeting)"
+✅ "Draft proposal for social media strategy outlined in meeting notes"
 
 BAD EXAMPLES:
 ❌ "Work on marketing" (too vague)
@@ -241,16 +261,35 @@ Return JSON in this exact format:
 
     if (upcomingMeetings.length > 0) {
       userPrompt += `UPCOMING MEETINGS (${upcomingMeetings.length} in next 7 days):\n`;
-      userPrompt += upcomingMeetings.map(m => 
-        `- ${m.attendees || 'TBD'} on ${formatDate(m.date_time)} (in ${daysUntil(m.date_time)} days) ${!m.summary || m.summary.trim() === '' ? '⚠️ No prep notes yet' : ''} [ID: ${m.id}]`
-      ).join('\n') + '\n\n';
+      upcomingMeetings.forEach(m => {
+        userPrompt += `\n- ${m.attendees || 'TBD'} on ${formatDate(m.date_time)} (in ${daysUntil(m.date_time)} days) [ID: ${m.id}]\n`;
+        if (m.summary && m.summary.trim()) {
+          userPrompt += `  Summary: ${m.summary.substring(0, 200)}${m.summary.length > 200 ? '...' : ''}\n`;
+        } else {
+          userPrompt += `  ⚠️ No agenda/prep notes yet\n`;
+        }
+        if (m.next_steps && m.next_steps.trim()) {
+          userPrompt += `  Next Steps: ${m.next_steps.substring(0, 200)}${m.next_steps.length > 200 ? '...' : ''}\n`;
+        }
+      });
+      userPrompt += '\n';
     }
 
-    if (recentMeetingsWithoutFollowup.length > 0) {
-      userPrompt += `RECENT MEETINGS (${recentMeetingsWithoutFollowup.length} without follow-up in past 7 days):\n`;
-      userPrompt += recentMeetingsWithoutFollowup.map(m => 
-        `- ${m.attendees || 'unknown'} on ${formatDate(m.date_time)} (${daysAgo(m.date_time)} days ago) [ID: ${m.id}]`
-      ).join('\n') + '\n\n';
+    if (recentMeetings.length > 0) {
+      userPrompt += `RECENT MEETINGS (${recentMeetings.length} in past 7 days - analyze for action items):\n`;
+      for (const m of recentMeetings) {
+        const hasFollowup = !recentMeetingsWithoutFollowup.some(mwf => mwf.id === m.id);
+        userPrompt += `\n- ${m.attendees || 'unknown'} on ${formatDate(m.date_time)} (${daysAgo(m.date_time)} days ago) ${!hasFollowup ? '⚠️ No follow-up logged' : ''} [ID: ${m.id}]\n`;
+        
+        if (m.summary && m.summary.trim()) {
+          userPrompt += `  Summary: ${m.summary.substring(0, 300)}${m.summary.length > 300 ? '...' : ''}\n`;
+        }
+        
+        if (m.next_steps && m.next_steps.trim()) {
+          userPrompt += `  Next Steps: ${m.next_steps.substring(0, 300)}${m.next_steps.length > 300 ? '...' : ''}\n`;
+        }
+      }
+      userPrompt += '\n';
     }
 
     if (communications.length > 0) {
@@ -300,6 +339,7 @@ Return JSON in this exact format:
     }
 
     userPrompt += 'IMPORTANT: Group similar items into single aggregated tasks. Create diverse recommendations across different categories.\n\n';
+    userPrompt += 'CRITICAL: Analyze meeting summaries and next_steps deeply. Extract specific action items from next_steps. Identify implicit commitments from summaries. Think proactively about what needs to happen next to keep projects moving forward.\n\n';
     userPrompt += 'Generate task recommendations based on the above data. Focus on the most urgent and impactful tasks.';
 
     console.log('Calling Lovable AI...');
