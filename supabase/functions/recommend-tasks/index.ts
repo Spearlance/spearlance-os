@@ -263,12 +263,12 @@ Return JSON in this exact format:
       userPrompt += `UPCOMING MEETINGS (${upcomingMeetings.length} in next 7 days):\n`;
       upcomingMeetings.forEach(m => {
         userPrompt += `\n- ${m.attendees || 'TBD'} on ${formatDate(m.date_time)} (in ${daysUntil(m.date_time)} days) [ID: ${m.id}]\n`;
-        if (m.summary && m.summary.trim()) {
+        if (typeof m.summary === 'string' && m.summary.trim()) {
           userPrompt += `  Summary: ${m.summary.substring(0, 200)}${m.summary.length > 200 ? '...' : ''}\n`;
         } else {
           userPrompt += `  ⚠️ No agenda/prep notes yet\n`;
         }
-        if (m.next_steps && m.next_steps.trim()) {
+        if (typeof m.next_steps === 'string' && m.next_steps.trim()) {
           userPrompt += `  Next Steps: ${m.next_steps.substring(0, 200)}${m.next_steps.length > 200 ? '...' : ''}\n`;
         }
       });
@@ -281,11 +281,11 @@ Return JSON in this exact format:
         const hasFollowup = !recentMeetingsWithoutFollowup.some(mwf => mwf.id === m.id);
         userPrompt += `\n- ${m.attendees || 'unknown'} on ${formatDate(m.date_time)} (${daysAgo(m.date_time)} days ago) ${!hasFollowup ? '⚠️ No follow-up logged' : ''} [ID: ${m.id}]\n`;
         
-        if (m.summary && m.summary.trim()) {
+        if (typeof m.summary === 'string' && m.summary.trim()) {
           userPrompt += `  Summary: ${m.summary.substring(0, 300)}${m.summary.length > 300 ? '...' : ''}\n`;
         }
         
-        if (m.next_steps && m.next_steps.trim()) {
+        if (typeof m.next_steps === 'string' && m.next_steps.trim()) {
           userPrompt += `  Next Steps: ${m.next_steps.substring(0, 300)}${m.next_steps.length > 300 ? '...' : ''}\n`;
         }
       }
