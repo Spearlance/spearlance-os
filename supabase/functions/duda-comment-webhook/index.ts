@@ -5,6 +5,12 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Transform editor link to white-label domain
+function transformEditorLink(originalLink: string | null): string | null {
+  if (!originalLink) return null;
+  return originalLink.replace('my.duda.co', 'www.mywebsitemanager.co');
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -107,7 +113,7 @@ Deno.serve(async (req) => {
             author_account: account_name,
             is_internal_reply: false,
             visibility: visibility?.toLowerCase() || 'public',
-            editor_link: editor_link,
+            editor_link: transformEditorLink(editor_link),
           });
 
         if (commentError) {
@@ -166,7 +172,7 @@ Deno.serve(async (req) => {
             author_account: account_name,
             is_internal_reply: false,
             visibility: visibility?.toLowerCase() || 'public',
-            editor_link: editor_link,
+            editor_link: transformEditorLink(editor_link),
           });
 
         if (commentError) {
