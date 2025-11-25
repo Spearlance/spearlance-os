@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, Send, CheckCircle2, Clock, Trash2 } from "lucide-react";
+import { ArrowLeft, Send, CheckCircle2, Clock, Trash2, Lock } from "lucide-react";
 import { toast } from "sonner";
 
 interface Comment {
@@ -19,6 +19,8 @@ interface Comment {
   author_user_id: string | null;
   created_at: string;
   author_name?: string;
+  visibility: string;
+  editor_link: string | null;
 }
 
 interface Conversation {
@@ -264,15 +266,18 @@ const SiteCommentDetail = () => {
             <div
               key={comment.id}
               className={`p-4 rounded-lg ${
-                comment.is_internal_reply
+                comment.is_internal_reply || comment.visibility === 'internal'
                   ? "bg-primary/10 border-l-4 border-primary"
                   : "bg-muted"
               }`}
             >
               <div className="flex items-start justify-between mb-2">
                 <div className="flex items-center gap-2">
-                  {comment.is_internal_reply && (
-                    <Badge variant="outline" className="text-xs">Internal</Badge>
+                  {(comment.is_internal_reply || comment.visibility === 'internal') && (
+                    <Badge variant="outline" className="text-xs flex items-center gap-1">
+                      <Lock className="h-3 w-3" />
+                      Internal
+                    </Badge>
                   )}
                   <span className="font-medium">
                     {comment.is_internal_reply

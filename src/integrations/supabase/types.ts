@@ -1839,9 +1839,11 @@ export type Database = {
           conversation_id: string
           created_at: string | null
           duda_comment_uuid: string
+          editor_link: string | null
           id: string
           is_internal_reply: boolean | null
           updated_at: string | null
+          visibility: string | null
         }
         Insert: {
           author_account?: string | null
@@ -1850,9 +1852,11 @@ export type Database = {
           conversation_id: string
           created_at?: string | null
           duda_comment_uuid: string
+          editor_link?: string | null
           id?: string
           is_internal_reply?: boolean | null
           updated_at?: string | null
+          visibility?: string | null
         }
         Update: {
           author_account?: string | null
@@ -1861,9 +1865,11 @@ export type Database = {
           conversation_id?: string
           created_at?: string | null
           duda_comment_uuid?: string
+          editor_link?: string | null
           id?: string
           is_internal_reply?: boolean | null
           updated_at?: string | null
+          visibility?: string | null
         }
         Relationships: [
           {
