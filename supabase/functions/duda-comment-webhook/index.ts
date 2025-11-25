@@ -222,12 +222,16 @@ Deno.serve(async (req) => {
           );
         }
 
-        // Upsert comment (handles duplicate webhooks)
+        // Generate a unique comment UUID for replies since Duda reuses the conversation ID
+        const baseCommentId = comment_id?.toString() || conversationId || 'comment';
+        const uniqueCommentUuid = `${baseCommentId}-${event_timestamp || Date.now()}`;
+
+        // Upsert comment (handles duplicate webhooks while keeping replies distinct)
         const { error: commentError } = await supabase
           .from('duda_conversation_comments')
           .upsert({
             conversation_id: conversation.id,
-            duda_comment_uuid: comment_id?.toString() || `comment-${Date.now()}`,
+            duda_comment_uuid: uniqueCommentUuid,
             comment_text: text,
             author_account: account_name,
             is_internal_reply: false,
