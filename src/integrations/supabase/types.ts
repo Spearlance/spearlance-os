@@ -1890,7 +1890,7 @@ export type Database = {
       }
       duda_conversations: {
         Row: {
-          client_id: string
+          client_id: string | null
           conversation_number: number | null
           created_at: string | null
           created_by_account: string | null
@@ -1906,7 +1906,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
-          client_id: string
+          client_id?: string | null
           conversation_number?: number | null
           created_at?: string | null
           created_by_account?: string | null
@@ -1922,7 +1922,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
-          client_id?: string
+          client_id?: string | null
           conversation_number?: number | null
           created_at?: string | null
           created_by_account?: string | null

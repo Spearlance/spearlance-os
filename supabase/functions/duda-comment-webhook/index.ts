@@ -92,22 +92,17 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Look up client by site_id
-    const { data: client, error: clientError } = await supabase
+    // Look up client by site_id (but don't fail if not found - we'll store orphaned comments)
+    const { data: client } = await supabase
       .from('clients')
       .select('id')
       .eq('site_id', site_name)
-      .single();
+      .maybeSingle();
 
-    if (clientError || !client) {
-      console.error('Client not found for site_id:', site_name, clientError);
-      return new Response(
-        JSON.stringify({ error: 'Client not found for site_id' }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    const clientId = client.id;
+    // clientId can be null - we'll still store the comment and link it later
+    const clientId = client?.id || null;
+    
+    console.log(clientId ? `Client found: ${clientId}` : `No client found for site_id: ${site_name} - storing as orphaned comment`);
 
     // Extract conversationId from editor_link if available
     let conversationId = null;
@@ -171,19 +166,21 @@ Deno.serve(async (req) => {
           console.error('Error inserting comment:', commentError);
         }
 
-        // Create notifications (only for admins/FMMs if internal)
-        const isInternal = visibility?.toLowerCase() === 'internal';
-        await createNotifications(
-          supabase,
-          clientId,
-          conversation.id,
-          'new_conversation',
-          {
-            conversation_number: conversation_number,
-            created_by: account_name,
-          },
-          isInternal
-        );
+        // Create notifications (only if we have a client)
+        if (clientId) {
+          const isInternal = visibility?.toLowerCase() === 'internal';
+          await createNotifications(
+            supabase,
+            clientId,
+            conversation.id,
+            'new_conversation',
+            {
+              conversation_number: conversation_number,
+              created_by: account_name,
+            },
+            isInternal
+          );
+        }
 
         break;
       }
@@ -200,8 +197,12 @@ Deno.serve(async (req) => {
         // Find conversation by conversationId (conversation_number might not be present)
         let conversationQuery = supabase
           .from('duda_conversations')
-          .select('id')
-          .eq('client_id', clientId);
+          .select('id');
+        
+        // Only filter by client_id if we have one
+        if (clientId) {
+          conversationQuery = conversationQuery.eq('client_id', clientId);
+        }
 
         // Only use .or() if both values exist, otherwise just use conversationId
         if (conversationId && conversation_number) {
@@ -244,18 +245,20 @@ Deno.serve(async (req) => {
           throw commentError;
         }
 
-        // Create notifications (only for admins/FMMs if internal)
-        const isInternal = visibility?.toLowerCase() === 'internal';
-        await createNotifications(
-          supabase,
-          clientId,
-          conversation.id,
-          'new_comment',
-          {
-            author: account_name,
-          },
-          isInternal
-        );
+        // Create notifications (only if we have a client)
+        if (clientId) {
+          const isInternal = visibility?.toLowerCase() === 'internal';
+          await createNotifications(
+            supabase,
+            clientId,
+            conversation.id,
+            'new_comment',
+            {
+              author: account_name,
+            },
+            isInternal
+          );
+        }
 
         break;
       }
@@ -277,9 +280,15 @@ Deno.serve(async (req) => {
           }
         }
 
-        const query = conversationId
-          ? supabase.from('duda_conversations').update(updateData).eq('duda_conversation_uuid', conversationId)
-          : supabase.from('duda_conversations').update(updateData).eq('conversation_number', conversation_number).eq('client_id', clientId);
+        let query;
+        if (conversationId) {
+          query = supabase.from('duda_conversations').update(updateData).eq('duda_conversation_uuid', conversationId);
+        } else {
+          query = supabase.from('duda_conversations').update(updateData).eq('conversation_number', conversation_number);
+          if (clientId) {
+            query = query.eq('client_id', clientId);
+          }
+        }
 
         const { error: updateError } = await query;
 
@@ -288,14 +297,15 @@ Deno.serve(async (req) => {
           throw updateError;
         }
 
-        // Create notification for status change
-        if (conversation_status) {
-          const { data: conversation } = await supabase
+        // Create notification for status change (only if we have a client)
+        if (conversation_status && clientId) {
+          let convQuery = supabase
             .from('duda_conversations')
             .select('id')
             .or(conversationId ? `duda_conversation_uuid.eq.${conversationId}` : `conversation_number.eq.${conversation_number}`)
-            .eq('client_id', clientId)
-            .single();
+            .eq('client_id', clientId);
+            
+          const { data: conversation } = await convQuery.single();
 
           if (conversation) {
             await createNotifications(
