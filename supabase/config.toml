@@ -209,3 +209,6 @@ verify_jwt = true
 
 [functions.blog-schedule-check]
 verify_jwt = false
+
+[functions.duda-comment-webhook]
+verify_jwt = false
