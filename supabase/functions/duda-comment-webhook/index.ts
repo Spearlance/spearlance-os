@@ -16,14 +16,26 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     const payload = await req.json();
-    console.log('Received Duda comment webhook:', JSON.stringify(payload, null, 2));
+    console.log('Received Duda comment webhook from Zapier:', JSON.stringify(payload, null, 2));
 
-    const { event_type, site_name, resource_data } = payload;
+    // Handle flat payload structure from Zapier
+    const {
+      event_type,
+      site_name,
+      account_name,
+      text,
+      conversation_number,
+      conversation_status,
+      visibility,
+      id: comment_id,
+      editor_link,
+      event_timestamp
+    } = payload;
 
-    if (!site_name || !resource_data) {
-      console.error('Missing required fields:', { site_name, resource_data });
+    if (!site_name) {
+      console.error('Missing site_name');
       return new Response(
-        JSON.stringify({ error: 'Missing site_name or resource_data' }),
+        JSON.stringify({ error: 'Missing site_name' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -45,24 +57,37 @@ Deno.serve(async (req) => {
 
     const clientId = client.id;
 
+    // Extract conversationId from editor_link if available
+    let conversationId = null;
+    if (editor_link) {
+      const match = editor_link.match(/#conversationId=([^&]+)/);
+      if (match) {
+        conversationId = match[1];
+      }
+    }
+
     // Handle different event types
     switch (event_type) {
       case 'NEW_CONVERSATION': {
-        const { conversation_uuid, page_uuid, conversation_number, device, created_by, comment } = resource_data;
-        
+        if (!conversationId || !conversation_number || !text) {
+          console.error('Missing required fields for NEW_CONVERSATION');
+          return new Response(
+            JSON.stringify({ error: 'Missing required fields' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
         // Upsert conversation
         const { data: conversation, error: convError } = await supabase
           .from('duda_conversations')
           .upsert({
             client_id: clientId,
             site_id: site_name,
-            duda_conversation_uuid: conversation_uuid,
-            duda_page_uuid: page_uuid,
+            duda_conversation_uuid: conversationId,
             conversation_number: conversation_number,
-            device: device,
-            status: 'open',
+            status: conversation_status || 'open',
             deleted: false,
-            created_by_account: created_by,
+            created_by_account: account_name,
           }, { onConflict: 'duda_conversation_uuid' })
           .select()
           .single();
@@ -73,44 +98,58 @@ Deno.serve(async (req) => {
         }
 
         // Insert first comment
-        if (comment) {
-          const { error: commentError } = await supabase
-            .from('duda_conversation_comments')
-            .insert({
-              conversation_id: conversation.id,
-              duda_comment_uuid: comment.comment_uuid,
-              comment_text: comment.comment_text,
-              author_account: comment.author_account,
-              is_internal_reply: false,
-            });
+        const { error: commentError } = await supabase
+          .from('duda_conversation_comments')
+          .insert({
+            conversation_id: conversation.id,
+            duda_comment_uuid: comment_id?.toString() || `comment-${Date.now()}`,
+            comment_text: text,
+            author_account: account_name,
+            is_internal_reply: false,
+            visibility: visibility?.toLowerCase() || 'public',
+            editor_link: editor_link,
+          });
 
-          if (commentError) {
-            console.error('Error inserting comment:', commentError);
-          }
+        if (commentError) {
+          console.error('Error inserting comment:', commentError);
         }
 
-        // Create notifications
-        await createNotifications(supabase, clientId, conversation.id, 'new_conversation', {
-          page_uuid: page_uuid,
-          conversation_number: conversation_number,
-          created_by: created_by,
-        });
+        // Create notifications (only for admins/FMMs if internal)
+        const isInternal = visibility?.toLowerCase() === 'internal';
+        await createNotifications(
+          supabase,
+          clientId,
+          conversation.id,
+          'new_conversation',
+          {
+            conversation_number: conversation_number,
+            created_by: account_name,
+          },
+          isInternal
+        );
 
         break;
       }
 
       case 'NEW_COMMENT': {
-        const { conversation_uuid, comment } = resource_data;
+        if (!conversationId || !text) {
+          console.error('Missing required fields for NEW_COMMENT');
+          return new Response(
+            JSON.stringify({ error: 'Missing required fields' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
 
-        // Find conversation
+        // Find conversation by conversationId or conversation_number
         const { data: conversation } = await supabase
           .from('duda_conversations')
           .select('id')
-          .eq('duda_conversation_uuid', conversation_uuid)
+          .or(`duda_conversation_uuid.eq.${conversationId},conversation_number.eq.${conversation_number}`)
+          .eq('client_id', clientId)
           .single();
 
         if (!conversation) {
-          console.error('Conversation not found:', conversation_uuid);
+          console.error('Conversation not found:', conversationId);
           return new Response(
             JSON.stringify({ error: 'Conversation not found' }),
             { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -120,39 +159,59 @@ Deno.serve(async (req) => {
         // Insert comment
         const { error: commentError } = await supabase
           .from('duda_conversation_comments')
-          .upsert({
+          .insert({
             conversation_id: conversation.id,
-            duda_comment_uuid: comment.comment_uuid,
-            comment_text: comment.comment_text,
-            author_account: comment.author_account,
+            duda_comment_uuid: comment_id?.toString() || `comment-${Date.now()}`,
+            comment_text: text,
+            author_account: account_name,
             is_internal_reply: false,
-          }, { onConflict: 'duda_comment_uuid' });
+            visibility: visibility?.toLowerCase() || 'public',
+            editor_link: editor_link,
+          });
 
         if (commentError) {
           console.error('Error inserting comment:', commentError);
           throw commentError;
         }
 
-        // Create notifications
-        await createNotifications(supabase, clientId, conversation.id, 'new_comment', {
-          author: comment.author_account,
-        });
+        // Create notifications (only for admins/FMMs if internal)
+        const isInternal = visibility?.toLowerCase() === 'internal';
+        await createNotifications(
+          supabase,
+          clientId,
+          conversation.id,
+          'new_comment',
+          {
+            author: account_name,
+          },
+          isInternal
+        );
 
         break;
       }
 
       case 'CONVERSATION_UPDATED': {
-        const { conversation_uuid, status, deleted } = resource_data;
+        if (!conversationId && !conversation_number) {
+          console.error('Missing conversation identifier');
+          return new Response(
+            JSON.stringify({ error: 'Missing conversation identifier' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
 
         const updateData: any = { updated_at: new Date().toISOString() };
-        if (status) updateData.status = status;
-        if (deleted !== undefined) updateData.deleted = deleted;
-        if (status === 'resolved') updateData.resolved_at = new Date().toISOString();
+        if (conversation_status) {
+          updateData.status = conversation_status;
+          if (conversation_status === 'resolved') {
+            updateData.resolved_at = new Date().toISOString();
+          }
+        }
 
-        const { error: updateError } = await supabase
-          .from('duda_conversations')
-          .update(updateData)
-          .eq('duda_conversation_uuid', conversation_uuid);
+        const query = conversationId
+          ? supabase.from('duda_conversations').update(updateData).eq('duda_conversation_uuid', conversationId)
+          : supabase.from('duda_conversations').update(updateData).eq('conversation_number', conversation_number).eq('client_id', clientId);
+
+        const { error: updateError } = await query;
 
         if (updateError) {
           console.error('Error updating conversation:', updateError);
@@ -160,15 +219,23 @@ Deno.serve(async (req) => {
         }
 
         // Create notification for status change
-        if (status) {
+        if (conversation_status) {
           const { data: conversation } = await supabase
             .from('duda_conversations')
             .select('id')
-            .eq('duda_conversation_uuid', conversation_uuid)
+            .or(conversationId ? `duda_conversation_uuid.eq.${conversationId}` : `conversation_number.eq.${conversation_number}`)
+            .eq('client_id', clientId)
             .single();
 
           if (conversation) {
-            await createNotifications(supabase, clientId, conversation.id, 'status_changed', { status });
+            await createNotifications(
+              supabase,
+              clientId,
+              conversation.id,
+              'status_changed',
+              { status: conversation_status },
+              false
+            );
           }
         }
 
@@ -176,15 +243,21 @@ Deno.serve(async (req) => {
       }
 
       case 'COMMENT_EDITED': {
-        const { comment_uuid, comment_text } = resource_data;
+        if (!comment_id || !text) {
+          console.error('Missing required fields for COMMENT_EDITED');
+          return new Response(
+            JSON.stringify({ error: 'Missing required fields' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
 
         const { error: editError } = await supabase
           .from('duda_conversation_comments')
           .update({
-            comment_text: comment_text,
+            comment_text: text,
             updated_at: new Date().toISOString(),
           })
-          .eq('duda_comment_uuid', comment_uuid);
+          .eq('duda_comment_uuid', comment_id.toString());
 
         if (editError) {
           console.error('Error editing comment:', editError);
@@ -217,7 +290,8 @@ async function createNotifications(
   clientId: string,
   conversationId: string,
   type: string,
-  metadata: any
+  metadata: any,
+  isInternal: boolean = false
 ) {
   try {
     // Get conversation details
@@ -236,16 +310,20 @@ async function createNotifications(
       .in('role', ['admin', 'fmm'])
       .contains('associated_client_ids', [clientId]);
 
-    // Get client primary contacts
-    const { data: primaryContacts } = await supabase
-      .from('client_primary_contacts')
-      .select('user_id')
-      .eq('client_id', clientId);
+    let userIds = adminFmmUsers?.map((u: any) => u.id) || [];
 
-    const userIds = [
-      ...(adminFmmUsers?.map((u: any) => u.id) || []),
-      ...(primaryContacts?.map((c: any) => c.user_id) || []),
-    ];
+    // Only notify client users if the comment is NOT internal
+    if (!isInternal) {
+      const { data: primaryContacts } = await supabase
+        .from('client_primary_contacts')
+        .select('user_id')
+        .eq('client_id', clientId);
+
+      userIds = [
+        ...userIds,
+        ...(primaryContacts?.map((c: any) => c.user_id) || []),
+      ];
+    }
 
     if (userIds.length === 0) return;
 
@@ -255,12 +333,12 @@ async function createNotifications(
 
     switch (type) {
       case 'new_conversation':
-        title = '🗨️ New Site Comment';
-        description = `New comment #${conversation.conversation_number} on page ${metadata.page_uuid || 'unknown'}`;
+        title = isInternal ? '🔒 New Internal Site Comment' : '🗨️ New Site Comment';
+        description = `${isInternal ? 'Internal comment' : 'New comment'} #${conversation.conversation_number}`;
         notifType = 'site_comment_new';
         break;
       case 'new_comment':
-        title = '💬 Reply on Site Comment';
+        title = isInternal ? '🔒 Internal Reply on Site Comment' : '💬 Reply on Site Comment';
         description = `${metadata.author} replied to comment #${conversation.conversation_number}`;
         notifType = 'site_comment_reply';
         break;
@@ -281,6 +359,7 @@ async function createNotifications(
       payload_json: {
         conversation_id: conversationId,
         conversation_number: conversation.conversation_number,
+        is_internal: isInternal,
         ...metadata,
       },
     }));
