@@ -21,6 +21,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Palette } from "lucide-react";
 import { SubtaskList } from "./SubtaskList";
 import { MentionTextarea } from "./MentionTextarea";
+import ReactQuill from "react-quill";
+import "react-quill/dist/quill.snow.css";
 
 interface TaskDrawerProps {
   task: any;
@@ -29,6 +31,21 @@ interface TaskDrawerProps {
   onUpdate: () => void;
   isAdminOrFMM?: boolean;
 }
+
+const quillModules = {
+  toolbar: [
+    ['bold', 'italic', 'underline'],
+    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+    ['link'],
+    ['clean']
+  ]
+};
+
+const quillFormats = [
+  'bold', 'italic', 'underline',
+  'list', 'bullet',
+  'link'
+];
 
 export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = false }: TaskDrawerProps) {
   const [editedTask, setEditedTask] = useState({
@@ -629,11 +646,17 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
 
                 <div className="space-y-2">
                   <Label>Description</Label>
-                  <Textarea 
-                    value={editedTask.description} 
-                    onChange={(e) => setEditedTask({ ...editedTask, description: e.target.value })}
-                    rows={4}
-                  />
+                  <div className="border rounded-md overflow-hidden">
+                    <ReactQuill
+                      theme="snow"
+                      value={editedTask.description}
+                      onChange={(value) => setEditedTask({ ...editedTask, description: value })}
+                      modules={quillModules}
+                      formats={quillFormats}
+                      className="bg-background [&_.ql-editor]:min-h-[100px]"
+                      placeholder="Add a description..."
+                    />
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-3 gap-3">
