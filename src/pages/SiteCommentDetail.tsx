@@ -30,6 +30,7 @@ interface Conversation {
   status: string;
   created_by_account: string;
   created_at: string;
+  title?: string;
 }
 
 const SiteCommentDetail = () => {
@@ -65,7 +66,7 @@ const SiteCommentDetail = () => {
     try {
       const { data, error } = await supabase
         .from("duda_conversations")
-        .select("*")
+        .select("id, conversation_number, duda_page_uuid, status, created_by_account, created_at, title")
         .eq("id", id)
         .single();
 
@@ -242,7 +243,9 @@ const SiteCommentDetail = () => {
       <Card className="p-6">
         <div className="space-y-4">
           <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-2xl font-bold">Comment #{conversation.conversation_number}</h1>
+            <h1 className="text-2xl font-bold">
+              {conversation.title || `Comment #${conversation.conversation_number}`}
+            </h1>
             <Badge variant={conversation.status === "open" ? "default" : "secondary"}>
               {conversation.status}
             </Badge>

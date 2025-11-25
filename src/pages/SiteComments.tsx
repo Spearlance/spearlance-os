@@ -17,6 +17,7 @@ interface Conversation {
   status: string;
   created_by_account: string;
   created_at: string;
+  title?: string;
   comment_count?: number;
   last_comment?: string;
 }
@@ -48,7 +49,8 @@ const SiteComments = () => {
           duda_page_uuid,
           status,
           created_by_account,
-          created_at
+          created_at,
+          title
         `)
         .eq("client_id", selectedClient.id)
         .eq("deleted", false)
@@ -173,7 +175,7 @@ const SiteComments = () => {
                 <div className="flex-1 space-y-2">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-lg font-semibold">
-                      #{conv.conversation_number}
+                      {conv.title || `Comment #${conv.conversation_number}`}
                     </span>
                     <Badge variant={getStatusColor(conv.status)}>
                       {conv.status === "open" ? (
