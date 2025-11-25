@@ -23,6 +23,40 @@ function extractPageFromLink(editorLink: string | null): string | null {
   return null;
 }
 
+// Generate title using Lovable AI
+async function generateCommentTitle(commentText: string): Promise<string> {
+  const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+  if (!LOVABLE_API_KEY || !commentText) {
+    return "Website Comment";
+  }
+  
+  try {
+    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'google/gemini-2.5-flash-lite',
+        messages: [
+          {
+            role: 'system',
+            content: 'Create a brief 3-6 word title summarizing this website comment. No quotes, just the title.'
+          },
+          { role: 'user', content: commentText }
+        ],
+      }),
+    });
+    
+    const data = await response.json();
+    return data.choices?.[0]?.message?.content?.trim() || "Website Comment";
+  } catch (error) {
+    console.error('Error generating title:', error);
+    return "Website Comment";
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -95,6 +129,9 @@ Deno.serve(async (req) => {
           );
         }
 
+        // Generate title for new conversation
+        const title = await generateCommentTitle(text);
+        
         // Upsert conversation
         const { data: conversation, error: convError } = await supabase
           .from('duda_conversations')
@@ -107,6 +144,7 @@ Deno.serve(async (req) => {
             deleted: false,
             created_by_account: account_name,
             duda_page_uuid: extractPageFromLink(editor_link),
+            title: title,
           }, { onConflict: 'duda_conversation_uuid' })
           .select()
           .single();
