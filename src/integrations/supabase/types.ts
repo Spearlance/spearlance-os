@@ -1831,6 +1831,113 @@ export type Database = {
           },
         ]
       }
+      duda_conversation_comments: {
+        Row: {
+          author_account: string | null
+          author_user_id: string | null
+          comment_text: string
+          conversation_id: string
+          created_at: string | null
+          duda_comment_uuid: string
+          id: string
+          is_internal_reply: boolean | null
+          updated_at: string | null
+        }
+        Insert: {
+          author_account?: string | null
+          author_user_id?: string | null
+          comment_text: string
+          conversation_id: string
+          created_at?: string | null
+          duda_comment_uuid: string
+          id?: string
+          is_internal_reply?: boolean | null
+          updated_at?: string | null
+        }
+        Update: {
+          author_account?: string | null
+          author_user_id?: string | null
+          comment_text?: string
+          conversation_id?: string
+          created_at?: string | null
+          duda_comment_uuid?: string
+          id?: string
+          is_internal_reply?: boolean | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "duda_conversation_comments_author_user_id_fkey"
+            columns: ["author_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "duda_conversation_comments_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "duda_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      duda_conversations: {
+        Row: {
+          client_id: string
+          conversation_number: number | null
+          created_at: string | null
+          created_by_account: string | null
+          deleted: boolean | null
+          device: string | null
+          duda_conversation_uuid: string
+          duda_page_uuid: string | null
+          id: string
+          resolved_at: string | null
+          site_id: string
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          client_id: string
+          conversation_number?: number | null
+          created_at?: string | null
+          created_by_account?: string | null
+          deleted?: boolean | null
+          device?: string | null
+          duda_conversation_uuid: string
+          duda_page_uuid?: string | null
+          id?: string
+          resolved_at?: string | null
+          site_id: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          client_id?: string
+          conversation_number?: number | null
+          created_at?: string | null
+          created_by_account?: string | null
+          deleted?: boolean | null
+          device?: string | null
+          duda_conversation_uuid?: string
+          duda_page_uuid?: string | null
+          id?: string
+          resolved_at?: string | null
+          site_id?: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "duda_conversations_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_templates: {
         Row: {
           created_at: string | null

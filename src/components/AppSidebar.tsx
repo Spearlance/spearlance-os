@@ -107,6 +107,7 @@ const helpSupportSubItems = [
 const websiteSubItems = [
   { title: "Editor", icon: ExternalLink, external: true },
   { title: "Form Submissions", url: "/website/form-submissions", icon: FileText },
+  { title: "Site Comments", url: "/website/comments", icon: MessageSquare },
   { title: "Analytics", url: "/analytics", icon: TrendingUp },
   { title: "SEO", url: "/seo", icon: Search },
   { title: "Blog Writer", url: "/blog-writer", icon: PenTool },
