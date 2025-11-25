@@ -27,7 +27,6 @@ interface Conversation {
   id: string;
   conversation_number: number;
   duda_page_uuid: string;
-  device: string;
   status: string;
   created_by_account: string;
   created_at: string;
@@ -250,14 +249,12 @@ const SiteCommentDetail = () => {
           </div>
 
           <div className="grid grid-cols-2 gap-4 text-sm">
-            <div>
-              <span className="text-muted-foreground">Page:</span>
-              <span className="ml-2 font-medium">{conversation.duda_page_uuid}</span>
-            </div>
-            <div>
-              <span className="text-muted-foreground">Device:</span>
-              <span className="ml-2 font-medium">{conversation.device}</span>
-            </div>
+            {conversation.duda_page_uuid && (
+              <div>
+                <span className="text-muted-foreground">Page:</span>
+                <span className="ml-2 font-medium">{conversation.duda_page_uuid}</span>
+              </div>
+            )}
             <div>
               <span className="text-muted-foreground">Created by:</span>
               <span className="ml-2 font-medium">{conversation.created_by_account}</span>

@@ -14,7 +14,6 @@ interface Conversation {
   id: string;
   conversation_number: number;
   duda_page_uuid: string;
-  device: string;
   status: string;
   created_by_account: string;
   created_at: string;
@@ -47,7 +46,6 @@ const SiteComments = () => {
           id,
           conversation_number,
           duda_page_uuid,
-          device,
           status,
           created_by_account,
           created_at
@@ -118,19 +116,6 @@ const SiteComments = () => {
     }
   };
 
-  const getDeviceIcon = (device: string) => {
-    switch (device?.toUpperCase()) {
-      case "DESKTOP":
-        return "💻";
-      case "TABLET":
-        return "📱";
-      case "MOBILE":
-        return "📱";
-      default:
-        return "🖥️";
-    }
-  };
-
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -198,14 +183,13 @@ const SiteComments = () => {
                       )}
                       {conv.status}
                     </Badge>
-                    <span className="text-sm text-muted-foreground">
-                      {getDeviceIcon(conv.device)} {conv.device}
-                    </span>
                   </div>
                   
-                  <div className="text-sm text-muted-foreground">
-                    <span className="font-medium">Page:</span> {conv.duda_page_uuid || "Unknown"}
-                  </div>
+                  {conv.duda_page_uuid && (
+                    <div className="text-sm text-muted-foreground">
+                      <span className="font-medium">Page:</span> {conv.duda_page_uuid}
+                    </div>
+                  )}
                   
                   {conv.last_comment && (
                     <p className="text-sm line-clamp-2 text-muted-foreground">
