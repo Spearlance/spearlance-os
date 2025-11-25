@@ -154,10 +154,10 @@ Deno.serve(async (req) => {
           throw convError;
         }
 
-        // Insert first comment
+        // Upsert first comment (handles duplicate webhooks)
         const { error: commentError } = await supabase
           .from('duda_conversation_comments')
-          .insert({
+          .upsert({
             conversation_id: conversation.id,
             duda_comment_uuid: comment_id?.toString() || `comment-${Date.now()}`,
             comment_text: text,
@@ -165,7 +165,7 @@ Deno.serve(async (req) => {
             is_internal_reply: false,
             visibility: visibility?.toLowerCase() || 'public',
             editor_link: transformEditorLink(editor_link),
-          });
+          }, { onConflict: 'duda_comment_uuid' });
 
         if (commentError) {
           console.error('Error inserting comment:', commentError);
@@ -222,10 +222,10 @@ Deno.serve(async (req) => {
           );
         }
 
-        // Insert comment
+        // Upsert comment (handles duplicate webhooks)
         const { error: commentError } = await supabase
           .from('duda_conversation_comments')
-          .insert({
+          .upsert({
             conversation_id: conversation.id,
             duda_comment_uuid: comment_id?.toString() || `comment-${Date.now()}`,
             comment_text: text,
@@ -233,7 +233,7 @@ Deno.serve(async (req) => {
             is_internal_reply: false,
             visibility: visibility?.toLowerCase() || 'public',
             editor_link: transformEditorLink(editor_link),
-          });
+          }, { onConflict: 'duda_comment_uuid' });
 
         if (commentError) {
           console.error('Error inserting comment:', commentError);
