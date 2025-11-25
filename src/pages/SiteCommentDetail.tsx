@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, Send, CheckCircle2, Clock, Trash2, Lock } from "lucide-react";
+import { ArrowLeft, Send, CheckCircle2, Clock, Trash2, Lock, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 
 interface Comment {
@@ -202,6 +202,8 @@ const SiteCommentDetail = () => {
     );
   }
 
+  const editorLink = comments[0]?.editor_link;
+
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -209,22 +211,33 @@ const SiteCommentDetail = () => {
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back to Comments
         </Button>
-        <Button
-          variant={conversation.status === "open" ? "default" : "outline"}
-          onClick={handleToggleStatus}
-        >
-          {conversation.status === "open" ? (
-            <>
-              <CheckCircle2 className="h-4 w-4 mr-2" />
-              Mark as Resolved
-            </>
-          ) : (
-            <>
-              <Clock className="h-4 w-4 mr-2" />
-              Reopen
-            </>
+        <div className="flex items-center gap-2">
+          {editorLink && (
+            <Button
+              variant="outline"
+              onClick={() => window.open(editorLink, '_blank')}
+            >
+              <ExternalLink className="h-4 w-4 mr-2" />
+              Open in Editor
+            </Button>
           )}
-        </Button>
+          <Button
+            variant={conversation.status === "open" ? "default" : "outline"}
+            onClick={handleToggleStatus}
+          >
+            {conversation.status === "open" ? (
+              <>
+                <CheckCircle2 className="h-4 w-4 mr-2" />
+                Mark as Resolved
+              </>
+            ) : (
+              <>
+                <Clock className="h-4 w-4 mr-2" />
+                Reopen
+              </>
+            )}
+          </Button>
+        </div>
       </div>
 
       <Card className="p-6">
