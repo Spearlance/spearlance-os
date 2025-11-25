@@ -197,13 +197,22 @@ Deno.serve(async (req) => {
           );
         }
 
-        // Find conversation by conversationId or conversation_number
-        const { data: conversation } = await supabase
+        // Find conversation by conversationId (conversation_number might not be present)
+        let conversationQuery = supabase
           .from('duda_conversations')
           .select('id')
-          .or(`duda_conversation_uuid.eq.${conversationId},conversation_number.eq.${conversation_number}`)
-          .eq('client_id', clientId)
-          .single();
+          .eq('client_id', clientId);
+
+        // Only use .or() if both values exist, otherwise just use conversationId
+        if (conversationId && conversation_number) {
+          conversationQuery = conversationQuery.or(`duda_conversation_uuid.eq.${conversationId},conversation_number.eq.${conversation_number}`);
+        } else if (conversationId) {
+          conversationQuery = conversationQuery.eq('duda_conversation_uuid', conversationId);
+        } else if (conversation_number) {
+          conversationQuery = conversationQuery.eq('conversation_number', conversation_number);
+        }
+
+        const { data: conversation } = await conversationQuery.single();
 
         if (!conversation) {
           console.error('Conversation not found:', conversationId);
