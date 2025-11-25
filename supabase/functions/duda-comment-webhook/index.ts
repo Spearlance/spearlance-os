@@ -11,6 +11,18 @@ function transformEditorLink(originalLink: string | null): string | null {
   return originalLink.replace('my.duda.co', 'www.mywebsitemanager.co');
 }
 
+// Extract page name from editor link
+// URL format: https://my.duda.co/home/site/SITEID/pages/PAGENAME#conversationId=xxx
+function extractPageFromLink(editorLink: string | null): string | null {
+  if (!editorLink) return null;
+  
+  const match = editorLink.match(/\/pages\/([^#?/]+)/);
+  if (match) {
+    return decodeURIComponent(match[1]).replace(/-/g, ' ');
+  }
+  return null;
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -94,6 +106,7 @@ Deno.serve(async (req) => {
             status: conversation_status || 'open',
             deleted: false,
             created_by_account: account_name,
+            duda_page_uuid: extractPageFromLink(editor_link),
           }, { onConflict: 'duda_conversation_uuid' })
           .select()
           .single();
