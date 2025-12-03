@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Megaphone, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
@@ -11,11 +12,26 @@ interface ClientChannel {
   status: string;
   progress: number;
   stage_name: string;
+  assigned_user?: {
+    id: string;
+    name: string;
+    avatar_url?: string | null;
+  };
 }
 
 interface ClientChannelsCardProps {
   channels: ClientChannel[];
 }
+
+const getInitials = (name?: string) => {
+  if (!name) return "?";
+  return name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+};
 
 export function ClientChannelsCard({ channels }: ClientChannelsCardProps) {
   const navigate = useNavigate();
@@ -77,6 +93,14 @@ export function ClientChannelsCard({ channels }: ClientChannelsCardProps) {
                       className="flex items-center justify-between p-2 bg-muted/50 rounded-md"
                     >
                       <div className="flex items-center gap-2">
+                        {channel.assigned_user && (
+                          <Avatar className="h-6 w-6">
+                            <AvatarImage src={channel.assigned_user.avatar_url || undefined} />
+                            <AvatarFallback className="text-xs bg-primary/10 text-primary">
+                              {getInitials(channel.assigned_user.name)}
+                            </AvatarFallback>
+                          </Avatar>
+                        )}
                         <span className="text-sm font-medium">{channel.name}</span>
                         {getStatusBadge(channel.status)}
                       </div>

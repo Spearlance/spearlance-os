@@ -85,6 +85,11 @@ export interface ClientChannel {
   status: string;
   progress: number;
   stage_name: string;
+  assigned_user?: {
+    id: string;
+    name: string;
+    avatar_url?: string | null;
+  };
 }
 
 export interface QuickLink {
@@ -304,11 +309,25 @@ export function useSuccessHub() {
 
     const { data: channels } = await supabase
       .from('marketing_flow_channels')
-      .select('id, name, status, progress, stage_id')
+      .select('id, name, status, progress, stage_id, assigned_to')
       .in('stage_id', stageIds)
       .order('created_at', { ascending: true });
 
     if (channels) {
+      // Get unique user IDs for assigned users
+      const userIds = [...new Set(channels.filter(c => c.assigned_to).map(c => c.assigned_to))] as string[];
+      
+      // Fetch user profiles if there are any
+      let userMap: Record<string, { id: string; name: string; avatar_url: string | null }> = {};
+      if (userIds.length > 0) {
+        const { data: users } = await supabase
+          .from('profiles')
+          .select('id, name, avatar_url')
+          .in('id', userIds);
+        
+        userMap = Object.fromEntries((users || []).map(u => [u.id, u]));
+      }
+
       setClientChannels(
         channels.map((ch) => ({
           id: ch.id,
@@ -316,6 +335,7 @@ export function useSuccessHub() {
           status: ch.status || 'active',
           progress: ch.progress || 0,
           stage_name: stageMap[ch.stage_id] || 'Unknown',
+          assigned_user: ch.assigned_to ? userMap[ch.assigned_to] : undefined,
         }))
       );
     }
