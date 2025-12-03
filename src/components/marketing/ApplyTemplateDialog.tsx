@@ -175,7 +175,7 @@ export function ApplyTemplateDialog({ open, onOpenChange, stages, selectedStageI
         if (includeTasks && templates.length > 0) {
           for (const template of templates) {
             // Determine if task should be recurring
-            const isRecurring = template.task_type === 'recurring' && template.cadence;
+            const isRecurring = template.task_type === 'recurring' && !!template.cadence;
             const recurrencePattern = isRecurring && template.cadence 
               ? CADENCE_TO_RECURRENCE[template.cadence] 
               : null;
