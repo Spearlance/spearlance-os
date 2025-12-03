@@ -59,6 +59,7 @@ import {
   Bug,
   Search,
   PenTool,
+  HeartPulse,
 } from "lucide-react";
 import { ReportBugDialog } from "@/components/support/ReportBugDialog";
 import { Button } from "@/components/ui/button";
@@ -96,6 +97,7 @@ const marketingSubItems = [
 const clientCommunicationSubItems = [
   { title: "Meetings", url: "/meetings", icon: Calendar },
   { title: "Logs", url: "/communications/logs", icon: MessageSquare },
+  { title: "Success Hub", url: "/success-hub", icon: HeartPulse, adminOnly: true },
 ];
 
 const helpSupportSubItems = [
@@ -456,8 +458,8 @@ export function AppSidebar() {
                     if (subItem.url === '/meetings') {
                       if (!isEnabled('meetings')) return false;
                     }
-                    // Hide "Logs" from non-FMM/Admin users
-                    if (subItem.title === "Logs") {
+                    // Hide "Logs" and "Success Hub" from non-FMM/Admin users
+                    if (subItem.title === "Logs" || subItem.title === "Success Hub") {
                       return userRole === "admin" || userRole === "fmm";
                     }
                     return true;

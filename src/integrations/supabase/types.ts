@@ -1451,6 +1451,72 @@ export type Database = {
           },
         ]
       }
+      client_success_logs: {
+        Row: {
+          business_outcomes: Json | null
+          client_id: string
+          created_at: string | null
+          created_by: string | null
+          health_status: string | null
+          id: string
+          kpis: Json | null
+          manual_wins: Json | null
+          needs_from_client: Json | null
+          notes: string | null
+          open_threads: Json | null
+          risks_blockers: Json | null
+          updated_at: string | null
+          week_start_date: string
+        }
+        Insert: {
+          business_outcomes?: Json | null
+          client_id: string
+          created_at?: string | null
+          created_by?: string | null
+          health_status?: string | null
+          id?: string
+          kpis?: Json | null
+          manual_wins?: Json | null
+          needs_from_client?: Json | null
+          notes?: string | null
+          open_threads?: Json | null
+          risks_blockers?: Json | null
+          updated_at?: string | null
+          week_start_date: string
+        }
+        Update: {
+          business_outcomes?: Json | null
+          client_id?: string
+          created_at?: string | null
+          created_by?: string | null
+          health_status?: string | null
+          id?: string
+          kpis?: Json | null
+          manual_wins?: Json | null
+          needs_from_client?: Json | null
+          notes?: string | null
+          open_threads?: Json | null
+          risks_blockers?: Json | null
+          updated_at?: string | null
+          week_start_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_success_logs_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_success_logs_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_team_invitations: {
         Row: {
           client_id: string
@@ -1514,7 +1580,9 @@ export type Database = {
           canva_folder_url: string | null
           company_name: string | null
           created_at: string | null
+          csm_owner_id: string | null
           decision_makers: string[] | null
+          delivery_owner_ids: string[] | null
           domain: string | null
           drive_folder_url: string | null
           front_tag: string
@@ -1525,11 +1593,13 @@ export type Database = {
           last_front_sync_at: string | null
           legal_name: string | null
           logo_url: string | null
+          meeting_cadence: string | null
           name: string
           oviond_url: string | null
           primary_contact_email: string | null
           primary_contact_name: string | null
           primary_contact_user_id: string | null
+          segment: string | null
           service_areas: string[] | null
           site_id: string | null
           status: Database["public"]["Enums"]["client_status"] | null
@@ -1555,7 +1625,9 @@ export type Database = {
           canva_folder_url?: string | null
           company_name?: string | null
           created_at?: string | null
+          csm_owner_id?: string | null
           decision_makers?: string[] | null
+          delivery_owner_ids?: string[] | null
           domain?: string | null
           drive_folder_url?: string | null
           front_tag: string
@@ -1566,11 +1638,13 @@ export type Database = {
           last_front_sync_at?: string | null
           legal_name?: string | null
           logo_url?: string | null
+          meeting_cadence?: string | null
           name: string
           oviond_url?: string | null
           primary_contact_email?: string | null
           primary_contact_name?: string | null
           primary_contact_user_id?: string | null
+          segment?: string | null
           service_areas?: string[] | null
           site_id?: string | null
           status?: Database["public"]["Enums"]["client_status"] | null
@@ -1596,7 +1670,9 @@ export type Database = {
           canva_folder_url?: string | null
           company_name?: string | null
           created_at?: string | null
+          csm_owner_id?: string | null
           decision_makers?: string[] | null
+          delivery_owner_ids?: string[] | null
           domain?: string | null
           drive_folder_url?: string | null
           front_tag?: string
@@ -1607,11 +1683,13 @@ export type Database = {
           last_front_sync_at?: string | null
           legal_name?: string | null
           logo_url?: string | null
+          meeting_cadence?: string | null
           name?: string
           oviond_url?: string | null
           primary_contact_email?: string | null
           primary_contact_name?: string | null
           primary_contact_user_id?: string | null
+          segment?: string | null
           service_areas?: string[] | null
           site_id?: string | null
           status?: Database["public"]["Enums"]["client_status"] | null
@@ -1632,6 +1710,13 @@ export type Database = {
             columns: ["billing_plan_id"]
             isOneToOne: false
             referencedRelation: "billing_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clients_csm_owner_id_fkey"
+            columns: ["csm_owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
