@@ -56,8 +56,6 @@ export interface SuccessLog {
   client_id: string;
   week_start_date: string;
   health_status: 'green' | 'yellow' | 'red';
-  business_outcomes: BusinessOutcome[];
-  kpis: KPI[];
   manual_wins: ManualWin[];
   risks_blockers: RiskBlocker[];
   needs_from_client: NeedFromClient[];
@@ -77,6 +75,27 @@ export interface ClientWithOwners {
   delivery_owner_ids?: string[];
   csm_owner?: { id: string; name: string; avatar_url?: string };
   delivery_owners?: { id: string; name: string; avatar_url?: string }[];
+  business_outcomes?: BusinessOutcome[];
+  kpis?: KPI[];
+}
+
+export interface ClientChannel {
+  id: string;
+  name: string;
+  status: string;
+  progress: number;
+  stage_name: string;
+}
+
+export interface QuickLink {
+  id: string;
+  client_id: string;
+  label: string;
+  url: string;
+  icon?: string;
+  display_order: number;
+  created_by?: string;
+  created_at: string;
 }
 
 // Helper function to safely parse JSON arrays
@@ -95,6 +114,8 @@ export function useSuccessHub() {
   const [thisWeekTasks, setThisWeekTasks] = useState<any[]>([]);
   const [completedTasks, setCompletedTasks] = useState<any[]>([]);
   const [recentCommunications, setRecentCommunications] = useState<any[]>([]);
+  const [clientChannels, setClientChannels] = useState<ClientChannel[]>([]);
+  const [quickLinks, setQuickLinks] = useState<QuickLink[]>([]);
   const [loading, setLoading] = useState(true);
 
   const weekStart = format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd');
@@ -117,6 +138,8 @@ export function useSuccessHub() {
       loadThisWeekTasks(),
       loadCompletedTasks(),
       loadRecentCommunications(),
+      loadClientChannels(),
+      loadQuickLinks(),
     ]);
     
     setLoading(false);
@@ -138,8 +161,6 @@ export function useSuccessHub() {
     if (data) {
       setSuccessLog({
         ...data,
-        business_outcomes: parseJsonArray<BusinessOutcome>(data.business_outcomes, []),
-        kpis: parseJsonArray<KPI>(data.kpis, []),
         manual_wins: parseJsonArray<ManualWin>(data.manual_wins, []),
         risks_blockers: parseJsonArray<RiskBlocker>(data.risks_blockers, []),
         needs_from_client: parseJsonArray<NeedFromClient>(data.needs_from_client, []),
@@ -154,7 +175,7 @@ export function useSuccessHub() {
   const loadClientData = async () => {
     const { data: client } = await supabase
       .from('clients')
-      .select('id, name, segment, meeting_cadence, csm_owner_id, delivery_owner_ids')
+      .select('id, name, segment, meeting_cadence, csm_owner_id, delivery_owner_ids, business_outcomes, kpis')
       .eq('id', selectedClient!.id)
       .single();
 
@@ -183,6 +204,8 @@ export function useSuccessHub() {
         ...client,
         csm_owner: csmOwner,
         delivery_owners: deliveryOwners,
+        business_outcomes: parseJsonArray<BusinessOutcome>(client.business_outcomes, []),
+        kpis: parseJsonArray<KPI>(client.kpis, []),
       });
     }
   };
@@ -254,13 +277,63 @@ export function useSuccessHub() {
     setRecentCommunications(data || []);
   };
 
+  const loadClientChannels = async () => {
+    const { data: flow } = await supabase
+      .from('marketing_flows')
+      .select('id')
+      .eq('client_id', selectedClient!.id)
+      .maybeSingle();
+
+    if (!flow) {
+      setClientChannels([]);
+      return;
+    }
+
+    const { data: stages } = await supabase
+      .from('marketing_flow_stages')
+      .select('id, name')
+      .eq('flow_id', flow.id);
+
+    if (!stages?.length) {
+      setClientChannels([]);
+      return;
+    }
+
+    const stageIds = stages.map(s => s.id);
+    const stageMap = Object.fromEntries(stages.map(s => [s.id, s.name]));
+
+    const { data: channels } = await supabase
+      .from('marketing_flow_channels')
+      .select('id, name, status, progress, stage_id')
+      .in('stage_id', stageIds)
+      .order('created_at', { ascending: true });
+
+    if (channels) {
+      setClientChannels(
+        channels.map((ch) => ({
+          id: ch.id,
+          name: ch.name,
+          status: ch.status || 'active',
+          progress: ch.progress || 0,
+          stage_name: stageMap[ch.stage_id] || 'Unknown',
+        }))
+      );
+    }
+  };
+
+  const loadQuickLinks = async () => {
+    const { data } = await supabase
+      .from('client_quick_links')
+      .select('*')
+      .eq('client_id', selectedClient!.id)
+      .order('display_order', { ascending: true });
+    setQuickLinks(data || []);
+  };
+
   const createOrUpdateLog = async (updates: Partial<SuccessLog>) => {
     const { data: user } = await supabase.auth.getUser();
     
-    // Convert typed arrays to JSON for database
     const dbUpdates: Record<string, any> = { ...updates };
-    if (updates.business_outcomes) dbUpdates.business_outcomes = updates.business_outcomes as unknown as Json;
-    if (updates.kpis) dbUpdates.kpis = updates.kpis as unknown as Json;
     if (updates.manual_wins) dbUpdates.manual_wins = updates.manual_wins as unknown as Json;
     if (updates.risks_blockers) dbUpdates.risks_blockers = updates.risks_blockers as unknown as Json;
     if (updates.needs_from_client) dbUpdates.needs_from_client = updates.needs_from_client as unknown as Json;
@@ -294,8 +367,6 @@ export function useSuccessHub() {
       if (!error && data) {
         setSuccessLog({
           ...data,
-          business_outcomes: parseJsonArray<BusinessOutcome>(data.business_outcomes, []),
-          kpis: parseJsonArray<KPI>(data.kpis, []),
           manual_wins: parseJsonArray<ManualWin>(data.manual_wins, []),
           risks_blockers: parseJsonArray<RiskBlocker>(data.risks_blockers, []),
           needs_from_client: parseJsonArray<NeedFromClient>(data.needs_from_client, []),
@@ -308,13 +379,50 @@ export function useSuccessHub() {
   };
 
   const updateClientData = async (updates: Partial<ClientWithOwners>) => {
+    const dbUpdates: Record<string, any> = { ...updates };
+    if (updates.business_outcomes) dbUpdates.business_outcomes = updates.business_outcomes as unknown as Json;
+    if (updates.kpis) dbUpdates.kpis = updates.kpis as unknown as Json;
+
     const { error } = await supabase
       .from('clients')
-      .update(updates)
+      .update(dbUpdates)
       .eq('id', selectedClient!.id);
     
     if (!error) {
       setClientData(prev => prev ? { ...prev, ...updates } : null);
+    }
+    return !error;
+  };
+
+  const addQuickLink = async (link: Omit<QuickLink, 'id' | 'client_id' | 'created_at' | 'created_by'>) => {
+    const { data: user } = await supabase.auth.getUser();
+    const { data, error } = await supabase
+      .from('client_quick_links')
+      .insert({
+        client_id: selectedClient!.id,
+        label: link.label,
+        url: link.url,
+        icon: link.icon,
+        display_order: link.display_order,
+        created_by: user.user?.id,
+      })
+      .select()
+      .single();
+
+    if (!error && data) {
+      setQuickLinks(prev => [...prev, data]);
+    }
+    return !error;
+  };
+
+  const deleteQuickLink = async (linkId: string) => {
+    const { error } = await supabase
+      .from('client_quick_links')
+      .delete()
+      .eq('id', linkId);
+
+    if (!error) {
+      setQuickLinks(prev => prev.filter(l => l.id !== linkId));
     }
     return !error;
   };
@@ -327,9 +435,13 @@ export function useSuccessHub() {
     thisWeekTasks,
     completedTasks,
     recentCommunications,
+    clientChannels,
+    quickLinks,
     loading,
     createOrUpdateLog,
     updateClientData,
+    addQuickLink,
+    deleteQuickLink,
     refreshData: loadAllData,
   };
 }
