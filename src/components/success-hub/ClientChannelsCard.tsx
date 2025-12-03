@@ -5,7 +5,6 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Megaphone, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-
 interface ClientChannel {
   id: string;
   name: string;
@@ -18,22 +17,16 @@ interface ClientChannel {
     avatar_url?: string | null;
   };
 }
-
 interface ClientChannelsCardProps {
   channels: ClientChannel[];
 }
-
 const getInitials = (name?: string) => {
   if (!name) return "?";
-  return name
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
+  return name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
 };
-
-export function ClientChannelsCard({ channels }: ClientChannelsCardProps) {
+export function ClientChannelsCard({
+  channels
+}: ClientChannelsCardProps) {
   const navigate = useNavigate();
 
   // Group channels by stage
@@ -43,7 +36,6 @@ export function ClientChannelsCard({ channels }: ClientChannelsCardProps) {
     acc[stage].push(channel);
     return acc;
   }, {} as Record<string, ClientChannel[]>);
-
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'active':
@@ -56,9 +48,7 @@ export function ClientChannelsCard({ channels }: ClientChannelsCardProps) {
         return null;
     }
   };
-
-  return (
-    <Card>
+  return <Card>
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-base font-medium flex items-center gap-2">
@@ -66,41 +56,31 @@ export function ClientChannelsCard({ channels }: ClientChannelsCardProps) {
             Active Channels
           </CardTitle>
           <Button variant="ghost" size="sm" onClick={() => navigate('/marketing/flow')}>
-            View Flowchart
+            View Flow
             <ExternalLink className="h-3 w-3 ml-1" />
           </Button>
         </div>
       </CardHeader>
       <CardContent>
-        {channels.length === 0 ? (
-          <div className="text-center py-4">
+        {channels.length === 0 ? <div className="text-center py-4">
             <p className="text-sm text-muted-foreground">No marketing channels configured</p>
             <Button variant="link" size="sm" onClick={() => navigate('/marketing/flow')}>
               Set up marketing flowchart
             </Button>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {Object.entries(channelsByStage).map(([stage, stageChannels]) => (
-              <div key={stage}>
+          </div> : <div className="space-y-4">
+            {Object.entries(channelsByStage).map(([stage, stageChannels]) => <div key={stage}>
                 <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
                   {stage}
                 </h4>
                 <div className="space-y-2">
-                  {stageChannels.map((channel) => (
-                    <div
-                      key={channel.id}
-                      className="flex items-center justify-between p-2 bg-muted/50 rounded-md"
-                    >
+                  {stageChannels.map(channel => <div key={channel.id} className="flex items-center justify-between p-2 bg-muted/50 rounded-md">
                       <div className="flex items-center gap-2">
-                        {channel.assigned_user && (
-                          <Avatar className="h-6 w-6">
+                        {channel.assigned_user && <Avatar className="h-6 w-6">
                             <AvatarImage src={channel.assigned_user.avatar_url || undefined} />
                             <AvatarFallback className="text-xs bg-primary/10 text-primary">
                               {getInitials(channel.assigned_user.name)}
                             </AvatarFallback>
-                          </Avatar>
-                        )}
+                          </Avatar>}
                         <span className="text-sm font-medium">{channel.name}</span>
                         {getStatusBadge(channel.status)}
                       </div>
@@ -110,14 +90,10 @@ export function ClientChannelsCard({ channels }: ClientChannelsCardProps) {
                           {channel.progress}%
                         </span>
                       </div>
-                    </div>
-                  ))}
+                    </div>)}
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
+              </div>)}
+          </div>}
       </CardContent>
-    </Card>
-  );
+    </Card>;
 }
