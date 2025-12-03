@@ -1451,6 +1451,54 @@ export type Database = {
           },
         ]
       }
+      client_quick_links: {
+        Row: {
+          client_id: string
+          created_at: string | null
+          created_by: string | null
+          display_order: number | null
+          icon: string | null
+          id: string
+          label: string
+          url: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string | null
+          created_by?: string | null
+          display_order?: number | null
+          icon?: string | null
+          id?: string
+          label: string
+          url: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string | null
+          created_by?: string | null
+          display_order?: number | null
+          icon?: string | null
+          id?: string
+          label?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_quick_links_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_quick_links_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_success_logs: {
         Row: {
           business_outcomes: Json | null
@@ -1577,6 +1625,7 @@ export type Database = {
           billing_status: Database["public"]["Enums"]["billing_status"] | null
           booking_permissions: string | null
           brand_name: string | null
+          business_outcomes: Json | null
           canva_folder_url: string | null
           company_name: string | null
           created_at: string | null
@@ -1590,6 +1639,7 @@ export type Database = {
           hq_city: string | null
           id: string
           industry: string | null
+          kpis: Json | null
           last_front_sync_at: string | null
           legal_name: string | null
           logo_url: string | null
@@ -1622,6 +1672,7 @@ export type Database = {
           billing_status?: Database["public"]["Enums"]["billing_status"] | null
           booking_permissions?: string | null
           brand_name?: string | null
+          business_outcomes?: Json | null
           canva_folder_url?: string | null
           company_name?: string | null
           created_at?: string | null
@@ -1635,6 +1686,7 @@ export type Database = {
           hq_city?: string | null
           id?: string
           industry?: string | null
+          kpis?: Json | null
           last_front_sync_at?: string | null
           legal_name?: string | null
           logo_url?: string | null
@@ -1667,6 +1719,7 @@ export type Database = {
           billing_status?: Database["public"]["Enums"]["billing_status"] | null
           booking_permissions?: string | null
           brand_name?: string | null
+          business_outcomes?: Json | null
           canva_folder_url?: string | null
           company_name?: string | null
           created_at?: string | null
@@ -1680,6 +1733,7 @@ export type Database = {
           hq_city?: string | null
           id?: string
           industry?: string | null
+          kpis?: Json | null
           last_front_sync_at?: string | null
           legal_name?: string | null
           logo_url?: string | null

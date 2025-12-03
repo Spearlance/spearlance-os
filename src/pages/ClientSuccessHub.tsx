@@ -10,6 +10,8 @@ import { WinsShippedCard } from "@/components/success-hub/WinsShippedCard";
 import { RisksBlockersCard } from "@/components/success-hub/RisksBlockersCard";
 import { CommunicationHubCard } from "@/components/success-hub/CommunicationHubCard";
 import { ActionButtons } from "@/components/success-hub/ActionButtons";
+import { ClientChannelsCard } from "@/components/success-hub/ClientChannelsCard";
+import { QuickLinksCard } from "@/components/success-hub/QuickLinksCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { isPast, isToday } from "date-fns";
@@ -28,12 +30,16 @@ export default function ClientSuccessHub() {
     thisWeekTasks,
     completedTasks,
     recentCommunications,
+    clientChannels,
+    quickLinks,
     loading,
     createOrUpdateLog,
+    updateClientData,
+    addQuickLink,
+    deleteQuickLink,
     refreshData,
   } = useSuccessHub();
 
-  // Check user role
   useEffect(() => {
     const checkRole = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -69,7 +75,7 @@ export default function ClientSuccessHub() {
   };
 
   const handleOutcomesKPIsUpdate = async (outcomes: BusinessOutcome[], kpis: KPI[]) => {
-    const success = await createOrUpdateLog({ 
+    const success = await updateClientData({ 
       business_outcomes: outcomes, 
       kpis: kpis 
     });
@@ -123,7 +129,6 @@ export default function ClientSuccessHub() {
     navigate(`/tasks?selected=${taskId}`);
   };
 
-  // Calculate overdue tasks
   const overdueTasks = thisWeekTasks.filter(
     task => task.due_date && isPast(new Date(task.due_date)) && !isToday(new Date(task.due_date))
   );
@@ -154,7 +159,6 @@ export default function ClientSuccessHub() {
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
       <h1 className="text-2xl font-bold text-foreground">Client Success Hub</h1>
 
-      {/* Section 1: Client Snapshot */}
       <ClientSnapshotBar
         clientData={clientData}
         healthStatus={successLog?.health_status || 'green'}
@@ -163,24 +167,19 @@ export default function ClientSuccessHub() {
         nextMeeting={nextMeeting}
       />
 
-      {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Left Column */}
         <div className="space-y-6">
-          {/* Section 2: Outcomes & KPIs */}
           <OutcomesKPIsCard
-            outcomes={successLog?.business_outcomes || []}
-            kpis={successLog?.kpis || []}
+            outcomes={clientData?.business_outcomes || []}
+            kpis={clientData?.kpis || []}
             onUpdate={handleOutcomesKPIsUpdate}
           />
 
-          {/* Section 3: This Week's Plan */}
           <WeeklyPlanCard
             tasks={thisWeekTasks}
             onTaskClick={handleTaskClick}
           />
 
-          {/* Section 4: Wins / Shipped */}
           <WinsShippedCard
             completedTasks={completedTasks}
             manualWins={successLog?.manual_wins || []}
@@ -189,9 +188,15 @@ export default function ClientSuccessHub() {
           />
         </div>
 
-        {/* Right Column */}
         <div className="space-y-6">
-          {/* Section 5: Risks / Blockers */}
+          <ClientChannelsCard channels={clientChannels} />
+
+          <QuickLinksCard
+            links={quickLinks}
+            onAddLink={addQuickLink}
+            onDeleteLink={deleteQuickLink}
+          />
+
           <RisksBlockersCard
             risksBlockers={successLog?.risks_blockers || []}
             needsFromClient={successLog?.needs_from_client || []}
@@ -200,7 +205,6 @@ export default function ClientSuccessHub() {
             onUpdateNeeds={handleUpdateNeeds}
           />
 
-          {/* Section 6: Communication Hub */}
           <CommunicationHubCard
             communications={recentCommunications}
             openThreads={successLog?.open_threads || []}
@@ -209,7 +213,6 @@ export default function ClientSuccessHub() {
         </div>
       </div>
 
-      {/* Section 7: Action Buttons */}
       <div className="pt-4 border-t border-border">
         <h3 className="text-sm font-medium text-muted-foreground mb-3">Quick Actions</h3>
         <ActionButtons clientId={selectedClient.id} onRefresh={refreshData} />
