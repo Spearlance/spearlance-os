@@ -1097,6 +1097,51 @@ export type Database = {
         }
         Relationships: []
       }
+      channel_weekly_kpis: {
+        Row: {
+          channel_id: string
+          created_at: string | null
+          created_by: string | null
+          id: string
+          kpi_data: Json
+          updated_at: string | null
+          week_start_date: string
+        }
+        Insert: {
+          channel_id: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          kpi_data?: Json
+          updated_at?: string | null
+          week_start_date: string
+        }
+        Update: {
+          channel_id?: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          kpi_data?: Json
+          updated_at?: string | null
+          week_start_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "channel_weekly_kpis_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_flow_channels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "channel_weekly_kpis_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chat_audit_logs: {
         Row: {
           client_id: string

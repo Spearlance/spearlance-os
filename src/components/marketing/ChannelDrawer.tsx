@@ -13,7 +13,7 @@ import { useNavigate } from "react-router-dom";
 import type { Database } from "@/integrations/supabase/types";
 import CreateChannelTaskDialog from "./CreateChannelTaskDialog";
 import { DeleteChannelDialog } from "./DeleteChannelDialog";
-
+import { ChannelKPIsTab } from "./ChannelKPIsTab";
 type Channel = Database["public"]["Tables"]["marketing_flow_channels"]["Row"];
 type Note = Database["public"]["Tables"]["marketing_flow_channel_notes"]["Row"];
 type Task = Database["public"]["Tables"]["tasks"]["Row"];
@@ -42,6 +42,10 @@ export function ChannelDrawer({ open, onOpenChange, channel, onUpdate, isAdminOr
   const [teamMembers, setTeamMembers] = useState<Array<{ id: string; name: string; role: string }>>([]);
   const [loadingMembers, setLoadingMembers] = useState(true);
   const [currentUserRole, setCurrentUserRole] = useState<string>("");
+
+  // Channels that support KPI tracking
+  const KPI_CHANNELS = ["Website", "Google Ads", "Facebook Ads"];
+  const hasKPIs = KPI_CHANNELS.includes(channel.name);
 
   useEffect(() => {
     if (open) {
@@ -277,10 +281,11 @@ export function ChannelDrawer({ open, onOpenChange, channel, onUpdate, isAdminOr
         </SheetHeader>
 
         <Tabs defaultValue="details" className="mt-6">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className={`grid w-full ${hasKPIs ? "grid-cols-4" : "grid-cols-3"}`}>
             <TabsTrigger value="details">Details</TabsTrigger>
             <TabsTrigger value="tasks">Tasks</TabsTrigger>
             <TabsTrigger value="notes">Notes</TabsTrigger>
+            {hasKPIs && <TabsTrigger value="kpis">KPIs</TabsTrigger>}
           </TabsList>
 
           <TabsContent value="details" className="space-y-4">
@@ -423,6 +428,16 @@ export function ChannelDrawer({ open, onOpenChange, channel, onUpdate, isAdminOr
               )}
             </div>
           </TabsContent>
+
+          {hasKPIs && (
+            <TabsContent value="kpis" className="space-y-4">
+              <ChannelKPIsTab
+                channelId={channel.id}
+                channelName={channel.name}
+                isAdminOrFMM={isAdminOrFMM}
+              />
+            </TabsContent>
+          )}
         </Tabs>
 
         {isAdminOrFMM && (
