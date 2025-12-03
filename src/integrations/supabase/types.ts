@@ -2760,33 +2760,57 @@ export type Database = {
       }
       marketing_flow_task_templates: {
         Row: {
+          cadence: string | null
           channel_name: string
+          client_dependency: boolean | null
+          client_dependency_notes: string | null
           created_at: string | null
           created_by: string | null
           description: string | null
           id: string
+          impact: string | null
+          links_required: string | null
+          owner_role: string | null
           priority: Database["public"]["Enums"]["task_priority"] | null
-          standard_stage_id: string
+          sla_target: string | null
+          standard_stage_id: string | null
+          task_type: string
           title: string
         }
         Insert: {
+          cadence?: string | null
           channel_name: string
+          client_dependency?: boolean | null
+          client_dependency_notes?: string | null
           created_at?: string | null
           created_by?: string | null
           description?: string | null
           id?: string
+          impact?: string | null
+          links_required?: string | null
+          owner_role?: string | null
           priority?: Database["public"]["Enums"]["task_priority"] | null
-          standard_stage_id: string
+          sla_target?: string | null
+          standard_stage_id?: string | null
+          task_type?: string
           title: string
         }
         Update: {
+          cadence?: string | null
           channel_name?: string
+          client_dependency?: boolean | null
+          client_dependency_notes?: string | null
           created_at?: string | null
           created_by?: string | null
           description?: string | null
           id?: string
+          impact?: string | null
+          links_required?: string | null
+          owner_role?: string | null
           priority?: Database["public"]["Enums"]["task_priority"] | null
-          standard_stage_id?: string
+          sla_target?: string | null
+          standard_stage_id?: string | null
+          task_type?: string
           title?: string
         }
         Relationships: [
