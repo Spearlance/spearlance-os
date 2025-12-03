@@ -24,6 +24,14 @@ interface User {
   avatar_url?: string;
 }
 
+interface TaskColumn {
+  id: string;
+  name: string;
+  key: string;
+  color: string;
+  mapped_status: 'to_do' | 'in_progress' | 'done';
+}
+
 export default function CreateChannelTaskDialog({
   open,
   onOpenChange,
@@ -33,13 +41,15 @@ export default function CreateChannelTaskDialog({
 }: CreateChannelTaskDialogProps) {
   const [loading, setLoading] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
+  const [taskColumns, setTaskColumns] = useState<TaskColumn[]>([]);
   const [selectedAssignees, setSelectedAssignees] = useState<string[]>([]);
   const [selectedColor, setSelectedColor] = useState("#6B7280");
   const { toast } = useToast();
   const [formData, setFormData] = useState({
     title: "",
     description: "",
-    status: "to_do" as const,
+    column_id: "",
+    status: "to_do" as 'to_do' | 'in_progress' | 'done',
     priority: "normal" as const,
     dueDate: "",
   });
@@ -47,6 +57,7 @@ export default function CreateChannelTaskDialog({
   useEffect(() => {
     if (open && clientId) {
       loadUsers();
+      loadTaskColumns();
     }
   }, [open, clientId]);
 
@@ -69,6 +80,42 @@ export default function CreateChannelTaskDialog({
     }
   };
 
+  const loadTaskColumns = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("task_columns")
+        .select("id, name, key, color, mapped_status")
+        .eq("client_id", clientId)
+        .order("display_order");
+
+      if (error) throw error;
+      
+      if (data && data.length > 0) {
+        setTaskColumns(data as TaskColumn[]);
+        // Set default to first column (usually "To Do")
+        const firstColumn = data[0] as TaskColumn;
+        setFormData(prev => ({
+          ...prev,
+          column_id: firstColumn.id,
+          status: firstColumn.mapped_status
+        }));
+      }
+    } catch (error) {
+      console.error("Error loading task columns:", error);
+    }
+  };
+
+  const handleColumnChange = (columnId: string) => {
+    const selectedColumn = taskColumns.find(c => c.id === columnId);
+    if (selectedColumn) {
+      setFormData(prev => ({
+        ...prev,
+        column_id: columnId,
+        status: selectedColumn.mapped_status
+      }));
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -85,6 +132,7 @@ export default function CreateChannelTaskDialog({
           title: formData.title,
           description: formData.description || null,
           status: formData.status,
+          column_id: formData.column_id || null,
           priority: formData.priority,
           due_date: formData.dueDate || null,
           color: selectedColor,
@@ -130,6 +178,7 @@ export default function CreateChannelTaskDialog({
       setFormData({
         title: "",
         description: "",
+        column_id: "",
         status: "to_do",
         priority: "normal",
         dueDate: "",
@@ -182,16 +231,42 @@ export default function CreateChannelTaskDialog({
             <div className="space-y-2">
               <Label htmlFor="status">Status</Label>
               <Select
-                value={formData.status}
-                onValueChange={(value: any) => setFormData({ ...formData, status: value })}
+                value={formData.column_id}
+                onValueChange={handleColumnChange}
               >
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue placeholder="Select status">
+                    {formData.column_id && taskColumns.find(c => c.id === formData.column_id) && (
+                      <div className="flex items-center gap-2">
+                        <div 
+                          className="w-3 h-3 rounded-full" 
+                          style={{ backgroundColor: taskColumns.find(c => c.id === formData.column_id)?.color }} 
+                        />
+                        {taskColumns.find(c => c.id === formData.column_id)?.name}
+                      </div>
+                    )}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="to_do">To Do</SelectItem>
-                  <SelectItem value="in_progress">In Progress</SelectItem>
-                  <SelectItem value="done">Done</SelectItem>
+                  {taskColumns.length > 0 ? (
+                    taskColumns.map((column) => (
+                      <SelectItem key={column.id} value={column.id}>
+                        <div className="flex items-center gap-2">
+                          <div 
+                            className="w-3 h-3 rounded-full" 
+                            style={{ backgroundColor: column.color }} 
+                          />
+                          {column.name}
+                        </div>
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <>
+                      <SelectItem value="to_do">To Do</SelectItem>
+                      <SelectItem value="in_progress">In Progress</SelectItem>
+                      <SelectItem value="done">Done</SelectItem>
+                    </>
+                  )}
                 </SelectContent>
               </Select>
             </div>
