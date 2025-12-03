@@ -50,6 +50,7 @@ import Analytics from "./pages/Analytics";
 import SEO from "./pages/SEO";
 import EmailTemplates from "./pages/admin/EmailTemplates";
 import BlogWriter from "./pages/BlogWriter";
+import ClientSuccessHub from "./pages/ClientSuccessHub";
 
 const queryClient = new QueryClient();
 
@@ -112,6 +113,7 @@ const App = () => (
             <Route path="/leads" element={<MainLayout><Leads /></MainLayout>} />
             <Route path="/admin/bug-reports" element={<MainLayout><AdminBugReports /></MainLayout>} />
             <Route path="/bug-reports" element={<MainLayout><MyBugReports /></MainLayout>} />
+            <Route path="/success-hub" element={<MainLayout><ClientSuccessHub /></MainLayout>} />
             <Route path="/calendar/callback" element={<CalendarCallback />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<MainLayout><NotFound /></MainLayout>} />
