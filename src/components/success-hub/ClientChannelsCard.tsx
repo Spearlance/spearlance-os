@@ -49,7 +49,7 @@ export function ClientChannelsCard({ channels }: ClientChannelsCardProps) {
             <Megaphone className="h-4 w-4 text-primary" />
             Active Channels
           </CardTitle>
-          <Button variant="ghost" size="sm" onClick={() => navigate('/marketing-flowchart')}>
+          <Button variant="ghost" size="sm" onClick={() => navigate('/marketing/flow')}>
             View Flowchart
             <ExternalLink className="h-3 w-3 ml-1" />
           </Button>
@@ -59,7 +59,7 @@ export function ClientChannelsCard({ channels }: ClientChannelsCardProps) {
         {channels.length === 0 ? (
           <div className="text-center py-4">
             <p className="text-sm text-muted-foreground">No marketing channels configured</p>
-            <Button variant="link" size="sm" onClick={() => navigate('/marketing-flowchart')}>
+            <Button variant="link" size="sm" onClick={() => navigate('/marketing/flow')}>
               Set up marketing flowchart
             </Button>
           </div>
