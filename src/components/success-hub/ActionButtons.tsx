@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { 
   MessageSquare, 
   Plus, 
-  AlertTriangle, 
   Send,
   Calendar
 } from "lucide-react";
@@ -20,7 +19,6 @@ export function ActionButtons({ clientId, onRefresh }: ActionButtonsProps) {
   const [showMeetingDialog, setShowMeetingDialog] = useState(false);
   const [showCommDialog, setShowCommDialog] = useState(false);
   const [showTaskDialog, setShowTaskDialog] = useState(false);
-  const [showEscalationDialog, setShowEscalationDialog] = useState(false);
 
   const handleDialogClose = (setter: (v: boolean) => void) => (open: boolean) => {
     setter(open);
@@ -47,11 +45,6 @@ export function ActionButtons({ clientId, onRefresh }: ActionButtonsProps) {
           Create Task
         </Button>
         
-        <Button variant="outline" onClick={() => setShowEscalationDialog(true)}>
-          <AlertTriangle className="h-4 w-4 mr-2" />
-          Create Escalation
-        </Button>
-        
         <Button variant="outline" disabled>
           <Send className="h-4 w-4 mr-2" />
           Send Weekly Update
@@ -71,13 +64,6 @@ export function ActionButtons({ clientId, onRefresh }: ActionButtonsProps) {
       <CreateTaskDialog
         open={showTaskDialog}
         onOpenChange={handleDialogClose(setShowTaskDialog)}
-        onSuccess={onRefresh}
-      />
-
-      {/* Escalation uses CreateTaskDialog */}
-      <CreateTaskDialog
-        open={showEscalationDialog}
-        onOpenChange={handleDialogClose(setShowEscalationDialog)}
         onSuccess={onRefresh}
       />
     </>
