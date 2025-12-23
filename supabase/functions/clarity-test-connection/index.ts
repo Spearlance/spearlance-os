@@ -24,56 +24,62 @@ serve(async (req) => {
     console.log(`Testing Clarity connection for project: ${projectId}`);
 
     // Microsoft Clarity Analytics API endpoint
-    // Using the project info endpoint to verify credentials
-    const clarityApiUrl = `https://www.clarity.ms/export-data/api/v1/${projectId}/project-info`;
+    // The API token is project-specific, so we use project-live-insights
+    const clarityApiUrl = `https://www.clarity.ms/export-data/api/v1/project-live-insights?numOfDays=1`;
 
     const response = await fetch(clarityApiUrl, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${apiToken}`,
-        'Content-Type': 'application/json',
+        'Accept': 'application/json',
       },
     });
 
     console.log(`Clarity API response status: ${response.status}`);
+    const responseText = await response.text();
+    console.log('Clarity API response body:', responseText);
 
     if (response.ok) {
-      const data = await response.json();
-      console.log('Clarity API response:', JSON.stringify(data));
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch {
+        data = {};
+      }
       
       return new Response(
         JSON.stringify({ 
           success: true, 
           projectName: data.projectName || projectId,
-          message: 'Connection successful' 
+          message: 'Connection successful',
+          hasData: !!data.totalSessionCount || !!data.distinctUserCount
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     // Handle specific error codes
-    if (response.status === 401 || response.status === 403) {
+    if (response.status === 401) {
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: 'Invalid API token or insufficient permissions' 
+          error: 'Invalid API token. Please check your token and ensure it has the correct permissions.' 
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    if (response.status === 404) {
+    if (response.status === 403) {
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: 'Project not found. Please check your Project ID' 
+          error: 'Access forbidden. Your API token may not have permission to access analytics data.' 
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const errorText = await response.text();
-    console.error('Clarity API error:', errorText);
+    console.error('Clarity API error:', responseText);
 
     return new Response(
       JSON.stringify({ 
