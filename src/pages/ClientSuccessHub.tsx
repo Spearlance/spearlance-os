@@ -12,6 +12,7 @@ import { CommunicationHubCard } from "@/components/success-hub/CommunicationHubC
 import { ActionButtons } from "@/components/success-hub/ActionButtons";
 import { ClientChannelsCard } from "@/components/success-hub/ClientChannelsCard";
 import { QuickLinksCard } from "@/components/success-hub/QuickLinksCard";
+import { ReportsCard } from "@/components/success-hub/ReportsCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { isPast, isToday } from "date-fns";
@@ -32,6 +33,7 @@ export default function ClientSuccessHub() {
     recentCommunications,
     clientChannels,
     quickLinks,
+    recentReports,
     loading,
     createOrUpdateLog,
     updateClientData,
@@ -190,6 +192,12 @@ export default function ClientSuccessHub() {
 
         <div className="space-y-6">
           <ClientChannelsCard channels={clientChannels} />
+
+          <ReportsCard
+            reports={recentReports}
+            clientId={selectedClient.id}
+            onReportGenerated={refreshData}
+          />
 
           <QuickLinksCard
             links={quickLinks}
