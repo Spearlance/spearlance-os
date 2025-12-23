@@ -17,6 +17,7 @@ import { ClientLogoUploader } from "@/components/settings/ClientLogoUploader";
 import { BillingTab } from "@/components/settings/BillingTab";
 import { UserProfileTab } from "@/components/settings/UserProfileTab";
 import { AnalyticsSetupTab } from "@/components/settings/AnalyticsSetupTab";
+import { ClaritySetupTab } from "@/components/settings/ClaritySetupTab";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Clock, Copy, Info, Globe, Loader2 } from "lucide-react";
@@ -256,6 +257,10 @@ export default function Settings() {
 
           {showAnalyticsTab && selectedClient && (
             <AnalyticsSetupTab client={selectedClient} />
+          )}
+
+          {(userProfile?.role === 'admin' || userProfile?.role === 'fmm') && selectedClient && (
+            <ClaritySetupTab client={selectedClient} />
           )}
         </TabsContent>
 
