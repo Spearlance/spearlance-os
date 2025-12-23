@@ -14,6 +14,7 @@ import type { Database } from "@/integrations/supabase/types";
 import CreateChannelTaskDialog from "./CreateChannelTaskDialog";
 import { DeleteChannelDialog } from "./DeleteChannelDialog";
 import { ChannelKPIsTab } from "./ChannelKPIsTab";
+import { CampaignsTab } from "./CampaignsTab";
 type Channel = Database["public"]["Tables"]["marketing_flow_channels"]["Row"];
 type Note = Database["public"]["Tables"]["marketing_flow_channel_notes"]["Row"];
 type Task = Database["public"]["Tables"]["tasks"]["Row"];
@@ -43,9 +44,10 @@ export function ChannelDrawer({ open, onOpenChange, channel, onUpdate, isAdminOr
   const [loadingMembers, setLoadingMembers] = useState(true);
   const [currentUserRole, setCurrentUserRole] = useState<string>("");
 
-  // Channels that support KPI tracking
+  // Channels that support KPI tracking and campaigns
   const KPI_CHANNELS = ["Website", "Google Ads", "Facebook Ads"];
   const hasKPIs = KPI_CHANNELS.includes(channel.name);
+  const hasCampaigns = KPI_CHANNELS.includes(channel.name);
 
   useEffect(() => {
     if (open) {
@@ -281,10 +283,11 @@ export function ChannelDrawer({ open, onOpenChange, channel, onUpdate, isAdminOr
         </SheetHeader>
 
         <Tabs defaultValue="details" className="mt-6">
-          <TabsList className={`grid w-full ${hasKPIs ? "grid-cols-4" : "grid-cols-3"}`}>
+          <TabsList className={`grid w-full ${hasCampaigns ? "grid-cols-5" : hasKPIs ? "grid-cols-4" : "grid-cols-3"}`}>
             <TabsTrigger value="details">Details</TabsTrigger>
             <TabsTrigger value="tasks">Tasks</TabsTrigger>
             <TabsTrigger value="notes">Notes</TabsTrigger>
+            {hasCampaigns && <TabsTrigger value="campaigns">Campaigns</TabsTrigger>}
             {hasKPIs && <TabsTrigger value="kpis">KPIs</TabsTrigger>}
           </TabsList>
 
@@ -428,6 +431,16 @@ export function ChannelDrawer({ open, onOpenChange, channel, onUpdate, isAdminOr
               )}
             </div>
           </TabsContent>
+
+          {hasCampaigns && (
+            <TabsContent value="campaigns" className="space-y-4">
+              <CampaignsTab
+                channelId={channel.id}
+                channelName={channel.name}
+                isAdminOrFMM={isAdminOrFMM}
+              />
+            </TabsContent>
+          )}
 
           {hasKPIs && (
             <TabsContent value="kpis" className="space-y-4">

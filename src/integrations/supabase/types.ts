@@ -1099,6 +1099,7 @@ export type Database = {
       }
       channel_weekly_kpis: {
         Row: {
+          campaign_id: string | null
           channel_id: string
           created_at: string | null
           created_by: string | null
@@ -1108,6 +1109,7 @@ export type Database = {
           week_start_date: string
         }
         Insert: {
+          campaign_id?: string | null
           channel_id: string
           created_at?: string | null
           created_by?: string | null
@@ -1117,6 +1119,7 @@ export type Database = {
           week_start_date: string
         }
         Update: {
+          campaign_id?: string | null
           channel_id?: string
           created_at?: string | null
           created_by?: string | null
@@ -1126,6 +1129,13 @@ export type Database = {
           week_start_date?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "channel_weekly_kpis_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_flow_campaigns"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "channel_weekly_kpis_channel_id_fkey"
             columns: ["channel_id"]
@@ -2608,6 +2618,54 @@ export type Database = {
           used?: boolean | null
         }
         Relationships: []
+      }
+      marketing_flow_campaigns: {
+        Row: {
+          channel_id: string
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string
+          name: string
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          channel_id: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          channel_id?: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketing_flow_campaigns_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_flow_channels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketing_flow_campaigns_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       marketing_flow_channel_notes: {
         Row: {

@@ -4,7 +4,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ChevronLeft, ChevronRight, Save, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -38,18 +37,14 @@ const CHANNEL_KPI_CONFIG: Record<string, KPIField[]> = {
   ],
 };
 
-interface ChannelKPIsTabProps {
+interface CampaignKPIsTabProps {
+  campaignId: string;
   channelId: string;
   channelName: string;
   isAdminOrFMM: boolean;
 }
 
-interface Campaign {
-  id: string;
-  name: string;
-}
-
-export function ChannelKPIsTab({ channelId, channelName, isAdminOrFMM }: ChannelKPIsTabProps) {
+export function CampaignKPIsTab({ campaignId, channelId, channelName, isAdminOrFMM }: CampaignKPIsTabProps) {
   const { toast } = useToast();
   const [selectedWeek, setSelectedWeek] = useState(() => 
     startOfWeek(new Date(), { weekStartsOn: 1 })
@@ -58,60 +53,33 @@ export function ChannelKPIsTab({ channelId, channelName, isAdminOrFMM }: Channel
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [history, setHistory] = useState<Array<{ week_start_date: string; kpi_data: Record<string, number> }>>([]);
-  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
-  const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(null);
 
   const kpiConfig = CHANNEL_KPI_CONFIG[channelName];
-
-  // Load campaigns for this channel
-  useEffect(() => {
-    const loadCampaigns = async () => {
-      const { data, error } = await supabase
-        .from("marketing_flow_campaigns")
-        .select("id, name")
-        .eq("channel_id", channelId)
-        .order("name");
-
-      if (!error && data) {
-        setCampaigns(data);
-      }
-    };
-    loadCampaigns();
-  }, [channelId]);
 
   useEffect(() => {
     if (kpiConfig) {
       loadKPIData();
       loadHistory();
     }
-  }, [channelId, selectedWeek, kpiConfig, selectedCampaignId]);
+  }, [campaignId, selectedWeek, kpiConfig]);
 
   const loadKPIData = async () => {
     setLoading(true);
     try {
       const weekDate = format(selectedWeek, "yyyy-MM-dd");
-      
-      let query = supabase
+      const { data, error } = await supabase
         .from("channel_weekly_kpis")
         .select("kpi_data")
         .eq("channel_id", channelId)
-        .eq("week_start_date", weekDate);
-      
-      // Filter by campaign if selected, otherwise get channel-level data (null campaign_id)
-      if (selectedCampaignId) {
-        query = query.eq("campaign_id", selectedCampaignId);
-      } else {
-        query = query.is("campaign_id", null);
-      }
-
-      const { data, error } = await query.maybeSingle();
+        .eq("campaign_id", campaignId)
+        .eq("week_start_date", weekDate)
+        .maybeSingle();
 
       if (error) throw error;
 
       if (data?.kpi_data) {
         setKpiData(data.kpi_data as Record<string, number | string>);
       } else {
-        // Initialize empty values
         const emptyData: Record<string, string> = {};
         kpiConfig?.forEach((field) => {
           emptyData[field.key] = "";
@@ -127,21 +95,13 @@ export function ChannelKPIsTab({ channelId, channelName, isAdminOrFMM }: Channel
 
   const loadHistory = async () => {
     try {
-      let query = supabase
+      const { data, error } = await supabase
         .from("channel_weekly_kpis")
         .select("week_start_date, kpi_data")
         .eq("channel_id", channelId)
+        .eq("campaign_id", campaignId)
         .order("week_start_date", { ascending: false })
         .limit(8);
-      
-      // Filter by campaign if selected, otherwise get channel-level data (null campaign_id)
-      if (selectedCampaignId) {
-        query = query.eq("campaign_id", selectedCampaignId);
-      } else {
-        query = query.is("campaign_id", null);
-      }
-
-      const { data, error } = await query;
 
       if (error) throw error;
       setHistory(data?.map(d => ({
@@ -161,7 +121,6 @@ export function ChannelKPIsTab({ channelId, channelName, isAdminOrFMM }: Channel
 
       const weekDate = format(selectedWeek, "yyyy-MM-dd");
       
-      // Convert empty strings to null and strings to numbers
       const cleanedData: Record<string, number | null> = {};
       Object.entries(kpiData).forEach(([key, value]) => {
         if (value === "" || value === null || value === undefined) {
@@ -175,7 +134,7 @@ export function ChannelKPIsTab({ channelId, channelName, isAdminOrFMM }: Channel
         .from("channel_weekly_kpis")
         .upsert({
           channel_id: channelId,
-          campaign_id: selectedCampaignId || null,
+          campaign_id: campaignId,
           week_start_date: weekDate,
           kpi_data: cleanedData,
           created_by: user.id,
@@ -231,32 +190,6 @@ export function ChannelKPIsTab({ channelId, channelName, isAdminOrFMM }: Channel
 
   return (
     <div className="space-y-6">
-      {/* Campaign Selector - only show if campaigns exist */}
-      {campaigns.length > 0 && (
-        <div className="space-y-2">
-          <Label>Select Campaign (optional)</Label>
-          <Select
-            value={selectedCampaignId || "channel-level"}
-            onValueChange={(value) => setSelectedCampaignId(value === "channel-level" ? null : value)}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Channel-level (aggregate)" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="channel-level">Channel-level (aggregate)</SelectItem>
-              {campaigns.map((campaign) => (
-                <SelectItem key={campaign.id} value={campaign.id}>
-                  {campaign.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <p className="text-xs text-muted-foreground">
-            Track KPIs for a specific campaign or for the channel overall
-          </p>
-        </div>
-      )}
-
       {/* Week Selector */}
       <div className="flex items-center justify-between">
         <Button
@@ -287,7 +220,7 @@ export function ChannelKPIsTab({ channelId, channelName, isAdminOrFMM }: Channel
       {/* KPI Input Form */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">{channelName} KPIs</CardTitle>
+          <CardTitle className="text-base">Campaign KPIs</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           {loading ? (
@@ -298,7 +231,7 @@ export function ChannelKPIsTab({ channelId, channelName, isAdminOrFMM }: Channel
             <>
               {kpiConfig.map((field) => (
                 <div key={field.key} className="space-y-1">
-                  <Label htmlFor={field.key}>{field.label}</Label>
+                  <Label htmlFor={`campaign-${field.key}`}>{field.label}</Label>
                   <div className="relative">
                     {field.type === "currency" && (
                       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
@@ -306,7 +239,7 @@ export function ChannelKPIsTab({ channelId, channelName, isAdminOrFMM }: Channel
                       </span>
                     )}
                     <Input
-                      id={field.key}
+                      id={`campaign-${field.key}`}
                       type="number"
                       step={field.type === "currency" ? "0.01" : "1"}
                       min="0"
