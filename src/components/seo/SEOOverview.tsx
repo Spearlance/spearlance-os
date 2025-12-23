@@ -1,19 +1,18 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TrendingUp, TrendingDown, Target, BarChart3, Hash } from "lucide-react";
+import { BarChart3, Hash } from "lucide-react";
 import { SEOReport } from "@/hooks/useSEOReports";
 import { format } from "date-fns";
 
 interface SEOOverviewProps {
   report: SEOReport | null;
-  previousReport?: SEOReport | null;
   isLoading?: boolean;
 }
 
-export function SEOOverview({ report, previousReport, isLoading }: SEOOverviewProps) {
+export function SEOOverview({ report, isLoading }: SEOOverviewProps) {
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {[...Array(4)].map((_, i) => (
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {[...Array(3)].map((_, i) => (
           <Card key={i} className="animate-pulse">
             <CardHeader className="pb-2">
               <div className="h-4 bg-muted rounded w-24" />
@@ -30,7 +29,7 @@ export function SEOOverview({ report, previousReport, isLoading }: SEOOverviewPr
 
   if (!report) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card className="col-span-full">
           <CardContent className="py-8 text-center text-muted-foreground">
             No SEO reports uploaded yet. Upload an SE Ranking PDF to see your keyword rankings.
@@ -39,14 +38,6 @@ export function SEOOverview({ report, previousReport, isLoading }: SEOOverviewPr
       </div>
     );
   }
-
-  const visibilityChange = previousReport && previousReport.visibility_score && report.visibility_score
-    ? report.visibility_score - previousReport.visibility_score
-    : null;
-
-  const positionChange = previousReport && previousReport.average_position && report.average_position
-    ? previousReport.average_position - report.average_position // Lower is better
-    : null;
 
   return (
     <div className="space-y-4">
@@ -58,28 +49,7 @@ export function SEOOverview({ report, previousReport, isLoading }: SEOOverviewPr
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Visibility Score */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <Target className="h-4 w-4 text-primary" />
-              Search Visibility
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {report.visibility_score?.toFixed(1) || '—'}%
-            </div>
-            {visibilityChange !== null && (
-              <div className={`flex items-center gap-1 text-sm ${visibilityChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {visibilityChange >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-                {visibilityChange >= 0 ? '+' : ''}{visibilityChange.toFixed(1)}%
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Average Position */}
         <Card>
           <CardHeader className="pb-2">
@@ -92,12 +62,6 @@ export function SEOOverview({ report, previousReport, isLoading }: SEOOverviewPr
             <div className="text-2xl font-bold">
               {report.average_position?.toFixed(1) || '—'}
             </div>
-            {positionChange !== null && (
-              <div className={`flex items-center gap-1 text-sm ${positionChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {positionChange >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-                {positionChange >= 0 ? '+' : ''}{positionChange.toFixed(1)} positions
-              </div>
-            )}
           </CardContent>
         </Card>
 
