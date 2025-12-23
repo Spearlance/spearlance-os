@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ChevronLeft, ChevronRight, Save, Loader2, Calculator } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { format, startOfWeek, addWeeks, subWeeks, isSameWeek, endOfWeek } from "date-fns";
+import { format, startOfWeek, addWeeks, subWeeks, isSameWeek, endOfWeek, parseISO } from "date-fns";
 
 interface KPIField {
   key: string;
@@ -491,7 +491,7 @@ export function ChannelKPIsTab({ channelId, channelName, isAdminOrFMM }: Channel
                       }
                     >
                       <TableCell className="font-medium">
-                        {format(new Date(row.week_start_date), "MMM d")}
+                        {format(parseISO(row.week_start_date + 'T12:00:00'), "MMM d")}
                       </TableCell>
                       {kpiConfig.map((field) => (
                         <TableCell key={field.key} className="text-right">
