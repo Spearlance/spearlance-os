@@ -6,7 +6,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-interface ClarityDayData {
+interface ClarityMetrics {
   totalSessionCount: number;
   distinctUserCount: number;
   pagesPerSession: number;
@@ -18,11 +18,22 @@ interface ClarityDayData {
   javascriptErrorCount: number;
 }
 
-async function fetchClarityData(apiToken: string): Promise<ClarityDayData | null> {
-  // Fetch exactly 1 day of data for precise daily metrics
-  const url = `https://www.clarity.ms/export-data/api/v1/project-live-insights?numOfDays=1`;
+interface ClarityDimensionData {
+  key: string;
+  totalSessionCount: number;
+  distinctUserCount: number;
+  scrollDepth?: number;
+  activeTime?: number;
+}
+
+async function fetchClarityData(apiToken: string, dimension?: string): Promise<any> {
+  let url = `https://www.clarity.ms/export-data/api/v1/project-live-insights?numOfDays=1`;
   
-  console.log('Fetching Clarity data for yesterday (numOfDays=1)');
+  if (dimension) {
+    url += `&dimension1=${dimension}`;
+  }
+  
+  console.log(`Fetching Clarity data${dimension ? ` with dimension ${dimension}` : ''}`);
   
   try {
     const response = await fetch(url, {
@@ -41,23 +52,27 @@ async function fetchClarityData(apiToken: string): Promise<ClarityDayData | null
     }
 
     const data = await response.json();
-    console.log('Clarity data received:', JSON.stringify(data).substring(0, 500));
+    console.log(`Clarity data received${dimension ? ` for ${dimension}` : ''}:`, JSON.stringify(data).substring(0, 500));
     
-    return {
-      totalSessionCount: data.totalSessionCount || 0,
-      distinctUserCount: data.distinctUserCount || 0,
-      pagesPerSession: data.pagesPerSession || 0,
-      scrollDepth: data.scrollDepth || 0,
-      activeTime: data.activeTime || 0,
-      rageClickCount: data.rageClickCount || 0,
-      deadClickCount: data.deadClickCount || 0,
-      quickbackCount: data.quickbackCount || 0,
-      javascriptErrorCount: data.javascriptErrorCount || 0,
-    };
+    return data;
   } catch (error) {
     console.error('Error fetching Clarity data:', error);
     return null;
   }
+}
+
+function parseSourceFromDimension(dimensionKey: string): { source: string; medium: string | null } {
+  // Dimension key format could be "google", "google / organic", "(direct)", etc.
+  if (!dimensionKey || dimensionKey === '(not set)') {
+    return { source: 'direct', medium: null };
+  }
+  
+  if (dimensionKey.includes(' / ')) {
+    const parts = dimensionKey.split(' / ');
+    return { source: parts[0], medium: parts[1] || null };
+  }
+  
+  return { source: dimensionKey, medium: null };
 }
 
 serve(async (req) => {
@@ -125,40 +140,109 @@ serve(async (req) => {
       try {
         console.log(`Processing client: ${config.client_id}`);
 
-        // Fetch 1 day of data (yesterday's metrics)
-        const dailyData = await fetchClarityData(config.api_token);
+        // API Call 1: Base metrics (no dimension)
+        const baseData = await fetchClarityData(config.api_token);
 
-        if (dailyData) {
-          // Upsert daily metrics for yesterday
+        if (baseData) {
           const { error: upsertError } = await supabase
             .from('clarity_daily_metrics')
             .upsert(
               {
                 client_id: config.client_id,
                 metric_date: metricDate,
-                total_sessions: dailyData.totalSessionCount,
-                distinct_users: dailyData.distinctUserCount,
-                pages_per_session: dailyData.pagesPerSession,
-                scroll_depth: dailyData.scrollDepth,
-                engagement_time_seconds: dailyData.activeTime,
-                rage_click_count: dailyData.rageClickCount,
-                dead_click_count: dailyData.deadClickCount,
-                quick_back_count: dailyData.quickbackCount,
-                javascript_error_count: dailyData.javascriptErrorCount,
-                raw_response: dailyData,
+                total_sessions: baseData.totalSessionCount || 0,
+                distinct_users: baseData.distinctUserCount || 0,
+                pages_per_session: baseData.pagesPerSession || 0,
+                scroll_depth: baseData.scrollDepth || 0,
+                engagement_time_seconds: baseData.activeTime || 0,
+                rage_click_count: baseData.rageClickCount || 0,
+                dead_click_count: baseData.deadClickCount || 0,
+                quick_back_count: baseData.quickbackCount || 0,
+                javascript_error_count: baseData.javascriptErrorCount || 0,
+                raw_response: baseData,
                 synced_at: new Date().toISOString(),
               },
               { onConflict: 'client_id,metric_date' }
             );
 
           if (upsertError) {
-            console.error(`Error upserting metrics for ${metricDate}:`, upsertError);
-            throw upsertError;
+            console.error(`Error upserting base metrics:`, upsertError);
+          } else {
+            console.log(`Synced base metrics: ${baseData.totalSessionCount} sessions, ${baseData.distinctUserCount} users`);
           }
-          
-          console.log(`Successfully synced metrics for ${metricDate}: ${dailyData.totalSessionCount} sessions, ${dailyData.distinctUserCount} users`);
-        } else {
-          console.log(`No data returned for client ${config.client_id}`);
+        }
+
+        // API Call 2: Traffic sources by Source dimension
+        const sourcesData = await fetchClarityData(config.api_token, 'Source');
+        
+        if (sourcesData?.dimensionData && Array.isArray(sourcesData.dimensionData)) {
+          const sourcesToUpsert = sourcesData.dimensionData.map((item: ClarityDimensionData) => {
+            const { source, medium } = parseSourceFromDimension(item.key);
+            return {
+              client_id: config.client_id,
+              metric_date: metricDate,
+              source,
+              medium,
+              sessions: item.totalSessionCount || 0,
+              users: item.distinctUserCount || 0,
+              synced_at: new Date().toISOString(),
+            };
+          });
+
+          if (sourcesToUpsert.length > 0) {
+            // Delete existing sources for this date first to avoid conflicts
+            await supabase
+              .from('clarity_daily_sources')
+              .delete()
+              .eq('client_id', config.client_id)
+              .eq('metric_date', metricDate);
+
+            const { error: sourcesError } = await supabase
+              .from('clarity_daily_sources')
+              .insert(sourcesToUpsert);
+
+            if (sourcesError) {
+              console.error(`Error inserting sources:`, sourcesError);
+            } else {
+              console.log(`Synced ${sourcesToUpsert.length} traffic sources`);
+            }
+          }
+        }
+
+        // API Call 3: Page performance by URL dimension
+        const pagesData = await fetchClarityData(config.api_token, 'URL');
+        
+        if (pagesData?.dimensionData && Array.isArray(pagesData.dimensionData)) {
+          const pagesToUpsert = pagesData.dimensionData.map((item: ClarityDimensionData) => ({
+            client_id: config.client_id,
+            metric_date: metricDate,
+            page_url: item.key || '/',
+            page_title: null, // Clarity doesn't provide title in this endpoint
+            sessions: item.totalSessionCount || 0,
+            users: item.distinctUserCount || 0,
+            scroll_depth: item.scrollDepth || null,
+            engagement_time_seconds: item.activeTime || 0,
+            synced_at: new Date().toISOString(),
+          }));
+
+          if (pagesToUpsert.length > 0) {
+            // Delete existing pages for this date first to avoid conflicts
+            await supabase
+              .from('clarity_daily_pages')
+              .delete()
+              .eq('client_id', config.client_id)
+              .eq('metric_date', metricDate);
+
+            const { error: pagesError } = await supabase
+              .from('clarity_daily_pages')
+              .insert(pagesToUpsert);
+
+            if (pagesError) {
+              console.error(`Error inserting pages:`, pagesError);
+            } else {
+              console.log(`Synced ${pagesToUpsert.length} pages`);
+            }
+          }
         }
 
         // Update last_synced_at

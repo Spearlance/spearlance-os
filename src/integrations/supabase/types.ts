@@ -1400,6 +1400,94 @@ export type Database = {
           },
         ]
       }
+      clarity_daily_pages: {
+        Row: {
+          client_id: string
+          engagement_time_seconds: number | null
+          id: string
+          metric_date: string
+          page_title: string | null
+          page_url: string
+          scroll_depth: number | null
+          sessions: number | null
+          synced_at: string | null
+          users: number | null
+        }
+        Insert: {
+          client_id: string
+          engagement_time_seconds?: number | null
+          id?: string
+          metric_date: string
+          page_title?: string | null
+          page_url: string
+          scroll_depth?: number | null
+          sessions?: number | null
+          synced_at?: string | null
+          users?: number | null
+        }
+        Update: {
+          client_id?: string
+          engagement_time_seconds?: number | null
+          id?: string
+          metric_date?: string
+          page_title?: string | null
+          page_url?: string
+          scroll_depth?: number | null
+          sessions?: number | null
+          synced_at?: string | null
+          users?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clarity_daily_pages_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clarity_daily_sources: {
+        Row: {
+          client_id: string
+          id: string
+          medium: string | null
+          metric_date: string
+          sessions: number | null
+          source: string
+          synced_at: string | null
+          users: number | null
+        }
+        Insert: {
+          client_id: string
+          id?: string
+          medium?: string | null
+          metric_date: string
+          sessions?: number | null
+          source: string
+          synced_at?: string | null
+          users?: number | null
+        }
+        Update: {
+          client_id?: string
+          id?: string
+          medium?: string | null
+          metric_date?: string
+          sessions?: number | null
+          source?: string
+          synced_at?: string | null
+          users?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clarity_daily_sources_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clarity_weekly_reports: {
         Row: {
           ai_insights: string | null
