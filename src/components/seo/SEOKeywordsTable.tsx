@@ -16,13 +16,19 @@ import { SEOKeyword } from "@/hooks/useSEOKeywords";
 import { Button } from "@/components/ui/button";
 
 interface SEOKeywordsTableProps {
-  keywords: SEOKeyword[];
+  keywords: ExtendedSEOKeyword[];
   regions: string[];
   isLoading?: boolean;
 }
 
-type SortField = 'keyword' | 'position' | 'position_change' | 'best_position';
+type SortField = 'keyword' | 'position' | 'position_change' | 'best_position' | 'search_volume' | 'clicks';
 type SortOrder = 'asc' | 'desc';
+
+// Extend SEOKeyword type to include new fields
+interface ExtendedSEOKeyword extends SEOKeyword {
+  search_volume?: number | null;
+  clicks?: number | null;
+}
 
 export function SEOKeywordsTable({ keywords, regions, isLoading }: SEOKeywordsTableProps) {
   const [searchQuery, setSearchQuery] = useState("");
@@ -192,6 +198,26 @@ export function SEOKeywordsTable({ keywords, regions, isLoading }: SEOKeywordsTa
                       <ArrowUpDown className="ml-2 h-3 w-3" />
                     </Button>
                   </TableHead>
+                  <TableHead className="text-right">
+                    <Button 
+                      variant="ghost" 
+                      className="h-auto p-0 font-medium hover:bg-transparent"
+                      onClick={() => handleSort('search_volume')}
+                    >
+                      Volume
+                      <ArrowUpDown className="ml-2 h-3 w-3" />
+                    </Button>
+                  </TableHead>
+                  <TableHead className="text-right">
+                    <Button 
+                      variant="ghost" 
+                      className="h-auto p-0 font-medium hover:bg-transparent"
+                      onClick={() => handleSort('clicks')}
+                    >
+                      Clicks
+                      <ArrowUpDown className="ml-2 h-3 w-3" />
+                    </Button>
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -209,6 +235,12 @@ export function SEOKeywordsTable({ keywords, regions, isLoading }: SEOKeywordsTa
                     </TableCell>
                     <TableCell className="text-center">
                       {keyword.best_position || '—'}
+                    </TableCell>
+                    <TableCell className="text-right text-sm text-muted-foreground">
+                      {keyword.search_volume?.toLocaleString() || '—'}
+                    </TableCell>
+                    <TableCell className="text-right text-sm text-muted-foreground">
+                      {keyword.clicks?.toLocaleString() || '—'}
                     </TableCell>
                   </TableRow>
                 ))}

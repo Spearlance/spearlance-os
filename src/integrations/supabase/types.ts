@@ -4047,6 +4047,7 @@ export type Database = {
       seo_keywords: {
         Row: {
           best_position: number | null
+          clicks: number | null
           client_id: string
           created_at: string | null
           id: string
@@ -4057,10 +4058,12 @@ export type Database = {
           ranking_url: string | null
           region: string | null
           search_engine: string | null
+          search_volume: number | null
           seo_report_id: string
         }
         Insert: {
           best_position?: number | null
+          clicks?: number | null
           client_id: string
           created_at?: string | null
           id?: string
@@ -4071,10 +4074,12 @@ export type Database = {
           ranking_url?: string | null
           region?: string | null
           search_engine?: string | null
+          search_volume?: number | null
           seo_report_id: string
         }
         Update: {
           best_position?: number | null
+          clicks?: number | null
           client_id?: string
           created_at?: string | null
           id?: string
@@ -4085,6 +4090,7 @@ export type Database = {
           ranking_url?: string | null
           region?: string | null
           search_engine?: string | null
+          search_volume?: number | null
           seo_report_id?: string
         }
         Relationships: [
