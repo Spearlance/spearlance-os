@@ -3,17 +3,10 @@ import { useClient } from "@/contexts/ClientContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Lock, FileText, MapPin, RefreshCw, AlertCircle, Upload } from "lucide-react";
+import { Search, Lock, FileText, MapPin, Upload } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { PagePerformanceTable } from "@/components/analytics/PagePerformanceTable";
-import { usePagePerformance } from "@/hooks/useAnalytics";
 import { PricingModal } from "@/components/billing/PricingModal";
-import { subDays, formatDistanceToNow } from "date-fns";
-import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { useLastRefreshTime } from "@/hooks/useLastRefreshTime";
-import { useCanAnalyzePages } from "@/hooks/useCanAnalyzePages";
 import { useSEOReports, useLatestSEOReport } from "@/hooks/useSEOReports";
 import { useLatestSEOKeywords, useUniqueRegions } from "@/hooks/useSEOKeywords";
 import { UploadSEOReportDialog } from "@/components/seo/UploadSEOReportDialog";
@@ -23,14 +16,9 @@ import { SEOVisibilityChart } from "@/components/seo/SEOVisibilityChart";
 
 export default function SEO() {
   const { selectedClient } = useClient();
-  const { toast } = useToast();
   const [pricingModalOpen, setPricingModalOpen] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [userRole, setUserRole] = useState<string | null>(null);
-  const [dateRange] = useState({
-    from: subDays(new Date(), 30),
-    to: new Date(),
-  });
 
   useEffect(() => {
     const fetchUserRole = async () => {
@@ -47,41 +35,14 @@ export default function SEO() {
     fetchUserRole();
   }, []);
 
-  const handleRefresh = async () => {
-    if (!selectedClient?.id) return;
-    
-    setIsRefreshing(true);
-    try {
-      const { error } = await supabase.functions.invoke('analytics-refresh-views', {
-        method: 'POST',
-        body: { client_id: selectedClient.id }
-      });
-      
-      if (error) throw error;
-      
-      toast({
-        title: "Data refreshed",
-        description: "Analytics data has been updated successfully",
-      });
-    } catch (error) {
-      console.error('Error refreshing data:', error);
-      toast({
-        title: "Refresh failed",
-        description: "Failed to refresh analytics data",
-        variant: "destructive",
-      });
-    } finally {
-      setIsRefreshing(false);
-    }
-  };
+  // SEO Reports data
+  const { data: seoReports, isLoading: reportsLoading } = useSEOReports(selectedClient?.id);
+  const { data: latestReport } = useLatestSEOReport(selectedClient?.id);
+  const { data: keywords, isLoading: keywordsLoading } = useLatestSEOKeywords(selectedClient?.id);
+  const { data: regions } = useUniqueRegions(selectedClient?.id);
 
-  const { data: pagePerformance, isLoading: pagesLoading } = usePagePerformance(
-    selectedClient?.id || '',
-    dateRange
-  );
-  
-  const { data: lastRefreshTime } = useLastRefreshTime(selectedClient?.id);
-  const { data: validationResult } = useCanAnalyzePages();
+  // Get previous report for comparison
+  const previousReport = seoReports && seoReports.length > 1 ? seoReports[1] : undefined;
 
   // Check if website is unlocked
   if (!selectedClient?.website_unlocked) {
@@ -114,32 +75,20 @@ export default function SEO() {
             <Search className="h-8 w-8" />
             SEO Tools
           </h1>
-          <div className="flex items-center gap-4">
-            <p className="text-muted-foreground">Optimize your website content for search engines and conversions</p>
-            {lastRefreshTime && (
-              <p className="text-sm text-muted-foreground">
-                Last updated: {formatDistanceToNow(new Date(lastRefreshTime), { addSuffix: true })}
-              </p>
-            )}
-          </div>
+          <p className="text-muted-foreground">Track keyword rankings and optimize your search visibility</p>
         </div>
         {(userRole === 'admin' || userRole === 'fmm') && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleRefresh}
-            disabled={isRefreshing}
-          >
-            <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
-            {isRefreshing ? 'Refreshing...' : 'Refresh Data'}
+          <Button onClick={() => setUploadDialogOpen(true)}>
+            <Upload className="h-4 w-4 mr-2" />
+            Upload SE Ranking Report
           </Button>
         )}
       </div>
 
       {/* Tabs */}
-      <Tabs defaultValue="analysis" className="space-y-6">
+      <Tabs defaultValue="rankings" className="space-y-6">
         <TabsList>
-          <TabsTrigger value="analysis">Page Analysis</TabsTrigger>
+          <TabsTrigger value="rankings">Keyword Rankings</TabsTrigger>
           <TabsTrigger value="blog" disabled>
             Blog Writer
             <Badge variant="outline" className="ml-2 px-1.5 py-0 text-[10px] font-normal">Coming Soon</Badge>
@@ -150,34 +99,41 @@ export default function SEO() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="analysis" className="space-y-6">
-          {!validationResult?.canAnalyze && (
-            <Alert>
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Setup Required</AlertTitle>
-              <AlertDescription className="space-y-2">
-                <p>Complete these steps to analyze your pages:</p>
-                <ul className="list-disc pl-4 space-y-1">
-                  {validationResult?.reasons.map((reason, i) => (
-                    <li key={i}>{reason}</li>
-                  ))}
-                </ul>
-              </AlertDescription>
-            </Alert>
+        <TabsContent value="rankings" className="space-y-6">
+          {!latestReport && !reportsLoading ? (
+            <Card className="border-dashed border-2">
+              <CardContent className="py-12 text-center space-y-4">
+                <Upload className="h-12 w-12 mx-auto text-muted-foreground" />
+                <h3 className="text-lg font-semibold">No SE Ranking Reports Yet</h3>
+                <p className="text-muted-foreground max-w-md mx-auto">
+                  Upload your first SE Ranking PDF report to start tracking keyword positions and search visibility.
+                </p>
+                {(userRole === 'admin' || userRole === 'fmm') && (
+                  <Button onClick={() => setUploadDialogOpen(true)}>
+                    <Upload className="h-4 w-4 mr-2" />
+                    Upload Report
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          ) : (
+            <>
+              <SEOOverview 
+                report={latestReport} 
+                previousReport={previousReport}
+                isLoading={reportsLoading} 
+              />
+              <SEOVisibilityChart 
+                reports={seoReports || []} 
+                isLoading={reportsLoading} 
+              />
+              <SEOKeywordsTable 
+                keywords={keywords || []} 
+                regions={regions || []}
+                isLoading={keywordsLoading} 
+              />
+            </>
           )}
-          <Card>
-            <CardContent className="pt-6">
-              <h3 className="text-lg font-semibold mb-2">Content Analysis</h3>
-              <p className="text-muted-foreground mb-4">
-                AI-powered analysis of your website pages to identify strengths, weaknesses, and opportunities for improvement.
-              </p>
-            </CardContent>
-          </Card>
-          <PagePerformanceTable 
-            data={pagePerformance} 
-            isLoading={pagesLoading}
-            isRefreshing={isRefreshing}
-          />
         </TabsContent>
 
         <TabsContent value="blog" className="space-y-6">
@@ -226,6 +182,15 @@ export default function SEO() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Upload Dialog */}
+      {selectedClient && (
+        <UploadSEOReportDialog
+          open={uploadDialogOpen}
+          onOpenChange={setUploadDialogOpen}
+          clientId={selectedClient.id}
+        />
+      )}
     </div>
   );
 }
