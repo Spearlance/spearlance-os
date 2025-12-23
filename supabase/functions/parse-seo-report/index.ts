@@ -6,314 +6,355 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+interface ParsedKeyword {
+  keyword: string;
+  search_volume: number | null;
+  clicks: number | null;
+  ranking_url: string | null;
+  position: number | null;
+  position_start: number | null;
+  position_change: number | null;
+  best_position: number | null;
+}
+
+interface ParsedData {
+  region: string;
+  keywords: ParsedKeyword[];
+  summary: {
+    visibility_score: number;
+    average_position: number;
+    keywords_total: number;
+    keywords_top_3: number;
+    keywords_top_10: number;
+    keywords_top_30: number;
+  };
+}
+
+function parseCSV(csvText: string): ParsedData {
+  const lines = csvText.split('\n').filter(line => line.trim());
+  
+  if (lines.length < 3) {
+    throw new Error('CSV file appears to be empty or invalid');
+  }
+
+  // Line 1: Region info - e.g., "Google USA (Jacksonville, Florida, United States), interface language: English"
+  const regionLine = lines[0];
+  const regionMatch = regionLine.match(/"?([^"]+)"?/);
+  const region = regionMatch ? regionMatch[1].replace(/, interface language:.*$/, '').trim() : 'Unknown';
+
+  console.log('Parsed region:', region);
+
+  // Line 2: Headers - find date columns dynamically
+  const headerLine = lines[1];
+  const headers = parseCSVLine(headerLine);
+  
+  console.log('Headers:', headers);
+
+  // Find column indices
+  const keywordIdx = headers.findIndex(h => h.toLowerCase() === 'keyword');
+  const searchVolIdx = headers.findIndex(h => h.toLowerCase().includes('search vol'));
+  const clicksIdx = headers.findIndex(h => h.toLowerCase() === 'clicks');
+  
+  // Find date columns (format: YYYY-MM-DD)
+  const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+  const dateColumns: { index: number; date: string }[] = [];
+  headers.forEach((h, idx) => {
+    if (dateRegex.test(h.trim())) {
+      dateColumns.push({ index: idx, date: h.trim() });
+    }
+  });
+
+  // Find URL columns (usually after each date column or labeled "URL")
+  const urlColumns: number[] = [];
+  headers.forEach((h, idx) => {
+    if (h.toLowerCase() === 'url' && idx > 0) {
+      urlColumns.push(idx);
+    }
+  });
+
+  console.log('Date columns:', dateColumns);
+  console.log('URL columns:', urlColumns);
+
+  const keywords: ParsedKeyword[] = [];
+
+  // Parse data rows (starting from line 3)
+  for (let i = 2; i < lines.length; i++) {
+    const row = parseCSVLine(lines[i]);
+    if (row.length < 3) continue;
+
+    const keyword = row[keywordIdx]?.trim();
+    if (!keyword) continue;
+
+    const searchVolume = parseIntSafe(row[searchVolIdx]);
+    const clicks = parseIntSafe(row[clicksIdx]);
+
+    // Get positions from date columns
+    const positions: (number | null)[] = dateColumns.map(dc => {
+      const val = row[dc.index]?.trim();
+      if (!val || val === '-' || val === '') return null;
+      const num = parseInt(val, 10);
+      return isNaN(num) ? null : num;
+    });
+
+    // Get ranking URL (last URL column with a value)
+    let rankingUrl: string | null = null;
+    for (const urlIdx of [...urlColumns].reverse()) {
+      const url = row[urlIdx]?.trim();
+      if (url && url !== '-' && url !== '') {
+        rankingUrl = url.replace(/\\/g, ''); // Remove escape characters
+        break;
+      }
+    }
+
+    // Calculate metrics
+    const validPositions = positions.filter((p): p is number => p !== null);
+    const position = validPositions.length > 0 ? validPositions[validPositions.length - 1] : null; // Latest position
+    const positionStart = validPositions.length > 0 ? validPositions[0] : null; // First position
+    const positionChange = (positionStart !== null && position !== null) ? positionStart - position : null; // Positive = improved
+    const bestPosition = validPositions.length > 0 ? Math.min(...validPositions) : null;
+
+    keywords.push({
+      keyword,
+      search_volume: searchVolume,
+      clicks,
+      ranking_url: rankingUrl,
+      position,
+      position_start: positionStart,
+      position_change: positionChange,
+      best_position: bestPosition,
+    });
+  }
+
+  console.log(`Parsed ${keywords.length} keywords`);
+
+  // Calculate summary metrics
+  const keywordsWithPosition = keywords.filter(k => k.position !== null);
+  const positionSum = keywordsWithPosition.reduce((sum, k) => sum + (k.position || 0), 0);
+  const averagePosition = keywordsWithPosition.length > 0 
+    ? Math.round((positionSum / keywordsWithPosition.length) * 10) / 10 
+    : 0;
+
+  const keywordsTop3 = keywordsWithPosition.filter(k => k.position !== null && k.position <= 3).length;
+  const keywordsTop10 = keywordsWithPosition.filter(k => k.position !== null && k.position <= 10).length;
+  const keywordsTop30 = keywordsWithPosition.filter(k => k.position !== null && k.position <= 30).length;
+
+  // Calculate visibility score (weighted by position and search volume)
+  let totalWeight = 0;
+  let weightedScore = 0;
+  for (const kw of keywords) {
+    if (kw.position !== null && kw.position <= 100) {
+      const weight = kw.search_volume || 1;
+      // CTR approximation: position 1 = ~30%, position 10 = ~2%, drops off after
+      const ctr = kw.position <= 1 ? 0.30 :
+                  kw.position <= 2 ? 0.15 :
+                  kw.position <= 3 ? 0.10 :
+                  kw.position <= 10 ? 0.05 - ((kw.position - 4) * 0.005) :
+                  kw.position <= 20 ? 0.01 :
+                  0.005;
+      weightedScore += ctr * weight;
+      totalWeight += weight;
+    }
+  }
+  const visibilityScore = totalWeight > 0 
+    ? Math.round((weightedScore / totalWeight) * 1000) / 10 
+    : 0;
+
+  return {
+    region,
+    keywords,
+    summary: {
+      visibility_score: visibilityScore,
+      average_position: averagePosition,
+      keywords_total: keywords.length,
+      keywords_top_3: keywordsTop3,
+      keywords_top_10: keywordsTop10,
+      keywords_top_30: keywordsTop30,
+    },
+  };
+}
+
+function parseCSVLine(line: string): string[] {
+  const result: string[] = [];
+  let current = '';
+  let inQuotes = false;
+
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+    
+    if (char === '"') {
+      inQuotes = !inQuotes;
+    } else if (char === ',' && !inQuotes) {
+      result.push(current.trim());
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+  result.push(current.trim());
+  
+  return result;
+}
+
+function parseIntSafe(value: string | undefined): number | null {
+  if (!value) return null;
+  const cleaned = value.replace(/[^0-9]/g, '');
+  const num = parseInt(cleaned, 10);
+  return isNaN(num) ? null : num;
+}
+
 serve(async (req) => {
+  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    console.log('Received SEO report upload request');
+
+    // Get auth header
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
-      throw new Error('Missing authorization header');
+      return new Response(
+        JSON.stringify({ error: 'No authorization header' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
+    // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
-
-    if (!lovableApiKey) {
-      throw new Error('LOVABLE_API_KEY is not configured');
-    }
-
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Parse multipart form data
+    // Parse form data
     const formData = await req.formData();
-    const pdfFile = formData.get('pdf') as File;
+    const csvFile = formData.get('csv') as File;
     const clientId = formData.get('client_id') as string;
-    const reportDateStr = formData.get('report_date') as string;
 
-    if (!pdfFile || !clientId) {
-      throw new Error('Missing required fields: pdf, client_id');
+    if (!csvFile) {
+      return new Response(
+        JSON.stringify({ error: 'No CSV file provided' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    console.log('Processing SE Ranking PDF:', pdfFile.name, 'for client:', clientId);
+    if (!clientId) {
+      return new Response(
+        JSON.stringify({ error: 'No client_id provided' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
-    // Upload PDF to storage
-    const timestamp = Date.now();
-    const storagePath = `${clientId}/${timestamp}-${pdfFile.name}`;
-    const pdfBuffer = await pdfFile.arrayBuffer();
+    console.log(`Processing CSV file: ${csvFile.name}, size: ${csvFile.size} bytes`);
+
+    // Read CSV content
+    const csvText = await csvFile.text();
     
-    const { data: uploadData, error: uploadError } = await supabase.storage
+    // Parse CSV
+    const parsedData = parseCSV(csvText);
+
+    console.log('Summary:', parsedData.summary);
+
+    // Upload CSV to storage for reference
+    const fileName = `${clientId}/${Date.now()}-${csvFile.name}`;
+    const { error: uploadError } = await supabase.storage
       .from('seo-reports')
-      .upload(storagePath, pdfBuffer, {
-        contentType: 'application/pdf',
-        upsert: false
+      .upload(fileName, csvFile, {
+        contentType: 'text/csv',
+        upsert: false,
       });
 
     if (uploadError) {
-      console.error('PDF upload error:', uploadError);
-      throw new Error(`Failed to upload PDF: ${uploadError.message}`);
+      console.error('Storage upload error:', uploadError);
+      // Continue even if storage fails - the data is what matters
     }
 
     const { data: { publicUrl } } = supabase.storage
       .from('seo-reports')
-      .getPublicUrl(storagePath);
+      .getPublicUrl(fileName);
 
-    console.log('PDF uploaded to:', storagePath);
-
-    // Convert PDF to base64 for AI processing
-    const base64Pdf = btoa(
-      new Uint8Array(pdfBuffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
-    );
-
-    // Use Lovable AI (Gemini 2.5 Pro) to extract data from PDF
-    const extractionPrompt = `You are analyzing an SE Ranking Project Report PDF. The PDF is provided as base64 encoded data.
-
-Extract the following data and return it as valid JSON ONLY (no markdown, no explanation):
-
-1. **Summary Metrics** (from the top of the report):
-   - Search Visibility percentage (e.g., "26.7")
-   - Average Position (e.g., "55.17") 
-   - Keywords in Top 3 count
-   - Keywords in Top 10 count
-   - Keywords in Top 30 count
-   - Total keywords in SERPs
-
-2. **Date Range** (from the report header):
-   - Start date (YYYY-MM-DD format)
-   - End date (YYYY-MM-DD format)
-
-3. **Keywords Table** - Extract ALL keyword rows with:
-   - keyword: The search term
-   - region: The location (e.g., "Google USA - Seattle, WA", "Google Canada - Vancouver")
-   - positions: Array of daily positions (the numbers in the grid, null if "-")
-   - best_position: The best (lowest) position during the period
-   - position_start: First day's position
-   - position_end: Last day's position
-   - position_change: Calculated as position_start - position_end (positive = improved, negative = dropped)
-
-Return ONLY valid JSON in this exact format (no markdown code blocks):
-{
-  "summary": {
-    "visibility_score": 26.7,
-    "average_position": 55.17,
-    "keywords_top_3": 5,
-    "keywords_top_10": 12,
-    "keywords_top_30": 25,
-    "keywords_total": 40
-  },
-  "date_range": {
-    "start": "2025-12-15",
-    "end": "2025-12-21"
-  },
-  "keywords": [
-    {
-      "keyword": "commercial snow removal",
-      "region": "Google USA - Seattle, WA",
-      "positions": [1, 1, 1, 1, 1, 1, 1],
-      "best_position": 1,
-      "position_start": 1,
-      "position_end": 1,
-      "position_change": 0
-    }
-  ]
-}
-
-IMPORTANT: 
-- Include ALL keywords from ALL regions (Google USA, Google Canada, etc.)
-- If a position shows "-" or is empty, use null
-- Calculate position_change as: position_start - position_end
-- Return ONLY the JSON object, NO markdown formatting`;
-
-    console.log('Calling Lovable AI for PDF extraction...');
-
-    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${lovableApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-pro',
-        messages: [
-          {
-            role: 'user',
-            content: [
-              {
-                type: 'file',
-                file: {
-                  filename: pdfFile.name,
-                  file_data: `data:application/pdf;base64,${base64Pdf}`
-                }
-              },
-              {
-                type: 'text',
-                text: extractionPrompt
-              }
-            ]
-          }
-        ],
-      }),
-    });
-
-    if (!aiResponse.ok) {
-      const errorText = await aiResponse.text();
-      console.error('AI extraction error:', aiResponse.status, errorText);
-      
-      if (aiResponse.status === 429) {
-        return new Response(JSON.stringify({ error: 'Rate limit exceeded. Please try again later.' }), {
-          status: 429,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-      if (aiResponse.status === 402) {
-        return new Response(JSON.stringify({ error: 'AI credits exhausted. Please add funds.' }), {
-          status: 402,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-      throw new Error(`AI extraction failed: ${errorText}`);
-    }
-
-    const aiData = await aiResponse.json();
-    const rawContent = aiData.choices?.[0]?.message?.content || '';
+    // Create SEO report record
+    const reportDate = new Date().toISOString().split('T')[0];
     
-    console.log('AI raw response length:', rawContent.length);
-    console.log('AI raw response preview:', rawContent.substring(0, 1000));
-
-    // Clean and parse AI response
-    let extractedData;
-    try {
-      // Remove markdown code blocks if present
-      let cleanedContent = rawContent.trim();
-      
-      // Remove various markdown code block formats
-      if (cleanedContent.startsWith('```json')) {
-        cleanedContent = cleanedContent.slice(7);
-      } else if (cleanedContent.startsWith('```JSON')) {
-        cleanedContent = cleanedContent.slice(7);
-      } else if (cleanedContent.startsWith('```')) {
-        cleanedContent = cleanedContent.slice(3);
-      }
-      if (cleanedContent.endsWith('```')) {
-        cleanedContent = cleanedContent.slice(0, -3);
-      }
-      cleanedContent = cleanedContent.trim();
-      
-      // Try to extract JSON object if there's extra text
-      const jsonMatch = cleanedContent.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        cleanedContent = jsonMatch[0];
-      }
-      
-      extractedData = JSON.parse(cleanedContent);
-    } catch (parseError) {
-      console.error('JSON parse error:', parseError);
-      console.error('Full raw content:', rawContent);
-      throw new Error(`Failed to parse AI response as JSON. Raw content: ${rawContent.substring(0, 200)}`);
-    }
-
-    console.log('Extracted summary:', extractedData.summary);
-    console.log('Keywords count:', extractedData.keywords?.length || 0);
-
-    // Determine report date
-    const reportDate = reportDateStr || extractedData.date_range?.end || new Date().toISOString().split('T')[0];
-
-    // Get user ID from auth
-    const { data: { user } } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''));
-
-    // Insert SEO report
     const { data: reportData, error: reportError } = await supabase
       .from('seo_reports')
       .insert({
         client_id: clientId,
         report_date: reportDate,
-        date_range_start: extractedData.date_range?.start,
-        date_range_end: extractedData.date_range?.end,
-        visibility_score: extractedData.summary?.visibility_score,
-        average_position: extractedData.summary?.average_position,
-        keywords_top_3: extractedData.summary?.keywords_top_3 || 0,
-        keywords_top_10: extractedData.summary?.keywords_top_10 || 0,
-        keywords_top_30: extractedData.summary?.keywords_top_30 || 0,
-        keywords_total: extractedData.summary?.keywords_total || 0,
-        pdf_url: storagePath,
-        raw_extraction: extractedData,
-        created_by: user?.id
+        visibility_score: parsedData.summary.visibility_score,
+        average_position: parsedData.summary.average_position,
+        keywords_top_3: parsedData.summary.keywords_top_3,
+        keywords_top_10: parsedData.summary.keywords_top_10,
+        keywords_top_30: parsedData.summary.keywords_top_30,
+        keywords_total: parsedData.summary.keywords_total,
+        report_file_url: publicUrl,
       })
       .select()
       .single();
 
     if (reportError) {
       console.error('Report insert error:', reportError);
-      throw new Error(`Failed to save report: ${reportError.message}`);
+      throw new Error(`Failed to create report: ${reportError.message}`);
     }
 
-    console.log('Report created:', reportData.id);
+    console.log('Created report:', reportData.id);
 
     // Insert keywords
-    if (extractedData.keywords && extractedData.keywords.length > 0) {
-      const keywordsToInsert = extractedData.keywords.map((kw: any) => ({
-        client_id: clientId,
-        seo_report_id: reportData.id,
-        keyword: kw.keyword,
-        search_engine: 'Google',
-        region: kw.region,
-        position: kw.position_end,
-        position_start: kw.position_start,
-        position_change: kw.position_change,
-        best_position: kw.best_position,
-        ranking_url: kw.ranking_url || null
-      }));
+    const keywordRecords = parsedData.keywords.map(kw => ({
+      client_id: clientId,
+      seo_report_id: reportData.id,
+      keyword: kw.keyword,
+      search_engine: 'Google',
+      region: parsedData.region,
+      position: kw.position,
+      position_start: kw.position_start,
+      position_change: kw.position_change,
+      best_position: kw.best_position,
+      ranking_url: kw.ranking_url,
+      search_volume: kw.search_volume,
+      clicks: kw.clicks,
+    }));
 
-      const { error: keywordsError } = await supabase
-        .from('seo_keywords')
-        .insert(keywordsToInsert);
+    const { error: keywordsError } = await supabase
+      .from('seo_keywords')
+      .insert(keywordRecords);
 
-      if (keywordsError) {
-        console.error('Keywords insert error:', keywordsError);
-        // Don't throw - the report was still created
-      } else {
-        console.log('Inserted', keywordsToInsert.length, 'keywords');
-      }
+    if (keywordsError) {
+      console.error('Keywords insert error:', keywordsError);
+      throw new Error(`Failed to insert keywords: ${keywordsError.message}`);
     }
 
-    // Create a summary for the reports table
-    const summaryText = `SE Ranking Report for week ending ${reportDate}. Visibility: ${extractedData.summary?.visibility_score || 'N/A'}%. Average position: ${extractedData.summary?.average_position || 'N/A'}. ${extractedData.summary?.keywords_top_3 || 0} keywords in Top 3, ${extractedData.summary?.keywords_top_10 || 0} in Top 10.`;
+    console.log(`Inserted ${keywordRecords.length} keywords`);
 
-    // Auto-create entry in reports table
-    const { error: reportsError } = await supabase
+    // Create a summary entry in the reports table (optional, non-critical)
+    const { error: summaryError } = await supabase
       .from('reports')
       .insert({
         client_id: clientId,
-        name: `SE Ranking Report - Week of ${extractedData.date_range?.start || reportDate}`,
-        description: summaryText,
-        oviond_url: storagePath,
-        tags: ['seo', 'se-ranking', 'auto-generated'],
-        created_by: user?.id
+        name: `SE Ranking Report - ${reportDate}`,
+        type: 'seo',
       });
 
-    if (reportsError) {
-      console.error('Reports table insert error:', reportsError);
-      // Don't throw - the SEO report was still created
+    if (summaryError) {
+      console.warn('Summary report insert error (non-critical):', summaryError);
     }
 
-    return new Response(JSON.stringify({
-      success: true,
-      report: reportData,
-      keywords_count: extractedData.keywords?.length || 0,
-      summary: extractedData.summary
-    }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return new Response(
+      JSON.stringify({
+        success: true,
+        report_id: reportData.id,
+        keywords_count: keywordRecords.length,
+        summary: parsedData.summary,
+        region: parsedData.region,
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
 
-  } catch (error) {
-    console.error('parse-seo-report error:', error);
-    return new Response(JSON.stringify({ 
-      error: error instanceof Error ? error.message : 'Unknown error occurred' 
-    }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Failed to process report';
+    console.error('Error processing SEO report:', error);
+    return new Response(
+      JSON.stringify({ error: errorMessage }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
   }
 });
