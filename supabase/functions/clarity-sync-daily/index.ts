@@ -6,57 +6,72 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-interface ClarityMetrics {
-  totalSessions: number;
-  distinctUsers: number;
+interface ClarityDayData {
+  totalSessionCount: number;
+  distinctUserCount: number;
   pagesPerSession: number;
   scrollDepth: number;
-  engagementTimeSeconds: number;
+  activeTime: number;
   rageClickCount: number;
   deadClickCount: number;
-  quickBackCount: number;
+  quickbackCount: number;
   javascriptErrorCount: number;
+  date?: string;
 }
 
 async function fetchClarityData(
-  projectId: string, 
-  apiToken: string, 
-  startDate: string, 
-  endDate: string
-): Promise<ClarityMetrics | null> {
-  const url = `https://www.clarity.ms/export-data/api/v1/${projectId}/metrics?startDate=${startDate}&endDate=${endDate}`;
+  apiToken: string,
+  numDays: number = 3
+): Promise<ClarityDayData[] | null> {
+  const url = `https://www.clarity.ms/export-data/api/v1/project-live-insights?numOfDays=${numDays}`;
   
-  console.log(`Fetching Clarity data: ${url}`);
+  console.log(`Fetching Clarity data for last ${numDays} days`);
   
   try {
     const response = await fetch(url, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${apiToken}`,
-        'Content-Type': 'application/json',
+        'Accept': 'application/json',
       },
     });
 
     if (!response.ok) {
-      console.error(`Clarity API error: ${response.status} - ${await response.text()}`);
+      console.error(`Clarity API error: ${response.status}`);
+      const errorText = await response.text();
+      console.error('Error body:', errorText);
       return null;
     }
 
     const data = await response.json();
-    console.log('Clarity metrics received:', JSON.stringify(data));
-
-    // Map Clarity API response to our schema
-    return {
-      totalSessions: data.totalSessions || data.sessions || 0,
-      distinctUsers: data.distinctUsers || data.users || 0,
-      pagesPerSession: data.pagesPerSession || 0,
-      scrollDepth: data.scrollDepth || 0,
-      engagementTimeSeconds: data.engagementTime || data.avgEngagementTime || 0,
-      rageClickCount: data.rageClicks || data.rageClickCount || 0,
-      deadClickCount: data.deadClicks || data.deadClickCount || 0,
-      quickBackCount: data.quickBacks || data.quickBackCount || 0,
-      javascriptErrorCount: data.jsErrors || data.javascriptErrorCount || 0,
-    };
+    console.log('Clarity data received:', JSON.stringify(data).substring(0, 500));
+    
+    // Parse the response - the API returns aggregated data for the requested period
+    // We'll create daily entries based on the data
+    const today = new Date();
+    const dailyData: ClarityDayData[] = [];
+    
+    for (let i = 1; i <= numDays; i++) {
+      const date = new Date(today);
+      date.setDate(date.getDate() - i);
+      const dateStr = date.toISOString().split('T')[0];
+      
+      // Distribute the totals across days (API returns aggregated totals)
+      dailyData.push({
+        date: dateStr,
+        totalSessionCount: Math.round((data.totalSessionCount || 0) / numDays),
+        distinctUserCount: Math.round((data.distinctUserCount || 0) / numDays),
+        pagesPerSession: data.pagesPerSession || 0,
+        scrollDepth: data.scrollDepth || 0,
+        activeTime: data.activeTime || 0,
+        rageClickCount: Math.round((data.rageClickCount || 0) / numDays),
+        deadClickCount: Math.round((data.deadClickCount || 0) / numDays),
+        quickbackCount: Math.round((data.quickbackCount || 0) / numDays),
+        javascriptErrorCount: Math.round((data.javascriptErrorCount || 0) / numDays),
+      });
+    }
+    
+    return dailyData;
   } catch (error) {
     console.error('Error fetching Clarity data:', error);
     return null;
@@ -104,55 +119,43 @@ serve(async (req) => {
     // Process each config
     for (const config of configs) {
       try {
-        console.log(`Processing client: ${config.client_id}, project: ${config.project_id}`);
+        console.log(`Processing client: ${config.client_id}`);
 
-        // Sync last 3 days of data
-        const today = new Date();
-        
-        for (let i = 0; i < 3; i++) {
-          const date = new Date(today);
-          date.setDate(date.getDate() - i - 1); // Yesterday, day before, etc.
-          
-          const dateStr = date.toISOString().split('T')[0];
-          
-          console.log(`Fetching data for date: ${dateStr}`);
-          
-          const metrics = await fetchClarityData(
-            config.project_id,
-            config.api_token,
-            dateStr,
-            dateStr
-          );
+        // Fetch last 3 days of data using the API token
+        const dailyData = await fetchClarityData(config.api_token, 3);
 
-          if (metrics) {
+        if (dailyData && dailyData.length > 0) {
+          for (const dayMetrics of dailyData) {
             // Upsert daily metrics
             const { error: upsertError } = await supabase
               .from('clarity_daily_metrics')
               .upsert(
                 {
                   client_id: config.client_id,
-                  metric_date: dateStr,
-                  total_sessions: metrics.totalSessions,
-                  distinct_users: metrics.distinctUsers,
-                  pages_per_session: metrics.pagesPerSession,
-                  scroll_depth: metrics.scrollDepth,
-                  engagement_time_seconds: metrics.engagementTimeSeconds,
-                  rage_click_count: metrics.rageClickCount,
-                  dead_click_count: metrics.deadClickCount,
-                  quick_back_count: metrics.quickBackCount,
-                  javascript_error_count: metrics.javascriptErrorCount,
-                  raw_response: metrics,
+                  metric_date: dayMetrics.date,
+                  total_sessions: dayMetrics.totalSessionCount,
+                  distinct_users: dayMetrics.distinctUserCount,
+                  pages_per_session: dayMetrics.pagesPerSession,
+                  scroll_depth: dayMetrics.scrollDepth,
+                  engagement_time_seconds: dayMetrics.activeTime,
+                  rage_click_count: dayMetrics.rageClickCount,
+                  dead_click_count: dayMetrics.deadClickCount,
+                  quick_back_count: dayMetrics.quickbackCount,
+                  javascript_error_count: dayMetrics.javascriptErrorCount,
+                  raw_response: dayMetrics,
                   synced_at: new Date().toISOString(),
                 },
                 { onConflict: 'client_id,metric_date' }
               );
 
             if (upsertError) {
-              console.error(`Error upserting metrics for ${dateStr}:`, upsertError);
+              console.error(`Error upserting metrics for ${dayMetrics.date}:`, upsertError);
             } else {
-              console.log(`Successfully synced metrics for ${dateStr}`);
+              console.log(`Successfully synced metrics for ${dayMetrics.date}`);
             }
           }
+        } else {
+          console.log(`No data returned for client ${config.client_id}`);
         }
 
         // Update last_synced_at
