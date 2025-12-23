@@ -224,3 +224,24 @@ verify_jwt = false
 
 [functions.parse-seo-report]
 verify_jwt = true
+
+[functions.send-templated-email]
+verify_jwt = true
+
+[functions.generate-ai-report]
+verify_jwt = true
+
+[functions.recommend-tasks]
+verify_jwt = true
+
+[functions.send-magic-link]
+verify_jwt = false
+
+[functions.request-new-invitation]
+verify_jwt = false
+
+[functions.admin-delete-client]
+verify_jwt = true
+
+[functions.send-weekly-performance-emails]
+verify_jwt = false
