@@ -1300,6 +1300,177 @@ export type Database = {
         }
         Relationships: []
       }
+      clarity_configs: {
+        Row: {
+          api_token: string
+          client_id: string
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          last_synced_at: string | null
+          project_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          api_token: string
+          client_id: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_synced_at?: string | null
+          project_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          api_token?: string
+          client_id?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_synced_at?: string | null
+          project_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clarity_configs_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: true
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clarity_daily_metrics: {
+        Row: {
+          client_id: string
+          dead_click_count: number | null
+          distinct_users: number | null
+          engagement_time_seconds: number | null
+          id: string
+          javascript_error_count: number | null
+          metric_date: string
+          pages_per_session: number | null
+          quick_back_count: number | null
+          rage_click_count: number | null
+          raw_response: Json | null
+          scroll_depth: number | null
+          synced_at: string | null
+          total_sessions: number | null
+        }
+        Insert: {
+          client_id: string
+          dead_click_count?: number | null
+          distinct_users?: number | null
+          engagement_time_seconds?: number | null
+          id?: string
+          javascript_error_count?: number | null
+          metric_date: string
+          pages_per_session?: number | null
+          quick_back_count?: number | null
+          rage_click_count?: number | null
+          raw_response?: Json | null
+          scroll_depth?: number | null
+          synced_at?: string | null
+          total_sessions?: number | null
+        }
+        Update: {
+          client_id?: string
+          dead_click_count?: number | null
+          distinct_users?: number | null
+          engagement_time_seconds?: number | null
+          id?: string
+          javascript_error_count?: number | null
+          metric_date?: string
+          pages_per_session?: number | null
+          quick_back_count?: number | null
+          rage_click_count?: number | null
+          raw_response?: Json | null
+          scroll_depth?: number | null
+          synced_at?: string | null
+          total_sessions?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clarity_daily_metrics_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clarity_weekly_reports: {
+        Row: {
+          ai_insights: string | null
+          avg_engagement_time_seconds: number | null
+          avg_pages_per_session: number | null
+          avg_scroll_depth: number | null
+          client_id: string
+          created_at: string | null
+          engagement_change_percent: number | null
+          id: string
+          sessions_change_percent: number | null
+          total_dead_clicks: number | null
+          total_distinct_users: number | null
+          total_js_errors: number | null
+          total_quick_backs: number | null
+          total_rage_clicks: number | null
+          total_sessions: number | null
+          users_change_percent: number | null
+          week_end_date: string
+          week_start_date: string
+        }
+        Insert: {
+          ai_insights?: string | null
+          avg_engagement_time_seconds?: number | null
+          avg_pages_per_session?: number | null
+          avg_scroll_depth?: number | null
+          client_id: string
+          created_at?: string | null
+          engagement_change_percent?: number | null
+          id?: string
+          sessions_change_percent?: number | null
+          total_dead_clicks?: number | null
+          total_distinct_users?: number | null
+          total_js_errors?: number | null
+          total_quick_backs?: number | null
+          total_rage_clicks?: number | null
+          total_sessions?: number | null
+          users_change_percent?: number | null
+          week_end_date: string
+          week_start_date: string
+        }
+        Update: {
+          ai_insights?: string | null
+          avg_engagement_time_seconds?: number | null
+          avg_pages_per_session?: number | null
+          avg_scroll_depth?: number | null
+          client_id?: string
+          created_at?: string | null
+          engagement_change_percent?: number | null
+          id?: string
+          sessions_change_percent?: number | null
+          total_dead_clicks?: number | null
+          total_distinct_users?: number | null
+          total_js_errors?: number | null
+          total_quick_backs?: number | null
+          total_rage_clicks?: number | null
+          total_sessions?: number | null
+          users_change_percent?: number | null
+          week_end_date?: string
+          week_start_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clarity_weekly_reports_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_activity_metrics: {
         Row: {
           assets_uploaded: number | null
