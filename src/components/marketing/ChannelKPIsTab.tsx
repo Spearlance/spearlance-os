@@ -238,20 +238,46 @@ export function ChannelKPIsTab({ channelId, channelName, isAdminOrFMM }: Channel
         }
       });
 
-      const { error } = await supabase
+      // Check if record exists first (handles NULL campaign_id properly)
+      let existingQuery = supabase
         .from("channel_weekly_kpis")
-        .upsert({
-          channel_id: channelId,
-          campaign_id: selectedCampaignId || null,
-          week_start_date: weekDate,
-          kpi_data: cleanedData,
-          created_by: user.id,
-          updated_at: new Date().toISOString(),
-        }, {
-          onConflict: "channel_id,campaign_id,week_start_date"
-        });
+        .select("id")
+        .eq("channel_id", channelId)
+        .eq("week_start_date", weekDate);
 
-      if (error) throw error;
+      if (selectedCampaignId) {
+        existingQuery = existingQuery.eq("campaign_id", selectedCampaignId);
+      } else {
+        existingQuery = existingQuery.is("campaign_id", null);
+      }
+
+      const { data: existing } = await existingQuery.maybeSingle();
+
+      if (existing) {
+        // Update existing record
+        const { error } = await supabase
+          .from("channel_weekly_kpis")
+          .update({ 
+            kpi_data: cleanedData, 
+            updated_at: new Date().toISOString() 
+          })
+          .eq("id", existing.id);
+
+        if (error) throw error;
+      } else {
+        // Insert new record
+        const { error } = await supabase
+          .from("channel_weekly_kpis")
+          .insert({
+            channel_id: channelId,
+            campaign_id: selectedCampaignId || null,
+            week_start_date: weekDate,
+            kpi_data: cleanedData,
+            created_by: user.id,
+          });
+
+        if (error) throw error;
+      }
 
       toast({
         title: "Success",
