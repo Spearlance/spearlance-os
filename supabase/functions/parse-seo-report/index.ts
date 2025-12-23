@@ -286,7 +286,7 @@ serve(async (req) => {
         keywords_top_10: parsedData.summary.keywords_top_10,
         keywords_top_30: parsedData.summary.keywords_top_30,
         keywords_total: parsedData.summary.keywords_total,
-        report_file_url: publicUrl,
+        pdf_url: fileName,
       })
       .select()
       .single();
