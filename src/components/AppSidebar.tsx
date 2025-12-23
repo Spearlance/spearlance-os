@@ -121,7 +121,7 @@ export function AppSidebar() {
   const { selectedClient, setSelectedClient, clients } = useClient();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { isEnabled } = useFeatureFlags();
+  const { isEnabled, isLoading: flagsLoading } = useFeatureFlags();
   const [userRole, setUserRole] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
   const [brandContentOpen, setBrandContentOpen] = useState(false);
@@ -231,9 +231,9 @@ export function AppSidebar() {
 
               {menuItems.slice(1, 3)
                 .filter((item) => {
-                  // Filter Launchpad by feature flag
+                  // Filter Launchpad by feature flag - show while loading
                   if (item.title === "Launchpad") {
-                    if (!isEnabled('launchpad')) return false;
+                    if (!flagsLoading && !isEnabled('launchpad')) return false;
                     if (isComplete) return false;
                   }
                   return true;
@@ -284,9 +284,10 @@ export function AppSidebar() {
                       <SidebarMenuSub>
                         {brandContentSubItems
                           .filter((subItem) => {
-                            if (subItem.url === '/social-media') return isEnabled('social_media');
-                            if (subItem.url === '/brand/guide') return isEnabled('brand_guide');
-                            if (subItem.url === '/brand/moodboard') return isEnabled('mood_board');
+                            // Show while flags loading, then filter
+                            if (subItem.url === '/social-media') return flagsLoading || isEnabled('social_media');
+                            if (subItem.url === '/brand/guide') return flagsLoading || isEnabled('brand_guide');
+                            if (subItem.url === '/brand/moodboard') return flagsLoading || isEnabled('mood_board');
                             return true;
                           })
                           .map((subItem) => (
@@ -327,7 +328,8 @@ export function AppSidebar() {
                       <SidebarMenuSub>
                         {marketingSubItems
                           .filter((subItem) => {
-                            if (subItem.url === '/marketing/flow') return isEnabled('marketing_flow');
+                            // Show while flags loading, then filter
+                            if (subItem.url === '/marketing/flow') return flagsLoading || isEnabled('marketing_flow');
                             return true;
                           })
                           .map((subItem) => (
@@ -370,9 +372,10 @@ export function AppSidebar() {
                           <SidebarMenuSub>
                             {websiteSubItems
                               .filter((subItem) => {
-                                if (subItem.url === '/blog-writer') return isEnabled('blog_writer');
-                                if (subItem.url === '/analytics') return isEnabled('analytics');
-                                if (subItem.url === '/seo') return isEnabled('seo');
+                                // Show while flags loading, then filter
+                                if (subItem.url === '/blog-writer') return flagsLoading || isEnabled('blog_writer');
+                                if (subItem.url === '/analytics') return flagsLoading || isEnabled('analytics');
+                                if (subItem.url === '/seo') return flagsLoading || isEnabled('seo');
                                 return true;
                               })
                               .map((subItem) => (
