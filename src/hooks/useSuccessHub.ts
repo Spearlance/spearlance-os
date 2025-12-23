@@ -110,6 +110,17 @@ function parseJsonArray<T>(data: Json | null | undefined, defaultValue: T[]): T[
   return defaultValue;
 }
 
+export interface AIReport {
+  id: string;
+  report_type: string;
+  report_name: string;
+  date_range_start: string;
+  date_range_end: string;
+  executive_summary: string | null;
+  report_content: string;
+  created_at: string;
+}
+
 export function useSuccessHub() {
   const { selectedClient } = useClient();
   const [successLog, setSuccessLog] = useState<SuccessLog | null>(null);
@@ -121,6 +132,7 @@ export function useSuccessHub() {
   const [recentCommunications, setRecentCommunications] = useState<any[]>([]);
   const [clientChannels, setClientChannels] = useState<ClientChannel[]>([]);
   const [quickLinks, setQuickLinks] = useState<QuickLink[]>([]);
+  const [recentReports, setRecentReports] = useState<AIReport[]>([]);
   const [loading, setLoading] = useState(true);
 
   const weekStart = format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd');
@@ -145,6 +157,7 @@ export function useSuccessHub() {
       loadRecentCommunications(),
       loadClientChannels(),
       loadQuickLinks(),
+      loadRecentReports(),
     ]);
     
     setLoading(false);
@@ -350,6 +363,16 @@ export function useSuccessHub() {
     setQuickLinks(data || []);
   };
 
+  const loadRecentReports = async () => {
+    const { data } = await supabase
+      .from('ai_generated_reports')
+      .select('id, report_type, report_name, date_range_start, date_range_end, executive_summary, report_content, created_at')
+      .eq('client_id', selectedClient!.id)
+      .order('created_at', { ascending: false })
+      .limit(3);
+    setRecentReports(data || []);
+  };
+
   const createOrUpdateLog = async (updates: Partial<SuccessLog>) => {
     const { data: user } = await supabase.auth.getUser();
     
@@ -457,6 +480,7 @@ export function useSuccessHub() {
     recentCommunications,
     clientChannels,
     quickLinks,
+    recentReports,
     loading,
     createOrUpdateLog,
     updateClientData,
