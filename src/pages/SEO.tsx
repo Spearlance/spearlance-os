@@ -7,12 +7,11 @@ import { Search, Lock, FileText, MapPin, Upload } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { PricingModal } from "@/components/billing/PricingModal";
 import { supabase } from "@/integrations/supabase/client";
-import { useSEOReports, useLatestSEOReport } from "@/hooks/useSEOReports";
+import { useLatestSEOReport } from "@/hooks/useSEOReports";
 import { useLatestSEOKeywords, useUniqueRegions } from "@/hooks/useSEOKeywords";
 import { UploadSEOReportDialog } from "@/components/seo/UploadSEOReportDialog";
 import { SEOOverview } from "@/components/seo/SEOOverview";
 import { SEOKeywordsTable } from "@/components/seo/SEOKeywordsTable";
-import { SEOVisibilityChart } from "@/components/seo/SEOVisibilityChart";
 
 export default function SEO() {
   const { selectedClient } = useClient();
@@ -36,13 +35,9 @@ export default function SEO() {
   }, []);
 
   // SEO Reports data
-  const { data: seoReports, isLoading: reportsLoading } = useSEOReports(selectedClient?.id);
-  const { data: latestReport } = useLatestSEOReport(selectedClient?.id);
+  const { data: latestReport, isLoading: reportsLoading } = useLatestSEOReport(selectedClient?.id);
   const { data: keywords, isLoading: keywordsLoading } = useLatestSEOKeywords(selectedClient?.id);
   const { data: regions } = useUniqueRegions(selectedClient?.id);
-
-  // Get previous report for comparison
-  const previousReport = seoReports && seoReports.length > 1 ? seoReports[1] : undefined;
 
   // Check if website is unlocked
   if (!selectedClient?.website_unlocked) {
@@ -75,7 +70,7 @@ export default function SEO() {
             <Search className="h-8 w-8" />
             SEO Tools
           </h1>
-          <p className="text-muted-foreground">Track keyword rankings and optimize your search visibility</p>
+          <p className="text-muted-foreground">Track keyword rankings and monitor your search performance</p>
         </div>
         {(userRole === 'admin' || userRole === 'fmm') && (
           <Button onClick={() => setUploadDialogOpen(true)}>
@@ -120,14 +115,9 @@ export default function SEO() {
             <>
               <SEOOverview 
                 report={latestReport} 
-                previousReport={previousReport}
                 isLoading={reportsLoading} 
               />
-              <SEOVisibilityChart 
-                reports={seoReports || []} 
-                isLoading={reportsLoading} 
-              />
-              <SEOKeywordsTable 
+              <SEOKeywordsTable
                 keywords={keywords || []} 
                 regions={regions || []}
                 isLoading={keywordsLoading} 
