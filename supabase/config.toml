@@ -212,3 +212,9 @@ verify_jwt = false
 
 [functions.duda-comment-webhook]
 verify_jwt = false
+
+[functions.clarity-test-connection]
+verify_jwt = true
+
+[functions.clarity-sync-daily]
+verify_jwt = false
