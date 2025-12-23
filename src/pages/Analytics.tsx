@@ -1,26 +1,24 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useClient } from "@/contexts/ClientContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Globe, Settings, AlertCircle, Lock } from "lucide-react";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
-import { AnalyticsOverview } from "@/components/analytics/AnalyticsOverview";
-import { TrafficSourcesChart } from "@/components/analytics/TrafficSourcesChart";
-
-import { ContentPerformanceTable } from "@/components/analytics/ContentPerformanceTable";
-import { VisitorsTimelineChart } from "@/components/analytics/VisitorsTimelineChart";
+import { Globe, Settings, Lock, ExternalLink } from "lucide-react";
+import { ClarityOverview } from "@/components/analytics/ClarityOverview";
+import { ClaritySourcesChart } from "@/components/analytics/ClaritySourcesChart";
+import { ClarityTopPagesTable } from "@/components/analytics/ClarityTopPagesTable";
+import { ClarityTimelineChart } from "@/components/analytics/ClarityTimelineChart";
+import { ClarityBehavioralCard } from "@/components/analytics/ClarityBehavioralCard";
 import { AnalyticsFilters } from "@/components/analytics/AnalyticsFilters";
-import { 
-  useAnalyticsOverview, 
-  useTrafficSources, 
-  useContentPerformance,
-  useVisitorTimeline,
-  useWorkspaceKey,
-  useAnalyticsStatus,
-} from "@/hooks/useAnalytics";
+import {
+  useClarityStatus,
+  useClarityOverview,
+  useClarityTimeline,
+  useClaritySources,
+  useClarityPages,
+  useClarityBehavioral,
+} from "@/hooks/useClarityAnalytics";
 import { PricingModal } from "@/components/billing/PricingModal";
 import { subDays, startOfDay, endOfDay } from "date-fns";
 
@@ -41,26 +39,29 @@ export default function Analytics() {
     to: dateRange.from,
   } : undefined;
 
-  // Fetch analytics data
-  const { data: workspaceKey } = useWorkspaceKey(selectedClient?.id || '');
-  const { data: status } = useAnalyticsStatus(selectedClient?.id || '');
-  const { data: overviewData, isLoading: overviewLoading } = useAnalyticsOverview(
+  // Fetch Clarity status and data
+  const { data: status, isLoading: statusLoading } = useClarityStatus(selectedClient?.id || '');
+  const { data: overviewData, isLoading: overviewLoading } = useClarityOverview(
     selectedClient?.id || '',
     dateRange
   );
-  const { data: comparisonData } = useAnalyticsOverview(
+  const { data: comparisonData } = useClarityOverview(
     selectedClient?.id || '',
     comparisonDateRange || dateRange
   );
-  const { data: trafficSources, isLoading: trafficLoading } = useTrafficSources(
+  const { data: timelineData, isLoading: timelineLoading } = useClarityTimeline(
     selectedClient?.id || '',
     dateRange
   );
-  const { data: contentPerformance, isLoading: contentLoading } = useContentPerformance(
+  const { data: sourcesData, isLoading: sourcesLoading } = useClaritySources(
     selectedClient?.id || '',
     dateRange
   );
-  const { data: visitorTimeline, isLoading: timelineLoading } = useVisitorTimeline(
+  const { data: pagesData, isLoading: pagesLoading } = useClarityPages(
+    selectedClient?.id || '',
+    dateRange
+  );
+  const { data: behavioralData, isLoading: behavioralLoading } = useClarityBehavioral(
     selectedClient?.id || '',
     dateRange
   );
@@ -87,23 +88,23 @@ export default function Analytics() {
     );
   }
 
-  // Check if workspace key is generated
-  if (!workspaceKey) {
+  // Check if Clarity is configured
+  if (!statusLoading && !status?.isConfigured) {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold">Analytics</h1>
           <Button onClick={() => navigate('/settings?tab=integrations')}>
             <Settings className="h-4 w-4 mr-2" />
-            Setup Analytics
+            Connect Clarity
           </Button>
         </div>
         <Card className="border-dashed border-2">
           <CardContent className="py-12 text-center space-y-4">
             <Globe className="h-12 w-12 mx-auto text-muted-foreground" />
-            <h3 className="text-lg font-semibold">Set Up Website Tracking</h3>
+            <h3 className="text-lg font-semibold">Connect Microsoft Clarity</h3>
             <p className="text-muted-foreground max-w-md mx-auto">
-              Generate a workspace key to start tracking website visitors
+              Connect your Microsoft Clarity account to see detailed analytics including session recordings, heatmaps, and behavioral insights.
             </p>
             <Button onClick={() => navigate('/settings?tab=integrations')}>
               Go to Settings
@@ -115,14 +116,14 @@ export default function Analytics() {
   }
 
   // Check if there's any data
-  if (status && !status.hasData) {
+  if (!statusLoading && status?.isConfigured && !status?.hasData) {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold">Analytics</h1>
           <Button variant="outline" onClick={() => navigate('/settings?tab=integrations')}>
             <Settings className="h-4 w-4 mr-2" />
-            View Setup Instructions
+            View Settings
           </Button>
         </div>
         <Card>
@@ -130,16 +131,20 @@ export default function Analytics() {
             <Globe className="h-12 w-12 mx-auto text-muted-foreground" />
             <h3 className="text-lg font-semibold">Waiting for Data</h3>
             <p className="text-muted-foreground max-w-md mx-auto">
-              Install the tracking code on your website to see analytics here
+              Clarity is connected but no data has been synced yet. Data is synced daily at 6 AM UTC, or you can trigger a manual sync from settings.
             </p>
             <Button variant="outline" onClick={() => navigate('/settings?tab=integrations')}>
-              View Installation Instructions
+              Sync Now
             </Button>
           </CardContent>
         </Card>
       </div>
     );
   }
+
+  const clarityDashboardUrl = status?.projectId 
+    ? `https://clarity.microsoft.com/projects/view/${status.projectId}/dashboard`
+    : 'https://clarity.microsoft.com';
 
   return (
     <div className="space-y-6">
@@ -150,12 +155,13 @@ export default function Analytics() {
           <p className="text-muted-foreground">Track your website performance and visitor behavior</p>
         </div>
         <div className="flex items-center gap-2">
-          {status?.isLive && (
-            <Badge variant="default" className="gap-1">
-              <span className="w-2 h-2 bg-success rounded-full animate-pulse" />
-              Live
-            </Badge>
-          )}
+          <Button
+            variant="outline"
+            onClick={() => window.open(clarityDashboardUrl, '_blank')}
+          >
+            <ExternalLink className="h-4 w-4 mr-2" />
+            View in Clarity
+          </Button>
           <Button variant="outline" onClick={() => navigate('/settings?tab=integrations')}>
             <Settings className="h-4 w-4 mr-2" />
             Settings
@@ -172,7 +178,7 @@ export default function Analytics() {
       />
 
       {/* Overview Metrics */}
-      <AnalyticsOverview
+      <ClarityOverview
         data={overviewData}
         isLoading={overviewLoading}
         comparisonData={comparisonEnabled ? comparisonData : undefined}
@@ -183,34 +189,28 @@ export default function Analytics() {
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="traffic">Traffic Sources</TabsTrigger>
-          <TabsTrigger value="content">Content</TabsTrigger>
+          <TabsTrigger value="pages">Top Pages</TabsTrigger>
+          <TabsTrigger value="behavior">Behavioral Insights</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
-          <VisitorsTimelineChart data={visitorTimeline} isLoading={timelineLoading} />
+          <ClarityTimelineChart data={timelineData} isLoading={timelineLoading} />
           <div className="grid gap-6 lg:grid-cols-2">
-            <TrafficSourcesChart data={trafficSources} isLoading={trafficLoading} />
-            <Card>
-              <CardContent className="pt-6">
-                <Alert>
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertTitle>Overview Summary</AlertTitle>
-                  <AlertDescription>
-                    Your analytics dashboard shows key metrics for website performance.
-                    Explore different tabs to dive deeper into traffic sources and content metrics.
-                  </AlertDescription>
-                </Alert>
-              </CardContent>
-            </Card>
+            <ClaritySourcesChart data={sourcesData} isLoading={sourcesLoading} />
+            <ClarityBehavioralCard data={behavioralData} isLoading={behavioralLoading} />
           </div>
         </TabsContent>
 
         <TabsContent value="traffic" className="space-y-6">
-          <TrafficSourcesChart data={trafficSources} isLoading={trafficLoading} />
+          <ClaritySourcesChart data={sourcesData} isLoading={sourcesLoading} />
         </TabsContent>
 
-        <TabsContent value="content" className="space-y-6">
-          <ContentPerformanceTable data={contentPerformance} isLoading={contentLoading} />
+        <TabsContent value="pages" className="space-y-6">
+          <ClarityTopPagesTable data={pagesData} isLoading={pagesLoading} />
+        </TabsContent>
+
+        <TabsContent value="behavior" className="space-y-6">
+          <ClarityBehavioralCard data={behavioralData} isLoading={behavioralLoading} />
         </TabsContent>
       </Tabs>
     </div>
