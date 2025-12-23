@@ -28,6 +28,7 @@ export function ClaritySetupTab({ client }: ClaritySetupTabProps) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
+  const [syncing, setSyncing] = useState(false);
   const [testResult, setTestResult] = useState<'success' | 'error' | null>(null);
   const [configExists, setConfigExists] = useState(false);
 
@@ -201,6 +202,51 @@ export function ClaritySetupTab({ client }: ClaritySetupTabProps) {
     }
   };
 
+  const syncNow = async () => {
+    if (!configExists) {
+      toast({
+        title: "No configuration",
+        description: "Please save your Clarity configuration first",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setSyncing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('clarity-sync-daily', {
+        body: { client_id: client.id }
+      });
+
+      if (error) throw error;
+
+      if (data?.success) {
+        setLastSyncedAt(new Date());
+        toast({
+          title: "Sync completed",
+          description: data.metricDate 
+            ? `Successfully synced metrics for ${data.metricDate}` 
+            : "Successfully synced Clarity metrics",
+        });
+      } else {
+        toast({
+          title: "Sync failed",
+          description: data?.error || "Could not sync Clarity data",
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      console.error('Error syncing:', error);
+      toast({
+        title: "Sync failed",
+        description: error.message || "Could not sync Clarity data",
+        variant: "destructive",
+      });
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   if (loading) {
     return (
       <Card>
@@ -315,7 +361,7 @@ export function ClaritySetupTab({ client }: ClaritySetupTabProps) {
         )}
 
         {/* Actions */}
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <Button
             variant="outline"
             onClick={testConnection}
@@ -340,6 +386,25 @@ export function ClaritySetupTab({ client }: ClaritySetupTabProps) {
               "Save Configuration"
             )}
           </Button>
+          {configExists && (
+            <Button
+              variant="secondary"
+              onClick={syncNow}
+              disabled={syncing}
+            >
+              {syncing ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Syncing...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Sync Now
+                </>
+              )}
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="sm"
@@ -369,6 +434,20 @@ export function ClaritySetupTab({ client }: ClaritySetupTabProps) {
             </ol>
           </AlertDescription>
         </Alert>
+
+        {/* Automation Info */}
+        {configExists && isActive && (
+          <Alert>
+            <AlertDescription className="text-sm">
+              <strong>Automation schedule:</strong>
+              <ul className="list-disc list-inside mt-2 space-y-1">
+                <li>Daily sync runs at 6 AM UTC every day</li>
+                <li>Weekly report generated every Friday at 7 AM UTC</li>
+                <li>Reports appear in the Reports tab with AI-generated insights</li>
+              </ul>
+            </AlertDescription>
+          </Alert>
+        )}
       </CardContent>
     </Card>
   );

@@ -218,3 +218,6 @@ verify_jwt = true
 
 [functions.clarity-sync-daily]
 verify_jwt = false
+
+[functions.clarity-generate-weekly-report]
+verify_jwt = false
