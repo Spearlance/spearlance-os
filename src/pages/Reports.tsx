@@ -3,11 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { useClient } from "@/contexts/ClientContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Plus, Search, Star } from "lucide-react";
+import { Plus, Star, Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ReportDrawer } from "@/components/reports/ReportDrawer";
 import { CreateReportDialog } from "@/components/reports/CreateReportDialog";
+import { GenerateReportDialog } from "@/components/reports/GenerateReportDialog";
+import { AIReportViewer } from "@/components/reports/AIReportViewer";
 import { ReportFilters } from "@/components/reports/ReportFilters";
 import {
   Table,
@@ -18,9 +19,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink, Info } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 import { format } from "date-fns";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface Report {
   id: string;
@@ -50,15 +51,39 @@ interface FilterState {
   pinnedOnly: boolean;
 }
 
+interface AIReport {
+  id: string;
+  client_id: string;
+  report_type: string;
+  report_name: string;
+  date_range_start: string;
+  date_range_end: string;
+  report_content: string;
+  executive_summary: string | null;
+  created_at: string;
+}
+
+const REPORT_TYPE_LABELS: Record<string, string> = {
+  'performance_summary': 'Performance Summary',
+  'channel_deep_dive': 'Channel Deep Dive',
+  'website_analytics': 'Website Analytics',
+  'seo_report': 'SEO Report',
+};
+
 const Reports = () => {
   const { selectedClient, loading: clientLoading } = useClient();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [reports, setReports] = useState<Report[]>([]);
+  const [aiReports, setAIReports] = useState<AIReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
+  const [selectedAIReport, setSelectedAIReport] = useState<AIReport | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [aiViewerOpen, setAIViewerOpen] = useState(false);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [generateDialogOpen, setGenerateDialogOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<string>("all");
   const [userRole, setUserRole] = useState<string>("");
   const [filters, setFilters] = useState<FilterState>({
     search: "",
@@ -70,7 +95,6 @@ const Reports = () => {
   });
 
   useEffect(() => {
-    // Don't redirect while client context is still initializing
     if (!selectedClient && !clientLoading) {
       navigate("/");
       return;
@@ -78,6 +102,7 @@ const Reports = () => {
     if (selectedClient) {
       loadUserRole();
       loadReports();
+      loadAIReports();
     }
   }, [selectedClient, clientLoading, navigate]);
 
@@ -99,6 +124,20 @@ const Reports = () => {
     }
   };
 
+  const loadAIReports = async () => {
+    if (!selectedClient) return;
+    
+    const { data, error } = await supabase
+      .from("ai_generated_reports")
+      .select("*")
+      .eq("client_id", selectedClient.id)
+      .order("created_at", { ascending: false });
+
+    if (!error && data) {
+      setAIReports(data);
+    }
+  };
+
   const loadReports = async () => {
     if (!selectedClient) return;
     
@@ -106,70 +145,48 @@ const Reports = () => {
     try {
       let query = supabase
         .from("reports")
-        .select(`
-          *,
-          owner:profiles!owner_user_id(name)
-        `)
+        .select(`*, owner:profiles!owner_user_id(name)`)
         .eq("client_id", selectedClient.id)
         .order("pinned", { ascending: false })
         .order("updated_at", { ascending: false });
 
-      // Apply filters
       if (filters.search) {
         query = query.or(`name.ilike.%${filters.search}%,summary.ilike.%${filters.search}%`);
       }
-
       if (filters.status !== 'all') {
         query = query.eq("status", filters.status);
       }
-
       if (filters.tags.length > 0) {
         query = query.contains("tags", filters.tags);
       }
-
       if (filters.owner) {
         query = query.eq("owner_user_id", filters.owner);
       }
-
       if (filters.pinnedOnly) {
         query = query.eq("pinned", true);
       }
 
       const { data, error } = await query;
-
       if (error) throw error;
 
-      // Client-side date range filtering (for overlapping periods)
       let filteredData = (data || []) as Report[];
       if (filters.dateRange.from || filters.dateRange.to) {
         filteredData = filteredData.filter((report) => {
           if (!report.date_range_start || !report.date_range_end) return true;
-          
           const reportStart = new Date(report.date_range_start);
           const reportEnd = new Date(report.date_range_end);
           const filterFrom = filters.dateRange.from;
           const filterTo = filters.dateRange.to;
-
-          if (filterFrom && filterTo) {
-            return reportStart <= filterTo && reportEnd >= filterFrom;
-          }
-          if (filterFrom) {
-            return reportEnd >= filterFrom;
-          }
-          if (filterTo) {
-            return reportStart <= filterTo;
-          }
+          if (filterFrom && filterTo) return reportStart <= filterTo && reportEnd >= filterFrom;
+          if (filterFrom) return reportEnd >= filterFrom;
+          if (filterTo) return reportStart <= filterTo;
           return true;
         });
       }
 
       setReports(filteredData);
     } catch (error: any) {
-      toast({
-        title: "Error loading reports",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast({ title: "Error loading reports", description: error.message, variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -177,234 +194,168 @@ const Reports = () => {
 
   const togglePin = async (reportId: string, currentPinned: boolean) => {
     try {
-      const { error } = await supabase
-        .from("reports")
-        .update({ pinned: !currentPinned })
-        .eq("id", reportId);
-
+      const { error } = await supabase.from("reports").update({ pinned: !currentPinned }).eq("id", reportId);
       if (error) throw error;
-
       toast({ title: currentPinned ? "Report unpinned" : "Report pinned" });
       loadReports();
     } catch (error: any) {
-      toast({
-        title: "Error updating pin",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast({ title: "Error updating pin", description: error.message, variant: "destructive" });
     }
   };
 
   const handleTagClick = (tag: string) => {
-    setFilters((prev) => ({
-      ...prev,
-      tags: prev.tags.includes(tag) ? prev.tags : [...prev.tags, tag],
-    }));
+    setFilters((prev) => ({ ...prev, tags: prev.tags.includes(tag) ? prev.tags : [...prev.tags, tag] }));
   };
 
-  const openDrawer = (report: Report) => {
-    setSelectedReport(report);
-    setDrawerOpen(true);
-  };
+  const openDrawer = (report: Report) => { setSelectedReport(report); setDrawerOpen(true); };
+  const openAIViewer = (report: AIReport) => { setSelectedAIReport(report); setAIViewerOpen(true); };
 
   const isAdminOrFMM = userRole === "admin" || userRole === "fmm";
-
-  const truncateSummary = (text: string | null) => {
-    if (!text) return "No summary";
-    return text.length > 180 ? text.substring(0, 180) + "..." : text;
-  };
-
+  const truncateSummary = (text: string | null) => text ? (text.length > 180 ? text.substring(0, 180) + "..." : text) : "No summary";
   const formatDateRange = (start: string | null, end: string | null) => {
     if (!start || !end) return "—";
-    try {
-      const startDate = new Date(start);
-      const endDate = new Date(end);
-      return `${format(startDate, "MMM d")} to ${format(endDate, "MMM d, yyyy")}`;
-    } catch {
-      return "—";
-    }
+    try { return `${format(new Date(start), "MMM d")} to ${format(new Date(end), "MMM d, yyyy")}`; } catch { return "—"; }
   };
 
-  // Show loading spinner while client context is initializing
   if (clientLoading || loading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-      </div>
-    );
+    return <div className="flex items-center justify-center h-screen"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div></div>;
   }
 
-  // Show message if no client selected after loading completes
   if (!selectedClient) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-center">
-          <h2 className="text-2xl font-semibold mb-2">No Client Selected</h2>
-          <p className="text-muted-foreground">Please select a client to view reports</p>
-        </div>
-      </div>
-    );
+    return <div className="flex items-center justify-center h-screen"><div className="text-center"><h2 className="text-2xl font-semibold mb-2">No Client Selected</h2><p className="text-muted-foreground">Please select a client to view reports</p></div></div>;
   }
 
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto py-8 px-4">
-        {/* Header */}
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold">Reports</h1>
-          {isAdminOrFMM && (
-            <Button onClick={() => setCreateDialogOpen(true)}>
-              <Plus className="mr-2 h-4 w-4" />
-              New Report
+          <div className="flex gap-2">
+            <Button onClick={() => setGenerateDialogOpen(true)} variant="default">
+              <Sparkles className="mr-2 h-4 w-4" />
+              Generate AI Report
             </Button>
-          )}
+            {isAdminOrFMM && (
+              <Button onClick={() => setCreateDialogOpen(true)} variant="outline">
+                <Plus className="mr-2 h-4 w-4" />
+                New Report
+              </Button>
+            )}
+          </div>
         </div>
 
-        {/* AI Disclaimer */}
-        <Alert className="mb-6">
-          <Info className="h-4 w-4" />
-          <AlertTitle>AI Report Analysis</AlertTitle>
-          <AlertDescription>
-            To help our AI assistant understand your reports, please add a summary to each report. 
-            We're also working on integrating popular reporting platforms into Spearlance for automated insights—stay tuned!
-          </AlertDescription>
-        </Alert>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
+          <TabsList>
+            <TabsTrigger value="all">All Reports</TabsTrigger>
+            <TabsTrigger value="ai" className="gap-1">
+              <Sparkles className="h-3.5 w-3.5" /> AI Generated ({aiReports.length})
+            </TabsTrigger>
+            <TabsTrigger value="manual">Manual ({reports.length})</TabsTrigger>
+          </TabsList>
 
-        {/* Filters */}
-        <ReportFilters
-          filters={filters}
-          onFiltersChange={setFilters}
-          clientId={selectedClient.id}
-        />
+          <TabsContent value="all" className="mt-4">
+            <ReportFilters filters={filters} onFiltersChange={setFilters} clientId={selectedClient.id} />
+          </TabsContent>
+          <TabsContent value="ai" className="mt-4" />
+          <TabsContent value="manual" className="mt-4">
+            <ReportFilters filters={filters} onFiltersChange={setFilters} clientId={selectedClient.id} />
+          </TabsContent>
+        </Tabs>
 
-        {/* Table */}
-        {loading ? (
-          <div className="text-center py-12">Loading reports...</div>
-        ) : reports.length === 0 ? (
-          <div className="text-center py-12 bg-muted/10 rounded-lg border-2 border-dashed">
-            <p className="text-lg text-muted-foreground">
-              {isAdminOrFMM
-                ? "Add your first report"
-                : "Your reports will appear here"}
-            </p>
-          </div>
-        ) : (
-          <div className="border rounded-lg bg-card">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[30px]"></TableHead>
-                  <TableHead>Report Name</TableHead>
-                  <TableHead>Tags</TableHead>
-                  <TableHead>Summary</TableHead>
-                  <TableHead className="w-[80px]">Link</TableHead>
-                  <TableHead>Date Range</TableHead>
-                  <TableHead>Owner</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Last Updated</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {reports.map((report) => (
-                  <TableRow key={report.id} className="cursor-pointer hover:bg-muted/50">
-                    <TableCell onClick={(e) => e.stopPropagation()}>
-                      <button
-                        onClick={() => togglePin(report.id, report.pinned)}
-                        disabled={!isAdminOrFMM}
-                        className="hover:scale-110 transition-transform disabled:cursor-default"
-                      >
-                        <Star
-                          className={`h-4 w-4 ${
-                            report.pinned
-                              ? "fill-yellow-400 text-yellow-400"
-                              : "text-muted-foreground"
-                          }`}
-                        />
-                      </button>
-                    </TableCell>
-                    <TableCell
-                      onClick={() => openDrawer(report)}
-                      className="font-medium"
-                    >
-                      {report.name}
-                    </TableCell>
-                    <TableCell onClick={(e) => e.stopPropagation()}>
-                      <div className="flex flex-wrap gap-1">
-                        {report.tags.length > 0 ? (
-                          report.tags.map((tag) => (
-                            <Badge
-                              key={tag}
-                              variant="secondary"
-                              className="cursor-pointer hover:bg-primary/20"
-                              onClick={() => handleTagClick(tag)}
-                            >
-                              {tag}
-                            </Badge>
-                          ))
-                        ) : (
-                          <span className="text-muted-foreground text-sm">No tags</span>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell
-                      onClick={() => openDrawer(report)}
-                      className="max-w-xs"
-                    >
-                      <span className="text-muted-foreground">
-                        {truncateSummary(report.summary)}
-                      </span>
-                    </TableCell>
-                    <TableCell onClick={(e) => e.stopPropagation()}>
-                      <a
-                        href={report.oviond_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary hover:underline"
-                      >
-                        <ExternalLink className="h-4 w-4" />
-                      </a>
-                    </TableCell>
-                    <TableCell onClick={() => openDrawer(report)}>
-                      {formatDateRange(report.date_range_start, report.date_range_end)}
-                    </TableCell>
-                    <TableCell onClick={() => openDrawer(report)}>
-                      {report.owner?.name || "Unassigned"}
-                    </TableCell>
-                    <TableCell onClick={() => openDrawer(report)}>
-                      <Badge variant={report.status === "Active" ? "default" : "secondary"}>
-                        {report.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell onClick={() => openDrawer(report)}>
-                      {format(new Date(report.updated_at), "MMM d, yyyy")}
-                    </TableCell>
+        {/* AI Reports Table */}
+        {(activeTab === "all" || activeTab === "ai") && aiReports.length > 0 && (
+          <div className="mb-8">
+            {activeTab === "all" && <h2 className="text-lg font-semibold mb-3 flex items-center gap-2"><Sparkles className="h-4 w-4 text-primary" /> AI Generated Reports</h2>}
+            <div className="border rounded-lg bg-card">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Report Name</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Date Range</TableHead>
+                    <TableHead>Summary</TableHead>
+                    <TableHead>Created</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {aiReports.map((report) => (
+                    <TableRow key={report.id} className="cursor-pointer hover:bg-muted/50" onClick={() => openAIViewer(report)}>
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="secondary" className="gap-1 text-xs"><Sparkles className="h-3 w-3" />AI</Badge>
+                          {report.report_name}
+                        </div>
+                      </TableCell>
+                      <TableCell><Badge variant="outline">{REPORT_TYPE_LABELS[report.report_type] || report.report_type}</Badge></TableCell>
+                      <TableCell>{formatDateRange(report.date_range_start, report.date_range_end)}</TableCell>
+                      <TableCell className="max-w-xs"><span className="text-muted-foreground">{truncateSummary(report.executive_summary)}</span></TableCell>
+                      <TableCell>{format(new Date(report.created_at), "MMM d, yyyy")}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </div>
+        )}
+
+        {/* Manual Reports Table */}
+        {(activeTab === "all" || activeTab === "manual") && (
+          <>
+            {activeTab === "all" && reports.length > 0 && <h2 className="text-lg font-semibold mb-3">Manual Reports</h2>}
+            {reports.length === 0 ? (
+              <div className="text-center py-12 bg-muted/10 rounded-lg border-2 border-dashed">
+                <p className="text-lg text-muted-foreground">{isAdminOrFMM ? "Add your first report" : "Your reports will appear here"}</p>
+              </div>
+            ) : (
+              <div className="border rounded-lg bg-card">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[30px]"></TableHead>
+                      <TableHead>Report Name</TableHead>
+                      <TableHead>Tags</TableHead>
+                      <TableHead>Summary</TableHead>
+                      <TableHead className="w-[80px]">Link</TableHead>
+                      <TableHead>Date Range</TableHead>
+                      <TableHead>Owner</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Last Updated</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {reports.map((report) => (
+                      <TableRow key={report.id} className="cursor-pointer hover:bg-muted/50">
+                        <TableCell onClick={(e) => e.stopPropagation()}>
+                          <button onClick={() => togglePin(report.id, report.pinned)} disabled={!isAdminOrFMM} className="hover:scale-110 transition-transform disabled:cursor-default">
+                            <Star className={`h-4 w-4 ${report.pinned ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground"}`} />
+                          </button>
+                        </TableCell>
+                        <TableCell onClick={() => openDrawer(report)} className="font-medium">{report.name}</TableCell>
+                        <TableCell onClick={(e) => e.stopPropagation()}>
+                          <div className="flex flex-wrap gap-1">
+                            {report.tags.length > 0 ? report.tags.map((tag) => (<Badge key={tag} variant="secondary" className="cursor-pointer hover:bg-primary/20" onClick={() => handleTagClick(tag)}>{tag}</Badge>)) : <span className="text-muted-foreground text-sm">No tags</span>}
+                          </div>
+                        </TableCell>
+                        <TableCell onClick={() => openDrawer(report)} className="max-w-xs"><span className="text-muted-foreground">{truncateSummary(report.summary)}</span></TableCell>
+                        <TableCell onClick={(e) => e.stopPropagation()}><a href={report.oviond_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline"><ExternalLink className="h-4 w-4" /></a></TableCell>
+                        <TableCell onClick={() => openDrawer(report)}>{formatDateRange(report.date_range_start, report.date_range_end)}</TableCell>
+                        <TableCell onClick={() => openDrawer(report)}>{report.owner?.name || "Unassigned"}</TableCell>
+                        <TableCell onClick={() => openDrawer(report)}><Badge variant={report.status === "Active" ? "default" : "secondary"}>{report.status}</Badge></TableCell>
+                        <TableCell onClick={() => openDrawer(report)}>{format(new Date(report.updated_at), "MMM d, yyyy")}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </>
         )}
       </div>
 
-      {/* Dialogs */}
-      <CreateReportDialog
-        open={createDialogOpen}
-        onOpenChange={setCreateDialogOpen}
-        clientId={selectedClient.id}
-        onSuccess={(newReport) => {
-          loadReports();
-          setSelectedReport(newReport);
-          setDrawerOpen(true);
-        }}
-      />
-
-      <ReportDrawer
-        report={selectedReport}
-        open={drawerOpen}
-        onOpenChange={setDrawerOpen}
-        onUpdate={loadReports}
-        isAdminOrFMM={isAdminOrFMM}
-      />
+      <CreateReportDialog open={createDialogOpen} onOpenChange={setCreateDialogOpen} clientId={selectedClient.id} onSuccess={(newReport) => { loadReports(); setSelectedReport(newReport); setDrawerOpen(true); }} />
+      <GenerateReportDialog open={generateDialogOpen} onOpenChange={setGenerateDialogOpen} clientId={selectedClient.id} onSuccess={(newReport) => { loadAIReports(); setSelectedAIReport(newReport); setAIViewerOpen(true); }} />
+      <ReportDrawer report={selectedReport} open={drawerOpen} onOpenChange={setDrawerOpen} onUpdate={loadReports} isAdminOrFMM={isAdminOrFMM} />
+      <AIReportViewer report={selectedAIReport} open={aiViewerOpen} onOpenChange={setAIViewerOpen} onDelete={loadAIReports} />
     </div>
   );
 };

@@ -107,6 +107,66 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_generated_reports: {
+        Row: {
+          client_id: string
+          created_at: string | null
+          created_by: string | null
+          data_snapshot: Json | null
+          date_range_end: string
+          date_range_start: string
+          executive_summary: string | null
+          id: string
+          report_content: string
+          report_name: string
+          report_type: string
+          selected_channels: string[] | null
+        }
+        Insert: {
+          client_id: string
+          created_at?: string | null
+          created_by?: string | null
+          data_snapshot?: Json | null
+          date_range_end: string
+          date_range_start: string
+          executive_summary?: string | null
+          id?: string
+          report_content: string
+          report_name: string
+          report_type: string
+          selected_channels?: string[] | null
+        }
+        Update: {
+          client_id?: string
+          created_at?: string | null
+          created_by?: string | null
+          data_snapshot?: Json | null
+          date_range_end?: string
+          date_range_start?: string
+          executive_summary?: string | null
+          id?: string
+          report_content?: string
+          report_name?: string
+          report_type?: string
+          selected_channels?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_generated_reports_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_generated_reports_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       analytics_workspace_keys: {
         Row: {
           active: boolean | null
