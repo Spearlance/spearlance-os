@@ -3,7 +3,7 @@ import { useClient } from "@/contexts/ClientContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Lock, FileText, MapPin, RefreshCw, AlertCircle } from "lucide-react";
+import { Search, Lock, FileText, MapPin, RefreshCw, AlertCircle, Upload } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { PagePerformanceTable } from "@/components/analytics/PagePerformanceTable";
@@ -14,6 +14,12 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useLastRefreshTime } from "@/hooks/useLastRefreshTime";
 import { useCanAnalyzePages } from "@/hooks/useCanAnalyzePages";
+import { useSEOReports, useLatestSEOReport } from "@/hooks/useSEOReports";
+import { useLatestSEOKeywords, useUniqueRegions } from "@/hooks/useSEOKeywords";
+import { UploadSEOReportDialog } from "@/components/seo/UploadSEOReportDialog";
+import { SEOOverview } from "@/components/seo/SEOOverview";
+import { SEOKeywordsTable } from "@/components/seo/SEOKeywordsTable";
+import { SEOVisibilityChart } from "@/components/seo/SEOVisibilityChart";
 
 export default function SEO() {
   const { selectedClient } = useClient();

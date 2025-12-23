@@ -4044,6 +4044,135 @@ export type Database = {
           },
         ]
       }
+      seo_keywords: {
+        Row: {
+          best_position: number | null
+          client_id: string
+          created_at: string | null
+          id: string
+          keyword: string
+          position: number | null
+          position_change: number | null
+          position_start: number | null
+          ranking_url: string | null
+          region: string | null
+          search_engine: string | null
+          seo_report_id: string
+        }
+        Insert: {
+          best_position?: number | null
+          client_id: string
+          created_at?: string | null
+          id?: string
+          keyword: string
+          position?: number | null
+          position_change?: number | null
+          position_start?: number | null
+          ranking_url?: string | null
+          region?: string | null
+          search_engine?: string | null
+          seo_report_id: string
+        }
+        Update: {
+          best_position?: number | null
+          client_id?: string
+          created_at?: string | null
+          id?: string
+          keyword?: string
+          position?: number | null
+          position_change?: number | null
+          position_start?: number | null
+          ranking_url?: string | null
+          region?: string | null
+          search_engine?: string | null
+          seo_report_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seo_keywords_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "seo_keywords_seo_report_id_fkey"
+            columns: ["seo_report_id"]
+            isOneToOne: false
+            referencedRelation: "seo_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      seo_reports: {
+        Row: {
+          average_position: number | null
+          client_id: string
+          created_at: string | null
+          created_by: string | null
+          date_range_end: string | null
+          date_range_start: string | null
+          id: string
+          keywords_top_10: number | null
+          keywords_top_3: number | null
+          keywords_top_30: number | null
+          keywords_total: number | null
+          pdf_url: string | null
+          raw_extraction: Json | null
+          report_date: string
+          visibility_score: number | null
+        }
+        Insert: {
+          average_position?: number | null
+          client_id: string
+          created_at?: string | null
+          created_by?: string | null
+          date_range_end?: string | null
+          date_range_start?: string | null
+          id?: string
+          keywords_top_10?: number | null
+          keywords_top_3?: number | null
+          keywords_top_30?: number | null
+          keywords_total?: number | null
+          pdf_url?: string | null
+          raw_extraction?: Json | null
+          report_date: string
+          visibility_score?: number | null
+        }
+        Update: {
+          average_position?: number | null
+          client_id?: string
+          created_at?: string | null
+          created_by?: string | null
+          date_range_end?: string | null
+          date_range_start?: string | null
+          id?: string
+          keywords_top_10?: number | null
+          keywords_top_3?: number | null
+          keywords_top_30?: number | null
+          keywords_total?: number | null
+          pdf_url?: string | null
+          raw_extraction?: Json | null
+          report_date?: string
+          visibility_score?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seo_reports_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "seo_reports_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       services: {
         Row: {
           client_id: string

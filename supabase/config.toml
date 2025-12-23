@@ -221,3 +221,6 @@ verify_jwt = false
 
 [functions.clarity-generate-weekly-report]
 verify_jwt = false
+
+[functions.parse-seo-report]
+verify_jwt = true
