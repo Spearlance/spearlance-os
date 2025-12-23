@@ -68,7 +68,9 @@ serve(async (req) => {
     );
 
     // Use Lovable AI (Gemini 2.5 Pro) to extract data from PDF
-    const extractionPrompt = `You are analyzing an SE Ranking Project Report PDF. Extract the following data and return it as valid JSON:
+    const extractionPrompt = `You are analyzing an SE Ranking Project Report PDF. The PDF is provided as base64 encoded data.
+
+Extract the following data and return it as valid JSON ONLY (no markdown, no explanation):
 
 1. **Summary Metrics** (from the top of the report):
    - Search Visibility percentage (e.g., "26.7")
@@ -91,7 +93,7 @@ serve(async (req) => {
    - position_end: Last day's position
    - position_change: Calculated as position_start - position_end (positive = improved, negative = dropped)
 
-Return ONLY valid JSON in this exact format:
+Return ONLY valid JSON in this exact format (no markdown code blocks):
 {
   "summary": {
     "visibility_score": 26.7,
@@ -122,7 +124,7 @@ IMPORTANT:
 - Include ALL keywords from ALL regions (Google USA, Google Canada, etc.)
 - If a position shows "-" or is empty, use null
 - Calculate position_change as: position_start - position_end
-- Return ONLY the JSON, no markdown or explanation`;
+- Return ONLY the JSON object, NO markdown formatting`;
 
     console.log('Calling Lovable AI for PDF extraction...');
 
@@ -139,19 +141,19 @@ IMPORTANT:
             role: 'user',
             content: [
               {
-                type: 'text',
-                text: extractionPrompt
+                type: 'file',
+                file: {
+                  filename: pdfFile.name,
+                  file_data: `data:application/pdf;base64,${base64Pdf}`
+                }
               },
               {
-                type: 'image_url',
-                image_url: {
-                  url: `data:application/pdf;base64,${base64Pdf}`
-                }
+                type: 'text',
+                text: extractionPrompt
               }
             ]
           }
         ],
-        max_tokens: 8000,
       }),
     });
 
@@ -178,13 +180,18 @@ IMPORTANT:
     const rawContent = aiData.choices?.[0]?.message?.content || '';
     
     console.log('AI raw response length:', rawContent.length);
+    console.log('AI raw response preview:', rawContent.substring(0, 1000));
 
     // Clean and parse AI response
     let extractedData;
     try {
       // Remove markdown code blocks if present
       let cleanedContent = rawContent.trim();
+      
+      // Remove various markdown code block formats
       if (cleanedContent.startsWith('```json')) {
+        cleanedContent = cleanedContent.slice(7);
+      } else if (cleanedContent.startsWith('```JSON')) {
         cleanedContent = cleanedContent.slice(7);
       } else if (cleanedContent.startsWith('```')) {
         cleanedContent = cleanedContent.slice(3);
@@ -194,11 +201,17 @@ IMPORTANT:
       }
       cleanedContent = cleanedContent.trim();
       
+      // Try to extract JSON object if there's extra text
+      const jsonMatch = cleanedContent.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        cleanedContent = jsonMatch[0];
+      }
+      
       extractedData = JSON.parse(cleanedContent);
     } catch (parseError) {
       console.error('JSON parse error:', parseError);
-      console.error('Raw content:', rawContent.substring(0, 500));
-      throw new Error('Failed to parse AI response as JSON');
+      console.error('Full raw content:', rawContent);
+      throw new Error(`Failed to parse AI response as JSON. Raw content: ${rawContent.substring(0, 200)}`);
     }
 
     console.log('Extracted summary:', extractedData.summary);
