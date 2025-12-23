@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useClient } from "@/contexts/ClientContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Plus, Star, Sparkles } from "lucide-react";
+import { Plus, Star, Sparkles, Mail, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ReportDrawer } from "@/components/reports/ReportDrawer";
 import { CreateReportDialog } from "@/components/reports/CreateReportDialog";
@@ -22,6 +22,12 @@ import { Badge } from "@/components/ui/badge";
 import { ExternalLink } from "lucide-react";
 import { format } from "date-fns";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface Report {
   id: string;
@@ -84,6 +90,7 @@ const Reports = () => {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [generateDialogOpen, setGenerateDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("all");
+  const [sendingWeeklyEmails, setSendingWeeklyEmails] = useState(false);
   const [userRole, setUserRole] = useState<string>("");
   const [filters, setFilters] = useState<FilterState>({
     search: "",
@@ -210,6 +217,25 @@ const Reports = () => {
   const openDrawer = (report: Report) => { setSelectedReport(report); setDrawerOpen(true); };
   const openAIViewer = (report: AIReport) => { setSelectedAIReport(report); setAIViewerOpen(true); };
 
+  const sendWeeklyEmails = async (testMode: boolean, clientId?: string) => {
+    setSendingWeeklyEmails(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('send-weekly-performance-emails', {
+        body: { test_mode: testMode, client_id: clientId }
+      });
+      if (error) throw error;
+      toast({
+        title: "Weekly emails sent!",
+        description: `${data.emails_sent} email(s) sent for ${data.clients_processed} client(s)`,
+      });
+      loadAIReports();
+    } catch (error: any) {
+      toast({ title: "Error sending emails", description: error.message, variant: "destructive" });
+    } finally {
+      setSendingWeeklyEmails(false);
+    }
+  };
+
   const isAdminOrFMM = userRole === "admin" || userRole === "fmm";
   const truncateSummary = (text: string | null) => text ? (text.length > 180 ? text.substring(0, 180) + "..." : text) : "No summary";
   const formatDateRange = (start: string | null, end: string | null) => {
@@ -235,6 +261,27 @@ const Reports = () => {
               <Sparkles className="mr-2 h-4 w-4" />
               Generate AI Report
             </Button>
+            {userRole === "admin" && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" disabled={sendingWeeklyEmails}>
+                    {sendingWeeklyEmails ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Mail className="mr-2 h-4 w-4" />}
+                    Send Weekly Emails
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => sendWeeklyEmails(true, selectedClient.id)}>
+                    Test: This Client Only (to Garrett)
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => sendWeeklyEmails(true)}>
+                    Test: All Clients (to Garrett)
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => sendWeeklyEmails(false)} className="text-primary">
+                    Send to Team (All Clients)
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
             {isAdminOrFMM && (
               <Button onClick={() => setCreateDialogOpen(true)} variant="outline">
                 <Plus className="mr-2 h-4 w-4" />
