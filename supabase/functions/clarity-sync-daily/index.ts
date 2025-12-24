@@ -146,14 +146,25 @@ function parseDimensionData(response: any): DimensionItem[] {
   return items;
 }
 
-async function fetchClarityData(apiToken: string, dimension?: string): Promise<any> {
-  let url = `https://www.clarity.ms/export-data/api/v1/project-live-insights?numOfDays=1`;
+async function fetchClarityData(apiToken: string, dimension?: string, targetDate?: string): Promise<any> {
+  // If a target date is provided, use the historical insights endpoint
+  // Otherwise use live insights for today's data
+  let url: string;
+  
+  if (targetDate) {
+    // Historical data - use date range endpoint
+    // Note: Clarity API uses startDate and endDate for historical queries
+    url = `https://www.clarity.ms/export-data/api/v1/project-insights?startDate=${targetDate}&endDate=${targetDate}`;
+  } else {
+    // Live data - today's metrics
+    url = `https://www.clarity.ms/export-data/api/v1/project-live-insights?numOfDays=1`;
+  }
   
   if (dimension) {
     url += `&dimension1=${dimension}`;
   }
   
-  console.log(`Fetching Clarity data${dimension ? ` with dimension ${dimension}` : ''}`);
+  console.log(`Fetching Clarity data${dimension ? ` with dimension ${dimension}` : ''}${targetDate ? ` for date ${targetDate}` : ''}`);
   
   try {
     const response = await fetch(url, {
@@ -172,7 +183,7 @@ async function fetchClarityData(apiToken: string, dimension?: string): Promise<a
     }
 
     const data = await response.json();
-    console.log(`Clarity data received${dimension ? ` for ${dimension}` : ''}:`, JSON.stringify(data).substring(0, 1000));
+    console.log(`Clarity data received${dimension ? ` for ${dimension}` : ''}${targetDate ? ` on ${targetDate}` : ''}:`, JSON.stringify(data).substring(0, 1000));
     
     return data;
   } catch (error) {
@@ -207,9 +218,12 @@ serve(async (req) => {
     console.log('Starting Clarity daily sync...');
 
     let targetClientId: string | null = null;
+    let targetDate: string | null = null;
+    
     try {
       const body = await req.json();
       targetClientId = body?.client_id || null;
+      targetDate = body?.date || null; // Optional: specific date to sync (YYYY-MM-DD)
     } catch {
       // No body or invalid JSON, continue with all clients
     }
@@ -247,16 +261,24 @@ serve(async (req) => {
       errors: [] as string[],
     };
 
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    const metricDate = yesterday.toISOString().split('T')[0];
+    // Use target date if provided, otherwise default to yesterday
+    let metricDate: string;
+    if (targetDate) {
+      metricDate = targetDate;
+      console.log(`Syncing historical data for date: ${metricDate}`);
+    } else {
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      metricDate = yesterday.toISOString().split('T')[0];
+    }
 
     for (const config of configs) {
       try {
         console.log(`Processing client: ${config.client_id}`);
 
         // API Call 1: Base metrics (no dimension)
-        const baseData = await fetchClarityData(config.api_token);
+        // Pass targetDate to fetch historical data if specified
+        const baseData = await fetchClarityData(config.api_token, undefined, targetDate || undefined);
 
         if (baseData) {
           // Parse the nested response structure
@@ -293,7 +315,7 @@ serve(async (req) => {
         }
 
         // API Call 2: Traffic sources by Source dimension
-        const sourcesData = await fetchClarityData(config.api_token, 'Source');
+        const sourcesData = await fetchClarityData(config.api_token, 'Source', targetDate || undefined);
         
         if (sourcesData) {
           const dimensionItems = parseDimensionData(sourcesData);
@@ -333,7 +355,7 @@ serve(async (req) => {
         }
 
         // API Call 3: Page performance by URL dimension
-        const pagesData = await fetchClarityData(config.api_token, 'URL');
+        const pagesData = await fetchClarityData(config.api_token, 'URL', targetDate || undefined);
         
         if (pagesData) {
           const dimensionItems = parseDimensionData(pagesData);
