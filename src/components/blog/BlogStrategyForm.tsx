@@ -10,6 +10,7 @@ import { Toggle } from "@/components/ui/toggle";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
 import { Loader2, AlertCircle } from "lucide-react";
+import { useSaveStatus } from "@/hooks/useSaveStatus";
 
 interface BlogStrategyFormProps {
   clientId: string;
@@ -21,6 +22,7 @@ interface BlogStrategyFormProps {
 
 export function BlogStrategyForm({ clientId, month, year }: BlogStrategyFormProps) {
   const queryClient = useQueryClient();
+  const { setSaveStatus } = useSaveStatus();
   const [postingFrequency, setPostingFrequency] = useState<'daily' | 'weekdays' | 'custom'>('daily');
   const [selectedDays, setSelectedDays] = useState<number[]>([1, 2, 3, 4, 5, 6, 7]);
   const [contentMix, setContentMix] = useState({
@@ -82,7 +84,7 @@ export function BlogStrategyForm({ clientId, month, year }: BlogStrategyFormProp
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["blog-strategy", clientId] });
-      toast.success("Blog strategy saved successfully");
+      setSaveStatus('saved');
     },
     onError: (error) => {
       console.error("Error saving strategy:", error);

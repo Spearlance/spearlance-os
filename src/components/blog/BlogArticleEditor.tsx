@@ -16,6 +16,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
+import { useSaveStatus } from "@/hooks/useSaveStatus";
 
 interface BlogArticleEditorProps {
   blogPostId: string;
@@ -41,6 +42,7 @@ export function BlogArticleEditor({
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [metadata, setMetadata] = useState<any>(null);
+  const { setSaveStatus } = useSaveStatus();
 
   useEffect(() => {
     loadPost();
@@ -106,7 +108,7 @@ export function BlogArticleEditor({
 
       if (error) throw error;
 
-      toast.success(publishNow ? "Article published!" : "Changes saved!");
+      setSaveStatus('saved');
       onSave?.();
       onOpenChange(false);
     } catch (error) {

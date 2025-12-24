@@ -31,6 +31,7 @@ import {
   Globe,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useSaveStatus } from "@/hooks/useSaveStatus";
 
 interface QuickLink {
   id: string;
@@ -73,6 +74,7 @@ export function QuickLinksCard({ links, onAddLink, onDeleteLink }: QuickLinksCar
   const [url, setUrl] = useState('');
   const [icon, setIcon] = useState('globe');
   const [saving, setSaving] = useState(false);
+  const { setSaveStatus } = useSaveStatus();
 
   const getIconComponent = (iconName?: string) => {
     const found = ICON_OPTIONS.find(i => i.value === iconName);
@@ -103,7 +105,7 @@ export function QuickLinksCard({ links, onAddLink, onDeleteLink }: QuickLinksCar
     });
 
     if (success) {
-      toast.success('Link added');
+      setSaveStatus('saved');
       setLabel('');
       setUrl('');
       setIcon('globe');
@@ -117,7 +119,7 @@ export function QuickLinksCard({ links, onAddLink, onDeleteLink }: QuickLinksCar
   const handleDelete = async (id: string) => {
     const success = await onDeleteLink(id);
     if (success) {
-      toast.success('Link removed');
+      setSaveStatus('saved');
     } else {
       toast.error('Failed to remove link');
     }

@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { CalProvider } from "@/components/CalProvider";
 import { FeatureFlagProvider } from "@/contexts/FeatureFlagContext";
+import { SaveStatusProvider } from "@/contexts/SaveStatusContext";
 import { MainLayout } from "@/components/MainLayout";
 import Dashboard from "./pages/Dashboard";
 import Auth from "./pages/Auth";
@@ -59,10 +60,11 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <FeatureFlagProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <CalProvider>
+        <SaveStatusProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <CalProvider>
             <Routes>
             <Route path="/auth" element={<Auth />} />
             <Route path="/reset-password" element={<ResetPassword />} />
@@ -120,8 +122,9 @@ const App = () => (
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<MainLayout><NotFound /></MainLayout>} />
             </Routes>
-          </CalProvider>
-        </BrowserRouter>
+            </CalProvider>
+          </BrowserRouter>
+        </SaveStatusProvider>
       </FeatureFlagProvider>
     </TooltipProvider>
   </QueryClientProvider>

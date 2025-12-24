@@ -6,6 +6,7 @@ import { Plus, Trash2, ChevronDown, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Progress } from "@/components/ui/progress";
+import { useSaveStatus } from "@/hooks/useSaveStatus";
 
 interface Subtask {
   id: string;
@@ -24,6 +25,7 @@ export const SubtaskList = ({ parentTaskId, subtasks, onUpdate }: SubtaskListPro
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   const [newSubtaskTitle, setNewSubtaskTitle] = useState("");
+  const { setSaveStatus } = useSaveStatus();
 
   const completedCount = subtasks.filter((st) => st.status === "done").length;
   const totalCount = subtasks.length;
@@ -64,7 +66,7 @@ export const SubtaskList = ({ parentTaskId, subtasks, onUpdate }: SubtaskListPro
     setNewSubtaskTitle("");
     setIsAdding(false);
     onUpdate();
-    toast.success("Subtask created");
+    setSaveStatus('saved');
   };
 
   const handleDeleteSubtask = async (subtaskId: string) => {
@@ -76,7 +78,7 @@ export const SubtaskList = ({ parentTaskId, subtasks, onUpdate }: SubtaskListPro
     }
 
     onUpdate();
-    toast.success("Subtask deleted");
+    setSaveStatus('saved');
   };
 
   return (

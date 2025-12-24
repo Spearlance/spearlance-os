@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useSaveStatus } from "@/hooks/useSaveStatus";
 
 interface AddGoalDialogProps {
   open: boolean;
@@ -29,6 +30,7 @@ export function AddGoalDialog({
   const [quarter, setQuarter] = useState<number>(currentQuarter);
   const [year, setYear] = useState<number>(currentYear);
   const [loading, setLoading] = useState(false);
+  const { setSaveStatus } = useSaveStatus();
 
   // Generate year options (current year + 2 future years)
   const yearOptions = useMemo(() => {
@@ -59,7 +61,7 @@ export function AddGoalDialog({
 
       if (error) throw error;
 
-      toast.success("Goal added successfully");
+      setSaveStatus('saved');
       onSuccess();
       onOpenChange(false);
       setGoalText("");
