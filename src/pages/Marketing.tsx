@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { useToast } from "@/hooks/use-toast";
+import { useSaveStatus } from "@/hooks/useSaveStatus";
 import { Plus, Trash2 } from "lucide-react";
 import {
   AlertDialog,
@@ -31,7 +31,7 @@ interface Service {
 
 export default function Marketing() {
   const { selectedClient } = useClient();
-  const { toast } = useToast();
+  const { setSaveStatus } = useSaveStatus();
   const [services, setServices] = useState<Service[]>([]);
   const [selectedServiceId, setSelectedServiceId] = useState<string>("");
   const [loading, setLoading] = useState(true);
@@ -58,11 +58,7 @@ export default function Marketing() {
 
     if (error) {
       console.error("Error loading services:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load services",
-        variant: "destructive",
-      });
+      setSaveStatus('error', "Failed to load services");
       setLoading(false);
       return;
     }
@@ -90,11 +86,7 @@ export default function Marketing() {
       .single();
 
     if (error) {
-      toast({
-        title: "Error",
-        description: "Failed to add service",
-        variant: "destructive",
-      });
+      setSaveStatus('error', "Failed to add service");
       return;
     }
 
@@ -102,10 +94,7 @@ export default function Marketing() {
     setSelectedServiceId(data.id);
     setNewServiceName("");
     setShowAddService(false);
-    toast({
-      title: "Success",
-      description: "Service added successfully",
-    });
+    setSaveStatus('saved');
   };
 
   const updateService = async (serviceId: string, updates: Partial<Service>) => {
@@ -115,19 +104,12 @@ export default function Marketing() {
       .eq("id", serviceId);
 
     if (error) {
-      toast({
-        title: "Error",
-        description: "Failed to update service",
-        variant: "destructive",
-      });
+      setSaveStatus('error', "Failed to update service");
       return;
     }
 
     setServices(services.map(s => s.id === serviceId ? { ...s, ...updates } : s));
-    toast({
-      title: "Saved",
-      description: "Service updated successfully",
-    });
+    setSaveStatus('saved');
   };
 
   const deleteService = async (serviceId: string) => {
@@ -137,11 +119,7 @@ export default function Marketing() {
       .eq("id", serviceId);
 
     if (error) {
-      toast({
-        title: "Error",
-        description: "Failed to delete service",
-        variant: "destructive",
-      });
+      setSaveStatus('error', "Failed to delete service");
       return;
     }
 
@@ -151,10 +129,7 @@ export default function Marketing() {
       setSelectedServiceId(updatedServices[0].id);
     }
     setDeleteServiceId(null);
-    toast({
-      title: "Success",
-      description: "Service deleted successfully",
-    });
+    setSaveStatus('saved');
   };
 
   const selectedService = services.find(s => s.id === selectedServiceId);
