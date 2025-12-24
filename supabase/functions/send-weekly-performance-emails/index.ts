@@ -337,7 +337,7 @@ Generate the JSON response with executive_summary, key_wins, concerns, focus_are
     for (const report of processedReports) {
       try {
         const appUrl = Deno.env.get('APP_URL') || 'https://os.spearlance.com';
-        const reportLink = `${appUrl}/reports?report=${report.reportId}`;
+        const reportLink = `${appUrl}/marketing/reports?report=${report.reportId}`;
 
         // Fetch template
         const { data: template } = await supabase
