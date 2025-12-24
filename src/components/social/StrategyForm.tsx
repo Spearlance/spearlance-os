@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, Info } from "lucide-react";
 import { toast } from "sonner";
+import { useSaveStatus } from "@/hooks/useSaveStatus";
 
 interface StrategyFormProps {
   clientId: string;
@@ -27,6 +28,7 @@ export function StrategyForm({
   onSaved 
 }: StrategyFormProps) {
   const queryClient = useQueryClient();
+  const { setSaveStatus } = useSaveStatus();
 
   // Fetch existing strategy
   const { data: strategy, isLoading } = useQuery({
@@ -144,7 +146,7 @@ export function StrategyForm({
         queryKey: ['active-strategy', clientId]
       });
       
-      toast.success('Strategy saved successfully');
+      setSaveStatus('saved');
       onSaved?.();
       setIsSaving(false);
     },

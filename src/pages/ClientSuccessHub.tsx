@@ -16,10 +16,12 @@ import { ReportsCard } from "@/components/success-hub/ReportsCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { isPast, isToday } from "date-fns";
+import { useSaveStatus } from "@/hooks/useSaveStatus";
 
 export default function ClientSuccessHub() {
   const navigate = useNavigate();
   const { selectedClient } = useClient();
+  const { setSaveStatus } = useSaveStatus();
   const [userRole, setUserRole] = useState<string | null>(null);
   const [roleLoading, setRoleLoading] = useState(true);
 
@@ -72,7 +74,7 @@ export default function ClientSuccessHub() {
   const handleHealthStatusChange = async (status: 'green' | 'yellow' | 'red') => {
     const success = await createOrUpdateLog({ health_status: status });
     if (success) {
-      toast.success('Health status updated');
+      setSaveStatus('saved');
     }
   };
 
@@ -82,7 +84,7 @@ export default function ClientSuccessHub() {
       kpis: kpis 
     });
     if (success) {
-      toast.success('Outcomes & KPIs updated');
+      setSaveStatus('saved');
     }
   };
 
@@ -92,7 +94,7 @@ export default function ClientSuccessHub() {
       manual_wins: [...currentWins, win] 
     });
     if (success) {
-      toast.success('Win added');
+      setSaveStatus('saved');
     }
   };
 
@@ -102,28 +104,28 @@ export default function ClientSuccessHub() {
       manual_wins: currentWins.filter(w => w.id !== winId) 
     });
     if (success) {
-      toast.success('Win removed');
+      setSaveStatus('saved');
     }
   };
 
   const handleUpdateRisks = async (risks: RiskBlocker[]) => {
     const success = await createOrUpdateLog({ risks_blockers: risks });
     if (success) {
-      toast.success('Risks updated');
+      setSaveStatus('saved');
     }
   };
 
   const handleUpdateNeeds = async (needs: NeedFromClient[]) => {
     const success = await createOrUpdateLog({ needs_from_client: needs });
     if (success) {
-      toast.success('Needs updated');
+      setSaveStatus('saved');
     }
   };
 
   const handleUpdateThreads = async (threads: OpenThread[]) => {
     const success = await createOrUpdateLog({ open_threads: threads });
     if (success) {
-      toast.success('Open threads updated');
+      setSaveStatus('saved');
     }
   };
 

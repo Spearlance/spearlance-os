@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
+import { useSaveStatus } from "@/hooks/useSaveStatus";
 
 interface BlogAIPreferencesFormProps {
   clientId: string;
@@ -14,6 +15,7 @@ interface BlogAIPreferencesFormProps {
 export function BlogAIPreferencesForm({ clientId }: BlogAIPreferencesFormProps) {
   const [topicsToAvoid, setTopicsToAvoid] = useState("");
   const [customInstructions, setCustomInstructions] = useState("");
+  const { setSaveStatus } = useSaveStatus();
 
   const queryClient = useQueryClient();
 
@@ -56,7 +58,7 @@ export function BlogAIPreferencesForm({ clientId }: BlogAIPreferencesFormProps) 
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["blog-ai-preferences", clientId] });
-      toast.success("AI preferences saved successfully");
+      setSaveStatus('saved');
     },
     onError: (error) => {
       console.error("Error saving preferences:", error);

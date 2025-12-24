@@ -16,6 +16,7 @@ import { Lock, Bug } from "lucide-react";
 import { ReportBugDialog } from "@/components/support/ReportBugDialog";
 import { Button } from "@/components/ui/button";
 import { UserProfileDropdown } from "@/components/UserProfileDropdown";
+import { SaveStatusIndicator } from "@/components/SaveStatusIndicator";
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -105,6 +106,7 @@ function MainLayoutContent({ children }: MainLayoutProps) {
               <h1 className="text-lg font-semibold">{getGreeting()}</h1>
             </div>
             <div className="flex items-center gap-2">
+              <SaveStatusIndicator />
               <Button 
                 variant="ghost" 
                 size="icon"
