@@ -12,7 +12,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Toggle } from "@/components/ui/toggle";
 import { Slider } from "@/components/ui/slider";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { useToast } from "@/hooks/use-toast";
+import { useSaveStatus } from "@/hooks/useSaveStatus";
 import { Plus, Info } from "lucide-react";
 
 interface Service {
@@ -32,7 +32,7 @@ interface StageMarketingProps {
 
 export function StageMarketing({ submissionId, onContinue, onBack, onSaveExit }: StageMarketingProps) {
   const { selectedClient } = useClient();
-  const { toast } = useToast();
+  const { setSaveStatus } = useSaveStatus();
   const [services, setServices] = useState<Service[]>([]);
   const [selectedServiceId, setSelectedServiceId] = useState<string>("");
   const [loading, setLoading] = useState(true);
@@ -63,11 +63,7 @@ export function StageMarketing({ submissionId, onContinue, onBack, onSaveExit }:
 
     if (error) {
       console.error("Error loading services:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load services",
-        variant: "destructive",
-      });
+      setSaveStatus('error', "Failed to load services");
       return;
     }
 
@@ -85,30 +81,19 @@ export function StageMarketing({ submissionId, onContinue, onBack, onSaveExit }:
       .eq("id", serviceId);
 
     if (error) {
-      toast({
-        title: "Error",
-        description: "Failed to update service",
-        variant: "destructive",
-      });
+      setSaveStatus('error', "Failed to update service");
       return;
     }
 
     setServices(services.map(s => s.id === serviceId ? { ...s, ...updates } : s));
-    toast({
-      title: "Saved",
-      description: "Service updated successfully",
-    });
+    setSaveStatus('saved');
   };
 
   const handleContinue = async () => {
     // Validate topic distribution
     const totalPercentage = Object.values(topicDistribution).reduce((sum, val) => sum + val, 0);
     if (totalPercentage !== 100) {
-      toast({
-        title: "Error",
-        description: "Content mix must total 100%",
-        variant: "destructive",
-      });
+      setSaveStatus('error', "Content mix must total 100%");
       return;
     }
 
@@ -120,11 +105,7 @@ export function StageMarketing({ submissionId, onContinue, onBack, onSaveExit }:
       .single();
 
     if (!submissionData) {
-      toast({
-        title: "Error",
-        description: "Failed to load submission data",
-        variant: "destructive",
-      });
+      setSaveStatus('error', "Failed to load submission data");
       return;
     }
 
@@ -152,11 +133,7 @@ export function StageMarketing({ submissionId, onContinue, onBack, onSaveExit }:
       .eq("id", submissionId);
 
     if (error) {
-      toast({
-        title: "Error",
-        description: "Failed to save progress",
-        variant: "destructive",
-      });
+      setSaveStatus('error', "Failed to save progress");
       return;
     }
 

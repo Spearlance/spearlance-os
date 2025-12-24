@@ -1,5 +1,4 @@
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
+// Toast components removed - using SaveStatusIndicator in header instead
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
@@ -61,11 +60,9 @@ const App = () => (
     <TooltipProvider>
       <FeatureFlagProvider>
         <SaveStatusProvider>
-          <Toaster />
-          <Sonner />
           <BrowserRouter>
             <CalProvider>
-            <Routes>
+              <Routes>
             <Route path="/auth" element={<Auth />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/set-password" element={<SetPassword />} />
