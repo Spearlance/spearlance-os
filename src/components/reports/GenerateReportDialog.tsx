@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { 
   Sparkles, 
   BarChart3, 
@@ -21,7 +22,8 @@ import {
   Search,
   ChevronRight,
   ChevronLeft,
-  Loader2
+  Loader2,
+  AlertTriangle
 } from "lucide-react";
 import { format, subDays, subMonths, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
 
@@ -89,6 +91,11 @@ export const GenerateReportDialog = ({
   const [selectedChannels, setSelectedChannels] = useState<string[]>([]);
   const [channels, setChannels] = useState<Channel[]>([]);
   const [reportName, setReportName] = useState<string>('');
+  const [dataAvailability, setDataAvailability] = useState<{
+    hasData: boolean;
+    availableRange: { start: string; end: string } | null;
+    checking: boolean;
+  }>({ hasData: true, availableRange: null, checking: false });
 
   useEffect(() => {
     if (open && clientId) {
@@ -99,8 +106,16 @@ export const GenerateReportDialog = ({
       setDatePreset('last_month');
       setSelectedChannels([]);
       setReportName('');
+      setDataAvailability({ hasData: true, availableRange: null, checking: false });
     }
   }, [open, clientId]);
+
+  // Check data availability when step 2 is completed or date range changes
+  useEffect(() => {
+    if (step === 2 && clientId && (reportType === 'website_analytics' || reportType === 'performance_summary')) {
+      checkDataAvailability();
+    }
+  }, [step, datePreset, customDateStart, customDateEnd, reportType, clientId]);
 
   const loadChannels = async () => {
     const { data } = await supabase
@@ -116,6 +131,56 @@ export const GenerateReportDialog = ({
 
     if (data) {
       setChannels(data.map(c => ({ id: c.id, name: c.name })));
+    }
+  };
+
+  const checkDataAvailability = async () => {
+    const { start, end } = getDateRange();
+    if (!start || !end) return;
+
+    setDataAvailability(prev => ({ ...prev, checking: true }));
+
+    try {
+      // Check if there's any Clarity data for this client in the selected date range
+      const { data: clarityData, error: clarityError } = await supabase
+        .from('clarity_daily_metrics')
+        .select('metric_date, total_sessions')
+        .eq('client_id', clientId)
+        .gte('metric_date', start)
+        .lte('metric_date', end)
+        .gt('total_sessions', 0)
+        .order('metric_date', { ascending: true });
+
+      // Also get the overall available range for this client
+      const { data: rangeData } = await supabase
+        .from('clarity_daily_metrics')
+        .select('metric_date')
+        .eq('client_id', clientId)
+        .gt('total_sessions', 0)
+        .order('metric_date', { ascending: true })
+        .limit(1);
+
+      const { data: latestData } = await supabase
+        .from('clarity_daily_metrics')
+        .select('metric_date')
+        .eq('client_id', clientId)
+        .gt('total_sessions', 0)
+        .order('metric_date', { ascending: false })
+        .limit(1);
+
+      const hasData = clarityData && clarityData.length > 0;
+      const availableRange = rangeData?.[0] && latestData?.[0] 
+        ? { start: rangeData[0].metric_date, end: latestData[0].metric_date }
+        : null;
+
+      setDataAvailability({
+        hasData,
+        availableRange,
+        checking: false,
+      });
+    } catch (error) {
+      console.error('Error checking data availability:', error);
+      setDataAvailability(prev => ({ ...prev, checking: false }));
     }
   };
 
@@ -320,6 +385,33 @@ export const GenerateReportDialog = ({
                     onChange={(e) => setCustomDateEnd(e.target.value)}
                   />
                 </div>
+              </div>
+            )}
+
+            {/* Data availability warning */}
+            {(reportType === 'website_analytics' || reportType === 'performance_summary') && !dataAvailability.checking && !dataAvailability.hasData && (
+              <Alert variant="destructive" className="mt-4">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription>
+                  <strong>No website analytics data</strong> found for the selected date range ({getDateRange().start} to {getDateRange().end}).
+                  {dataAvailability.availableRange ? (
+                    <span className="block mt-1">
+                      Data is available from <strong>{dataAvailability.availableRange.start}</strong> to <strong>{dataAvailability.availableRange.end}</strong>.
+                      Consider adjusting your date range.
+                    </span>
+                  ) : (
+                    <span className="block mt-1">
+                      No Clarity analytics data has been synced yet for this client.
+                    </span>
+                  )}
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {dataAvailability.checking && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground mt-4">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Checking data availability...
               </div>
             )}
           </div>
