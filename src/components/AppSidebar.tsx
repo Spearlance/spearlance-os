@@ -34,6 +34,7 @@ import {
   Home,
   Calendar,
   CheckSquare,
+  ClipboardList,
   FolderOpen,
   Users,
   User,
@@ -261,6 +262,18 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+
+              {/* My Tasks - only for admin and fmm users */}
+              {!isLoading && (userRole === 'admin' || userRole === 'fmm') && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild>
+                    <NavLink to="/my-tasks" className={getNavClass}>
+                      <ClipboardList className="h-4 w-4" />
+                      {!collapsed && <span>My Tasks</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
 
               <Collapsible open={brandContentOpen} onOpenChange={setBrandContentOpen}>
                 <SidebarMenuItem>
