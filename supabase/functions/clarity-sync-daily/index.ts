@@ -6,7 +6,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-interface ClarityMetrics {
+interface ParsedMetrics {
   totalSessionCount: number;
   distinctUserCount: number;
   pagesPerSession: number;
@@ -18,12 +18,132 @@ interface ClarityMetrics {
   javascriptErrorCount: number;
 }
 
-interface ClarityDimensionData {
+interface DimensionItem {
   key: string;
   totalSessionCount: number;
   distinctUserCount: number;
   scrollDepth?: number;
   activeTime?: number;
+}
+
+// Parse the nested Clarity API response into flat metrics
+function parseMetricsFromResponse(response: any): ParsedMetrics {
+  const metrics: ParsedMetrics = {
+    totalSessionCount: 0,
+    distinctUserCount: 0,
+    pagesPerSession: 0,
+    scrollDepth: 0,
+    activeTime: 0,
+    rageClickCount: 0,
+    deadClickCount: 0,
+    quickbackCount: 0,
+    javascriptErrorCount: 0,
+  };
+
+  // Handle case where response is not an array
+  if (!Array.isArray(response)) {
+    console.log('Response is not an array, checking for flat structure');
+    // Fallback to flat structure if API returns that format
+    if (response?.totalSessionCount !== undefined) {
+      return {
+        totalSessionCount: parseInt(response.totalSessionCount) || 0,
+        distinctUserCount: parseInt(response.distinctUserCount) || 0,
+        pagesPerSession: parseFloat(response.pagesPerSession) || 0,
+        scrollDepth: parseFloat(response.scrollDepth) || 0,
+        activeTime: parseInt(response.activeTime) || 0,
+        rageClickCount: parseInt(response.rageClickCount) || 0,
+        deadClickCount: parseInt(response.deadClickCount) || 0,
+        quickbackCount: parseInt(response.quickbackCount) || 0,
+        javascriptErrorCount: parseInt(response.javascriptErrorCount) || 0,
+      };
+    }
+    return metrics;
+  }
+
+  console.log(`Parsing ${response.length} metric items from response`);
+
+  // Parse the nested array structure from Clarity API
+  for (const item of response) {
+    const info = item.information?.[0];
+    if (!info) {
+      console.log(`No information found for metricName: ${item.metricName}`);
+      continue;
+    }
+
+    console.log(`Processing metric: ${item.metricName}`, JSON.stringify(info).substring(0, 200));
+
+    switch (item.metricName) {
+      case 'Traffic':
+        metrics.totalSessionCount = parseInt(info.totalSessionCount) || 0;
+        metrics.distinctUserCount = parseInt(info.distinctUserCount) || 0;
+        metrics.pagesPerSession = parseFloat(info.pagesPerSessionPercentage) || parseFloat(info.pagesPerSession) || 0;
+        break;
+      case 'ScrollDepth':
+        metrics.scrollDepth = parseFloat(info.averageScrollDepth) || parseFloat(info.scrollDepth) || 0;
+        break;
+      case 'EngagementTime':
+      case 'ActiveTime':
+        metrics.activeTime = parseInt(info.activeTime) || parseInt(info.averageActiveTime) || 0;
+        break;
+      case 'RageClickCount':
+      case 'RageClicks':
+        metrics.rageClickCount = parseInt(info.subTotal) || parseInt(info.count) || parseInt(info.rageClickCount) || 0;
+        break;
+      case 'DeadClickCount':
+      case 'DeadClicks':
+        metrics.deadClickCount = parseInt(info.subTotal) || parseInt(info.count) || parseInt(info.deadClickCount) || 0;
+        break;
+      case 'QuickbackClick':
+      case 'Quickbacks':
+        metrics.quickbackCount = parseInt(info.subTotal) || parseInt(info.count) || parseInt(info.quickbackCount) || 0;
+        break;
+      case 'ScriptErrorCount':
+      case 'JavascriptErrors':
+        metrics.javascriptErrorCount = parseInt(info.subTotal) || parseInt(info.count) || parseInt(info.javascriptErrorCount) || 0;
+        break;
+    }
+  }
+
+  console.log('Parsed metrics:', metrics);
+  return metrics;
+}
+
+// Parse dimension data from the nested response
+function parseDimensionData(response: any): DimensionItem[] {
+  const items: DimensionItem[] = [];
+
+  if (!Array.isArray(response)) {
+    // Check if dimensionData exists in a flat structure
+    if (response?.dimensionData && Array.isArray(response.dimensionData)) {
+      return response.dimensionData.map((item: any) => ({
+        key: item.key || '',
+        totalSessionCount: parseInt(item.totalSessionCount) || 0,
+        distinctUserCount: parseInt(item.distinctUserCount) || 0,
+        scrollDepth: parseFloat(item.scrollDepth) || undefined,
+        activeTime: parseInt(item.activeTime) || undefined,
+      }));
+    }
+    return items;
+  }
+
+  // Look for Traffic metric which contains dimension data
+  for (const item of response) {
+    if (item.metricName === 'Traffic' && item.information && Array.isArray(item.information)) {
+      for (const info of item.information) {
+        if (info.key || info.dimensionKey) {
+          items.push({
+            key: info.key || info.dimensionKey || '',
+            totalSessionCount: parseInt(info.totalSessionCount) || 0,
+            distinctUserCount: parseInt(info.distinctUserCount) || 0,
+            scrollDepth: parseFloat(info.scrollDepth) || undefined,
+            activeTime: parseInt(info.activeTime) || undefined,
+          });
+        }
+      }
+    }
+  }
+
+  return items;
 }
 
 async function fetchClarityData(apiToken: string, dimension?: string): Promise<any> {
@@ -52,7 +172,7 @@ async function fetchClarityData(apiToken: string, dimension?: string): Promise<a
     }
 
     const data = await response.json();
-    console.log(`Clarity data received${dimension ? ` for ${dimension}` : ''}:`, JSON.stringify(data).substring(0, 500));
+    console.log(`Clarity data received${dimension ? ` for ${dimension}` : ''}:`, JSON.stringify(data).substring(0, 1000));
     
     return data;
   } catch (error) {
@@ -62,7 +182,6 @@ async function fetchClarityData(apiToken: string, dimension?: string): Promise<a
 }
 
 function parseSourceFromDimension(dimensionKey: string): { source: string; medium: string | null } {
-  // Dimension key format could be "google", "google / organic", "(direct)", etc.
   if (!dimensionKey || dimensionKey === '(not set)') {
     return { source: 'direct', medium: null };
   }
@@ -87,7 +206,6 @@ serve(async (req) => {
   try {
     console.log('Starting Clarity daily sync...');
 
-    // Check if a specific client_id was passed (for manual sync)
     let targetClientId: string | null = null;
     try {
       const body = await req.json();
@@ -96,7 +214,6 @@ serve(async (req) => {
       // No body or invalid JSON, continue with all clients
     }
 
-    // Get Clarity configs (all active or specific one for manual sync)
     let query = supabase
       .from('clarity_configs')
       .select('*');
@@ -130,12 +247,10 @@ serve(async (req) => {
       errors: [] as string[],
     };
 
-    // Calculate yesterday's date (the date we're syncing data for)
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
     const metricDate = yesterday.toISOString().split('T')[0];
 
-    // Process each config
     for (const config of configs) {
       try {
         console.log(`Processing client: ${config.client_id}`);
@@ -144,21 +259,26 @@ serve(async (req) => {
         const baseData = await fetchClarityData(config.api_token);
 
         if (baseData) {
+          // Parse the nested response structure
+          const parsedMetrics = parseMetricsFromResponse(baseData);
+          
+          console.log(`Upserting metrics for ${config.client_id}: sessions=${parsedMetrics.totalSessionCount}, users=${parsedMetrics.distinctUserCount}`);
+
           const { error: upsertError } = await supabase
             .from('clarity_daily_metrics')
             .upsert(
               {
                 client_id: config.client_id,
                 metric_date: metricDate,
-                total_sessions: baseData.totalSessionCount || 0,
-                distinct_users: baseData.distinctUserCount || 0,
-                pages_per_session: baseData.pagesPerSession || 0,
-                scroll_depth: baseData.scrollDepth || 0,
-                engagement_time_seconds: baseData.activeTime || 0,
-                rage_click_count: baseData.rageClickCount || 0,
-                dead_click_count: baseData.deadClickCount || 0,
-                quick_back_count: baseData.quickbackCount || 0,
-                javascript_error_count: baseData.javascriptErrorCount || 0,
+                total_sessions: parsedMetrics.totalSessionCount,
+                distinct_users: parsedMetrics.distinctUserCount,
+                pages_per_session: parsedMetrics.pagesPerSession,
+                scroll_depth: parsedMetrics.scrollDepth,
+                engagement_time_seconds: parsedMetrics.activeTime,
+                rage_click_count: parsedMetrics.rageClickCount,
+                dead_click_count: parsedMetrics.deadClickCount,
+                quick_back_count: parsedMetrics.quickbackCount,
+                javascript_error_count: parsedMetrics.javascriptErrorCount,
                 raw_response: baseData,
                 synced_at: new Date().toISOString(),
               },
@@ -168,29 +288,30 @@ serve(async (req) => {
           if (upsertError) {
             console.error(`Error upserting base metrics:`, upsertError);
           } else {
-            console.log(`Synced base metrics: ${baseData.totalSessionCount} sessions, ${baseData.distinctUserCount} users`);
+            console.log(`Synced base metrics: ${parsedMetrics.totalSessionCount} sessions, ${parsedMetrics.distinctUserCount} users`);
           }
         }
 
         // API Call 2: Traffic sources by Source dimension
         const sourcesData = await fetchClarityData(config.api_token, 'Source');
         
-        if (sourcesData?.dimensionData && Array.isArray(sourcesData.dimensionData)) {
-          const sourcesToUpsert = sourcesData.dimensionData.map((item: ClarityDimensionData) => {
-            const { source, medium } = parseSourceFromDimension(item.key);
-            return {
-              client_id: config.client_id,
-              metric_date: metricDate,
-              source,
-              medium,
-              sessions: item.totalSessionCount || 0,
-              users: item.distinctUserCount || 0,
-              synced_at: new Date().toISOString(),
-            };
-          });
+        if (sourcesData) {
+          const dimensionItems = parseDimensionData(sourcesData);
+          
+          if (dimensionItems.length > 0) {
+            const sourcesToUpsert = dimensionItems.map((item) => {
+              const { source, medium } = parseSourceFromDimension(item.key);
+              return {
+                client_id: config.client_id,
+                metric_date: metricDate,
+                source,
+                medium,
+                sessions: item.totalSessionCount,
+                users: item.distinctUserCount,
+                synced_at: new Date().toISOString(),
+              };
+            });
 
-          if (sourcesToUpsert.length > 0) {
-            // Delete existing sources for this date first to avoid conflicts
             await supabase
               .from('clarity_daily_sources')
               .delete()
@@ -206,27 +327,30 @@ serve(async (req) => {
             } else {
               console.log(`Synced ${sourcesToUpsert.length} traffic sources`);
             }
+          } else {
+            console.log('No dimension data found for sources');
           }
         }
 
         // API Call 3: Page performance by URL dimension
         const pagesData = await fetchClarityData(config.api_token, 'URL');
         
-        if (pagesData?.dimensionData && Array.isArray(pagesData.dimensionData)) {
-          const pagesToUpsert = pagesData.dimensionData.map((item: ClarityDimensionData) => ({
-            client_id: config.client_id,
-            metric_date: metricDate,
-            page_url: item.key || '/',
-            page_title: null, // Clarity doesn't provide title in this endpoint
-            sessions: item.totalSessionCount || 0,
-            users: item.distinctUserCount || 0,
-            scroll_depth: item.scrollDepth || null,
-            engagement_time_seconds: item.activeTime || 0,
-            synced_at: new Date().toISOString(),
-          }));
+        if (pagesData) {
+          const dimensionItems = parseDimensionData(pagesData);
+          
+          if (dimensionItems.length > 0) {
+            const pagesToUpsert = dimensionItems.map((item) => ({
+              client_id: config.client_id,
+              metric_date: metricDate,
+              page_url: item.key || '/',
+              page_title: null,
+              sessions: item.totalSessionCount,
+              users: item.distinctUserCount,
+              scroll_depth: item.scrollDepth || null,
+              engagement_time_seconds: item.activeTime || 0,
+              synced_at: new Date().toISOString(),
+            }));
 
-          if (pagesToUpsert.length > 0) {
-            // Delete existing pages for this date first to avoid conflicts
             await supabase
               .from('clarity_daily_pages')
               .delete()
@@ -242,6 +366,8 @@ serve(async (req) => {
             } else {
               console.log(`Synced ${pagesToUpsert.length} pages`);
             }
+          } else {
+            console.log('No dimension data found for pages');
           }
         }
 
