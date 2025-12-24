@@ -242,10 +242,10 @@ export default function MyTasks() {
               >
                 <div className="flex items-center justify-between">
                   <CollapsibleTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      className="flex items-center gap-2 px-2 -ml-2 hover:bg-transparent"
-                    >
+                        <Button
+                          variant="ghost"
+                          className="flex items-center gap-2 px-2 -ml-2 hover:bg-transparent hover:text-foreground"
+                        >
                       {isExpanded ? (
                         <ChevronDown className="h-5 w-5" />
                       ) : (
