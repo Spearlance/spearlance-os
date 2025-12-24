@@ -17,6 +17,7 @@ import { DeleteTaskDialog } from "./DeleteTaskDialog";
 import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AssigneeSelector } from "./AssigneeSelector";
+import { WatcherSelector } from "./WatcherSelector";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Palette } from "lucide-react";
 import { SubtaskList } from "./SubtaskList";
@@ -63,6 +64,7 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
   const [newComment, setNewComment] = useState("");
   const [users, setUsers] = useState<any[]>([]);
   const [selectedAssignees, setSelectedAssignees] = useState<string[]>([]);
+  const [selectedWatchers, setSelectedWatchers] = useState<string[]>([]);
   const [relatedAssets, setRelatedAssets] = useState<any[]>([]);
   const [relatedMeetings, setRelatedMeetings] = useState<any[]>([]);
   const [relatedChannels, setRelatedChannels] = useState<any[]>([]);
@@ -125,6 +127,7 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
     loadUsers();
     loadRelatedItems();
     loadCurrentAssignees();
+    loadCurrentWatchers();
     loadSubtasks();
     loadTaskColumns();
     
@@ -139,6 +142,17 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
       window.removeEventListener('taskColumnsUpdated', handleColumnUpdate);
     };
   }, [task.id, task.client_id]);
+
+  const loadCurrentWatchers = async () => {
+    const { data } = await supabase
+      .from("task_watchers")
+      .select("user_id")
+      .eq("task_id", task.id);
+    
+    if (data) {
+      setSelectedWatchers(data.map(w => w.user_id));
+    }
+  };
 
   const loadCurrentAssignees = async () => {
     const { data } = await supabase
@@ -485,6 +499,37 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
       }
     }
 
+    // Sync watchers - delete existing first
+    const { error: deleteWatchersError } = await supabase
+      .from("task_watchers")
+      .delete()
+      .eq("task_id", task.id);
+
+    if (deleteWatchersError) {
+      toast({ title: "Error updating watchers", variant: "destructive" });
+      return;
+    }
+
+    // Insert new watchers
+    if (selectedWatchers.length > 0) {
+      const { data: { user } } = await supabase.auth.getUser();
+      const watcherInserts = selectedWatchers.map(userId => ({
+        task_id: task.id,
+        user_id: userId,
+        notify_on_complete: true,
+        created_by: user?.id,
+      }));
+
+      const { error: insertWatchersError } = await supabase
+        .from("task_watchers")
+        .insert(watcherInserts);
+
+      if (insertWatchersError) {
+        toast({ title: "Error updating watchers", variant: "destructive" });
+        return;
+      }
+    }
+
     toast({ title: "Task updated successfully" });
     onUpdate();
     onOpenChange(false);
@@ -782,6 +827,19 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
                     </Popover>
                   </div>
                 </div>
+
+                <div className="space-y-2">
+                  <Label>Notify on completion</Label>
+                  <WatcherSelector
+                    users={users}
+                    selectedUserIds={selectedWatchers}
+                    onSelectionChange={setSelectedWatchers}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    These users will be notified when this task is completed
+                  </p>
+                </div>
+
 
                 {/* Task Duration Display */}
                 {(task.started_at || task.completed_at) && (

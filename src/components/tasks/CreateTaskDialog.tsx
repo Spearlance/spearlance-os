@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useClient } from "@/contexts/ClientContext";
 import { AssigneeSelector } from "./AssigneeSelector";
+import { WatcherSelector } from "./WatcherSelector";
 import { Repeat } from "lucide-react";
 
 interface CreateTaskDialogProps {
@@ -41,6 +42,7 @@ export function CreateTaskDialog({ open, onOpenChange, onSuccess }: CreateTaskDi
   const [users, setUsers] = useState<User[]>([]);
   const [taskColumns, setTaskColumns] = useState<TaskColumn[]>([]);
   const [selectedAssignees, setSelectedAssignees] = useState<string[]>([]);
+  const [selectedWatchers, setSelectedWatchers] = useState<string[]>([]);
   const [selectedColor, setSelectedColor] = useState("#6B7280");
   const [isRecurring, setIsRecurring] = useState(false);
   const [recurrenceFrequency, setRecurrenceFrequency] = useState<'daily' | 'weekly' | 'monthly' | 'quarterly' | 'yearly'>('weekly');
@@ -186,6 +188,22 @@ export function CreateTaskDialog({ open, onOpenChange, onSuccess }: CreateTaskDi
         if (assigneeError) throw assigneeError;
       }
 
+      // Add watchers
+      if (selectedWatchers.length > 0 && newTask) {
+        const watcherInserts = selectedWatchers.map(userId => ({
+          task_id: newTask.id,
+          user_id: userId,
+          notify_on_complete: true,
+          created_by: user.id,
+        }));
+        
+        const { error: watcherError } = await supabase
+          .from("task_watchers")
+          .insert(watcherInserts);
+        
+        if (watcherError) throw watcherError;
+      }
+
       toast({
         title: "Success",
         description: "Task created successfully",
@@ -194,6 +212,7 @@ export function CreateTaskDialog({ open, onOpenChange, onSuccess }: CreateTaskDi
       onOpenChange(false);
       setFormData({ title: "", description: "", column_id: "", status: "to_do", priority: "normal", due_date: "" });
       setSelectedAssignees([]);
+      setSelectedWatchers([]);
       setSelectedColor("#6B7280");
       setIsRecurring(false);
       setSelectedDaysOfWeek([]);
@@ -312,6 +331,18 @@ export function CreateTaskDialog({ open, onOpenChange, onSuccess }: CreateTaskDi
               onSelectionChange={setSelectedAssignees}
               disabled={loading}
             />
+          </div>
+          <div>
+            <Label htmlFor="watchers">Notify on completion</Label>
+            <WatcherSelector
+              users={users}
+              selectedUserIds={selectedWatchers}
+              onSelectionChange={setSelectedWatchers}
+              disabled={loading}
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              These users will be notified when this task is completed
+            </p>
           </div>
           <div>
             <Label htmlFor="color">Color</Label>

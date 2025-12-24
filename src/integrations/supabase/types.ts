@@ -5066,6 +5066,44 @@ export type Database = {
           },
         ]
       }
+      task_watchers: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          id: string
+          notify_on_complete: boolean | null
+          notify_on_status_change: boolean | null
+          task_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          notify_on_complete?: boolean | null
+          notify_on_status_change?: boolean | null
+          task_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          notify_on_complete?: boolean | null
+          notify_on_status_change?: boolean | null
+          task_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_watchers_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tasks: {
         Row: {
           activity_log: string | null
