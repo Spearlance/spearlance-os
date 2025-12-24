@@ -245,3 +245,9 @@ verify_jwt = true
 
 [functions.send-weekly-performance-emails]
 verify_jwt = false
+
+[functions.send-daily-task-summary]
+verify_jwt = false
+
+[functions.send-weekly-task-summary]
+verify_jwt = false
