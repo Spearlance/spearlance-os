@@ -14,6 +14,7 @@ import MeetingDetail from "./pages/MeetingDetail";
 import CommunicationLogs from "./pages/CommunicationLogs";
 import CommunicationDetail from "./pages/CommunicationDetail";
 import Tasks from "./pages/Tasks";
+import MyTasks from "./pages/MyTasks";
 import Assets from "./pages/Assets";
 import Marketing from "./pages/Marketing";
 import MarketingProfile from "./pages/MarketingProfile";
@@ -79,6 +80,7 @@ const App = () => (
           <Route path="/communications/logs" element={<MainLayout><CommunicationLogs /></MainLayout>} />
           <Route path="/communications/logs/:id" element={<MainLayout><CommunicationDetail /></MainLayout>} />
             <Route path="/tasks" element={<MainLayout><Tasks /></MainLayout>} />
+            <Route path="/my-tasks" element={<MainLayout><MyTasks /></MainLayout>} />
             <Route path="/brand/guide" element={<MainLayout><BrandGuide /></MainLayout>} />
             <Route path="/brand/moodboard" element={<MainLayout><MoodBoard /></MainLayout>} />
             <Route path="/brand/assets" element={<MainLayout><Assets /></MainLayout>} />
