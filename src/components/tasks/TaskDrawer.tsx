@@ -12,7 +12,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { FileText, Image, Link as LinkIcon, FileVideo, FileAudio, ExternalLink, X, Plus, Trash2 } from "lucide-react";
+import { FileText, Image, Link as LinkIcon, FileVideo, FileAudio, ExternalLink, X, Plus, Trash2, Clock } from "lucide-react";
 import { DeleteTaskDialog } from "./DeleteTaskDialog";
 import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -782,6 +782,50 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
                     </Popover>
                   </div>
                 </div>
+
+                {/* Task Duration Display */}
+                {(task.started_at || task.completed_at) && (
+                  <div className="border rounded-lg p-3 bg-muted/50">
+                    <div className="flex items-center gap-2 text-sm">
+                      <Clock className="h-4 w-4 text-muted-foreground" />
+                      {task.status === 'done' && task.started_at && task.completed_at ? (
+                        <span className="text-muted-foreground">
+                          Completed in{' '}
+                          <span className="font-medium text-foreground">
+                            {(() => {
+                              const start = new Date(task.started_at);
+                              const end = new Date(task.completed_at);
+                              const diffMs = end.getTime() - start.getTime();
+                              const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+                              const diffDays = Math.floor(diffHours / 24);
+                              const remainingHours = diffHours % 24;
+                              if (diffDays > 0) return `${diffDays}d ${remainingHours}h`;
+                              if (diffHours > 0) return `${diffHours}h`;
+                              return 'Less than 1h';
+                            })()}
+                          </span>
+                        </span>
+                      ) : task.status === 'in_progress' && task.started_at ? (
+                        <span className="text-muted-foreground">
+                          In progress for{' '}
+                          <span className="font-medium text-foreground">
+                            {(() => {
+                              const start = new Date(task.started_at);
+                              const now = new Date();
+                              const diffMs = now.getTime() - start.getTime();
+                              const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+                              const diffDays = Math.floor(diffHours / 24);
+                              const remainingHours = diffHours % 24;
+                              if (diffDays > 0) return `${diffDays}d ${remainingHours}h`;
+                              if (diffHours > 0) return `${diffHours}h`;
+                              return 'Less than 1h';
+                            })()}
+                          </span>
+                        </span>
+                      ) : null}
+                    </div>
+                  </div>
+                )}
 
                 {/* Subtasks Section */}
                 <div className="border-t pt-4 mt-4">
