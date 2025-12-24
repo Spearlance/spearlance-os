@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useClient } from "@/contexts/ClientContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -79,6 +79,7 @@ const REPORT_TYPE_LABELS: Record<string, string> = {
 const Reports = () => {
   const { selectedClient, loading: clientLoading } = useClient();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   const [reports, setReports] = useState<Report[]>([]);
   const [aiReports, setAIReports] = useState<AIReport[]>([]);
@@ -116,6 +117,20 @@ const Reports = () => {
   useEffect(() => {
     loadReports();
   }, [filters]);
+
+  // Handle query parameter to auto-open report from email links
+  useEffect(() => {
+    const reportId = searchParams.get('report');
+    if (reportId && aiReports.length > 0) {
+      const report = aiReports.find(r => r.id === reportId);
+      if (report) {
+        setSelectedAIReport(report);
+        setAIViewerOpen(true);
+        // Clear the query param for cleaner URL
+        setSearchParams({}, { replace: true });
+      }
+    }
+  }, [aiReports, searchParams, setSearchParams]);
 
   const loadUserRole = async () => {
     const { data: { user } } = await supabase.auth.getUser();
