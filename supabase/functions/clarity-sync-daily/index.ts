@@ -109,40 +109,76 @@ function parseMetricsFromResponse(response: any): ParsedMetrics {
 }
 
 // Parse dimension data from the nested response
-function parseDimensionData(response: any): DimensionItem[] {
+// dimensionName should be the field name Clarity returns (e.g., 'Source', 'Url')
+function parseDimensionData(response: any, dimensionName: string): DimensionItem[] {
   const items: DimensionItem[] = [];
 
   if (!Array.isArray(response)) {
     // Check if dimensionData exists in a flat structure
     if (response?.dimensionData && Array.isArray(response.dimensionData)) {
       return response.dimensionData.map((item: any) => ({
-        key: item.key || '',
+        key: item.key || item[dimensionName] || '',
         totalSessionCount: parseInt(item.totalSessionCount) || 0,
         distinctUserCount: parseInt(item.distinctUserCount) || 0,
-        scrollDepth: parseFloat(item.scrollDepth) || undefined,
-        activeTime: parseInt(item.activeTime) || undefined,
+        scrollDepth: parseFloat(item.scrollDepth) || parseFloat(item.averageScrollDepth) || undefined,
+        activeTime: parseInt(item.activeTime) || parseInt(item.averageActiveTime) || undefined,
       }));
     }
     return items;
   }
 
+  console.log(`Parsing dimension data for field: ${dimensionName}`);
+
   // Look for Traffic metric which contains dimension data
   for (const item of response) {
     if (item.metricName === 'Traffic' && item.information && Array.isArray(item.information)) {
+      console.log(`Found Traffic metric with ${item.information.length} items`);
       for (const info of item.information) {
-        if (info.key || info.dimensionKey) {
+        // Clarity returns the dimension value in a field named after the dimension
+        // e.g., for Source dimension, field is "Source"; for URL, field is "Url"
+        const dimensionValue = info[dimensionName] || info.key || info.dimensionKey;
+        
+        if (dimensionValue !== undefined) {
           items.push({
-            key: info.key || info.dimensionKey || '',
-            totalSessionCount: parseInt(info.totalSessionCount) || 0,
+            key: dimensionValue || '',
+            totalSessionCount: parseInt(info.totalSessionCount) || parseInt(info.sessionsCount) || 0,
             distinctUserCount: parseInt(info.distinctUserCount) || 0,
-            scrollDepth: parseFloat(info.scrollDepth) || undefined,
-            activeTime: parseInt(info.activeTime) || undefined,
+            scrollDepth: parseFloat(info.scrollDepth) || parseFloat(info.averageScrollDepth) || undefined,
+            activeTime: parseInt(info.activeTime) || parseInt(info.averageActiveTime) || undefined,
           });
+        }
+      }
+    }
+    
+    // Also check ScrollDepth metric for scroll depth data per dimension
+    if (item.metricName === 'ScrollDepth' && item.information && Array.isArray(item.information)) {
+      for (const info of item.information) {
+        const dimensionValue = info[dimensionName];
+        if (dimensionValue !== undefined) {
+          // Find existing item and update scroll depth, or add new
+          const existing = items.find(i => i.key === dimensionValue);
+          if (existing) {
+            existing.scrollDepth = parseFloat(info.averageScrollDepth) || parseFloat(info.scrollDepth) || existing.scrollDepth;
+          }
+        }
+      }
+    }
+    
+    // Also check EngagementTime/ActiveTime metric
+    if ((item.metricName === 'EngagementTime' || item.metricName === 'ActiveTime') && item.information && Array.isArray(item.information)) {
+      for (const info of item.information) {
+        const dimensionValue = info[dimensionName];
+        if (dimensionValue !== undefined) {
+          const existing = items.find(i => i.key === dimensionValue);
+          if (existing) {
+            existing.activeTime = parseInt(info.averageActiveTime) || parseInt(info.activeTime) || existing.activeTime;
+          }
         }
       }
     }
   }
 
+  console.log(`Parsed ${items.length} dimension items for ${dimensionName}`);
   return items;
 }
 
@@ -318,7 +354,7 @@ serve(async (req) => {
         const sourcesData = await fetchClarityData(config.api_token, 'Source', targetDate || undefined);
         
         if (sourcesData) {
-          const dimensionItems = parseDimensionData(sourcesData);
+          const dimensionItems = parseDimensionData(sourcesData, 'Source');
           
           if (dimensionItems.length > 0) {
             const sourcesToUpsert = dimensionItems.map((item) => {
@@ -358,7 +394,8 @@ serve(async (req) => {
         const pagesData = await fetchClarityData(config.api_token, 'URL', targetDate || undefined);
         
         if (pagesData) {
-          const dimensionItems = parseDimensionData(pagesData);
+          // Clarity uses 'Url' (with capital U, lowercase rest) as the field name
+          const dimensionItems = parseDimensionData(pagesData, 'Url');
           
           if (dimensionItems.length > 0) {
             const pagesToUpsert = dimensionItems.map((item) => ({
