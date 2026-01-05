@@ -258,15 +258,15 @@ Make topics specific, actionable, and valuable. Ensure proper distribution acros
       throw batchError;
     }
 
-    // Insert all topics
-    const topicsToInsert = topics.map((topic: any) => ({
+    // Insert all topics - use calculated suggestedDates instead of AI-generated dates
+    const topicsToInsert = topics.map((topic: any, index: number) => ({
       client_id,
       strategy_batch_id: batch.id,
       topic_title: topic.title,
       summary: topic.summary,
       category: topic.category,
       keywords: topic.keywords,
-      suggested_publish_date: topic.suggested_publish_date,
+      suggested_publish_date: suggestedDates[index], // Use calculated date, not AI date
       status: 'idea',
       priority: 'medium',
       ai_generated: true,
