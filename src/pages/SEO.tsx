@@ -3,7 +3,7 @@ import { useClient } from "@/contexts/ClientContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Lock, FileText, MapPin, Upload } from "lucide-react";
+import { Search, Lock, MapPin, Upload } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { PricingModal } from "@/components/billing/PricingModal";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,6 +12,7 @@ import { useLatestSEOKeywords, useUniqueRegions } from "@/hooks/useSEOKeywords";
 import { UploadSEOReportDialog } from "@/components/seo/UploadSEOReportDialog";
 import { SEOOverview } from "@/components/seo/SEOOverview";
 import { SEOKeywordsTable } from "@/components/seo/SEOKeywordsTable";
+import { BlogWriterMain } from "@/components/blog/BlogWriterMain";
 
 export default function SEO() {
   const { selectedClient } = useClient();
@@ -84,10 +85,7 @@ export default function SEO() {
       <Tabs defaultValue="rankings" className="space-y-6">
         <TabsList>
           <TabsTrigger value="rankings">Keyword Rankings</TabsTrigger>
-          <TabsTrigger value="blog" disabled>
-            Blog Writer
-            <Badge variant="outline" className="ml-2 px-1.5 py-0 text-[10px] font-normal">Coming Soon</Badge>
-          </TabsTrigger>
+            <TabsTrigger value="blog">Blog Writer</TabsTrigger>
           <TabsTrigger value="pages" disabled>
             Local Landing Pages
             <Badge variant="outline" className="ml-2 px-1.5 py-0 text-[10px] font-normal">Coming Soon</Badge>
@@ -127,26 +125,7 @@ export default function SEO() {
         </TabsContent>
 
         <TabsContent value="blog" className="space-y-6">
-          <Card className="border-dashed border-2">
-            <CardContent className="py-12 text-center space-y-4">
-              <FileText className="h-12 w-12 mx-auto text-muted-foreground" />
-              <h3 className="text-lg font-semibold">AI Blog Writer - Coming Soon</h3>
-              <p className="text-muted-foreground max-w-2xl mx-auto">
-                Generate SEO-optimized blog posts tailored to your target audience and brand voice. 
-                This tool will integrate with your avatars, brand guide, and assets library to create compelling content.
-              </p>
-              <div className="text-sm text-muted-foreground space-y-2 max-w-md mx-auto pt-4">
-                <p className="font-medium">Planned Features:</p>
-                <ul className="text-left list-disc list-inside space-y-1">
-                  <li>Topic and keyword research</li>
-                  <li>Target audience selection from avatars</li>
-                  <li>Tone and style matching from brand guide</li>
-                  <li>Auto-image selection from assets library</li>
-                  <li>SEO optimization built-in</li>
-                </ul>
-              </div>
-            </CardContent>
-          </Card>
+          <BlogWriterMain />
         </TabsContent>
 
         <TabsContent value="pages" className="space-y-6">
