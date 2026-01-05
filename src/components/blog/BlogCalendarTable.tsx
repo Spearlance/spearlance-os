@@ -1,15 +1,15 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Plus, Trash2 } from "lucide-react";
+import { Plus } from "lucide-react";
 import { format } from "date-fns";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useClient } from "@/contexts/ClientContext";
 import { BlogTopicDrawer } from "./BlogTopicDrawer";
 import { parseUTCDate } from "@/lib/utils";
+
 interface BlogTopic {
   id: string;
   topic_title: string;
@@ -40,7 +40,6 @@ export const BlogCalendarTable = ({
 }: BlogCalendarTableProps) => {
   const { selectedClient } = useClient();
   const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
-  const [generatingArticles, setGeneratingArticles] = useState(false);
   const [selectedTopic, setSelectedTopic] = useState<BlogTopic | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
@@ -86,28 +85,6 @@ export const BlogCalendarTable = ({
       setSelectedTopics([]);
     } else {
       setSelectedTopics(topics.map(t => t.id));
-    }
-  };
-
-  const handleGenerateArticles = async (topicIds: string[]) => {
-    if (topicIds.length === 0) return;
-
-    setGeneratingArticles(true);
-    try {
-      for (const topicId of topicIds) {
-        await supabase.functions.invoke('blog-generate-article', {
-          body: { topic_id: topicId },
-        });
-      }
-
-      toast.success(`Successfully generated ${topicIds.length} articles!`);
-      setSelectedTopics([]);
-      onRefresh();
-    } catch (error: any) {
-      console.error('Error generating articles:', error);
-      toast.error(error.message || "Failed to generate articles.");
-    } finally {
-      setGeneratingArticles(false);
     }
   };
 
@@ -174,17 +151,6 @@ export const BlogCalendarTable = ({
           <span className="text-sm font-medium">{selectedTopics.length} selected</span>
           <Button
             size="sm"
-            onClick={() => handleGenerateArticles(selectedTopics)}
-            disabled={generatingArticles}
-          >
-            {generatingArticles ? (
-              <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Generating...</>
-            ) : (
-              <>Generate Articles</>
-            )}
-          </Button>
-          <Button
-            size="sm"
             variant="ghost"
             onClick={() => setSelectedTopics([])}
           >
@@ -207,7 +173,6 @@ export const BlogCalendarTable = ({
               <TableHead>Topic</TableHead>
               <TableHead>Category</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -230,16 +195,6 @@ export const BlogCalendarTable = ({
                     </TableCell>
                     <TableCell colSpan={3} className="text-center text-muted-foreground">
                       No topics scheduled
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => toast.info("Use 'Generate All Topics' to create topics")}
-                      >
-                        <Plus className="h-3 w-3 mr-1" />
-                        Add Topic
-                      </Button>
                     </TableCell>
                   </TableRow>
                 );
@@ -289,17 +244,6 @@ export const BlogCalendarTable = ({
                       <Badge className={getStatusColor(status)}>
                         {getStatusLabel(status)}
                       </Badge>
-                    </TableCell>
-                    <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                      {status === 'idea' && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleGenerateArticles([topic.id])}
-                        >
-                          Generate Article
-                        </Button>
-                      )}
                     </TableCell>
                   </TableRow>
                 );
