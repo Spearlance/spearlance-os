@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { BlogArticleWizard } from "./BlogArticleWizard";
 import { BlogArticleEditor } from "./BlogArticleEditor";
-
+import { parseUTCDate } from "@/lib/utils";
 interface BlogTopic {
   id: string;
   topic_title: string;
@@ -108,7 +108,7 @@ export const BlogTopicDrawer = ({ topic, open, onOpenChange, onRefresh }: BlogTo
           <div>
             <h3 className="text-sm font-semibold mb-2">Suggested Publish Date</h3>
             <p className="text-sm text-muted-foreground">
-              {new Date(topic.suggested_publish_date).toLocaleDateString('default', {
+              {parseUTCDate(topic.suggested_publish_date).toLocaleDateString('default', {
                 month: 'long',
                 day: 'numeric',
                 year: 'numeric'

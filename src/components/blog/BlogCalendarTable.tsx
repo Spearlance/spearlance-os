@@ -9,7 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useClient } from "@/contexts/ClientContext";
 import { BlogTopicDrawer } from "./BlogTopicDrawer";
-
+import { parseUTCDate } from "@/lib/utils";
 interface BlogTopic {
   id: string;
   topic_title: string;
@@ -69,7 +69,7 @@ export const BlogCalendarTable = ({
     : allDays;
 
   const topicsByDate = topics.reduce((acc, topic) => {
-    const dateKey = format(new Date(topic.suggested_publish_date), 'yyyy-MM-dd');
+    const dateKey = format(parseUTCDate(topic.suggested_publish_date), 'yyyy-MM-dd');
     if (!acc[dateKey]) acc[dateKey] = [];
     acc[dateKey].push(topic);
     return acc;

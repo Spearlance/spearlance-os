@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { format } from "date-fns";
 import { BlogTopicDrawer } from "./BlogTopicDrawer";
 import { parseUTCDate } from "@/lib/utils";
 
@@ -76,8 +77,7 @@ export const BlogWeeklyCalendarView = ({
   const currentWeekDays = weeks[currentWeek] || [];
   
   const topicsByDate = topics.reduce((acc, topic) => {
-    const date = parseUTCDate(topic.suggested_publish_date);
-    const dateKey = date.toISOString().split('T')[0];
+    const dateKey = format(parseUTCDate(topic.suggested_publish_date), 'yyyy-MM-dd');
     if (!acc[dateKey]) acc[dateKey] = [];
     acc[dateKey].push(topic);
     return acc;
@@ -137,7 +137,7 @@ export const BlogWeeklyCalendarView = ({
 
         <div className="grid grid-cols-7 gap-4">
           {currentWeekDays.map((date) => {
-            const dateKey = date.toISOString().split('T')[0];
+            const dateKey = format(date, 'yyyy-MM-dd');
             const dayTopics = topicsByDate[dateKey] || [];
             const dayName = weekDays[date.getDay()];
             const dayNumber = date.getDate();
