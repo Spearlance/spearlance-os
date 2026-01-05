@@ -256,6 +256,7 @@ export function BlogWriterMain() {
               selectedMonth={selectedMonth}
               selectedYear={selectedYear}
               expectedPostCount={strategyPostCount}
+              activeStrategy={activeStrategy}
             />
           )}
           
@@ -275,6 +276,7 @@ export function BlogWriterMain() {
               onRefresh={refetch}
               selectedMonth={selectedMonth}
               selectedYear={selectedYear}
+              activeStrategy={activeStrategy}
             />
           )}
         </TabsContent>
