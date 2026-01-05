@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import spearlanceLogo from '@/assets/spearlance-logo.png';
+import { parseUTCDate } from "@/lib/utils";
 
 interface BlogMonthlyGeneratorProps {
   clientId: string;
@@ -46,7 +47,7 @@ export function BlogMonthlyGenerator({
       setProgress(`Generating all ${expectedPostCount} blog topics...`);
     } else {
       const existingCount = existingTopicDates.filter(date => {
-        const d = new Date(date);
+        const d = parseUTCDate(date);
         return d.getMonth() + 1 === month && d.getFullYear() === year;
       }).length;
       const missingCount = expectedPostCount - existingCount;
@@ -124,7 +125,7 @@ export function BlogMonthlyGenerator({
                   <AlertDescription>
                     {(() => {
                       const existingCount = existingTopicDates.filter(date => {
-                        const d = new Date(date);
+                        const d = parseUTCDate(date);
                         return d.getMonth() + 1 === month && d.getFullYear() === year;
                       }).length;
                       const missingCount = expectedPostCount - existingCount;
