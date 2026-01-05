@@ -22,16 +22,28 @@ interface BlogWeeklyCalendarViewProps {
   onRefresh: () => void;
   selectedMonth: number;
   selectedYear: number;
+  activeStrategy?: any;
 }
 
 export const BlogWeeklyCalendarView = ({ 
   topics, 
   onRefresh, 
   selectedMonth, 
-  selectedYear 
+  selectedYear,
+  activeStrategy
 }: BlogWeeklyCalendarViewProps) => {
   const [selectedTopic, setSelectedTopic] = useState<BlogTopic | null>(null);
   const [currentWeek, setCurrentWeek] = useState(0);
+
+  // Filter to only show strategy days
+  const strategyDays = activeStrategy?.selected_days || [];
+  
+  const isStrategyDay = (date: Date) => {
+    if (strategyDays.length === 0) return true;
+    const dayOfWeek = date.getDay();
+    const isoDayOfWeek = dayOfWeek === 0 ? 7 : dayOfWeek;
+    return strategyDays.includes(isoDayOfWeek);
+  };
 
   const getWeeksInMonth = (month: number, year: number) => {
     const firstDay = new Date(year, month - 1, 1);
@@ -43,11 +55,17 @@ export const BlogWeeklyCalendarView = ({
     
     for (let day = 1; day <= daysInMonth; day++) {
       const date = new Date(year, month - 1, day);
-      currentWeekDays.push(date);
+      // Only include strategy days
+      if (isStrategyDay(date)) {
+        currentWeekDays.push(date);
+      }
       
+      // End of week (Saturday) or end of month
       if (date.getDay() === 6 || day === daysInMonth) {
-        weeks.push([...currentWeekDays]);
-        currentWeekDays = [];
+        if (currentWeekDays.length > 0) {
+          weeks.push([...currentWeekDays]);
+          currentWeekDays = [];
+        }
       }
     }
     

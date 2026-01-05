@@ -27,6 +27,7 @@ interface BlogCalendarTableProps {
   selectedMonth: number;
   selectedYear: number;
   expectedPostCount?: number;
+  activeStrategy?: any;
 }
 
 export const BlogCalendarTable = ({ 
@@ -34,7 +35,8 @@ export const BlogCalendarTable = ({
   onRefresh, 
   selectedMonth, 
   selectedYear, 
-  expectedPostCount 
+  expectedPostCount,
+  activeStrategy
 }: BlogCalendarTableProps) => {
   const { selectedClient } = useClient();
   const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
@@ -55,6 +57,16 @@ export const BlogCalendarTable = ({
   };
 
   const allDays = getDaysInMonth(selectedMonth, selectedYear);
+  
+  // Filter days to only show strategy days (like social media calendar)
+  const strategyDays = activeStrategy?.selected_days || [];
+  const filteredDays = strategyDays.length > 0 
+    ? allDays.filter(day => {
+        const dayOfWeek = day.getDay();
+        const isoDayOfWeek = dayOfWeek === 0 ? 7 : dayOfWeek;
+        return strategyDays.includes(isoDayOfWeek);
+      })
+    : allDays;
 
   const topicsByDate = topics.reduce((acc, topic) => {
     const dateKey = format(new Date(topic.suggested_publish_date), 'yyyy-MM-dd');
@@ -135,7 +147,7 @@ export const BlogCalendarTable = ({
     return dayTopics.some(t => ['draft', 'scheduled', 'published'].includes(getTopicStatus(t)));
   }).length;
 
-  const totalDays = expectedPostCount && expectedPostCount > 0 ? expectedPostCount : allDays.length;
+  const totalDays = expectedPostCount && expectedPostCount > 0 ? expectedPostCount : filteredDays.length;
   const progressPercent = totalDays > 0 ? Math.round((daysWithReadyPosts / totalDays) * 100) : 0;
 
   return (
@@ -199,7 +211,7 @@ export const BlogCalendarTable = ({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {allDays.map((day) => {
+            {filteredDays.map((day) => {
               const dateKey = format(day, 'yyyy-MM-dd');
               const dayTopics = topicsByDate[dateKey] || [];
               const hasTopics = dayTopics.length > 0;
