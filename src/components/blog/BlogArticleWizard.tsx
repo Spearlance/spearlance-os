@@ -1,13 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, ChevronLeft, Edit2, Check, AlertCircle } from "lucide-react";
+import { Loader2, ChevronLeft, Copy, Check, AlertCircle, FileText, ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { BlogArticleEditor } from "./BlogArticleEditor";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
 
 interface BlogArticleWizardProps {
   topic: {
@@ -22,21 +19,48 @@ interface BlogArticleWizardProps {
   onCancel: () => void;
 }
 
-type Step = 'outline' | 'generate' | 'edit';
+type Step = 'generating' | 'ready';
+
+interface ArticleBrief {
+  site_info: {
+    site_id: string;
+    website_url: string;
+  };
+  article_brief: {
+    title: string;
+    topic_summary: string;
+    connection_to_brand: string;
+    relevant_context: {
+      target_audience: string;
+      pain_points_addressed: string[];
+      value_props_to_highlight: string[];
+      services_to_mention: string[];
+      competitive_advantages: string[];
+    };
+  };
+  outline: {
+    meta_description: string;
+    sections: {
+      heading: string;
+      subheadings?: string[];
+      key_points: string[];
+      word_count_target: number;
+    }[];
+    seo_recommendations: string[];
+    internal_link_opportunities: string[];
+  };
+}
 
 export function BlogArticleWizard({ topic, onComplete, onCancel }: BlogArticleWizardProps) {
-  const [currentStep, setCurrentStep] = useState<Step>('outline');
+  const [currentStep, setCurrentStep] = useState<Step>('generating');
   const [loading, setLoading] = useState(false);
-  const [outline, setOutline] = useState<any>(null);
-  const [blogPostId, setBlogPostId] = useState<string | null>(null);
-  const [article, setArticle] = useState<any>(null);
+  const [brief, setBrief] = useState<ArticleBrief | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
-  const steps: Step[] = ['outline', 'generate', 'edit'];
-  const currentStepIndex = steps.indexOf(currentStep);
-  const progress = ((currentStepIndex + 1) / steps.length) * 100;
+  const progress = currentStep === 'generating' ? 50 : 100;
 
-  const generateOutline = async () => {
+  const generateBrief = async () => {
     setLoading(true);
     setError(null);
     try {
@@ -53,83 +77,120 @@ export function BlogArticleWizard({ topic, onComplete, onCancel }: BlogArticleWi
       if (fnError) throw fnError;
       if (data.error) throw new Error(data.error);
 
-      if (data.success) {
-        setOutline(data.outline);
-        setCurrentStep('outline');
-        toast.success("Outline generated!");
+      if (data.success && data.brief) {
+        setBrief(data.brief);
+        setCurrentStep('ready');
+        toast.success("Brief generated!");
       } else {
-        throw new Error("Failed to generate outline");
+        throw new Error("Failed to generate brief");
       }
     } catch (error: any) {
-      console.error('Error generating outline:', error);
-      setError(error.message || "Failed to generate outline");
-      toast.error("Failed to generate outline. Please try again.");
+      console.error('Error generating brief:', error);
+      setError(error.message || "Failed to generate brief");
+      toast.error("Failed to generate brief. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
-  const generateArticle = async () => {
-    setLoading(true);
-    setError(null);
+  // Auto-generate on mount
+  useEffect(() => {
+    if (!brief && !loading) {
+      generateBrief();
+    }
+  }, []);
+
+  const formatBriefForCopy = (): string => {
+    if (!brief) return '';
+
+    const lines: string[] = [];
+
+    // Site Information
+    lines.push('## DUDA SITE INFORMATION');
+    lines.push(`- Site ID: ${brief.site_info.site_id}`);
+    lines.push(`- Website URL: ${brief.site_info.website_url}`);
+    lines.push('');
+
+    // Article Brief
+    lines.push('## BLOG ARTICLE BRIEF');
+    lines.push('');
+    lines.push(`### Topic: ${brief.article_brief.title}`);
+    lines.push(brief.article_brief.topic_summary);
+    lines.push('');
+
+    lines.push('### Connection to Brand');
+    lines.push(brief.article_brief.connection_to_brand);
+    lines.push('');
+
+    lines.push('### Target Audience Context');
+    lines.push(`**Target Audience:** ${brief.article_brief.relevant_context.target_audience}`);
+    lines.push('');
+
+    if (brief.article_brief.relevant_context.pain_points_addressed?.length) {
+      lines.push('**Pain Points Addressed:**');
+      brief.article_brief.relevant_context.pain_points_addressed.forEach(p => lines.push(`- ${p}`));
+      lines.push('');
+    }
+
+    if (brief.article_brief.relevant_context.value_props_to_highlight?.length) {
+      lines.push('**Value Propositions to Highlight:**');
+      brief.article_brief.relevant_context.value_props_to_highlight.forEach(v => lines.push(`- ${v}`));
+      lines.push('');
+    }
+
+    if (brief.article_brief.relevant_context.services_to_mention?.length) {
+      lines.push('**Services to Reference:**');
+      brief.article_brief.relevant_context.services_to_mention.forEach(s => lines.push(`- ${s}`));
+      lines.push('');
+    }
+
+    if (brief.article_brief.relevant_context.competitive_advantages?.length) {
+      lines.push('**Competitive Advantages:**');
+      brief.article_brief.relevant_context.competitive_advantages.forEach(a => lines.push(`- ${a}`));
+      lines.push('');
+    }
+
+    // Outline
+    lines.push('## BLOG OUTLINE');
+    lines.push('');
+    lines.push('### Meta Description');
+    lines.push(brief.outline.meta_description);
+    lines.push('');
+
+    lines.push('### Sections');
+    brief.outline.sections.forEach((section, index) => {
+      lines.push(`${index + 1}. **${section.heading}** (~${section.word_count_target} words)`);
+      if (section.subheadings?.length) {
+        section.subheadings.forEach(sub => lines.push(`   - ${sub}`));
+      }
+      section.key_points.forEach(point => lines.push(`   - ${point}`));
+      lines.push('');
+    });
+
+    if (brief.outline.seo_recommendations?.length) {
+      lines.push('### SEO Recommendations');
+      brief.outline.seo_recommendations.forEach(rec => lines.push(`- ${rec}`));
+      lines.push('');
+    }
+
+    if (brief.outline.internal_link_opportunities?.length) {
+      lines.push('### Internal Link Opportunities');
+      brief.outline.internal_link_opportunities.forEach(link => lines.push(`- ${link}`));
+    }
+
+    return lines.join('\n');
+  };
+
+  const handleCopy = async () => {
+    const text = formatBriefForCopy();
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      const { data, error: fnError } = await supabase.functions.invoke('blog-generate-article', {
-        body: {
-          topic_id: topic.id,
-          client_id: topic.client_id,
-          title: outline?.title || topic.topic_title,
-          meta_description: outline?.meta_description || topic.summary,
-          keywords: topic.keywords || [],
-          outline,
-          avatar_id: topic.avatar_id,
-          created_by: user?.id,
-          personal_context: outline?.personal_context || null
-        }
-      });
-
-      if (fnError) throw fnError;
-      if (data.error) throw new Error(data.error);
-
-      if (data.success) {
-        setArticle(data.article);
-        setBlogPostId(data.blog_post_id);
-        setCurrentStep('edit');
-        toast.success("Article generated!");
-      } else {
-        throw new Error("Failed to generate article");
-      }
-    } catch (error: any) {
-      console.error('Error generating article:', error);
-      setError(error.message || "Failed to generate article");
-      toast.error("Failed to generate article. Please try again.");
-    } finally {
-      setLoading(false);
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      toast.success("Copied to clipboard!");
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      toast.error("Failed to copy");
     }
-  };
-
-  // Auto-generate outline on mount
-  useState(() => {
-    if (!outline && !loading) {
-      generateOutline();
-    }
-  });
-
-  const handleOutlineEdit = (field: string, value: string) => {
-    setOutline((prev: any) => ({
-      ...prev,
-      [field]: value
-    }));
-  };
-
-  const handleSectionEdit = (index: number, field: string, value: any) => {
-    setOutline((prev: any) => ({
-      ...prev,
-      sections: prev.sections.map((section: any, i: number) => 
-        i === index ? { ...section, [field]: value } : section
-      )
-    }));
   };
 
   return (
@@ -138,9 +199,8 @@ export function BlogArticleWizard({ topic, onComplete, onCancel }: BlogArticleWi
         <Progress value={progress} className="h-2" />
         <div className="flex justify-between text-sm text-muted-foreground">
           <span>
-            {currentStep === 'outline' && 'Step 1: Review Structure'}
-            {currentStep === 'generate' && 'Step 2: Generate Article'}
-            {currentStep === 'edit' && 'Step 3: Edit & Review'}
+            {currentStep === 'generating' && 'Generating Brief...'}
+            {currentStep === 'ready' && 'Brief Ready - Copy for Claude'}
           </span>
           <span>{Math.round(progress)}% Complete</span>
         </div>
@@ -158,141 +218,155 @@ export function BlogArticleWizard({ topic, onComplete, onCancel }: BlogArticleWi
         </Card>
       )}
 
-      {/* STEP 1: Outline Preview */}
-      {currentStep === 'outline' && (
-        <Card className="p-6">
-          {loading ? (
-            <div className="flex flex-col items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
-              <p className="text-sm text-muted-foreground">Generating structure...</p>
-            </div>
-          ) : outline ? (
-            <div className="space-y-4">
-              <div>
-                <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                  <Edit2 className="h-5 w-5" />
-                  Article Structure
-                </h3>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Optimized Title</Label>
-                <Textarea
-                  value={outline.title || topic.topic_title}
-                  onChange={(e) => handleOutlineEdit('title', e.target.value)}
-                  className="min-h-[60px]"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Meta Description</Label>
-                <Textarea
-                  value={outline.meta_description || ''}
-                  onChange={(e) => handleOutlineEdit('meta_description', e.target.value)}
-                  className="min-h-[80px]"
-                  placeholder="150-160 characters for SEO"
-                />
-                <p className="text-xs text-muted-foreground">
-                  {outline.meta_description?.length || 0}/160 characters
-                </p>
-              </div>
-
-              <div className="space-y-3">
-                <Label>Sections</Label>
-                {outline.sections?.map((section: any, index: number) => (
-                  <Card key={index} className="p-4 bg-muted/50">
-                    <Textarea
-                      value={section.heading}
-                      onChange={(e) => handleSectionEdit(index, 'heading', e.target.value)}
-                      className="font-semibold mb-2 min-h-[40px]"
-                    />
-                    <div className="space-y-1 text-sm text-muted-foreground">
-                      {section.key_points?.map((point: string, i: number) => (
-                        <div key={i} className="flex items-start gap-2">
-                          <span>•</span>
-                          <span>{point}</span>
-                        </div>
-                      ))}
-                    </div>
-                    {section.word_count_target && (
-                      <p className="text-xs text-muted-foreground mt-2">
-                        Target: ~{section.word_count_target} words
-                      </p>
-                    )}
-                  </Card>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground">Click "Generate Outline" to start</p>
-            </div>
-          )}
-        </Card>
-      )}
-
-      {/* STEP 2: Generate Article */}
-      {currentStep === 'generate' && (
+      {/* Generating State */}
+      {currentStep === 'generating' && loading && (
         <Card className="p-6">
           <div className="flex flex-col items-center justify-center py-12">
-            <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Writing Your Article</h3>
-            <p className="text-sm text-muted-foreground text-center max-w-md">
-              Our AI is crafting your article based on the approved structure. This may take 30-60 seconds...
-            </p>
-            <div className="mt-6 w-full max-w-sm">
-              <Progress value={66} className="h-2" />
-            </div>
+            <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+            <p className="text-sm text-muted-foreground">Analyzing brand context and generating brief...</p>
           </div>
         </Card>
       )}
 
-      {/* STEP 3: Edit & Review */}
-      {currentStep === 'edit' && article && blogPostId && (
-        <BlogArticleEditor
-          blogPostId={blogPostId}
-          initialContent={article.content}
-          initialTitle={article.title}
-          open={true}
-          onOpenChange={(open) => !open && onCancel()}
-          onSave={onComplete}
-        />
+      {/* Brief Ready State */}
+      {currentStep === 'ready' && brief && (
+        <div className="space-y-4">
+          {/* Site Info Card */}
+          <Card className="p-4 bg-primary/5 border-primary/20">
+            <div className="flex items-center gap-2 mb-3">
+              <ExternalLink className="h-4 w-4 text-primary" />
+              <h3 className="font-semibold text-primary">Duda Site Information</h3>
+            </div>
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <span className="text-muted-foreground">Site ID:</span>
+                <code className="ml-2 px-2 py-1 bg-muted rounded font-mono">{brief.site_info.site_id}</code>
+              </div>
+              <div>
+                <span className="text-muted-foreground">URL:</span>
+                <code className="ml-2 px-2 py-1 bg-muted rounded font-mono text-xs">{brief.site_info.website_url}</code>
+              </div>
+            </div>
+          </Card>
+
+          {/* Article Brief Card */}
+          <Card className="p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <FileText className="h-4 w-4" />
+              <h3 className="font-semibold">Article Brief</h3>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <h4 className="text-sm font-medium mb-1">Topic</h4>
+                <p className="font-semibold">{brief.article_brief.title}</p>
+                <p className="text-sm text-muted-foreground mt-1">{brief.article_brief.topic_summary}</p>
+              </div>
+
+              <div>
+                <h4 className="text-sm font-medium mb-1">Brand Connection</h4>
+                <p className="text-sm text-muted-foreground whitespace-pre-wrap">{brief.article_brief.connection_to_brand}</p>
+              </div>
+
+              <div>
+                <h4 className="text-sm font-medium mb-2">Relevant Context</h4>
+                <div className="grid gap-2 text-sm">
+                  <div>
+                    <span className="text-muted-foreground">Target Audience:</span>
+                    <span className="ml-2">{brief.article_brief.relevant_context.target_audience}</span>
+                  </div>
+                  {brief.article_brief.relevant_context.pain_points_addressed?.length > 0 && (
+                    <div>
+                      <span className="text-muted-foreground">Pain Points:</span>
+                      <span className="ml-2">{brief.article_brief.relevant_context.pain_points_addressed.join(', ')}</span>
+                    </div>
+                  )}
+                  {brief.article_brief.relevant_context.services_to_mention?.length > 0 && (
+                    <div>
+                      <span className="text-muted-foreground">Services:</span>
+                      <span className="ml-2">{brief.article_brief.relevant_context.services_to_mention.join(', ')}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </Card>
+
+          {/* Outline Card */}
+          <Card className="p-4">
+            <h3 className="font-semibold mb-3">Blog Outline</h3>
+            
+            <div className="space-y-3">
+              <div>
+                <h4 className="text-sm font-medium mb-1">Meta Description</h4>
+                <p className="text-sm text-muted-foreground">{brief.outline.meta_description}</p>
+                <p className="text-xs text-muted-foreground mt-1">{brief.outline.meta_description?.length || 0}/160 characters</p>
+              </div>
+
+              <div>
+                <h4 className="text-sm font-medium mb-2">Sections</h4>
+                <div className="space-y-2">
+                  {brief.outline.sections.map((section, index) => (
+                    <div key={index} className="p-3 bg-muted/50 rounded-lg">
+                      <div className="flex justify-between items-start mb-1">
+                        <span className="font-medium text-sm">{index + 1}. {section.heading}</span>
+                        <span className="text-xs text-muted-foreground">~{section.word_count_target} words</span>
+                      </div>
+                      <ul className="text-xs text-muted-foreground space-y-1">
+                        {section.key_points.map((point, i) => (
+                          <li key={i}>• {point}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {brief.outline.seo_recommendations?.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-medium mb-1">SEO Recommendations</h4>
+                  <ul className="text-sm text-muted-foreground">
+                    {brief.outline.seo_recommendations.map((rec, i) => (
+                      <li key={i}>• {rec}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </Card>
+        </div>
       )}
 
       {/* Navigation Buttons */}
       <div className="flex justify-between">
-        <Button
-          variant="outline"
-          onClick={() => {
-            if (currentStep === 'outline') {
-              onCancel();
-            } else if (currentStep === 'generate') {
-              setCurrentStep('outline');
-            }
-          }}
-          disabled={loading || currentStep === 'edit'}
-        >
+        <Button variant="outline" onClick={onCancel} disabled={loading}>
           <ChevronLeft className="w-4 h-4 mr-2" />
-          {currentStep === 'outline' ? 'Cancel' : 'Back'}
+          Cancel
         </Button>
 
-        {currentStep === 'outline' && outline && !loading && (
-          <Button onClick={() => {
-            setCurrentStep('generate');
-            generateArticle();
-          }}>
-            <Check className="w-4 h-4 mr-2" />
-            Approve & Write Article
+        {currentStep === 'ready' && brief && (
+          <Button onClick={handleCopy}>
+            {copied ? (
+              <>
+                <Check className="w-4 h-4 mr-2" />
+                Copied!
+              </>
+            ) : (
+              <>
+                <Copy className="w-4 h-4 mr-2" />
+                Copy for Claude
+              </>
+            )}
           </Button>
         )}
 
-        {currentStep === 'outline' && !outline && !loading && (
-          <Button onClick={generateOutline}>
-            Generate Outline
+        {currentStep === 'generating' && !loading && !brief && (
+          <Button onClick={generateBrief}>
+            Generate Brief
           </Button>
         )}
 
-        {currentStep === 'outline' && loading && (
+        {loading && (
           <Button disabled>
             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
             Generating...

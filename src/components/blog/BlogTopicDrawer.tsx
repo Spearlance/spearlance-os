@@ -175,7 +175,7 @@ export const BlogTopicDrawer = ({ topic, open, onOpenChange, onRefresh }: BlogTo
           <div className="flex gap-2 pt-2 border-t">
             {!hasArticle ? (
               <Button onClick={handleStartWizard} className="flex-1">
-                Generate Article
+                Prepare for Claude
               </Button>
             ) : (
               <Button onClick={handleOpenEditor} className="flex-1">
