@@ -5111,6 +5111,7 @@ export type Database = {
           client_id: string
           color: string | null
           column_id: string | null
+          completed_at: string | null
           created_at: string | null
           creator_user_id: string | null
           description: string | null
@@ -5127,6 +5128,7 @@ export type Database = {
           recurrence_pattern: Json | null
           related_asset_ids: string[] | null
           related_meeting_ids: string[] | null
+          started_at: string | null
           status: Database["public"]["Enums"]["task_status"] | null
           subtask_order: number | null
           title: string
@@ -5138,6 +5140,7 @@ export type Database = {
           client_id: string
           color?: string | null
           column_id?: string | null
+          completed_at?: string | null
           created_at?: string | null
           creator_user_id?: string | null
           description?: string | null
@@ -5154,6 +5157,7 @@ export type Database = {
           recurrence_pattern?: Json | null
           related_asset_ids?: string[] | null
           related_meeting_ids?: string[] | null
+          started_at?: string | null
           status?: Database["public"]["Enums"]["task_status"] | null
           subtask_order?: number | null
           title: string
@@ -5165,6 +5169,7 @@ export type Database = {
           client_id?: string
           color?: string | null
           column_id?: string | null
+          completed_at?: string | null
           created_at?: string | null
           creator_user_id?: string | null
           description?: string | null
@@ -5181,6 +5186,7 @@ export type Database = {
           recurrence_pattern?: Json | null
           related_asset_ids?: string[] | null
           related_meeting_ids?: string[] | null
+          started_at?: string | null
           status?: Database["public"]["Enums"]["task_status"] | null
           subtask_order?: number | null
           title?: string
