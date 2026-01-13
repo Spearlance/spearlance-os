@@ -61,6 +61,8 @@ import {
   Search,
   PenTool,
   HeartPulse,
+  Briefcase,
+  Mail,
 } from "lucide-react";
 import { ReportBugDialog } from "@/components/support/ReportBugDialog";
 import { Button } from "@/components/ui/button";
@@ -594,6 +596,30 @@ export function AppSidebar() {
                               <NavLink to="/admin" end className={getNavClass}>
                                 <Users className="h-4 w-4" />
                                 <span>Client Management</span>
+                              </NavLink>
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
+                          <SidebarMenuSubItem>
+                            <SidebarMenuSubButton asChild>
+                              <NavLink to="/admin/designer-workload" end className={getNavClass}>
+                                <Briefcase className="h-4 w-4" />
+                                <span>Designer Workload</span>
+                              </NavLink>
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
+                          <SidebarMenuSubItem>
+                            <SidebarMenuSubButton asChild>
+                              <NavLink to="/admin/prompt-templates" end className={getNavClass}>
+                                <FileText className="h-4 w-4" />
+                                <span>Prompt Templates</span>
+                              </NavLink>
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
+                          <SidebarMenuSubItem>
+                            <SidebarMenuSubButton asChild>
+                              <NavLink to="/admin/email-templates" end className={getNavClass}>
+                                <Mail className="h-4 w-4" />
+                                <span>Email Templates</span>
                               </NavLink>
                             </SidebarMenuSubButton>
                           </SidebarMenuSubItem>
