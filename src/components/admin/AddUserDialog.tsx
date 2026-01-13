@@ -21,7 +21,7 @@ export function AddUserDialog({ clients, onUserCreated }: AddUserDialogProps) {
   const [formData, setFormData] = useState({
     email: "",
     name: "",
-    role: "client" as "admin" | "fmm" | "client",
+    role: "client" as "admin" | "fmm" | "client" | "web_designer",
   });
   const [selectedClientIds, setSelectedClientIds] = useState<string[]>([]);
   const { toast } = useToast();
@@ -110,7 +110,7 @@ export function AddUserDialog({ clients, onUserCreated }: AddUserDialogProps) {
             <Label htmlFor="role">Role *</Label>
             <Select
               value={formData.role}
-              onValueChange={(value: "admin" | "fmm" | "client") => setFormData({ ...formData, role: value })}
+              onValueChange={(value: "admin" | "fmm" | "client" | "web_designer") => setFormData({ ...formData, role: value })}
             >
               <SelectTrigger>
                 <SelectValue />
@@ -118,6 +118,7 @@ export function AddUserDialog({ clients, onUserCreated }: AddUserDialogProps) {
               <SelectContent>
                 <SelectItem value="admin">Admin</SelectItem>
                 <SelectItem value="fmm">FMM</SelectItem>
+                <SelectItem value="web_designer">Web Designer</SelectItem>
                 <SelectItem value="client">Client</SelectItem>
               </SelectContent>
             </Select>

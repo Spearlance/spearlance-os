@@ -12,7 +12,7 @@ const corsHeaders = {
 interface CreateUserRequest {
   email: string;
   name: string;
-  role: 'admin' | 'fmm' | 'client';
+  role: 'admin' | 'fmm' | 'client' | 'web_designer';
   client_ids?: string[];
 }
 
@@ -62,7 +62,7 @@ serve(async (req) => {
       throw new Error('Email, name, and role are required');
     }
 
-    if (!['admin', 'fmm', 'client'].includes(role)) {
+    if (!['admin', 'fmm', 'client', 'web_designer'].includes(role)) {
       throw new Error('Invalid role');
     }
 

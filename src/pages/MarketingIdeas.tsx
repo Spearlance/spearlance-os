@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useClient } from '@/contexts/ClientContext';
@@ -20,6 +21,7 @@ import ReactMarkdown from 'react-markdown';
 
 export default function MarketingIdeas() {
   const { selectedClient } = useClient();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [selectedTypeFilter, setSelectedTypeFilter] = useState<string>('all');
@@ -44,6 +46,26 @@ export default function MarketingIdeas() {
   const [selectedAvatarId, setSelectedAvatarId] = useState<string>('');
   const [useCustomAudience, setUseCustomAudience] = useState(false);
   const [noteContent, setNoteContent] = useState('');
+
+  // Check user role and restrict access for web_designer
+  useEffect(() => {
+    const checkAccess = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", user.id)
+          .maybeSingle();
+        
+        if ((profile?.role as string) === 'web_designer') {
+          toast.error("Access Denied - Web designers don't have access to Marketing Ideas");
+          navigate('/');
+        }
+      }
+    };
+    checkAccess();
+  }, [navigate]);
 
   const { data: ideas = [], isLoading } = useQuery({
     queryKey: ['marketing-ideas', selectedClient?.id, selectedStatus, selectedTypeFilter],
