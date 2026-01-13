@@ -2,7 +2,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
-import { Calendar, Paperclip, MessageSquare, CheckCircle2, Repeat, Link } from "lucide-react";
+import { Calendar, Paperclip, MessageSquare, CheckCircle2, Repeat, Link, Globe } from "lucide-react";
 import { format } from "date-fns";
 
 interface TaskCardProps {
@@ -22,6 +22,8 @@ interface TaskCardProps {
     completed_subtasks?: number;
     comment_count?: number;
     attachment_count?: number;
+    linked_page_name?: string;
+    linked_channel_name?: string;
   };
   onClick?: () => void;
   isDragging?: boolean;
@@ -102,6 +104,24 @@ export const TaskCard = ({ task, onClick, isDragging }: TaskCardProps) => {
               {tag.name}
             </Badge>
           ))}
+        </div>
+      )}
+
+      {/* Linked Items Row */}
+      {(task.linked_page_name || task.linked_channel_name) && (
+        <div className="flex items-center gap-2 flex-wrap mb-2">
+          {task.linked_page_name && (
+            <span className="inline-flex items-center gap-1 text-xs text-muted-foreground bg-muted/50 rounded px-1.5 py-0.5">
+              <Globe className="h-3 w-3" />
+              {task.linked_page_name}
+            </span>
+          )}
+          {task.linked_channel_name && (
+            <span className="inline-flex items-center gap-1 text-xs text-muted-foreground bg-muted/50 rounded px-1.5 py-0.5">
+              <Link className="h-3 w-3" />
+              {task.linked_channel_name}
+            </span>
+          )}
         </div>
       )}
 

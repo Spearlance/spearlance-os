@@ -17,6 +17,7 @@ export interface MyTask {
   client_logo_url?: string;
   linked_channel_id: string | null;
   linked_channel_name?: string;
+  linked_page_name?: string;
   subtask_count?: number;
   completed_subtasks?: number;
   tags?: Array<{ id: string; name: string; color: string }>;
@@ -121,6 +122,20 @@ export function useMyTasks() {
             linkedChannelName = channel?.name;
           }
 
+          // Load linked page name if any
+          let linkedPageName: string | undefined;
+          const { data: pageLink } = await supabase
+            .from("website_build_tasks")
+            .select("page_id, website_build_pages!inner(name)")
+            .eq("task_id", task.id)
+            .not("page_id", "is", null)
+            .limit(1)
+            .maybeSingle();
+          
+          if (pageLink && pageLink.website_build_pages) {
+            linkedPageName = (pageLink.website_build_pages as any).name;
+          }
+
           return {
             id: task.id,
             title: task.title,
@@ -136,6 +151,7 @@ export function useMyTasks() {
             client_logo_url: task.clients?.logo_url,
             linked_channel_id: task.linked_channel_id,
             linked_channel_name: linkedChannelName,
+            linked_page_name: linkedPageName,
             subtask_count: subtasks?.length || 0,
             completed_subtasks: subtasks?.filter(st => st.status === "done").length || 0,
             tags: tagLinks?.map(tl => tl.task_tags).filter(Boolean) || [],

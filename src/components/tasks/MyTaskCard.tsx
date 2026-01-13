@@ -2,7 +2,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
-import { Calendar, CheckCircle2, Repeat, Link, Building2, ExternalLink } from "lucide-react";
+import { Calendar, CheckCircle2, Repeat, Link, Building2, ExternalLink, Globe } from "lucide-react";
 import { format, isToday, isTomorrow, isPast } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
@@ -150,12 +150,21 @@ export const MyTaskCard = ({ task, onClick, showClient = true, onViewInBoard }: 
 
         {/* Footer */}
         <div className="flex items-center justify-between gap-2 mt-3">
-          {/* Channel */}
-          {task.linked_channel_name && (
-            <span className="text-xs text-muted-foreground truncate max-w-[100px]">
-              {task.linked_channel_name}
-            </span>
-          )}
+          {/* Channel & Page Links */}
+          <div className="flex items-center gap-2 flex-wrap">
+            {task.linked_page_name && (
+              <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                <Globe className="h-3 w-3" />
+                <span className="truncate max-w-[80px]">{task.linked_page_name}</span>
+              </span>
+            )}
+            {task.linked_channel_name && (
+              <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                <Link className="h-3 w-3" />
+                <span className="truncate max-w-[80px]">{task.linked_channel_name}</span>
+              </span>
+            )}
+          </div>
           
           <div className="flex-1" />
 
