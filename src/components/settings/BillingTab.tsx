@@ -57,8 +57,9 @@ export function BillingTab({ client, isAdmin = false, onUpdate }: BillingTabProp
         try {
           // Ensure we have a valid session before making the request
           const { data: { session } } = await supabase.auth.getSession();
-          if (!session) {
-            console.error('No active session found');
+          if (!session?.access_token) {
+            console.log('No active session found, skipping plan name fetch');
+            setFetchingPlanName(false);
             return;
           }
 
@@ -69,7 +70,11 @@ export function BillingTab({ client, isAdmin = false, onUpdate }: BillingTabProp
             }
           });
 
-          if (error) throw error;
+          if (error) {
+            console.error('Error fetching plan name:', error);
+            // Don't throw, just log and continue
+            return;
+          }
 
           if (data?.success && data?.plan_name) {
             console.log('Successfully fetched plan name:', data.plan_name);
@@ -80,6 +85,7 @@ export function BillingTab({ client, isAdmin = false, onUpdate }: BillingTabProp
           }
         } catch (error: any) {
           console.error('Error fetching plan name:', error);
+          // Silently fail - don't break the UI
         } finally {
           setFetchingPlanName(false);
         }
