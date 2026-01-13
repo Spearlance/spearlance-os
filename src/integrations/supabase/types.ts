@@ -5592,10 +5592,13 @@ export type Database = {
       }
       website_build_pages: {
         Row: {
+          ai_content: string | null
           ai_generated_content: Json | null
+          ai_prompt_template: string | null
           build_id: string
           content_notes: string | null
           created_at: string
+          dev_notes: string | null
           id: string
           page_name: string
           page_type: string | null
@@ -5604,10 +5607,13 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          ai_content?: string | null
           ai_generated_content?: Json | null
+          ai_prompt_template?: string | null
           build_id: string
           content_notes?: string | null
           created_at?: string
+          dev_notes?: string | null
           id?: string
           page_name: string
           page_type?: string | null
@@ -5616,10 +5622,13 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          ai_content?: string | null
           ai_generated_content?: Json | null
+          ai_prompt_template?: string | null
           build_id?: string
           content_notes?: string | null
           created_at?: string
+          dev_notes?: string | null
           id?: string
           page_name?: string
           page_type?: string | null
@@ -5642,18 +5651,21 @@ export type Database = {
           build_id: string
           created_at: string
           id: string
+          page_id: string | null
           task_id: string
         }
         Insert: {
           build_id: string
           created_at?: string
           id?: string
+          page_id?: string | null
           task_id: string
         }
         Update: {
           build_id?: string
           created_at?: string
           id?: string
+          page_id?: string | null
           task_id?: string
         }
         Relationships: [
@@ -5662,6 +5674,13 @@ export type Database = {
             columns: ["build_id"]
             isOneToOne: false
             referencedRelation: "website_builds"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "website_build_tasks_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "website_build_pages"
             referencedColumns: ["id"]
           },
           {
@@ -5795,6 +5814,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      website_page_prompt_templates: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_default: boolean | null
+          output_structure: Json | null
+          page_type: string
+          prompt_template: string
+          template_name: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_default?: boolean | null
+          output_structure?: Json | null
+          page_type: string
+          prompt_template: string
+          template_name: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_default?: boolean | null
+          output_structure?: Json | null
+          page_type?: string
+          prompt_template?: string
+          template_name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       website_pages: {
         Row: {

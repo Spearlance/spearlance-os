@@ -109,7 +109,7 @@ export default function WebsiteBuildDetail() {
         </TabsContent>
 
         <TabsContent value="pages" className="mt-6">
-          <BuildPagesTab buildId={build.id} />
+          <BuildPagesTab buildId={build.id} clientId={build.client_id} />
         </TabsContent>
 
         <TabsContent value="dev-notes" className="mt-6">
