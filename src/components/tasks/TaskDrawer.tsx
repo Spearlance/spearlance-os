@@ -12,7 +12,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { FileText, Image, Link as LinkIcon, FileVideo, FileAudio, ExternalLink, X, Plus, Trash2, Clock, Globe } from "lucide-react";
+import { FileText, Image, Link as LinkIcon, FileVideo, FileAudio, ExternalLink, X, Plus, Trash2, Clock, Globe, ChevronLeft } from "lucide-react";
 import { DeleteTaskDialog } from "./DeleteTaskDialog";
 import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -75,6 +75,10 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
   const [availableMeetings, setAvailableMeetings] = useState<any[]>([]);
   const [showLinkChannelDialog, setShowLinkChannelDialog] = useState(false);
   const [availableChannels, setAvailableChannels] = useState<any[]>([]);
+  const [showLinkWebsiteDialog, setShowLinkWebsiteDialog] = useState(false);
+  const [availableBuilds, setAvailableBuilds] = useState<any[]>([]);
+  const [selectedBuildForPage, setSelectedBuildForPage] = useState<string | null>(null);
+  const [availablePages, setAvailablePages] = useState<any[]>([]);
   const [subtasks, setSubtasks] = useState<any[]>([]);
   const [taskColumns, setTaskColumns] = useState<Array<{ id: string; name: string; key: string; color: string; mapped_status: 'to_do' | 'in_progress' | 'done' }>>([]);
   const { toast } = useToast();
@@ -262,28 +266,122 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
   };
 
   const loadLinkedWebsitePage = async () => {
-    const { data } = await supabase
+    // First try to find a link with a page
+    const { data: pageLink } = await supabase
       .from("website_build_tasks")
       .select(`
+        id,
+        build_id,
         page_id,
-        website_build_pages!inner(id, name, build_id, website_builds!inner(id, name))
+        website_build_pages(id, page_name, build_id),
+        website_builds(id, name)
       `)
       .eq("task_id", task.id)
-      .not("page_id", "is", null)
       .limit(1)
       .maybeSingle();
     
-    if (data && data.website_build_pages) {
-      const page = data.website_build_pages as any;
-      setLinkedWebsitePage({
-        id: page.id,
-        name: page.name,
-        build_id: page.build_id,
-        build_name: page.website_builds?.name || 'Unknown Build',
-      });
+    if (pageLink) {
+      const page = pageLink.website_build_pages as any;
+      const build = pageLink.website_builds as any;
+      if (page) {
+        setLinkedWebsitePage({
+          id: page.id,
+          name: page.page_name,
+          build_id: page.build_id,
+          build_name: build?.name || 'Unknown Build',
+        });
+      } else if (build) {
+        // Linked to build only (no specific page)
+        setLinkedWebsitePage({
+          id: '',
+          name: '(No specific page)',
+          build_id: pageLink.build_id,
+          build_name: build.name,
+        });
+      } else {
+        setLinkedWebsitePage(null);
+      }
     } else {
       setLinkedWebsitePage(null);
     }
+  };
+
+  const loadAvailableBuilds = async () => {
+    const { data } = await supabase
+      .from("website_builds")
+      .select("id, name, status")
+      .eq("client_id", task.client_id)
+      .order("created_at", { ascending: false });
+    setAvailableBuilds(data || []);
+  };
+
+  const loadAvailablePages = async (buildId: string) => {
+    const { data } = await supabase
+      .from("website_build_pages")
+      .select("id, page_name, page_type, status")
+      .eq("build_id", buildId)
+      .order("sort_order");
+    setAvailablePages(data || []);
+  };
+
+  const handleLinkWebsitePage = async (buildId: string, pageId?: string) => {
+    // Check if task already linked to any build
+    const { data: existing } = await supabase
+      .from("website_build_tasks")
+      .select("id")
+      .eq("task_id", task.id)
+      .maybeSingle();
+    
+    if (existing) {
+      // Update existing link
+      const { error } = await supabase
+        .from("website_build_tasks")
+        .update({ 
+          build_id: buildId,
+          page_id: pageId || null 
+        })
+        .eq("id", existing.id);
+      
+      if (error) {
+        toast({ title: "Error linking website", variant: "destructive" });
+        return;
+      }
+    } else {
+      // Insert new link
+      const { error } = await supabase
+        .from("website_build_tasks")
+        .insert({
+          task_id: task.id,
+          build_id: buildId,
+          page_id: pageId || null
+        });
+      
+      if (error) {
+        toast({ title: "Error linking website", variant: "destructive" });
+        return;
+      }
+    }
+    
+    toast({ title: pageId ? "Page linked successfully" : "Build linked successfully" });
+    loadLinkedWebsitePage();
+    setShowLinkWebsiteDialog(false);
+    setSelectedBuildForPage(null);
+    setAvailablePages([]);
+  };
+
+  const handleUnlinkWebsitePage = async () => {
+    const { error } = await supabase
+      .from("website_build_tasks")
+      .delete()
+      .eq("task_id", task.id);
+    
+    if (error) {
+      toast({ title: "Error unlinking website", variant: "destructive" });
+      return;
+    }
+    
+    toast({ title: "Website unlinked successfully" });
+    setLinkedWebsitePage(null);
   };
 
   const loadAvailableAssets = async () => {
@@ -966,14 +1064,128 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
           <TabsContent value="related" className="mt-0 flex-1 flex flex-col overflow-hidden">
             <ScrollArea className="flex-1 pr-4">
               <div className="space-y-6">
-                {/* Linked Website Page */}
-                {linkedWebsitePage && (
-                  <div>
-                    <h3 className="font-medium mb-3">Linked Website Page</h3>
+                {/* Linked Website Build/Page */}
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-medium">Website Build/Page</h3>
+                    {!linkedWebsitePage && (
+                      <Dialog open={showLinkWebsiteDialog} onOpenChange={(open) => {
+                        setShowLinkWebsiteDialog(open);
+                        if (!open) {
+                          setSelectedBuildForPage(null);
+                          setAvailablePages([]);
+                        }
+                      }}>
+                        <DialogTrigger asChild>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => {
+                              loadAvailableBuilds();
+                              setSelectedBuildForPage(null);
+                              setAvailablePages([]);
+                            }}
+                          >
+                            <Plus className="h-4 w-4 mr-1" />
+                            Link Build/Page
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>
+                              {selectedBuildForPage ? "Select Page (Optional)" : "Select Website Build"}
+                            </DialogTitle>
+                          </DialogHeader>
+                          <ScrollArea className="h-[400px] pr-4">
+                            {!selectedBuildForPage ? (
+                              <div className="space-y-2">
+                                {availableBuilds.length === 0 ? (
+                                  <p className="text-sm text-muted-foreground text-center py-8">No website builds found</p>
+                                ) : (
+                                  availableBuilds.map((build) => (
+                                    <Card
+                                      key={build.id}
+                                      className="cursor-pointer hover:bg-accent transition-colors"
+                                      onClick={() => {
+                                        setSelectedBuildForPage(build.id);
+                                        loadAvailablePages(build.id);
+                                      }}
+                                    >
+                                      <CardContent className="p-4">
+                                        <div className="flex items-center justify-between">
+                                          <div className="font-medium">{build.name}</div>
+                                          <Badge variant="outline">{build.status}</Badge>
+                                        </div>
+                                      </CardContent>
+                                    </Card>
+                                  ))
+                                )}
+                              </div>
+                            ) : (
+                              <div className="space-y-2">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="mb-2"
+                                  onClick={() => {
+                                    setSelectedBuildForPage(null);
+                                    setAvailablePages([]);
+                                  }}
+                                >
+                                  <ChevronLeft className="h-4 w-4 mr-1" />
+                                  Back to Builds
+                                </Button>
+                                <Card
+                                  className="cursor-pointer hover:bg-accent transition-colors border-dashed"
+                                  onClick={() => handleLinkWebsitePage(selectedBuildForPage)}
+                                >
+                                  <CardContent className="p-4 text-center text-muted-foreground">
+                                    Link to Build only (no specific page)
+                                  </CardContent>
+                                </Card>
+                                {availablePages.map((page) => (
+                                  <Card
+                                    key={page.id}
+                                    className="cursor-pointer hover:bg-accent transition-colors"
+                                    onClick={() => handleLinkWebsitePage(selectedBuildForPage, page.id)}
+                                  >
+                                    <CardContent className="p-4">
+                                      <div className="flex items-center justify-between">
+                                        <div>
+                                          <div className="font-medium">{page.page_name}</div>
+                                          <div className="text-sm text-muted-foreground">
+                                            {page.page_type || 'Custom'}
+                                          </div>
+                                        </div>
+                                        <Badge variant="outline">{page.status}</Badge>
+                                      </div>
+                                    </CardContent>
+                                  </Card>
+                                ))}
+                              </div>
+                            )}
+                          </ScrollArea>
+                        </DialogContent>
+                      </Dialog>
+                    )}
+                  </div>
+                  
+                  {linkedWebsitePage ? (
                     <div
-                      className="flex items-center justify-between p-3 bg-muted rounded-lg cursor-pointer hover:bg-muted/80"
+                      className="relative group flex items-center justify-between p-3 bg-muted rounded-lg cursor-pointer hover:bg-muted/80"
                       onClick={() => navigate(`/website/builds/${linkedWebsitePage.build_id}`)}
                     >
+                      <Button
+                        variant="destructive"
+                        size="icon"
+                        className="absolute top-2 right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleUnlinkWebsitePage();
+                        }}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
                       <div className="flex items-center gap-2">
                         <Globe className="h-4 w-4 text-muted-foreground" />
                         <div>
@@ -981,10 +1193,12 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
                           <div className="text-xs text-muted-foreground">{linkedWebsitePage.build_name}</div>
                         </div>
                       </div>
-                      <ExternalLink className="h-4 w-4 text-muted-foreground" />
+                      <ExternalLink className="h-4 w-4 text-muted-foreground mr-8" />
                     </div>
-                  </div>
-                )}
+                  ) : (
+                    <p className="text-sm text-muted-foreground">No website build/page linked</p>
+                  )}
+                </div>
 
                 {/* Related Channels */}
                 <div>
