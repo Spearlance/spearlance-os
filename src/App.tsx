@@ -50,6 +50,7 @@ import MyBugReports from "./pages/MyBugReports";
 import Analytics from "./pages/Analytics";
 import SEO from "./pages/SEO";
 import EmailTemplates from "./pages/admin/EmailTemplates";
+import PromptTemplates from "./pages/admin/PromptTemplates";
 import BlogWriter from "./pages/BlogWriter";
 import ClientSuccessHub from "./pages/ClientSuccessHub";
 import WebsiteBuilds from "./pages/WebsiteBuilds";
@@ -105,6 +106,7 @@ const App = () => (
             <Route path="/notifications" element={<MainLayout><Notifications /></MainLayout>} />
             <Route path="/admin" element={<MainLayout><Admin /></MainLayout>} />
             <Route path="/admin/email-templates" element={<MainLayout><EmailTemplates /></MainLayout>} />
+            <Route path="/admin/prompt-templates" element={<MainLayout><PromptTemplates /></MainLayout>} />
             <Route path="/admin/2fa-setup" element={<MainLayout><Admin2FASetup /></MainLayout>} />
             <Route path="/backfill-images" element={<MainLayout><BackfillImages /></MainLayout>} />
             <Route path="/website/form-submissions" element={<MainLayout><WebsiteFormSubmissions /></MainLayout>} />

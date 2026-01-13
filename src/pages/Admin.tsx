@@ -291,7 +291,11 @@ export default function Admin() {
 
       <Admin2FABanner />
 
-      <div className="flex justify-end mb-4">
+      <div className="flex justify-end gap-2 mb-4">
+        <Button onClick={() => navigate("/admin/prompt-templates")} variant="outline">
+          <FileText className="h-4 w-4 mr-2" />
+          Prompt Templates
+        </Button>
         <Button onClick={() => navigate("/admin/email-templates")} variant="outline">
           <Mail className="h-4 w-4 mr-2" />
           Email Templates
