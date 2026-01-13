@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
-import { Plus } from "lucide-react";
+import { Plus, Globe } from "lucide-react";
 import { format } from "date-fns";
 
 interface Task {
@@ -21,6 +21,7 @@ interface Task {
   due_date?: string;
   assignees?: Array<{ id: string; name: string; avatar_url?: string }>;
   tags?: Array<{ id: string; name: string; color: string }>;
+  linked_page_name?: string;
 }
 
 interface TaskTableViewProps {
@@ -54,6 +55,7 @@ export const TaskTableView = ({
               <TableHead>Title</TableHead>
               <TableHead>Priority</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead>Linked Page</TableHead>
               <TableHead>Assignees</TableHead>
               <TableHead>Tags</TableHead>
               <TableHead>Due Date</TableHead>
@@ -62,7 +64,7 @@ export const TaskTableView = ({
           <TableBody>
             {tasks.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-muted-foreground">
+                <TableCell colSpan={7} className="text-center text-muted-foreground">
                   No tasks found
                 </TableCell>
               </TableRow>
@@ -90,6 +92,16 @@ export const TaskTableView = ({
                     <Badge variant="secondary">
                       {taskColumns.find(col => col.key === task.status)?.name || task.status}
                     </Badge>
+                  </TableCell>
+                  <TableCell>
+                    {task.linked_page_name ? (
+                      <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                        <Globe className="h-3 w-3" />
+                        {task.linked_page_name}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
                   </TableCell>
                   <TableCell>
                     <div className="flex -space-x-2">

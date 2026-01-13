@@ -40,6 +40,7 @@ interface Task {
   tags?: Array<{ id: string; name: string; color: string }>;
   subtask_count?: number;
   completed_subtasks?: number;
+  linked_page_name?: string;
   profiles?: {
     name: string;
   };
@@ -372,6 +373,20 @@ export default function Tasks() {
           `)
           .eq("task_id", task.id);
 
+        // Load linked page name
+        let linkedPageName: string | undefined;
+        const { data: pageLink } = await supabase
+          .from("website_build_tasks")
+          .select("page_id, website_build_pages!inner(name)")
+          .eq("task_id", task.id)
+          .not("page_id", "is", null)
+          .limit(1)
+          .maybeSingle();
+        
+        if (pageLink && pageLink.website_build_pages) {
+          linkedPageName = (pageLink.website_build_pages as any).name;
+        }
+
         return {
           ...task,
         assignees: assigneeProfiles.map((profile: any) => {
@@ -386,6 +401,7 @@ export default function Tasks() {
           subtask_count: subtasks?.length || 0,
           completed_subtasks: subtasks?.filter(st => st.status === "done").length || 0,
           tags: tagLinks?.map(tl => tl.task_tags).filter(Boolean) || [],
+          linked_page_name: linkedPageName,
         };
       })
     );

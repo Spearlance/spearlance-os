@@ -10,7 +10,6 @@ import { BuildOverviewTab } from "@/components/website-builds/BuildOverviewTab";
 import { BuildPagesTab } from "@/components/website-builds/BuildPagesTab";
 import { BuildDevNotesTab } from "@/components/website-builds/BuildDevNotesTab";
 import { BuildLinkedTasksTab } from "@/components/website-builds/BuildLinkedTasksTab";
-import { BuildAIContentTab } from "@/components/website-builds/BuildAIContentTab";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 
@@ -96,12 +95,11 @@ export default function WebsiteBuildDetail() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="pages">Pages</TabsTrigger>
           <TabsTrigger value="dev-notes">Dev Notes</TabsTrigger>
           <TabsTrigger value="tasks">Linked Tasks</TabsTrigger>
-          <TabsTrigger value="ai-content">AI Content</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="mt-6">
@@ -121,10 +119,6 @@ export default function WebsiteBuildDetail() {
 
         <TabsContent value="tasks" className="mt-6">
           <BuildLinkedTasksTab buildId={build.id} clientId={build.client_id} />
-        </TabsContent>
-
-        <TabsContent value="ai-content" className="mt-6">
-          <BuildAIContentTab buildId={build.id} clientId={build.client_id} />
         </TabsContent>
       </Tabs>
     </div>

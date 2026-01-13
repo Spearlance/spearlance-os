@@ -12,7 +12,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { FileText, Image, Link as LinkIcon, FileVideo, FileAudio, ExternalLink, X, Plus, Trash2, Clock } from "lucide-react";
+import { FileText, Image, Link as LinkIcon, FileVideo, FileAudio, ExternalLink, X, Plus, Trash2, Clock, Globe } from "lucide-react";
 import { DeleteTaskDialog } from "./DeleteTaskDialog";
 import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -68,6 +68,7 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
   const [relatedAssets, setRelatedAssets] = useState<any[]>([]);
   const [relatedMeetings, setRelatedMeetings] = useState<any[]>([]);
   const [relatedChannels, setRelatedChannels] = useState<any[]>([]);
+  const [linkedWebsitePage, setLinkedWebsitePage] = useState<{ id: string; name: string; build_id: string; build_name: string } | null>(null);
   const [showLinkAssetDialog, setShowLinkAssetDialog] = useState(false);
   const [showLinkMeetingDialog, setShowLinkMeetingDialog] = useState(false);
   const [availableAssets, setAvailableAssets] = useState<any[]>([]);
@@ -130,6 +131,7 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
     loadCurrentWatchers();
     loadSubtasks();
     loadTaskColumns();
+    loadLinkedWebsitePage();
     
     // Listen for column updates
     const handleColumnUpdate = () => {
@@ -257,6 +259,31 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
       .order("display_order");
     
     setTaskColumns(data || []);
+  };
+
+  const loadLinkedWebsitePage = async () => {
+    const { data } = await supabase
+      .from("website_build_tasks")
+      .select(`
+        page_id,
+        website_build_pages!inner(id, name, build_id, website_builds!inner(id, name))
+      `)
+      .eq("task_id", task.id)
+      .not("page_id", "is", null)
+      .limit(1)
+      .maybeSingle();
+    
+    if (data && data.website_build_pages) {
+      const page = data.website_build_pages as any;
+      setLinkedWebsitePage({
+        id: page.id,
+        name: page.name,
+        build_id: page.build_id,
+        build_name: page.website_builds?.name || 'Unknown Build',
+      });
+    } else {
+      setLinkedWebsitePage(null);
+    }
   };
 
   const loadAvailableAssets = async () => {
@@ -939,6 +966,26 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
           <TabsContent value="related" className="mt-0 flex-1 flex flex-col overflow-hidden">
             <ScrollArea className="flex-1 pr-4">
               <div className="space-y-6">
+                {/* Linked Website Page */}
+                {linkedWebsitePage && (
+                  <div>
+                    <h3 className="font-medium mb-3">Linked Website Page</h3>
+                    <div
+                      className="flex items-center justify-between p-3 bg-muted rounded-lg cursor-pointer hover:bg-muted/80"
+                      onClick={() => navigate(`/website/builds/${linkedWebsitePage.build_id}`)}
+                    >
+                      <div className="flex items-center gap-2">
+                        <Globe className="h-4 w-4 text-muted-foreground" />
+                        <div>
+                          <div className="font-medium text-sm">{linkedWebsitePage.name}</div>
+                          <div className="text-xs text-muted-foreground">{linkedWebsitePage.build_name}</div>
+                        </div>
+                      </div>
+                      <ExternalLink className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                  </div>
+                )}
+
                 {/* Related Channels */}
                 <div>
                   <div className="flex items-center justify-between mb-3">

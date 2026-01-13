@@ -1,16 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
-import { Plus, Link2, ExternalLink } from "lucide-react";
+import { Plus, Link2 } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
+import { TaskCard } from "@/components/tasks/TaskCard";
+import { TaskDrawer } from "@/components/tasks/TaskDrawer";
+import { CreateTaskDialog } from "@/components/tasks/CreateTaskDialog";
 
 interface PageTasksTabProps {
   pageId: string;
@@ -23,26 +20,92 @@ interface Task {
   title: string;
   description: string | null;
   status: string;
-  priority: string | null;
+  priority: string;
+  due_date: string | null;
+  color?: string;
+  is_recurring?: boolean;
+  is_recurring_instance?: boolean;
+  assignees?: Array<{ id: string; name: string; avatar_url?: string }>;
+  tags?: Array<{ id: string; name: string; color: string }>;
+  subtask_count?: number;
+  completed_subtasks?: number;
+  client_id: string;
 }
 
 export default function PageTasksTab({ pageId, buildId, clientId }: PageTasksTabProps) {
   const queryClient = useQueryClient();
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isLinkOpen, setIsLinkOpen] = useState(false);
-  const [newTask, setNewTask] = useState({ title: "", description: "" });
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
-  // Fetch tasks linked to this page
-  const { data: pageTasks = [], isLoading } = useQuery({
+  // Fetch tasks linked to this page with full details
+  const { data: pageTasks = [], isLoading, refetch } = useQuery({
     queryKey: ["page-tasks", pageId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("website_build_tasks")
-        .select("id, task_id, tasks:task_id(id, title, description, status, priority)")
+        .select("id, task_id")
         .eq("page_id", pageId);
 
       if (error) throw error;
-      return data?.map((t) => t.tasks).filter(Boolean) as Task[];
+      if (!data || data.length === 0) return [];
+
+      const taskIds = data.map(t => t.task_id);
+
+      // Fetch full task details
+      const { data: tasks, error: tasksError } = await supabase
+        .from("tasks")
+        .select("*")
+        .in("id", taskIds);
+
+      if (tasksError) throw tasksError;
+
+      // Enrich tasks with assignees, subtasks, and tags
+      const enrichedTasks = await Promise.all(
+        (tasks || []).map(async (task) => {
+          // Load assignees
+          const { data: taskAssignees } = await supabase
+            .from("task_assignees")
+            .select("user_id")
+            .eq("task_id", task.id);
+
+          let assigneeProfiles: any[] = [];
+          if (taskAssignees && taskAssignees.length > 0) {
+            const userIds = taskAssignees.map(ta => ta.user_id);
+            const { data: profilesData } = await supabase
+              .from("profiles")
+              .select("id, name, avatar_url")
+              .in("id", userIds);
+            assigneeProfiles = profilesData || [];
+          }
+
+          // Load subtasks
+          const { data: subtasks } = await supabase
+            .from("tasks")
+            .select("id, status")
+            .eq("parent_task_id", task.id);
+
+          // Load tags
+          const { data: tagLinks } = await supabase
+            .from("task_tag_links")
+            .select("task_tags (id, name, color)")
+            .eq("task_id", task.id);
+
+          return {
+            ...task,
+            assignees: assigneeProfiles.map((profile) => ({
+              id: profile.id,
+              name: profile.name || "Unknown User",
+              avatar_url: profile.avatar_url || null,
+            })),
+            subtask_count: subtasks?.length || 0,
+            completed_subtasks: subtasks?.filter(st => st.status === "done").length || 0,
+            tags: tagLinks?.map(tl => tl.task_tags).filter(Boolean) || [],
+          };
+        })
+      );
+
+      return enrichedTasks as Task[];
     },
   });
 
@@ -58,56 +121,23 @@ export default function PageTasksTab({ pageId, buildId, clientId }: PageTasksTab
 
       const linkedIds = linkedTaskIds?.map((t) => t.task_id) || [];
 
-      const { data, error } = await supabase
+      const query = supabase
         .from("tasks")
         .select("id, title, status, priority")
-        .eq("client_id", clientId)
-        .not("id", "in", linkedIds.length > 0 ? `(${linkedIds.join(",")})` : "(00000000-0000-0000-0000-000000000000)");
+        .eq("client_id", clientId);
 
-      if (error) throw error;
-      return data || [];
+      // Only add the NOT IN filter if there are linked IDs
+      if (linkedIds.length > 0) {
+        const { data, error } = await query.not("id", "in", `(${linkedIds.join(",")})`);
+        if (error) throw error;
+        return data || [];
+      } else {
+        const { data, error } = await query;
+        if (error) throw error;
+        return data || [];
+      }
     },
     enabled: isLinkOpen,
-  });
-
-  // Create new task and link to page
-  const createTask = useMutation({
-    mutationFn: async (taskData: { title: string; description: string }) => {
-      // First create the task
-      const { data: task, error: taskError } = await supabase
-        .from("tasks")
-        .insert({
-          title: taskData.title,
-          description: taskData.description,
-          client_id: clientId,
-          status: "to_do",
-        })
-        .select()
-        .single();
-
-      if (taskError) throw taskError;
-
-      // Then link it to the page
-      const { error: linkError } = await supabase
-        .from("website_build_tasks")
-        .insert({
-          build_id: buildId,
-          task_id: task.id,
-          page_id: pageId,
-        });
-
-      if (linkError) throw linkError;
-      return task;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["page-tasks", pageId] });
-      setNewTask({ title: "", description: "" });
-      setIsCreateOpen(false);
-      toast.success("Task created and linked");
-    },
-    onError: () => {
-      toast.error("Failed to create task");
-    },
   });
 
   // Link existing task to page
@@ -134,27 +164,39 @@ export default function PageTasksTab({ pageId, buildId, clientId }: PageTasksTab
     },
   });
 
-  // Toggle task status
-  const toggleStatus = useMutation({
-    mutationFn: async ({ taskId, currentStatus }: { taskId: string; currentStatus: string }) => {
-      const newStatus = currentStatus === "done" ? "to_do" : "done";
-      const { error } = await supabase
-        .from("tasks")
-        .update({ status: newStatus })
-        .eq("id", taskId);
+  // Handle new task creation - link it to this page
+  const handleTaskCreated = async () => {
+    // Get the most recently created task for this client
+    const { data: latestTask } = await supabase
+      .from("tasks")
+      .select("id")
+      .eq("client_id", clientId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .single();
 
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["page-tasks", pageId] });
-    },
-  });
+    if (latestTask) {
+      // Link the task to this page
+      await supabase
+        .from("website_build_tasks")
+        .insert({
+          build_id: buildId,
+          task_id: latestTask.id,
+          page_id: pageId,
+        });
+    }
 
-  const priorityColors: Record<string, string> = {
-    low: "bg-slate-100 text-slate-800",
-    medium: "bg-yellow-100 text-yellow-800",
-    high: "bg-orange-100 text-orange-800",
-    urgent: "bg-red-100 text-red-800",
+    refetch();
+    setShowCreateDialog(false);
+  };
+
+  const handleTaskClick = (task: Task) => {
+    setSelectedTask(task);
+  };
+
+  const handleTaskUpdate = () => {
+    refetch();
+    setSelectedTask(null);
   };
 
   if (isLoading) {
@@ -164,44 +206,10 @@ export default function PageTasksTab({ pageId, buildId, clientId }: PageTasksTab
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
-        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-          <DialogTrigger asChild>
-            <Button size="sm" className="gap-2">
-              <Plus className="h-4 w-4" />
-              New Task
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Create Page Task</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 pt-4">
-              <div className="space-y-2">
-                <Label>Title</Label>
-                <Input
-                  placeholder="Task title..."
-                  value={newTask.title}
-                  onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Description</Label>
-                <Textarea
-                  placeholder="Task description..."
-                  value={newTask.description}
-                  onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
-                />
-              </div>
-              <Button
-                className="w-full"
-                onClick={() => createTask.mutate(newTask)}
-                disabled={!newTask.title.trim() || createTask.isPending}
-              >
-                {createTask.isPending ? "Creating..." : "Create Task"}
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+        <Button size="sm" className="gap-2" onClick={() => setShowCreateDialog(true)}>
+          <Plus className="h-4 w-4" />
+          New Task
+        </Button>
 
         <Dialog open={isLinkOpen} onOpenChange={setIsLinkOpen}>
           <DialogTrigger asChild>
@@ -229,9 +237,9 @@ export default function PageTasksTab({ pageId, buildId, clientId }: PageTasksTab
                     >
                       <div>
                         <p className="font-medium text-sm">{task.title}</p>
-                        <Badge variant="outline" className="text-xs mt-1">
-                          {task.status}
-                        </Badge>
+                        <span className="text-xs text-muted-foreground">
+                          {task.status.replace("_", " ")}
+                        </span>
                       </div>
                       <Link2 className="h-4 w-4 text-muted-foreground" />
                     </div>
@@ -249,45 +257,33 @@ export default function PageTasksTab({ pageId, buildId, clientId }: PageTasksTab
           <p className="text-xs mt-1">Create a task or link an existing one</p>
         </div>
       ) : (
-        <div className="space-y-2">
+        <div className="grid gap-3">
           {pageTasks.map((task) => (
-            <div
+            <TaskCard
               key={task.id}
-              className="flex items-start gap-3 p-3 border rounded-lg hover:bg-muted/50"
-            >
-              <Checkbox
-                checked={task.status === "done"}
-                onCheckedChange={() => toggleStatus.mutate({ taskId: task.id, currentStatus: task.status })}
-                className="mt-0.5"
-              />
-              <div className="flex-1 min-w-0">
-                <p className={`font-medium text-sm ${task.status === "done" ? "line-through text-muted-foreground" : ""}`}>
-                  {task.title}
-                </p>
-                {task.description && (
-                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                    {task.description}
-                  </p>
-                )}
-                <div className="flex items-center gap-2 mt-2">
-                  <Badge variant="outline" className="text-xs">
-                    {task.status.replace("_", " ")}
-                  </Badge>
-                  {task.priority && (
-                    <Badge className={`text-xs ${priorityColors[task.priority] || ""}`}>
-                      {task.priority}
-                    </Badge>
-                  )}
-                </div>
-              </div>
-              <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
-                <a href={`/tasks?selected=${task.id}`} target="_blank" rel="noopener noreferrer">
-                  <ExternalLink className="h-4 w-4" />
-                </a>
-              </Button>
-            </div>
+              task={task}
+              onClick={() => handleTaskClick(task)}
+            />
           ))}
         </div>
+      )}
+
+      {/* Create Task Dialog */}
+      <CreateTaskDialog
+        open={showCreateDialog}
+        onOpenChange={setShowCreateDialog}
+        onSuccess={handleTaskCreated}
+      />
+
+      {/* Task Drawer */}
+      {selectedTask && (
+        <TaskDrawer
+          task={selectedTask}
+          open={!!selectedTask}
+          onOpenChange={(open) => !open && setSelectedTask(null)}
+          onUpdate={handleTaskUpdate}
+          isAdminOrFMM={true}
+        />
       )}
     </div>
   );
