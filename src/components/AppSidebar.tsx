@@ -108,6 +108,7 @@ const helpSupportSubItems = [
 ];
 
 const websiteSubItems = [
+  { title: "Builds", url: "/website/builds", icon: FolderOpen },
   { title: "Editor", icon: ExternalLink, external: true },
   { title: "Form Submissions", url: "/website/form-submissions", icon: FileText },
   { title: "Site Comments", url: "/website/comments", icon: MessageSquare },
