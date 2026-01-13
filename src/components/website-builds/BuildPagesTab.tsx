@@ -7,13 +7,29 @@ import { PageCard } from "./PageCard";
 import { AddPageDialog } from "./AddPageDialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
+import PageDrawer from "./PageDrawer";
 
 interface BuildPagesTabProps {
   buildId: string;
+  clientId: string;
 }
 
-export function BuildPagesTab({ buildId }: BuildPagesTabProps) {
+interface Page {
+  id: string;
+  page_name: string;
+  page_type: string;
+  status: string;
+  content_notes: string | null;
+  dev_notes: string | null;
+  ai_content: string | null;
+  sort_order: number;
+  build_id: string;
+}
+
+export function BuildPagesTab({ buildId, clientId }: BuildPagesTabProps) {
   const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [selectedPage, setSelectedPage] = useState<Page | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const queryClient = useQueryClient();
 
   const { data: pages, isLoading } = useQuery({
@@ -26,7 +42,7 @@ export function BuildPagesTab({ buildId }: BuildPagesTabProps) {
         .order("sort_order", { ascending: true });
 
       if (error) throw error;
-      return data;
+      return data as Page[];
     },
   });
 
@@ -59,6 +75,19 @@ export function BuildPagesTab({ buildId }: BuildPagesTabProps) {
 
     reorderPages.mutate(updates);
   };
+
+  const handlePageClick = (page: Page) => {
+    setSelectedPage({
+      ...page,
+      name: page.page_name,
+    } as Page & { name: string });
+    setDrawerOpen(true);
+  };
+
+  // Update selected page when pages data changes
+  const currentSelectedPage = selectedPage && pages
+    ? pages.find((p) => p.id === selectedPage.id)
+    : null;
 
   if (isLoading) {
     return (
@@ -111,6 +140,7 @@ export function BuildPagesTab({ buildId }: BuildPagesTabProps) {
                           page={page} 
                           buildId={buildId}
                           isDragging={snapshot.isDragging}
+                          onClick={() => handlePageClick(page)}
                         />
                       </div>
                     )}
@@ -131,6 +161,24 @@ export function BuildPagesTab({ buildId }: BuildPagesTabProps) {
           queryClient.invalidateQueries({ queryKey: ["website-build-pages", buildId] });
           setAddDialogOpen(false);
         }}
+      />
+
+      <PageDrawer
+        page={currentSelectedPage ? {
+          id: currentSelectedPage.id,
+          name: currentSelectedPage.page_name,
+          page_type: currentSelectedPage.page_type || "other",
+          status: currentSelectedPage.status,
+          content_notes: currentSelectedPage.content_notes,
+          dev_notes: currentSelectedPage.dev_notes,
+          ai_content: currentSelectedPage.ai_content,
+          sort_order: currentSelectedPage.sort_order,
+          build_id: currentSelectedPage.build_id,
+        } : null}
+        open={drawerOpen}
+        onOpenChange={setDrawerOpen}
+        buildId={buildId}
+        clientId={clientId}
       />
     </div>
   );
