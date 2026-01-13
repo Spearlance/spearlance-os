@@ -5590,6 +5590,143 @@ export type Database = {
           },
         ]
       }
+      website_build_pages: {
+        Row: {
+          ai_generated_content: Json | null
+          build_id: string
+          content_notes: string | null
+          created_at: string
+          id: string
+          page_name: string
+          page_type: string | null
+          sort_order: number
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          ai_generated_content?: Json | null
+          build_id: string
+          content_notes?: string | null
+          created_at?: string
+          id?: string
+          page_name: string
+          page_type?: string | null
+          sort_order?: number
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          ai_generated_content?: Json | null
+          build_id?: string
+          content_notes?: string | null
+          created_at?: string
+          id?: string
+          page_name?: string
+          page_type?: string | null
+          sort_order?: number
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "website_build_pages_build_id_fkey"
+            columns: ["build_id"]
+            isOneToOne: false
+            referencedRelation: "website_builds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      website_build_tasks: {
+        Row: {
+          build_id: string
+          created_at: string
+          id: string
+          task_id: string
+        }
+        Insert: {
+          build_id: string
+          created_at?: string
+          id?: string
+          task_id: string
+        }
+        Update: {
+          build_id?: string
+          created_at?: string
+          id?: string
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "website_build_tasks_build_id_fkey"
+            columns: ["build_id"]
+            isOneToOne: false
+            referencedRelation: "website_builds"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "website_build_tasks_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      website_builds: {
+        Row: {
+          client_id: string
+          created_at: string
+          created_by: string | null
+          dev_notes: string | null
+          id: string
+          name: string
+          scope_summary: string | null
+          status: string
+          target_launch_date: string | null
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          created_by?: string | null
+          dev_notes?: string | null
+          id?: string
+          name: string
+          scope_summary?: string | null
+          status?: string
+          target_launch_date?: string | null
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          created_by?: string | null
+          dev_notes?: string | null
+          id?: string
+          name?: string
+          scope_summary?: string | null
+          status?: string
+          target_launch_date?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "website_builds_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "website_builds_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       website_form_submissions: {
         Row: {
           assigned_to: string | null
@@ -5816,7 +5953,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "fmm" | "client"
+      app_role: "admin" | "fmm" | "client" | "web_designer"
       asset_type: "image" | "video" | "copy" | "doc" | "link" | "other"
       billing_status: "good" | "delinquent" | "cancelled"
       bug_report_severity: "critical" | "high" | "medium" | "low" | "cosmetic"
@@ -5970,7 +6107,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "fmm", "client"],
+      app_role: ["admin", "fmm", "client", "web_designer"],
       asset_type: ["image", "video", "copy", "doc", "link", "other"],
       billing_status: ["good", "delinquent", "cancelled"],
       bug_report_severity: ["critical", "high", "medium", "low", "cosmetic"],
