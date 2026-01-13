@@ -263,8 +263,8 @@ export function AppSidebar() {
                 </SidebarMenuItem>
               ))}
 
-              {/* My Tasks - only for admin and fmm users */}
-              {!isLoading && (userRole === 'admin' || userRole === 'fmm') && (
+              {/* My Tasks - only for admin, fmm, and web_designer users */}
+              {!isLoading && (userRole === 'admin' || userRole === 'fmm' || userRole === 'web_designer') && (
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild>
                     <NavLink to="/my-tasks" className={getNavClass}>
@@ -297,6 +297,8 @@ export function AppSidebar() {
                       <SidebarMenuSub>
                         {brandContentSubItems
                           .filter((subItem) => {
+                            // Web designers don't have access to social media
+                            if (subItem.url === '/social-media' && userRole === 'web_designer') return false;
                             // Show while flags loading, then filter
                             if (subItem.url === '/social-media') return flagsLoading || isEnabled('social_media');
                             if (subItem.url === '/brand/guide') return flagsLoading || isEnabled('brand_guide');
@@ -341,6 +343,10 @@ export function AppSidebar() {
                       <SidebarMenuSub>
                         {marketingSubItems
                           .filter((subItem) => {
+                            // Web designers only see Profile and Services
+                            if (userRole === 'web_designer') {
+                              return subItem.url === '/marketing/profile' || subItem.url === '/marketing/services';
+                            }
                             // Show while flags loading, then filter
                             if (subItem.url === '/marketing/flow') return flagsLoading || isEnabled('marketing_flow');
                             return true;
@@ -447,7 +453,8 @@ export function AppSidebar() {
                 </SidebarMenuItem>
               </Collapsible>
 
-              {!isLoading && (
+              {/* Communication section - hidden for web_designer */}
+              {!isLoading && userRole !== 'web_designer' && (
                 <Collapsible open={clientCommunicationOpen} onOpenChange={setClientCommunicationOpen}>
                   <SidebarMenuItem>
                     <CollapsibleTrigger asChild>

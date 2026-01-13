@@ -52,7 +52,7 @@ export default function CommunicationLogs() {
       }
       loadLogs();
     }
-  }, [selectedClient, typeFilter, searchQuery, userRole]);
+  }, [selectedClient, typeFilter, searchQuery, userRole, navigate, toast]);
 
   const loadUserRole = async () => {
     const { data: { user } } = await supabase.auth.getUser();

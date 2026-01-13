@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useClient } from "@/contexts/ClientContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -36,6 +37,7 @@ type Task = Database["public"]["Tables"]["tasks"]["Row"];
 
 const MarketingFlowchart = () => {
   const { selectedClient } = useClient();
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [flowId, setFlowId] = useState<string | null>(null);
@@ -64,10 +66,16 @@ const MarketingFlowchart = () => {
           .eq("id", user.id)
           .maybeSingle();
         setUserRole(profile?.role || "");
+        
+        // Restrict access for web_designer
+        if ((profile?.role as string) === 'web_designer') {
+          toast({ title: "Access Denied", description: "Web designers don't have access to Marketing Flow", variant: "destructive" });
+          navigate('/');
+        }
       }
     };
     fetchUserRole();
-  }, []);
+  }, [navigate, toast]);
 
   useEffect(() => {
     if (selectedClient?.id) {

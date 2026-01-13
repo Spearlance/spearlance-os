@@ -58,6 +58,7 @@ export default function ClientSuccessHub() {
         .eq('id', user.id)
         .single();
 
+      // web_designer is also restricted along with admin/fmm check
       if (profile?.role !== 'admin' && profile?.role !== 'fmm') {
         toast.error('Access denied. This page is for Admin and FMM only.');
         navigate('/dashboard');

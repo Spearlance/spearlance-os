@@ -114,6 +114,14 @@ const Reports = () => {
     }
   }, [selectedClient, clientLoading, navigate]);
 
+  // Check user role and restrict access for web_designer
+  useEffect(() => {
+    if ((userRole as string) === 'web_designer') {
+      toast({ title: "Access Denied", description: "Web designers don't have access to Reports", variant: "destructive" });
+      navigate('/');
+    }
+  }, [userRole, navigate]);
+
   useEffect(() => {
     loadReports();
   }, [filters]);

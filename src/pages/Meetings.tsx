@@ -43,10 +43,16 @@ export default function Meetings() {
           .eq("id", user.id)
           .maybeSingle();
         setUserRole(profile?.role || "");
+        
+        // Restrict access for web_designer
+        if ((profile?.role as string) === 'web_designer') {
+          toast({ title: "Access Denied", description: "Web designers don't have access to Meetings", variant: "destructive" });
+          navigate('/');
+        }
       }
     };
     fetchUserRole();
-  }, []);
+  }, [navigate, toast]);
 
   useEffect(() => {
     const checkTldvStatus = async () => {

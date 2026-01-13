@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { MonthlyPlannerWizard } from "@/components/social/MonthlyPlannerWizard";
 import { MonthlyCalendarTable } from "@/components/social/MonthlyCalendarTable";
@@ -26,6 +27,7 @@ import { toast } from "sonner";
 
 const SocialMedia = () => {
   const { selectedClient, loading: clientLoading } = useClient();
+  const navigate = useNavigate();
   const [showMonthlyWizard, setShowMonthlyWizard] = useState(false);
   const [showPostCreator, setShowPostCreator] = useState(false);
   const [generationType, setGenerationType] = useState<'all' | 'missing'>('all');
@@ -37,6 +39,26 @@ const SocialMedia = () => {
   
   const [selectedMonth, setSelectedMonth] = useState(currentMonth);
   const [selectedYear, setSelectedYear] = useState(currentYear);
+
+  // Check user role and restrict access for web_designer
+  useEffect(() => {
+    const checkAccess = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", user.id)
+          .maybeSingle();
+        
+        if ((profile?.role as string) === 'web_designer') {
+          toast.error("Access Denied - Web designers don't have access to Social Media");
+          navigate('/');
+        }
+      }
+    };
+    checkAccess();
+  }, [navigate]);
 
   const { data: monthlyPosts, refetch } = useQuery({
     queryKey: ['monthly-posts', selectedClient?.id, selectedMonth, selectedYear],

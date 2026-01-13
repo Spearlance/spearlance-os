@@ -114,7 +114,7 @@ export default function Admin() {
     }
   };
 
-  const handleRoleChange = async (userId: string, newRole: "admin" | "fmm" | "client") => {
+  const handleRoleChange = async (userId: string, newRole: "admin" | "fmm" | "client" | "web_designer") => {
     try {
       const { data, error } = await supabase.functions.invoke('admin-update-user-role', {
         body: { userId, newRole }
@@ -384,7 +384,7 @@ export default function Admin() {
                       <TableCell>
                         <Select
                           value={user.role}
-                          onValueChange={(value) => handleRoleChange(user.id, value as "admin" | "fmm" | "client")}
+                          onValueChange={(value) => handleRoleChange(user.id, value as "admin" | "fmm" | "client" | "web_designer")}
                         >
                           <SelectTrigger className="w-32">
                             <SelectValue />
@@ -392,6 +392,7 @@ export default function Admin() {
                           <SelectContent>
                             <SelectItem value="admin">Admin</SelectItem>
                             <SelectItem value="fmm">FMM</SelectItem>
+                            <SelectItem value="web_designer">Web Designer</SelectItem>
                             <SelectItem value="client">Client</SelectItem>
                           </SelectContent>
                         </Select>

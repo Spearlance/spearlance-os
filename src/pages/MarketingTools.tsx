@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useClient } from "@/contexts/ClientContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -30,6 +31,7 @@ const categories = [
 
 export default function MarketingTools() {
   const { selectedClient } = useClient();
+  const navigate = useNavigate();
   const { toast } = useToast();
   const { hasAccess } = useAccountType();
   const [clientTools, setClientTools] = useState<any[]>([]);
@@ -50,6 +52,26 @@ export default function MarketingTools() {
     loadData();
     checkUserRole();
   }, [selectedClient]);
+
+  // Check user role and restrict access for web_designer
+  useEffect(() => {
+    const checkAccess = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", user.id)
+          .maybeSingle();
+        
+        if ((profile?.role as string) === 'web_designer') {
+          toast({ title: "Access Denied", description: "Web designers don't have access to Marketing Tools", variant: "destructive" });
+          navigate('/');
+        }
+      }
+    };
+    checkAccess();
+  }, [navigate, toast]);
 
   const checkUserRole = async () => {
     const { data: { user } } = await supabase.auth.getUser();
