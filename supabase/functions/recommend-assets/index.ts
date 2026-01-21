@@ -12,14 +12,14 @@ serve(async (req) => {
   }
 
   try {
-    const { caption_text, client_id, match_count = 5 } = await req.json();
+    const { caption_text, client_id, match_count = 5, exclude_asset_ids = [] } = await req.json();
     
     if (!caption_text || !client_id) {
       throw new Error('caption_text and client_id are required');
     }
     
-    // Cap match_count at 12 to prevent abuse
-    const limitedMatchCount = Math.min(Math.max(match_count, 1), 12);
+    // Cap match_count at 20 to account for filtering
+    const limitedMatchCount = Math.min(Math.max(match_count, 1), 20);
 
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
@@ -90,13 +90,18 @@ serve(async (req) => {
       throw new Error(`Database query failed: ${queryError.message}`);
     }
 
-    console.log(`Found ${assets?.length || 0} matching assets`);
+    // Filter out excluded asset IDs (assets already used in this build)
+    const filteredAssets = (assets || []).filter(
+      (asset: { id: string }) => !exclude_asset_ids.includes(asset.id)
+    );
+
+    console.log(`Found ${assets?.length || 0} matching assets, ${filteredAssets.length} after exclusions`);
 
     return new Response(
       JSON.stringify({ 
         success: true,
-        recommendations: assets || [],
-        count: assets?.length || 0
+        recommendations: filteredAssets,
+        count: filteredAssets.length
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
