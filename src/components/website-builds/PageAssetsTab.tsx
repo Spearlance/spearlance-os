@@ -5,9 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
-import { RefreshCw, ImageOff, ExternalLink, Globe, Download, Loader2, Search, X, AlertTriangle, Trash2, CheckCircle2 } from "lucide-react";
+import { RefreshCw, ImageOff, ExternalLink, Globe, Download, Loader2, Search, X, AlertTriangle, Trash2, CheckCircle2, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { AssetDrawer } from "@/components/assets/AssetDrawer";
+import { AssetLibraryPicker } from "./AssetLibraryPicker";
 import { logApiError, isQuotaError } from "@/lib/apiErrorLogger";
 
 interface PageAsset {
@@ -176,6 +177,7 @@ export default function PageAssetsTab({ pageId, buildId, clientId, pageType, pag
   const [selectedAsset, setSelectedAsset] = useState<any>(null);
   const [assetDrawerOpen, setAssetDrawerOpen] = useState(false);
   const [quotaWarning, setQuotaWarning] = useState(false);
+  const [libraryPickerOpen, setLibraryPickerOpen] = useState(false);
   
   // Stock search state
   const [stockQuery, setStockQuery] = useState('');
@@ -635,14 +637,49 @@ export default function PageAssetsTab({ pageId, buildId, clientId, pageType, pag
       );
     }
 
-    if (pageAssets.length === 0) return null;
+    // Show empty state with Add from Library button when no assets
+    if (pageAssets.length === 0) {
+      return (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
+            <p className="text-sm font-medium">Assets for This Page</p>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="ml-auto h-7 text-xs"
+              onClick={() => setLibraryPickerOpen(true)}
+            >
+              <Plus className="h-3 w-3 mr-1" />
+              Add from Library
+            </Button>
+          </div>
+          <Card className="border-dashed">
+            <CardContent className="p-6 text-center">
+              <p className="text-sm text-muted-foreground">
+                No assets linked to this page yet. Add from your library or save stock images below.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      );
+    }
 
     return (
       <div className="space-y-3">
         <div className="flex items-center gap-2">
           <CheckCircle2 className="h-4 w-4 text-primary" />
           <p className="text-sm font-medium">Assets for This Page</p>
-          <Badge variant="secondary" className="ml-auto">{pageAssets.length}</Badge>
+          <Badge variant="secondary">{pageAssets.length}</Badge>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="ml-auto h-7 text-xs"
+            onClick={() => setLibraryPickerOpen(true)}
+          >
+            <Plus className="h-3 w-3 mr-1" />
+            Add from Library
+          </Button>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {pageAssets.map((asset) => (
@@ -797,6 +834,15 @@ export default function PageAssetsTab({ pageId, buildId, clientId, pageType, pag
           onUpdate={() => {}}
         />
       )}
+
+      <AssetLibraryPicker
+        open={libraryPickerOpen}
+        onOpenChange={setLibraryPickerOpen}
+        clientId={clientId}
+        pageId={pageId}
+        existingAssetIds={pageAssets.map(a => a.id)}
+        onAssetsLinked={fetchPageAssets}
+      />
     </div>
   );
 }
