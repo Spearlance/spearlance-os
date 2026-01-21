@@ -251,3 +251,6 @@ verify_jwt = false
 
 [functions.send-weekly-task-summary]
 verify_jwt = false
+
+[functions.admin-update-user-profile]
+verify_jwt = true

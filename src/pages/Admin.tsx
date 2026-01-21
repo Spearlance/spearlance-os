@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Users, Building2, BarChart3, Loader2, Globe, KeyRound, Mail, FileText, Settings } from "lucide-react";
 import { AddUserDialog } from "@/components/admin/AddUserDialog";
-import { UserInfoDialog } from "@/components/admin/UserInfoDialog";
+import { EditUserDialog } from "@/components/admin/EditUserDialog";
 import { EditClientDialog } from "@/components/admin/EditClientDialog";
 import { Admin2FABanner } from "@/components/admin/Admin2FABanner";
 import { DeleteUserDialog } from "@/components/admin/DeleteUserDialog";
@@ -433,7 +433,7 @@ export default function Admin() {
                               <KeyRound className="h-4 w-4" />
                             </Button>
                           )}
-                          <UserInfoDialog user={user} clients={clients} />
+                          <EditUserDialog user={user} clients={clients} onUserUpdated={loadData} />
                           {user.role !== 'admin' && (
                             <DeleteUserDialog
                               user={user}
