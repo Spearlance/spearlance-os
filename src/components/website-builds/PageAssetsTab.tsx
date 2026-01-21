@@ -4,9 +4,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { RefreshCw, ImageOff, ExternalLink, Globe, Download, Loader2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { RefreshCw, ImageOff, ExternalLink, Globe, Download, Loader2, Search, X, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { AssetDrawer } from "@/components/assets/AssetDrawer";
+import { logApiError, isQuotaError } from "@/lib/apiErrorLogger";
 
 interface Asset {
   id: string;
@@ -79,6 +81,11 @@ export default function PageAssetsTab({ pageId, buildId, clientId, pageType, pag
   const [error, setError] = useState<string | null>(null);
   const [selectedAsset, setSelectedAsset] = useState<any>(null);
   const [assetDrawerOpen, setAssetDrawerOpen] = useState(false);
+  const [quotaWarning, setQuotaWarning] = useState(false);
+  
+  // Stock search state
+  const [stockQuery, setStockQuery] = useState('');
+  const [hasSearched, setHasSearched] = useState(false);
 
   const fetchStockImages = async (query: string) => {
     setLoadingStock(true);
@@ -94,14 +101,38 @@ export default function PageAssetsTab({ pageId, buildId, clientId, pageType, pag
       }
     } catch (err) {
       console.error('Error fetching stock images:', err);
+      toast.error('Failed to load stock images');
     } finally {
       setLoadingStock(false);
+    }
+  };
+
+  const handleStockSearch = () => {
+    if (!stockQuery.trim()) return;
+    setHasSearched(true);
+    fetchStockImages(stockQuery);
+  };
+
+  const handleClearSearch = () => {
+    setStockQuery('');
+    setHasSearched(false);
+    // Revert to auto-generated query
+    const autoQuery = pageType === 'home' 
+      ? 'professional business office team' 
+      : `${pageName} professional business`;
+    fetchStockImages(autoQuery);
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleStockSearch();
     }
   };
 
   const fetchRecommendations = async () => {
     setLoading(true);
     setError(null);
+    setQuotaWarning(false);
 
     try {
       const query = generatePageQuery(pageType, pageName);
@@ -117,7 +148,29 @@ export default function PageAssetsTab({ pageId, buildId, clientId, pageType, pag
 
       if (fnError) throw fnError;
 
+      // Handle quota/rate limit errors gracefully
       if (data.error) {
+        if (isQuotaError(data.error)) {
+          console.warn('OpenAI quota exceeded - falling back to stock images');
+          setQuotaWarning(true);
+          setAssets([]);
+          
+          // Log the error for admin visibility
+          await logApiError({
+            functionName: 'recommend-assets',
+            errorMessage: data.error,
+            errorType: 'openai_quota',
+            clientId,
+            metadata: { pageId, pageName, pageType }
+          });
+          
+          // Load stock images as fallback
+          const stockSearchQuery = pageType === 'home' 
+            ? 'professional business office team' 
+            : `${pageName} professional business`;
+          fetchStockImages(stockSearchQuery);
+          return;
+        }
         throw new Error(data.error);
       }
 
@@ -125,11 +178,10 @@ export default function PageAssetsTab({ pageId, buildId, clientId, pageType, pag
       
       // If we have less than 3 client assets, fetch stock images as fallback
       if ((data.recommendations || []).length < 3) {
-        // Use a simpler query for stock images
-        const stockQuery = pageType === 'home' 
+        const stockSearchQuery = pageType === 'home' 
           ? 'professional business office team' 
           : `${pageName} professional business`;
-        fetchStockImages(stockQuery);
+        fetchStockImages(stockSearchQuery);
       }
     } catch (err) {
       console.error('Error fetching asset recommendations:', err);
@@ -234,31 +286,39 @@ export default function PageAssetsTab({ pageId, buildId, clientId, pageType, pag
     );
   }
 
-  if (error) {
-    return (
-      <div className="flex flex-col items-center justify-center py-12 text-center space-y-4">
-        <ImageOff className="h-12 w-12 text-muted-foreground" />
-        <div className="space-y-2">
-          <p className="text-sm font-medium">Failed to load recommendations</p>
-          <p className="text-xs text-muted-foreground">{error}</p>
-        </div>
-        <Button variant="outline" size="sm" onClick={fetchRecommendations}>
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Try Again
-        </Button>
-      </div>
-    );
-  }
-
   // Stock images section component
   const renderStockImages = () => {
-    if (loadingStock) {
-      return (
-        <div className="space-y-4 pt-6 border-t">
-          <div className="flex items-center gap-2">
-            <Globe className="h-4 w-4 text-muted-foreground" />
-            <p className="text-sm font-medium">Loading stock images...</p>
+    return (
+      <div className="space-y-4 pt-6 border-t">
+        <div className="flex items-center gap-2">
+          <Globe className="h-4 w-4 text-muted-foreground" />
+          <p className="text-sm font-medium">Search Stock Photos</p>
+        </div>
+        
+        {/* Search Input */}
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search stock photos..."
+              value={stockQuery}
+              onChange={(e) => setStockQuery(e.target.value)}
+              onKeyPress={handleKeyPress}
+              className="pl-10"
+            />
           </div>
+          <Button onClick={handleStockSearch} disabled={loadingStock || !stockQuery.trim()}>
+            {loadingStock ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Search'}
+          </Button>
+          {hasSearched && (
+            <Button variant="outline" onClick={handleClearSearch}>
+              <X className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+
+        {/* Stock Loading State */}
+        {loadingStock && (
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             {[...Array(6)].map((_, i) => (
               <Card key={i} className="overflow-hidden">
@@ -270,77 +330,84 @@ export default function PageAssetsTab({ pageId, buildId, clientId, pageType, pag
               </Card>
             ))}
           </div>
-        </div>
-      );
-    }
+        )}
 
-    if (stockImages.length === 0) return null;
+        {/* Stock Results */}
+        {!loadingStock && stockImages.length > 0 && (
+          <>
+            <p className="text-xs text-muted-foreground">
+              {hasSearched ? `Results for "${stockQuery}"` : 'Suggested images from Pexels'} • {stockImages.length} images
+            </p>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {stockImages.map((image) => (
+                <Card key={image.id} className="overflow-hidden group hover:ring-2 hover:ring-primary/20 transition-all">
+                  <div className="relative aspect-square bg-muted">
+                    <img
+                      src={image.thumbnail_url}
+                      alt={image.title}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <CardContent className="p-3 space-y-2">
+                    <p className="text-sm font-medium truncate" title={image.title}>
+                      {image.title}
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      📷 {image.photographer}
+                    </p>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="w-full h-7 text-xs"
+                      disabled={savingStock === image.id}
+                      onClick={() => handleSaveStockImage(image)}
+                    >
+                      {savingStock === image.id ? (
+                        <>
+                          <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        <>
+                          <Download className="h-3 w-3 mr-1" />
+                          Save to Assets
+                        </>
+                      )}
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </>
+        )}
 
-    return (
-      <div className="space-y-4 pt-6 border-t">
-        <div className="flex items-center gap-2">
-          <Globe className="h-4 w-4 text-muted-foreground" />
-          <p className="text-sm font-medium">Stock Images from Pexels</p>
-          <span className="text-xs text-muted-foreground">({stockImages.length} results)</span>
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          {stockImages.map((image) => (
-            <Card key={image.id} className="overflow-hidden group hover:ring-2 hover:ring-primary/20 transition-all">
-              <div className="relative aspect-square bg-muted">
-                <img
-                  src={image.thumbnail_url}
-                  alt={image.title}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <CardContent className="p-3 space-y-2">
-                <p className="text-sm font-medium truncate" title={image.title}>
-                  {image.title}
-                </p>
-                <p className="text-xs text-muted-foreground truncate">
-                  📷 {image.photographer}
-                </p>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="w-full h-7 text-xs"
-                  disabled={savingStock === image.id}
-                  onClick={() => handleSaveStockImage(image)}
-                >
-                  {savingStock === image.id ? (
-                    <>
-                      <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                      Saving...
-                    </>
-                  ) : (
-                    <>
-                      <Download className="h-3 w-3 mr-1" />
-                      Save to Assets
-                    </>
-                  )}
-                </Button>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        {/* No Results State */}
+        {!loadingStock && stockImages.length === 0 && hasSearched && (
+          <Card>
+            <CardContent className="p-6 text-center">
+              <p className="text-muted-foreground">
+                No results for "{stockQuery}". Try a different search term.
+              </p>
+            </CardContent>
+          </Card>
+        )}
       </div>
     );
   };
 
-  if (assets.length === 0 && stockImages.length === 0 && !loadingStock) {
+  // Error state (but not quota warning - that shows stock images)
+  if (error && !quotaWarning) {
     return (
       <div className="space-y-6">
         <div className="flex flex-col items-center justify-center py-12 text-center space-y-4">
           <ImageOff className="h-12 w-12 text-muted-foreground" />
           <div className="space-y-2">
-            <p className="text-sm font-medium">No matching assets found</p>
-            <p className="text-xs text-muted-foreground">
-              Upload more images to the Assets library and run "Analyze Missing" to enable AI recommendations.
-            </p>
+            <p className="text-sm font-medium">Failed to load recommendations</p>
+            <p className="text-xs text-muted-foreground">{error}</p>
           </div>
           <Button variant="outline" size="sm" onClick={fetchRecommendations}>
             <RefreshCw className="h-4 w-4 mr-2" />
-            Refresh
+            Try Again
           </Button>
         </div>
         {renderStockImages()}
@@ -350,6 +417,20 @@ export default function PageAssetsTab({ pageId, buildId, clientId, pageType, pag
 
   return (
     <div className="space-y-4">
+      {/* Quota Warning Banner */}
+      {quotaWarning && (
+        <Card className="border-warning bg-warning/10">
+          <CardContent className="p-4 flex items-center gap-3">
+            <AlertTriangle className="h-5 w-5 text-warning flex-shrink-0" />
+            <div>
+              <p className="text-sm text-foreground font-medium">Client asset recommendations temporarily unavailable</p>
+              <p className="text-xs text-muted-foreground">An API quota limit was reached. This has been logged for admin review. Stock images are available below.</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Client Assets */}
       {assets.length > 0 && (
         <>
           <div className="flex items-center justify-between">
@@ -417,6 +498,19 @@ export default function PageAssetsTab({ pageId, buildId, clientId, pageType, pag
         </>
       )}
 
+      {assets.length === 0 && !quotaWarning && (
+        <div className="flex flex-col items-center justify-center py-8 text-center space-y-4">
+          <ImageOff className="h-10 w-10 text-muted-foreground" />
+          <div className="space-y-1">
+            <p className="text-sm font-medium">No matching client assets</p>
+            <p className="text-xs text-muted-foreground">
+              Search for stock images below to add to the client's library.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Stock Images Section - Always Visible */}
       {renderStockImages()}
 
       <AssetDrawer
