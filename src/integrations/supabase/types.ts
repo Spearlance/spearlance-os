@@ -5909,6 +5909,45 @@ export type Database = {
           },
         ]
       }
+      website_page_assets: {
+        Row: {
+          asset_id: string
+          created_at: string | null
+          created_by: string | null
+          id: string
+          page_id: string
+        }
+        Insert: {
+          asset_id: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          page_id: string
+        }
+        Update: {
+          asset_id?: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          page_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "website_page_assets_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "website_page_assets_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "website_build_pages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       website_page_prompt_templates: {
         Row: {
           created_at: string | null

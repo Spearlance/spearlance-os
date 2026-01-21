@@ -1,14 +1,22 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
-import { RefreshCw, ImageOff, ExternalLink, Globe, Download, Loader2, Search, X, AlertTriangle } from "lucide-react";
+import { RefreshCw, ImageOff, ExternalLink, Globe, Download, Loader2, Search, X, AlertTriangle, Trash2, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { AssetDrawer } from "@/components/assets/AssetDrawer";
 import { logApiError, isQuotaError } from "@/lib/apiErrorLogger";
+
+interface PageAsset {
+  id: string;
+  title: string;
+  file_url: string | null;
+  preview_url: string | null;
+  type: string;
+}
 
 interface Asset {
   id: string;
@@ -157,10 +165,13 @@ const getSimilarityLabel = (similarity: number): string => {
 
 export default function PageAssetsTab({ pageId, buildId, clientId, pageType, pageName, clientName, clientIndustry, clientLocation, serviceAreas, services }: PageAssetsTabProps) {
   const [assets, setAssets] = useState<Asset[]>([]);
+  const [pageAssets, setPageAssets] = useState<PageAsset[]>([]);
   const [stockImages, setStockImages] = useState<StockImage[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingPageAssets, setLoadingPageAssets] = useState(true);
   const [loadingStock, setLoadingStock] = useState(false);
   const [savingStock, setSavingStock] = useState<number | null>(null);
+  const [unlinkingAsset, setUnlinkingAsset] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [selectedAsset, setSelectedAsset] = useState<any>(null);
   const [assetDrawerOpen, setAssetDrawerOpen] = useState(false);
@@ -169,6 +180,60 @@ export default function PageAssetsTab({ pageId, buildId, clientId, pageType, pag
   // Stock search state
   const [stockQuery, setStockQuery] = useState('');
   const [hasSearched, setHasSearched] = useState(false);
+
+  // Fetch assets explicitly linked to this page
+  const fetchPageAssets = useCallback(async () => {
+    setLoadingPageAssets(true);
+    try {
+      const { data, error } = await supabase
+        .from('website_page_assets')
+        .select(`
+          asset_id,
+          assets (
+            id,
+            title,
+            file_url,
+            preview_url,
+            type
+          )
+        `)
+        .eq('page_id', pageId);
+
+      if (error) throw error;
+
+      const linkedAssets = data
+        ?.map(d => d.assets as unknown as PageAsset)
+        .filter(Boolean) || [];
+      
+      setPageAssets(linkedAssets);
+    } catch (err) {
+      console.error('Error fetching page assets:', err);
+    } finally {
+      setLoadingPageAssets(false);
+    }
+  }, [pageId]);
+
+  // Unlink an asset from this page
+  const handleUnlinkAsset = async (assetId: string) => {
+    setUnlinkingAsset(assetId);
+    try {
+      const { error } = await supabase
+        .from('website_page_assets')
+        .delete()
+        .eq('page_id', pageId)
+        .eq('asset_id', assetId);
+
+      if (error) throw error;
+
+      toast.success('Asset removed from page');
+      fetchPageAssets();
+    } catch (err) {
+      console.error('Error unlinking asset:', err);
+      toast.error('Failed to remove asset');
+    } finally {
+      setUnlinkingAsset(null);
+    }
+  };
 
   const fetchStockImages = async (query: string) => {
     setLoadingStock(true);
@@ -293,8 +358,8 @@ export default function PageAssetsTab({ pageId, buildId, clientId, pageType, pag
         .from('client-assets')
         .getPublicUrl(filePath);
 
-      // Create asset record
-      const { error: insertError } = await supabase
+      // Create asset record and get its ID
+      const { data: assetData, error: insertError } = await supabase
         .from('assets')
         .insert([{
           client_id: clientId,
@@ -304,17 +369,31 @@ export default function PageAssetsTab({ pageId, buildId, clientId, pageType, pag
           file_url: urlData.publicUrl,
           preview_url: urlData.publicUrl,
           tags: ['stock', 'pexels'],
-        }]);
+        }])
+        .select('id')
+        .single();
 
       if (insertError) throw insertError;
 
-      toast.success('Image saved to assets library');
+      // Link asset to this page
+      const { error: linkError } = await supabase
+        .from('website_page_assets')
+        .insert([{
+          page_id: pageId,
+          asset_id: assetData.id
+        }]);
+
+      if (linkError) {
+        console.error('Failed to link asset to page:', linkError);
+      }
+
+      toast.success('Image saved and added to this page');
       
       // Remove from stock list
       setStockImages(prev => prev.filter(img => img.id !== image.id));
       
-      // Refresh recommendations
-      fetchRecommendations();
+      // Refresh page assets to show the new one
+      fetchPageAssets();
     } catch (err) {
       console.error('Error saving stock image:', err);
       toast.error('Failed to save image');
@@ -325,7 +404,8 @@ export default function PageAssetsTab({ pageId, buildId, clientId, pageType, pag
 
   useEffect(() => {
     fetchRecommendations();
-  }, [clientId, pageType, pageName]);
+    fetchPageAssets();
+  }, [clientId, pageType, pageName, fetchPageAssets]);
 
   const handleViewAsset = async (asset: Asset) => {
     // Fetch full asset details
@@ -492,8 +572,87 @@ export default function PageAssetsTab({ pageId, buildId, clientId, pageType, pag
     );
   }
 
+  // Render page assets section
+  const renderPageAssets = () => {
+    if (loadingPageAssets) {
+      return (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="h-4 w-4 text-primary" />
+            <p className="text-sm font-medium">Assets for This Page</p>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {[...Array(2)].map((_, i) => (
+              <Card key={i} className="overflow-hidden">
+                <Skeleton className="aspect-square w-full" />
+                <CardContent className="p-2">
+                  <Skeleton className="h-4 w-3/4" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    if (pageAssets.length === 0) return null;
+
+    return (
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <CheckCircle2 className="h-4 w-4 text-primary" />
+          <p className="text-sm font-medium">Assets for This Page</p>
+          <Badge variant="secondary" className="ml-auto">{pageAssets.length}</Badge>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {pageAssets.map((asset) => (
+            <Card key={asset.id} className="overflow-hidden group hover:ring-2 hover:ring-primary/20 transition-all">
+              <div className="relative aspect-square bg-muted">
+                {(asset.preview_url || asset.file_url) ? (
+                  <img
+                    src={asset.preview_url || asset.file_url || ''}
+                    alt={asset.title}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <ImageOff className="h-8 w-8 text-muted-foreground" />
+                  </div>
+                )}
+              </div>
+              <CardContent className="p-2 space-y-1">
+                <p className="text-xs font-medium truncate" title={asset.title}>
+                  {asset.title}
+                </p>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="w-full h-6 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
+                  disabled={unlinkingAsset === asset.id}
+                  onClick={() => handleUnlinkAsset(asset.id)}
+                >
+                  {unlinkingAsset === asset.id ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <>
+                      <Trash2 className="h-3 w-3 mr-1" />
+                      Remove
+                    </>
+                  )}
+                </Button>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-4">
+      {/* Page Assets Section - Explicitly linked assets */}
+      {renderPageAssets()}
+
       {/* Quota Warning Banner */}
       {quotaWarning && (
         <Card className="border-warning bg-warning/10">
@@ -507,7 +666,7 @@ export default function PageAssetsTab({ pageId, buildId, clientId, pageType, pag
         </Card>
       )}
 
-      {/* Client Assets */}
+      {/* Client Assets (AI Recommendations) */}
       {assets.length > 0 && (
         <>
           <div className="flex items-center justify-between">
