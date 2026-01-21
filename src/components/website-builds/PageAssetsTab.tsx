@@ -513,12 +513,14 @@ export default function PageAssetsTab({ pageId, buildId, clientId, pageType, pag
       {/* Stock Images Section - Always Visible */}
       {renderStockImages()}
 
-      <AssetDrawer
-        asset={selectedAsset}
-        open={assetDrawerOpen}
-        onOpenChange={setAssetDrawerOpen}
-        onUpdate={() => {}}
-      />
+      {selectedAsset && (
+        <AssetDrawer
+          asset={selectedAsset}
+          open={assetDrawerOpen}
+          onOpenChange={setAssetDrawerOpen}
+          onUpdate={() => {}}
+        />
+      )}
     </div>
   );
 }
