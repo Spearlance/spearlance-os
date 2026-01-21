@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useClient } from "@/contexts/ClientContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -59,6 +60,7 @@ interface BuildProgress {
 
 export default function DesignerWorkload() {
   const navigate = useNavigate();
+  const { clients, setSelectedClient } = useClient();
   const [loading, setLoading] = useState(true);
   const [designers, setDesigners] = useState<DesignerStats[]>([]);
   const [builds, setBuilds] = useState<BuildProgress[]>([]);
@@ -410,6 +412,10 @@ export default function DesignerWorkload() {
                                       className="flex items-center justify-between p-2 bg-background rounded-lg border cursor-pointer hover:border-primary/50 transition-colors"
                                       onClick={(e) => {
                                         e.stopPropagation();
+                                        const targetClient = clients.find(c => c.id === task.client_id);
+                                        if (targetClient) {
+                                          setSelectedClient(targetClient);
+                                        }
                                         navigate(`/tasks?selected=${task.id}`);
                                       }}
                                     >
