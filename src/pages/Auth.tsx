@@ -12,6 +12,7 @@ import { z } from "zod";
 import { AnimatedCarousel } from "@/components/auth/AnimatedCarousel";
 import { PasswordStrengthIndicator } from "@/components/auth/PasswordStrengthIndicator";
 import { MagicLinkLogin } from "@/components/auth/MagicLinkLogin";
+import { trackLoginEvent } from "@/hooks/useActivityTracker";
 
 const signupSchema = z.object({
   email: z.string().trim().email("Please enter a valid email address"),
@@ -158,12 +159,17 @@ const Auth = () => {
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) throw error;
+
+      // Track login event
+      if (data.user) {
+        trackLoginEvent(data.user.id);
+      }
 
       // Handle remember me
       if (rememberMe) {

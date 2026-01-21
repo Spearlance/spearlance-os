@@ -26,9 +26,11 @@ import {
   User,
   Building2,
   Save,
-  Loader2
+  Loader2,
+  Activity
 } from "lucide-react";
 import { format } from "date-fns";
+import { UserActivityTab } from "./UserActivityTab";
 
 interface EditUserDialogProps {
   user: {
@@ -45,6 +47,7 @@ interface EditUserDialogProps {
     expertise_level?: string;
     preferred_communication_style?: string;
     focus_areas?: string[];
+    last_login_at?: string | null;
   };
   clients: Array<{ id: string; name: string }>;
   onUserUpdated: () => void;
@@ -265,9 +268,13 @@ export function EditUserDialog({ user, clients, onUserUpdated }: EditUserDialogP
         </div>
 
         <Tabs defaultValue="access" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="access">Client Access</TabsTrigger>
-            <TabsTrigger value="profile">Profile Details</TabsTrigger>
+            <TabsTrigger value="profile">Profile</TabsTrigger>
+            <TabsTrigger value="activity" className="gap-1">
+              <Activity className="h-3 w-3" />
+              Activity
+            </TabsTrigger>
             <TabsTrigger value="actions">Actions</TabsTrigger>
           </TabsList>
 
@@ -510,6 +517,11 @@ export function EditUserDialog({ user, clients, onUserUpdated }: EditUserDialogP
                 </div>
               </div>
             </div>
+          </TabsContent>
+
+          {/* Activity Tab */}
+          <TabsContent value="activity">
+            <UserActivityTab userId={user.id} lastLoginAt={user.last_login_at} />
           </TabsContent>
         </Tabs>
 

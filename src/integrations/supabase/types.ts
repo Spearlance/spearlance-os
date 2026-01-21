@@ -3872,6 +3872,7 @@ export type Database = {
           ical_feed_token: string | null
           id: string
           job_title: string | null
+          last_login_at: string | null
           name: string
           preferred_communication_style: string | null
           role: Database["public"]["Enums"]["app_role"]
@@ -3897,6 +3898,7 @@ export type Database = {
           ical_feed_token?: string | null
           id: string
           job_title?: string | null
+          last_login_at?: string | null
           name: string
           preferred_communication_style?: string | null
           role: Database["public"]["Enums"]["app_role"]
@@ -3922,6 +3924,7 @@ export type Database = {
           ical_feed_token?: string | null
           id?: string
           job_title?: string | null
+          last_login_at?: string | null
           name?: string
           preferred_communication_style?: string | null
           role?: Database["public"]["Enums"]["app_role"]
@@ -5405,6 +5408,47 @@ export type Database = {
             columns: ["requester_user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_activity_logs: {
+        Row: {
+          action_details: Json | null
+          action_type: string
+          client_id: string | null
+          created_at: string
+          id: string
+          ip_address: string | null
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          action_details?: Json | null
+          action_type: string
+          client_id?: string | null
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          action_details?: Json | null
+          action_type?: string
+          client_id?: string | null
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_activity_logs_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
             referencedColumns: ["id"]
           },
         ]

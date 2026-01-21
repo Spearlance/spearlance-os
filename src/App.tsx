@@ -52,6 +52,7 @@ import SEO from "./pages/SEO";
 import EmailTemplates from "./pages/admin/EmailTemplates";
 import PromptTemplates from "./pages/admin/PromptTemplates";
 import DesignerWorkload from "./pages/admin/DesignerWorkload";
+import UserActivity from "./pages/admin/UserActivity";
 import BlogWriter from "./pages/BlogWriter";
 import ClientSuccessHub from "./pages/ClientSuccessHub";
 import WebsiteBuilds from "./pages/WebsiteBuilds";
@@ -110,6 +111,7 @@ const App = () => (
             <Route path="/admin/prompt-templates" element={<MainLayout><PromptTemplates /></MainLayout>} />
             <Route path="/admin/designer-workload" element={<MainLayout><DesignerWorkload /></MainLayout>} />
             <Route path="/admin/2fa-setup" element={<MainLayout><Admin2FASetup /></MainLayout>} />
+            <Route path="/admin/user-activity" element={<MainLayout><UserActivity /></MainLayout>} />
             <Route path="/backfill-images" element={<MainLayout><BackfillImages /></MainLayout>} />
             <Route path="/website/form-submissions" element={<MainLayout><WebsiteFormSubmissions /></MainLayout>} />
             <Route path="/website/comments" element={<MainLayout><SiteComments /></MainLayout>} />
