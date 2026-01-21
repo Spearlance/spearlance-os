@@ -56,6 +56,28 @@ interface PageAssetsTabProps {
   services?: ServiceContext[];
 }
 
+// Helper to fetch linked asset IDs for a build - uses type assertion to avoid TS depth issues
+async function getBuildLinkedAssetIds(buildId: string): Promise<string[]> {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const pagesTable = supabase.from('website_pages') as any;
+    const { data: pages } = await pagesTable.select('id').eq('build_id', buildId);
+    
+    if (!pages || pages.length === 0) return [];
+    
+    const pageIds = pages.map((p: { id: string }) => p.id);
+    
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const assetsTable = supabase.from('website_page_assets') as any;
+    const { data: linkedAssets } = await assetsTable.select('asset_id').in('page_id', pageIds);
+    
+    return linkedAssets?.map((a: { asset_id: string }) => a.asset_id) || [];
+  } catch (err) {
+    console.error('Error fetching build linked assets:', err);
+    return [];
+  }
+}
+
 // Extract business keywords from client name
 const extractBusinessKeywords = (name: string): string => {
   if (!name) return '';
@@ -152,15 +174,27 @@ const generatePageQuery = (pageType: string, pageName: string): string => {
   return baseQuery;
 };
 
-const getSimilarityColor = (similarity: number): string => {
-  if (similarity >= 0.5) return "bg-green-500/10 text-green-600 border-green-500/20";
-  if (similarity >= 0.3) return "bg-blue-500/10 text-blue-600 border-blue-500/20";
+// Transform raw similarity (typically 0.15-0.60) to display percentage (50-99%)
+const getDisplaySimilarity = (rawSimilarity: number): number => {
+  const MIN_RAW = 0.15;
+  const MAX_RAW = 0.60;
+  const MIN_DISPLAY = 50;
+  const MAX_DISPLAY = 99;
+  
+  const clamped = Math.min(Math.max(rawSimilarity, MIN_RAW), MAX_RAW);
+  const normalized = (clamped - MIN_RAW) / (MAX_RAW - MIN_RAW);
+  return Math.round(MIN_DISPLAY + normalized * (MAX_DISPLAY - MIN_DISPLAY));
+};
+
+const getSimilarityColor = (displayScore: number): string => {
+  if (displayScore >= 80) return "bg-green-500/10 text-green-600 border-green-500/20";
+  if (displayScore >= 65) return "bg-blue-500/10 text-blue-600 border-blue-500/20";
   return "bg-muted text-muted-foreground";
 };
 
-const getSimilarityLabel = (similarity: number): string => {
-  if (similarity >= 0.5) return "Excellent";
-  if (similarity >= 0.3) return "Good";
+const getSimilarityLabel = (displayScore: number): string => {
+  if (displayScore >= 80) return "Excellent";
+  if (displayScore >= 65) return "Good";
   return "Fair";
 };
 
@@ -173,8 +207,10 @@ export default function PageAssetsTab({ pageId, buildId, clientId, pageType, pag
   const [loadingStock, setLoadingStock] = useState(false);
   const [savingStock, setSavingStock] = useState<number | null>(null);
   const [unlinkingAsset, setUnlinkingAsset] = useState<string | null>(null);
+  const [linkingRecommendedAsset, setLinkingRecommendedAsset] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [selectedAsset, setSelectedAsset] = useState<any>(null);
+  const [buildLinkedAssetIds, setBuildLinkedAssetIds] = useState<string[]>([]);
   const [assetDrawerOpen, setAssetDrawerOpen] = useState(false);
   const [quotaWarning, setQuotaWarning] = useState(false);
   const [libraryPickerOpen, setLibraryPickerOpen] = useState(false);
@@ -182,6 +218,12 @@ export default function PageAssetsTab({ pageId, buildId, clientId, pageType, pag
   // Stock search state
   const [stockQuery, setStockQuery] = useState('');
   const [hasSearched, setHasSearched] = useState(false);
+
+  // Fetch all asset IDs linked to any page in this build (for deprioritization)
+  const fetchBuildLinkedAssets = useCallback(async () => {
+    const ids = await getBuildLinkedAssetIds(buildId);
+    setBuildLinkedAssetIds(ids);
+  }, [buildId]);
 
   // Fetch assets explicitly linked to this page
   const fetchPageAssets = useCallback(async () => {
@@ -290,7 +332,8 @@ export default function PageAssetsTab({ pageId, buildId, clientId, pageType, pag
         body: { 
           caption_text: query, 
           client_id: clientId,
-          match_count: 10
+          match_count: 15, // Request more since we'll filter some out
+          exclude_asset_ids: buildLinkedAssetIds // Exclude assets already used in this build
         }
       });
 
@@ -320,10 +363,15 @@ export default function PageAssetsTab({ pageId, buildId, clientId, pageType, pag
         throw new Error(data.error);
       }
 
-      setAssets(data.recommendations || []);
+      // Filter out assets already linked to this page, limit to 10
+      const recommendations = (data.recommendations || [])
+        .filter((asset: Asset) => !pageAssets.some(pa => pa.id === asset.id))
+        .slice(0, 10);
+      
+      setAssets(recommendations);
       
       // If we have less than 3 client assets, fetch stock images as fallback
-      if ((data.recommendations || []).length < 3) {
+      if (recommendations.length < 3) {
         const stockSearchQuery = generateStockQuery(pageType, pageName, clientName, clientIndustry, clientLocation, serviceAreas, services);
         fetchStockImages(stockSearchQuery);
       }
@@ -334,6 +382,30 @@ export default function PageAssetsTab({ pageId, buildId, clientId, pageType, pag
       fetchStockImages(pageName);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Link a recommended asset to this page
+  const handleLinkRecommendedAsset = async (assetId: string) => {
+    setLinkingRecommendedAsset(assetId);
+    try {
+      const { error } = await supabase
+        .from('website_page_assets')
+        .insert([{ page_id: pageId, asset_id: assetId }]);
+      
+      if (error) throw error;
+      
+      toast.success('Asset added to page');
+      fetchPageAssets();
+      fetchBuildLinkedAssets();
+      
+      // Remove from recommendations list
+      setAssets(prev => prev.filter(a => a.id !== assetId));
+    } catch (err) {
+      console.error('Error linking recommended asset:', err);
+      toast.error('Failed to add asset');
+    } finally {
+      setLinkingRecommendedAsset(null);
     }
   };
 
@@ -445,9 +517,13 @@ export default function PageAssetsTab({ pageId, buildId, clientId, pageType, pag
   };
 
   useEffect(() => {
+    fetchBuildLinkedAssets();
+  }, [fetchBuildLinkedAssets]);
+
+  useEffect(() => {
     fetchRecommendations();
     fetchPageAssets();
-  }, [clientId, pageType, pageName, fetchPageAssets]);
+  }, [clientId, pageType, pageName, fetchPageAssets, buildLinkedAssetIds]);
 
   const handleViewAsset = async (asset: Asset) => {
     // Fetch full asset details
@@ -790,19 +866,36 @@ export default function PageAssetsTab({ pageId, buildId, clientId, pageType, pag
                   <div className="flex items-center justify-between gap-2">
                     <Badge 
                       variant="outline" 
-                      className={`text-xs ${getSimilarityColor(asset.similarity)}`}
+                      className={`text-xs ${getSimilarityColor(getDisplaySimilarity(asset.similarity))}`}
                     >
-                      {getSimilarityLabel(asset.similarity)} {Math.round(asset.similarity * 100)}%
+                      {getSimilarityLabel(getDisplaySimilarity(asset.similarity))} {getDisplaySimilarity(asset.similarity)}%
                     </Badge>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="h-7 px-2 text-xs"
-                      onClick={() => handleViewAsset(asset)}
-                    >
-                      <ExternalLink className="h-3 w-3 mr-1" />
-                      View
-                    </Button>
+                    <div className="flex gap-1">
+                      <Button 
+                        variant="default" 
+                        size="sm" 
+                        className="h-7 px-2 text-xs"
+                        disabled={linkingRecommendedAsset === asset.id}
+                        onClick={() => handleLinkRecommendedAsset(asset.id)}
+                      >
+                        {linkingRecommendedAsset === asset.id ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <>
+                            <Plus className="h-3 w-3 mr-1" />
+                            Add
+                          </>
+                        )}
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-7 px-2 text-xs"
+                        onClick={() => handleViewAsset(asset)}
+                      >
+                        <ExternalLink className="h-3 w-3" />
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
