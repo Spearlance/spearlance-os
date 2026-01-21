@@ -2,13 +2,14 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ListTodo, FileText, Sparkles } from "lucide-react";
+import { ListTodo, FileText, Sparkles, Image } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import PageTasksTab from "./PageTasksTab";
 import PageNotesTab from "./PageNotesTab";
 import PageAIContentTab from "./PageAIContentTab";
+import PageAssetsTab from "./PageAssetsTab";
 
 interface Page {
   id: string;
@@ -117,7 +118,7 @@ export default function PageDrawer({ page, open, onOpenChange, buildId, clientId
         </SheetHeader>
 
         <Tabs defaultValue="tasks" className="mt-6">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="tasks" className="flex items-center gap-2">
               <ListTodo className="h-4 w-4" />
               Tasks
@@ -129,6 +130,10 @@ export default function PageDrawer({ page, open, onOpenChange, buildId, clientId
             <TabsTrigger value="ai-content" className="flex items-center gap-2">
               <Sparkles className="h-4 w-4" />
               AI Content
+            </TabsTrigger>
+            <TabsTrigger value="assets" className="flex items-center gap-2">
+              <Image className="h-4 w-4" />
+              Assets
             </TabsTrigger>
           </TabsList>
 
@@ -148,6 +153,16 @@ export default function PageDrawer({ page, open, onOpenChange, buildId, clientId
               pageType={page.page_type}
               pageName={page.page_name}
               initialContent={page.ai_content || ""}
+            />
+          </TabsContent>
+
+          <TabsContent value="assets" className="mt-4">
+            <PageAssetsTab 
+              pageId={page.id} 
+              buildId={buildId} 
+              clientId={clientId}
+              pageType={page.page_type}
+              pageName={page.page_name}
             />
           </TabsContent>
         </Tabs>
