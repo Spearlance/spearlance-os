@@ -3,7 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ListTodo, FileText, Sparkles, Image } from "lucide-react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import PageTasksTab from "./PageTasksTab";
@@ -67,6 +67,20 @@ const pageTypeLabels: Record<string, string> = {
 
 export default function PageDrawer({ page, open, onOpenChange, buildId, clientId }: PageDrawerProps) {
   const queryClient = useQueryClient();
+
+  // Fetch client name and industry for context-aware asset recommendations
+  const { data: client } = useQuery({
+    queryKey: ['client-context', clientId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('clients')
+        .select('name, industry')
+        .eq('id', clientId)
+        .single();
+      return data;
+    },
+    enabled: !!clientId
+  });
 
   const updateStatus = useMutation({
     mutationFn: async (newStatus: string) => {
@@ -163,6 +177,8 @@ export default function PageDrawer({ page, open, onOpenChange, buildId, clientId
               clientId={clientId}
               pageType={page.page_type}
               pageName={page.page_name}
+              clientName={client?.name}
+              clientIndustry={client?.industry}
             />
           </TabsContent>
         </Tabs>
