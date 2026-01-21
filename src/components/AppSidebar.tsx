@@ -63,6 +63,7 @@ import {
   HeartPulse,
   Briefcase,
   Mail,
+  Activity,
 } from "lucide-react";
 import { ReportBugDialog } from "@/components/support/ReportBugDialog";
 import { Button } from "@/components/ui/button";
@@ -620,6 +621,14 @@ export function AppSidebar() {
                               <NavLink to="/admin/email-templates" end className={getNavClass}>
                                 <Mail className="h-4 w-4" />
                                 <span>Email Templates</span>
+                              </NavLink>
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
+                          <SidebarMenuSubItem>
+                            <SidebarMenuSubButton asChild>
+                              <NavLink to="/admin/user-activity" end className={getNavClass}>
+                                <Activity className="h-4 w-4" />
+                                <span>User Activity</span>
                               </NavLink>
                             </SidebarMenuSubButton>
                           </SidebarMenuSubItem>
