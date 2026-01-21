@@ -77,10 +77,7 @@ export function BuildPagesTab({ buildId, clientId }: BuildPagesTabProps) {
   };
 
   const handlePageClick = (page: Page) => {
-    setSelectedPage({
-      ...page,
-      name: page.page_name,
-    } as Page & { name: string });
+    setSelectedPage(page);
     setDrawerOpen(true);
   };
 
@@ -164,17 +161,7 @@ export function BuildPagesTab({ buildId, clientId }: BuildPagesTabProps) {
       />
 
       <PageDrawer
-        page={currentSelectedPage ? {
-          id: currentSelectedPage.id,
-          name: currentSelectedPage.page_name,
-          page_type: currentSelectedPage.page_type || "other",
-          status: currentSelectedPage.status,
-          content_notes: currentSelectedPage.content_notes,
-          dev_notes: currentSelectedPage.dev_notes,
-          ai_content: currentSelectedPage.ai_content,
-          sort_order: currentSelectedPage.sort_order,
-          build_id: currentSelectedPage.build_id,
-        } : null}
+        page={currentSelectedPage || null}
         open={drawerOpen}
         onOpenChange={setDrawerOpen}
         buildId={buildId}

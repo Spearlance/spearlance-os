@@ -12,7 +12,7 @@ import PageAIContentTab from "./PageAIContentTab";
 
 interface Page {
   id: string;
-  name: string;
+  page_name: string;
   page_type: string;
   status: string;
   content_notes: string | null;
@@ -87,7 +87,7 @@ export default function PageDrawer({ page, open, onOpenChange, buildId, clientId
         <SheetHeader className="space-y-4 pb-4 border-b">
           <div className="flex items-start justify-between gap-4">
             <div className="space-y-1">
-              <SheetTitle className="text-xl">{page.name}</SheetTitle>
+              <SheetTitle className="text-xl">{page.page_name}</SheetTitle>
               <Badge variant="outline" className="text-xs">
                 {pageTypeLabels[page.page_type] || page.page_type}
               </Badge>
@@ -140,7 +140,7 @@ export default function PageDrawer({ page, open, onOpenChange, buildId, clientId
               buildId={buildId} 
               clientId={clientId}
               pageType={page.page_type}
-              pageName={page.name}
+              pageName={page.page_name}
               initialContent={page.ai_content || ""}
             />
           </TabsContent>
