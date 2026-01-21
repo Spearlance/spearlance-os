@@ -56,25 +56,34 @@ interface PageAssetsTabProps {
   services?: ServiceContext[];
 }
 
-// Helper to fetch linked asset IDs for a build - uses type assertion to avoid TS depth issues
-async function getBuildLinkedAssetIds(buildId: string): Promise<string[]> {
+// Helper to fetch asset usage counts across the build - uses type assertion to avoid TS depth issues
+async function getBuildAssetUsageCounts(buildId: string, currentPageId: string): Promise<Map<string, number>> {
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const pagesTable = supabase.from('website_pages') as any;
     const { data: pages } = await pagesTable.select('id').eq('build_id', buildId);
     
-    if (!pages || pages.length === 0) return [];
+    if (!pages || pages.length === 0) return new Map();
     
-    const pageIds = pages.map((p: { id: string }) => p.id);
+    // Exclude current page from usage count (we want to show "used on OTHER pages")
+    const otherPageIds = pages.filter((p: { id: string }) => p.id !== currentPageId).map((p: { id: string }) => p.id);
+    
+    if (otherPageIds.length === 0) return new Map();
     
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const assetsTable = supabase.from('website_page_assets') as any;
-    const { data: linkedAssets } = await assetsTable.select('asset_id').in('page_id', pageIds);
+    const { data: linkedAssets } = await assetsTable.select('asset_id, page_id').in('page_id', otherPageIds);
     
-    return linkedAssets?.map((a: { asset_id: string }) => a.asset_id) || [];
+    // Count how many times each asset is used on other pages
+    const counts = new Map<string, number>();
+    (linkedAssets || []).forEach((a: { asset_id: string }) => {
+      counts.set(a.asset_id, (counts.get(a.asset_id) || 0) + 1);
+    });
+    
+    return counts;
   } catch (err) {
-    console.error('Error fetching build linked assets:', err);
-    return [];
+    console.error('Error fetching build asset usage:', err);
+    return new Map();
   }
 }
 
@@ -210,7 +219,7 @@ export default function PageAssetsTab({ pageId, buildId, clientId, pageType, pag
   const [linkingRecommendedAsset, setLinkingRecommendedAsset] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [selectedAsset, setSelectedAsset] = useState<any>(null);
-  const [buildLinkedAssetIds, setBuildLinkedAssetIds] = useState<string[]>([]);
+  const [buildAssetUsage, setBuildAssetUsage] = useState<Map<string, number>>(new Map());
   const [assetDrawerOpen, setAssetDrawerOpen] = useState(false);
   const [quotaWarning, setQuotaWarning] = useState(false);
   const [libraryPickerOpen, setLibraryPickerOpen] = useState(false);
@@ -219,11 +228,11 @@ export default function PageAssetsTab({ pageId, buildId, clientId, pageType, pag
   const [stockQuery, setStockQuery] = useState('');
   const [hasSearched, setHasSearched] = useState(false);
 
-  // Fetch all asset IDs linked to any page in this build (for deprioritization)
-  const fetchBuildLinkedAssets = useCallback(async () => {
-    const ids = await getBuildLinkedAssetIds(buildId);
-    setBuildLinkedAssetIds(ids);
-  }, [buildId]);
+  // Fetch asset usage counts across the build (for "used elsewhere" indicator)
+  const fetchBuildAssetUsage = useCallback(async () => {
+    const counts = await getBuildAssetUsageCounts(buildId, pageId);
+    setBuildAssetUsage(counts);
+  }, [buildId, pageId]);
 
   // Fetch assets explicitly linked to this page
   const fetchPageAssets = useCallback(async () => {
@@ -332,8 +341,7 @@ export default function PageAssetsTab({ pageId, buildId, clientId, pageType, pag
         body: { 
           caption_text: query, 
           client_id: clientId,
-          match_count: 15, // Request more since we'll filter some out
-          exclude_asset_ids: buildLinkedAssetIds // Exclude assets already used in this build
+          match_count: 15
         }
       });
 
@@ -363,9 +371,15 @@ export default function PageAssetsTab({ pageId, buildId, clientId, pageType, pag
         throw new Error(data.error);
       }
 
-      // Filter out assets already linked to this page, limit to 10
+      // Filter out assets already linked to this page, then sort unused first, limit to 10
       const recommendations = (data.recommendations || [])
         .filter((asset: Asset) => !pageAssets.some(pa => pa.id === asset.id))
+        .sort((a: Asset, b: Asset) => {
+          // Sort: unused assets first, then by similarity
+          const aUsed = buildAssetUsage.has(a.id) ? 1 : 0;
+          const bUsed = buildAssetUsage.has(b.id) ? 1 : 0;
+          return aUsed - bUsed;
+        })
         .slice(0, 10);
       
       setAssets(recommendations);
@@ -397,7 +411,7 @@ export default function PageAssetsTab({ pageId, buildId, clientId, pageType, pag
       
       toast.success('Asset added to page');
       fetchPageAssets();
-      fetchBuildLinkedAssets();
+      fetchBuildAssetUsage();
       
       // Remove from recommendations list
       setAssets(prev => prev.filter(a => a.id !== assetId));
@@ -517,13 +531,13 @@ export default function PageAssetsTab({ pageId, buildId, clientId, pageType, pag
   };
 
   useEffect(() => {
-    fetchBuildLinkedAssets();
-  }, [fetchBuildLinkedAssets]);
+    fetchBuildAssetUsage();
+  }, [fetchBuildAssetUsage]);
 
   useEffect(() => {
     fetchRecommendations();
     fetchPageAssets();
-  }, [clientId, pageType, pageName, fetchPageAssets, buildLinkedAssetIds]);
+  }, [clientId, pageType, pageName, fetchPageAssets, buildAssetUsage]);
 
   const handleViewAsset = async (asset: Asset) => {
     // Fetch full asset details
@@ -833,8 +847,19 @@ export default function PageAssetsTab({ pageId, buildId, clientId, pageType, pag
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            {assets.map((asset, index) => (
-              <Card key={asset.id} className="overflow-hidden group hover:ring-2 hover:ring-primary/20 transition-all">
+            {assets.map((asset, index) => {
+              const usageCount = buildAssetUsage.get(asset.id) || 0;
+              const isUsedElsewhere = usageCount > 0;
+              
+              return (
+              <Card 
+                key={asset.id} 
+                className={`overflow-hidden group transition-all ${
+                  isUsedElsewhere 
+                    ? 'ring-1 ring-warning/30 bg-warning/5' 
+                    : 'hover:ring-2 hover:ring-primary/20'
+                }`}
+              >
                 <div className="relative aspect-square bg-muted">
                   {(asset.preview_url || asset.file_url) ? (
                     <img
@@ -853,6 +878,13 @@ export default function PageAssetsTab({ pageId, buildId, clientId, pageType, pag
                   >
                     #{index + 1}
                   </Badge>
+                  {isUsedElsewhere && (
+                    <Badge 
+                      className="absolute top-2 right-2 bg-warning text-warning-foreground border-0 text-[10px] px-1.5"
+                    >
+                      Used on {usageCount} page{usageCount > 1 ? 's' : ''}
+                    </Badge>
+                  )}
                 </div>
                 <CardContent className="p-3 space-y-2">
                   <p className="text-sm font-medium truncate" title={asset.title}>
@@ -899,7 +931,8 @@ export default function PageAssetsTab({ pageId, buildId, clientId, pageType, pag
                   </div>
                 </CardContent>
               </Card>
-            ))}
+              );
+            })}
           </div>
         </>
       )}
