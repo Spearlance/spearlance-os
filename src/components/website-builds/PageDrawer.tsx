@@ -68,16 +68,29 @@ const pageTypeLabels: Record<string, string> = {
 export default function PageDrawer({ page, open, onOpenChange, buildId, clientId }: PageDrawerProps) {
   const queryClient = useQueryClient();
 
-  // Fetch client name and industry for context-aware asset recommendations
+  // Fetch client context including location for context-aware asset recommendations
   const { data: client } = useQuery({
     queryKey: ['client-context', clientId],
     queryFn: async () => {
       const { data } = await supabase
         .from('clients')
-        .select('name, industry')
+        .select('name, industry, brand_name, hq_city, service_areas')
         .eq('id', clientId)
         .single();
       return data;
+    },
+    enabled: !!clientId
+  });
+
+  // Fetch client services for richer context in stock image searches
+  const { data: services } = useQuery({
+    queryKey: ['client-services-context', clientId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('services')
+        .select('name, description')
+        .eq('client_id', clientId);
+      return data || [];
     },
     enabled: !!clientId
   });
@@ -179,6 +192,9 @@ export default function PageDrawer({ page, open, onOpenChange, buildId, clientId
               pageName={page.page_name}
               clientName={client?.name}
               clientIndustry={client?.industry}
+              clientLocation={client?.hq_city}
+              serviceAreas={client?.service_areas}
+              services={services}
             />
           </TabsContent>
         </Tabs>
