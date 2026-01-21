@@ -12,11 +12,14 @@ serve(async (req) => {
   }
 
   try {
-    const { caption_text, client_id } = await req.json();
+    const { caption_text, client_id, match_count = 5 } = await req.json();
     
     if (!caption_text || !client_id) {
       throw new Error('caption_text and client_id are required');
     }
+    
+    // Cap match_count at 12 to prevent abuse
+    const limitedMatchCount = Math.min(Math.max(match_count, 1), 12);
 
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
@@ -78,7 +81,7 @@ serve(async (req) => {
         query_embedding: JSON.stringify(captionEmbedding),
         match_client_id: client_id,
         match_threshold: 0.15,
-        match_count: 5
+        match_count: limitedMatchCount
       }
     );
 
