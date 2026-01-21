@@ -31,18 +31,24 @@ interface PageDrawerProps {
 }
 
 const statusColors: Record<string, string> = {
-  not_started: "bg-muted text-muted-foreground",
-  in_progress: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
-  content_ready: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
-  in_review: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
-  approved: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
+  not_started: "bg-gray-500/10 text-gray-500 border-gray-500/20",
+  in_progress: "bg-blue-500/10 text-blue-500 border-blue-500/20",
+  content_ready: "bg-purple-500/10 text-purple-500 border-purple-500/20",
+  designed: "bg-indigo-500/10 text-indigo-500 border-indigo-500/20",
+  built: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
+  in_review: "bg-orange-500/10 text-orange-500 border-orange-500/20",
+  reviewed: "bg-teal-500/10 text-teal-500 border-teal-500/20",
+  approved: "bg-green-500/10 text-green-500 border-green-500/20",
 };
 
 const statusLabels: Record<string, string> = {
   not_started: "Not Started",
   in_progress: "In Progress",
   content_ready: "Content Ready",
+  designed: "Designed",
+  built: "Built",
   in_review: "In Review",
+  reviewed: "Reviewed",
   approved: "Approved",
 };
 
