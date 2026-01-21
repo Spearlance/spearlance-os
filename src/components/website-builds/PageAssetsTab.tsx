@@ -35,7 +35,47 @@ interface PageAssetsTabProps {
   clientId: string;
   pageType: string;
   pageName: string;
+  clientName?: string;
+  clientIndustry?: string;
 }
+
+// Extract business keywords from client name
+const extractBusinessKeywords = (name: string): string => {
+  if (!name) return '';
+  return name
+    .replace(/\.(com|net|org|io|co|biz)$/i, '')
+    .replace(/^(my|the|home|best|top|pro)/gi, ' ')
+    .split(/(?=[A-Z])|[-_.\s]+/)
+    .filter(word => word.length > 2)
+    .map(word => word.toLowerCase())
+    .join(' ')
+    .trim();
+};
+
+// Generate context-aware stock query
+const generateStockQuery = (
+  pageType: string,
+  pageName: string,
+  clientName?: string,
+  clientIndustry?: string
+): string => {
+  const nameKeywords = extractBusinessKeywords(clientName || '');
+  const businessContext = clientIndustry || nameKeywords || '';
+  
+  const baseQueries: Record<string, string> = {
+    home: `${businessContext} professional hero welcome`,
+    about: `${businessContext} team culture behind the scenes`,
+    services: `${businessContext} ${pageName} professional work`,
+    service_detail: `${businessContext} ${pageName} detailed work`,
+    contact: `${businessContext} office location exterior`,
+    gallery: `${businessContext} portfolio showcase examples`,
+    blog: `${businessContext} blog article imagery`,
+    landing: `${businessContext} marketing promotional hero`,
+    other: `${businessContext} professional business`
+  };
+  
+  return (baseQueries[pageType] || baseQueries.other).trim();
+};
 
 const generatePageQuery = (pageType: string, pageName: string): string => {
   const baseQueries: Record<string, string> = {
@@ -72,7 +112,7 @@ const getSimilarityLabel = (similarity: number): string => {
   return "Fair";
 };
 
-export default function PageAssetsTab({ pageId, buildId, clientId, pageType, pageName }: PageAssetsTabProps) {
+export default function PageAssetsTab({ pageId, buildId, clientId, pageType, pageName, clientName, clientIndustry }: PageAssetsTabProps) {
   const [assets, setAssets] = useState<Asset[]>([]);
   const [stockImages, setStockImages] = useState<StockImage[]>([]);
   const [loading, setLoading] = useState(true);
@@ -116,10 +156,8 @@ export default function PageAssetsTab({ pageId, buildId, clientId, pageType, pag
   const handleClearSearch = () => {
     setStockQuery('');
     setHasSearched(false);
-    // Revert to auto-generated query
-    const autoQuery = pageType === 'home' 
-      ? 'professional business office team' 
-      : `${pageName} professional business`;
+    // Revert to context-aware query
+    const autoQuery = generateStockQuery(pageType, pageName, clientName, clientIndustry);
     fetchStockImages(autoQuery);
   };
 
@@ -164,10 +202,8 @@ export default function PageAssetsTab({ pageId, buildId, clientId, pageType, pag
             metadata: { pageId, pageName, pageType }
           });
           
-          // Load stock images as fallback
-          const stockSearchQuery = pageType === 'home' 
-            ? 'professional business office team' 
-            : `${pageName} professional business`;
+          // Load stock images as fallback with client context
+          const stockSearchQuery = generateStockQuery(pageType, pageName, clientName, clientIndustry);
           fetchStockImages(stockSearchQuery);
           return;
         }
@@ -178,9 +214,7 @@ export default function PageAssetsTab({ pageId, buildId, clientId, pageType, pag
       
       // If we have less than 3 client assets, fetch stock images as fallback
       if ((data.recommendations || []).length < 3) {
-        const stockSearchQuery = pageType === 'home' 
-          ? 'professional business office team' 
-          : `${pageName} professional business`;
+        const stockSearchQuery = generateStockQuery(pageType, pageName, clientName, clientIndustry);
         fetchStockImages(stockSearchQuery);
       }
     } catch (err) {
