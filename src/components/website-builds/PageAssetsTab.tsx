@@ -335,9 +335,43 @@ export default function PageAssetsTab({ pageId, buildId, clientId, pageType, pag
     }
   };
 
+  // Get or create "Stock Images" folder for organization
+  const getOrCreateStockFolder = async (targetClientId: string): Promise<string> => {
+    // Check if "Stock Images" folder exists at root level
+    const { data: existingFolder } = await supabase
+      .from('asset_folders')
+      .select('id')
+      .eq('client_id', targetClientId)
+      .eq('name', 'Stock Images')
+      .is('parent_folder_id', null)
+      .single();
+
+    if (existingFolder) {
+      return existingFolder.id;
+    }
+
+    // Create the folder with a distinct indigo color
+    const { data: newFolder, error } = await supabase
+      .from('asset_folders')
+      .insert({
+        client_id: targetClientId,
+        name: 'Stock Images',
+        parent_folder_id: null,
+        color: '#6366f1'
+      })
+      .select('id')
+      .single();
+
+    if (error) throw error;
+    return newFolder.id;
+  };
+
   const handleSaveStockImage = async (image: StockImage) => {
     setSavingStock(image.id);
     try {
+      // Get or create Stock Images folder
+      const stockFolderId = await getOrCreateStockFolder(clientId);
+
       // Download the image
       const response = await fetch(image.full_url);
       if (!response.ok) throw new Error('Failed to download image');
@@ -358,11 +392,12 @@ export default function PageAssetsTab({ pageId, buildId, clientId, pageType, pag
         .from('client-assets')
         .getPublicUrl(filePath);
 
-      // Create asset record and get its ID
+      // Create asset record with folder_id
       const { data: assetData, error: insertError } = await supabase
         .from('assets')
         .insert([{
           client_id: clientId,
+          folder_id: stockFolderId,
           title: image.title || `Stock image by ${image.photographer}`,
           type: 'image',
           storage_type: 'upload' as const,
@@ -386,6 +421,11 @@ export default function PageAssetsTab({ pageId, buildId, clientId, pageType, pag
       if (linkError) {
         console.error('Failed to link asset to page:', linkError);
       }
+
+      // Trigger AI analysis in background for description & embeddings
+      supabase.functions.invoke('analyze-asset', {
+        body: { asset_id: assetData.id }
+      }).catch(err => console.error('AI analysis failed:', err));
 
       toast.success('Image saved and added to this page');
       
