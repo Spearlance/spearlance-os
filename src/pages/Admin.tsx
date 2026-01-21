@@ -11,7 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Users, Building2, BarChart3, Loader2, Globe, KeyRound, Mail, FileText, Settings } from "lucide-react";
+import { Users, Building2, BarChart3, Loader2, Globe, KeyRound, Mail, FileText, Settings, AlertTriangle } from "lucide-react";
+import { ApiErrorsTab } from "@/components/admin/ApiErrorsTab";
 import { AddUserDialog } from "@/components/admin/AddUserDialog";
 import { EditUserDialog } from "@/components/admin/EditUserDialog";
 import { EditClientDialog } from "@/components/admin/EditClientDialog";
@@ -300,6 +301,10 @@ export default function Admin() {
           <TabsTrigger value="features">
             <Settings className="h-4 w-4 mr-2" />
             Feature Flags
+          </TabsTrigger>
+          <TabsTrigger value="errors">
+            <AlertTriangle className="h-4 w-4 mr-2" />
+            API Errors
           </TabsTrigger>
         </TabsList>
 
@@ -632,6 +637,10 @@ export default function Admin() {
               <FeatureFlagManager onFlagsUpdated={loadData} />
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="errors" className="space-y-4">
+          <ApiErrorsTab clients={clients} />
         </TabsContent>
 
       </Tabs>
