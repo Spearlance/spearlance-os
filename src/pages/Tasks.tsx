@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useClient } from "@/contexts/ClientContext";
 import { supabase } from "@/integrations/supabase/client";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
@@ -47,7 +48,8 @@ interface Task {
 }
 
 export default function Tasks() {
-  const { selectedClient } = useClient();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { selectedClient, setSelectedClient, clients } = useClient();
   const [taskColumns, setTaskColumns] = useState<Array<{ id: string; name: string; key: string; color: string; mapped_status: 'to_do' | 'in_progress' | 'done' }>>([]);
   const [tasks, setTasks] = useState<Record<string, Task[]>>({});
   const [allTasks, setAllTasks] = useState<Task[]>([]);
@@ -76,6 +78,31 @@ export default function Tasks() {
     loadUserRole();
     loadCurrentUser();
   }, []);
+
+  // Handle URL params for deep-linking to specific tasks (from Designer Workload, etc.)
+  useEffect(() => {
+    const clientId = searchParams.get('client');
+    const taskId = searchParams.get('selected');
+    
+    // If a client ID is specified and it's different from current, switch to it
+    if (clientId && selectedClient?.id !== clientId) {
+      const targetClient = clients.find(c => c.id === clientId);
+      if (targetClient) {
+        setSelectedClient(targetClient);
+      }
+      return; // Wait for selectedClient to update before proceeding
+    }
+    
+    // If we have a task ID and tasks are loaded, open the drawer
+    if (taskId && allTasks.length > 0) {
+      const task = allTasks.find(t => t.id === taskId);
+      if (task) {
+        setSelectedTask(task);
+        // Clear the URL params to avoid re-triggering
+        setSearchParams({}, { replace: true });
+      }
+    }
+  }, [searchParams, selectedClient, clients, allTasks, setSelectedClient, setSearchParams]);
 
   useEffect(() => {
     if (selectedClient) {

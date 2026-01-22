@@ -410,14 +410,11 @@ export default function DesignerWorkload() {
                                     <div 
                                       key={task.id}
                                       className="flex items-center justify-between p-2 bg-background rounded-lg border cursor-pointer hover:border-primary/50 transition-colors"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        const targetClient = clients.find(c => c.id === task.client_id);
-                                        if (targetClient) {
-                                          setSelectedClient(targetClient);
-                                        }
-                                        navigate(`/tasks?selected=${task.id}`);
-                                      }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                // Pass both client and task ID in URL - let Tasks page handle the context switch
+                                navigate(`/tasks?client=${task.client_id}&selected=${task.id}`);
+                              }}
                                     >
                                       <div className="flex items-center gap-3">
                                         <Badge variant={task.status === 'in_progress' ? 'secondary' : 'outline'} className="text-xs">
