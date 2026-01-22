@@ -36,6 +36,7 @@ import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, Building2, Globe, Calendar, Clock, Copy, CreditCard } from "lucide-react";
 import { ClientLogoUpload } from "./ClientLogoUpload";
+import { AssetShareSettings } from "./AssetShareSettings";
 import { format } from "date-fns";
 
 const clientEditSchema = z.object({
@@ -69,6 +70,9 @@ interface EditClientDialogProps {
     site_id?: string;
     website_unlocked?: boolean;
     account_type?: string;
+    asset_share_enabled?: boolean;
+    asset_share_token?: string | null;
+    asset_share_expires_at?: string | null;
   };
   assignedUsers: Array<{ id: string; name: string }>;
   onClientUpdated: () => void;
@@ -546,6 +550,17 @@ export function EditClientDialog({ client, assignedUsers, onClientUpdated }: Edi
                 )}
               </div>
             </div>
+
+            <Separator />
+
+            {/* Asset Sharing Portal Section */}
+            <AssetShareSettings
+              clientId={client.id}
+              assetShareEnabled={client.asset_share_enabled || false}
+              assetShareToken={client.asset_share_token || null}
+              assetShareExpiresAt={client.asset_share_expires_at || null}
+              onUpdate={onClientUpdated}
+            />
 
             <Separator />
 
