@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useClient } from "@/contexts/ClientContext";
@@ -16,10 +16,26 @@ import { useToast } from "@/hooks/use-toast";
 export default function WebsiteBuildDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { selectedClient } = useClient();
+  const { selectedClient, setSelectedClient, clients } = useClient();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("overview");
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Handle URL params for deep-linking (from Designer Workload, etc.)
+  useEffect(() => {
+    const clientId = searchParams.get('client');
+    
+    // If a client ID is specified and it's different from current, switch to it
+    if (clientId && selectedClient?.id !== clientId) {
+      const targetClient = clients.find(c => c.id === clientId);
+      if (targetClient) {
+        setSelectedClient(targetClient);
+        // Clear the URL param after switching
+        setSearchParams({}, { replace: true });
+      }
+    }
+  }, [searchParams, selectedClient, clients, setSelectedClient, setSearchParams]);
 
   const { data: build, isLoading } = useQuery({
     queryKey: ["website-build", id],

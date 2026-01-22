@@ -525,7 +525,7 @@ export default function DesignerWorkload() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => navigate(`/website/builds/${build.id}`)}
+                          onClick={() => navigate(`/website/builds/${build.id}?client=${build.client_id}`)}
                         >
                           <ExternalLink className="h-4 w-4" />
                         </Button>
