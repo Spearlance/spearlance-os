@@ -2,6 +2,7 @@
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { HelmetProvider } from "react-helmet-async";
 import { CalProvider } from "@/components/CalProvider";
 import { FeatureFlagProvider } from "@/contexts/FeatureFlagContext";
 import { SaveStatusProvider } from "@/contexts/SaveStatusContext";
@@ -9,6 +10,7 @@ import { MainLayout } from "@/components/MainLayout";
 import Dashboard from "./pages/Dashboard";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
+import PublicAssets from "./pages/PublicAssets";
 import Meetings from "./pages/Meetings";
 import MeetingDetail from "./pages/MeetingDetail";
 import CommunicationLogs from "./pages/CommunicationLogs";
@@ -62,23 +64,25 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <FeatureFlagProvider>
-        <SaveStatusProvider>
-          <BrowserRouter>
-            <CalProvider>
-              <Routes>
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/set-password" element={<SetPassword />} />
-            <Route
-              path="/"
-              element={
-                <MainLayout>
-                  <Dashboard />
-                </MainLayout>
-              }
-            />
+    <HelmetProvider>
+      <TooltipProvider>
+        <FeatureFlagProvider>
+          <SaveStatusProvider>
+            <BrowserRouter>
+              <CalProvider>
+                <Routes>
+              <Route path="/assets/share/:token" element={<PublicAssets />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/set-password" element={<SetPassword />} />
+              <Route
+                path="/"
+                element={
+                  <MainLayout>
+                    <Dashboard />
+                  </MainLayout>
+                }
+              />
           <Route path="/meetings" element={<MainLayout><Meetings /></MainLayout>} />
           <Route path="/meetings/:id" element={<MainLayout><MeetingDetail /></MainLayout>} />
           <Route path="/communications/logs" element={<MainLayout><CommunicationLogs /></MainLayout>} />
@@ -134,6 +138,7 @@ const App = () => (
         </SaveStatusProvider>
       </FeatureFlagProvider>
     </TooltipProvider>
+    </HelmetProvider>
   </QueryClientProvider>
 );
 

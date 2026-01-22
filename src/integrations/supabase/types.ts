@@ -2044,6 +2044,10 @@ export type Database = {
         Row: {
           access_locked: boolean | null
           account_type: string | null
+          asset_share_enabled: boolean | null
+          asset_share_expires_at: string | null
+          asset_share_password_hash: string | null
+          asset_share_token: string | null
           billing_method: string | null
           billing_plan_id: string | null
           billing_status: Database["public"]["Enums"]["billing_status"] | null
@@ -2091,6 +2095,10 @@ export type Database = {
         Insert: {
           access_locked?: boolean | null
           account_type?: string | null
+          asset_share_enabled?: boolean | null
+          asset_share_expires_at?: string | null
+          asset_share_password_hash?: string | null
+          asset_share_token?: string | null
           billing_method?: string | null
           billing_plan_id?: string | null
           billing_status?: Database["public"]["Enums"]["billing_status"] | null
@@ -2138,6 +2146,10 @@ export type Database = {
         Update: {
           access_locked?: boolean | null
           account_type?: string | null
+          asset_share_enabled?: boolean | null
+          asset_share_expires_at?: string | null
+          asset_share_password_hash?: string | null
+          asset_share_token?: string | null
           billing_method?: string | null
           billing_plan_id?: string | null
           billing_status?: Database["public"]["Enums"]["billing_status"] | null
