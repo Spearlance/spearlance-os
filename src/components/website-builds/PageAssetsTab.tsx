@@ -512,7 +512,10 @@ export default function PageAssetsTab({ pageId, buildId, clientId, pageType, pag
       // Trigger AI analysis in background for description & embeddings
       supabase.functions.invoke('analyze-asset', {
         body: { asset_id: assetData.id }
-      }).catch(err => console.error('AI analysis failed:', err));
+      }).catch(err => {
+        console.error('AI analysis failed:', err);
+        toast.error('Asset saved but AI analysis couldn\'t run.');
+      });
 
       toast.success('Image saved and added to this page');
       

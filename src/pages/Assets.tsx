@@ -247,7 +247,13 @@ export default function Assets() {
     if (assetData && (type === 'image' || type === 'video')) {
       supabase.functions.invoke('analyze-asset', {
         body: { asset_id: assetData.id }
-      }).catch(err => console.error('AI analysis failed:', err));
+      }).catch(err => {
+        console.error('AI analysis failed:', err);
+        toast({
+          title: "AI analysis skipped",
+          description: "Asset uploaded successfully but AI analysis couldn't run.",
+        });
+      });
     }
   };
 
