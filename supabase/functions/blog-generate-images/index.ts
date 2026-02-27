@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { AI_CHAT_URL, AI_MODELS, aiHeaders } from '../_shared/aiClient.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -12,7 +13,7 @@ serve(async (req) => {
   }
 
   try {
-    const { 
+    const {
       blog_post_id,
       num_images = 3,
       image_style = 'photorealistic',
@@ -46,9 +47,6 @@ serve(async (req) => {
     const colors = brand_colors || brandGuide?.primary_color || '#000000';
     const aesthetic = brandGuide?.brand_aesthetic || 'modern and professional';
 
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) throw new Error('LOVABLE_API_KEY not configured');
-
     const generatedImages = [];
 
     // Extract key topics from content for image generation
@@ -74,31 +72,29 @@ REQUIREMENTS:
 - Professional business context
 - Eye-catching and engaging`;
 
-    const featuredResponse = await fetch('https://ai.gateway.lovable.dev/v1/images/generations', {
+    const featuredResponse = await fetch(AI_CHAT_URL, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
+      headers: aiHeaders(),
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash-image-preview',
-        prompt: featuredPrompt,
-        n: 1,
+        model: AI_MODELS.IMAGE,
+        messages: [{ role: 'user', content: featuredPrompt }],
+        modalities: ['image', 'text'],
       }),
     });
 
     if (featuredResponse.ok) {
       const featuredData = await featuredResponse.json();
-      const imageUrl = featuredData.data[0].url;
-      
+      const imageUrl = featuredData.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+      if (!imageUrl) throw new Error('No image in AI response');
+
       // Upload to Supabase Storage
-      const imageResponse = await fetch(imageUrl);
-      const imageBlob = await imageResponse.blob();
+      const base64Content = imageUrl.split(',')[1];
+      const imageBuffer = Uint8Array.from(atob(base64Content), c => c.charCodeAt(0));
       const fileName = `${blog_post_id}/featured-${Date.now()}.png`;
-      
+
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('client-assets')
-        .upload(fileName, imageBlob, {
+        .upload(fileName, imageBuffer, {
           contentType: 'image/png',
           upsert: false
         });
@@ -131,7 +127,7 @@ REQUIREMENTS:
 
     for (let i = 0; i < numBodyImages && i < sections.length; i++) {
       const sectionTitle = sections[i].replace(/<[^>]*>/g, '');
-      
+
       console.log(`Generating body image ${i + 1}...`);
       const bodyPrompt = `Create a ${image_style} image for a blog section about "${sectionTitle}".
 
@@ -147,30 +143,28 @@ REQUIREMENTS:
 - Relevant to the topic
 - Professional business context`;
 
-      const bodyResponse = await fetch('https://ai.gateway.lovable.dev/v1/images/generations', {
+      const bodyResponse = await fetch(AI_CHAT_URL, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
+        headers: aiHeaders(),
         body: JSON.stringify({
-          model: 'google/gemini-2.5-flash-image-preview',
-          prompt: bodyPrompt,
-          n: 1,
+          model: AI_MODELS.IMAGE,
+          messages: [{ role: 'user', content: bodyPrompt }],
+          modalities: ['image', 'text'],
         }),
       });
 
       if (bodyResponse.ok) {
         const bodyData = await bodyResponse.json();
-        const imageUrl = bodyData.data[0].url;
-        
-        const imageResponse = await fetch(imageUrl);
-        const imageBlob = await imageResponse.blob();
+        const imageUrl = bodyData.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+        if (!imageUrl) throw new Error('No image in AI response');
+
+        const base64Content = imageUrl.split(',')[1];
+        const imageBuffer = Uint8Array.from(atob(base64Content), c => c.charCodeAt(0));
         const fileName = `${blog_post_id}/body-${i + 1}-${Date.now()}.png`;
-        
+
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from('client-assets')
-          .upload(fileName, imageBlob, {
+          .upload(fileName, imageBuffer, {
             contentType: 'image/png',
             upsert: false
           });

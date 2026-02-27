@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { AI_CHAT_URL, AI_MODELS, aiHeaders } from '../_shared/aiClient.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -173,15 +174,11 @@ Return a JSON array of exactly ${postsToGenerate} objects with this structure:
 
 ${generation_type === 'missing' ? 'Assign each post to one of the available days. ' : 'Spread the topics naturally across the month. '}Mix up the categories so there's variety week-to-week. Make topics specific and actionable.`;
 
-    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    const response = await fetch(AI_CHAT_URL, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${lovableApiKey}`,
-        'Content-Type': 'application/json',
-      },
+      headers: aiHeaders(),
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: AI_MODELS.TEXT,
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: `Generate ${postsToGenerate} diverse social media post topics for ${new Date(year, month - 1).toLocaleString('default', { month: 'long' })} ${year}. Return ONLY valid JSON array, no markdown formatting.` }
@@ -191,7 +188,7 @@ ${generation_type === 'missing' ? 'Assign each post to one of the available days
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Lovable AI error:', response.status, errorText);
+      console.error('AI error:', response.status, errorText);
       throw new Error(`AI generation failed: ${response.status}`);
     }
 

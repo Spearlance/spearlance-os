@@ -21,11 +21,6 @@ serve(async (req) => {
     // Cap match_count at 20 to account for filtering
     const limitedMatchCount = Math.min(Math.max(match_count, 1), 20);
 
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY not configured');
-    }
-
     console.log(`Finding assets for caption: "${caption_text.substring(0, 50)}..."`);
 
     // Step 1: Generate embedding for the caption using OpenAI
