@@ -214,7 +214,7 @@ Make topics specific, actionable, and valuable. Ensure proper distribution acros
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Lovable AI error:', response.status, errorText);
+      console.error('AI API error:', response.status, errorText);
       throw new Error(`AI generation failed: ${response.status}`);
     }
 
