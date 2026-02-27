@@ -4,6 +4,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { X, Globe, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { PRICING } from "@/lib/pricing";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -78,8 +79,8 @@ export function WebsiteUpsellBanner({ onUpgradeClick }: WebsiteUpsellBannerProps
         <AlertDescription className="flex flex-col gap-1">
           <span className="font-medium">
             {hasStripeCustomer 
-              ? "Add a professional website + AI tools for $750"
-              : "Unlock your professional website with AI tools – $750 add-on"}
+              ? `Add a professional website + AI tools for ${PRICING.format(PRICING.WEBSITE_ADDON)}`
+              : `Unlock your professional website with AI tools – ${PRICING.format(PRICING.WEBSITE_ADDON)} add-on`}
           </span>
           <span className="text-sm opacity-80">
             Included free in Unlimited plan
@@ -96,7 +97,7 @@ export function WebsiteUpsellBanner({ onUpgradeClick }: WebsiteUpsellBannerProps
               disabled={loading}
             >
               <Globe className="h-4 w-4 mr-2" />
-              {loading ? "Loading..." : "Add Website ($750)"}
+              {loading ? "Loading..." : `Add Website (${PRICING.format(PRICING.WEBSITE_ADDON)})`}
             </Button>
             <Button 
               onClick={onUpgradeClick}

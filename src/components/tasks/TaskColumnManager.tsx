@@ -378,8 +378,6 @@ export function TaskColumnManager() {
 
       // 3. Update display order if reordered OR if new columns were added (two-phase update to avoid UNIQUE constraint conflicts)
       if (pendingChanges.reordered || pendingChanges.added.length > 0) {
-        console.log("Reordering columns - Phase 1: Moving to temporary positions");
-        
         // Phase 1: Move all columns to large negative positions to guarantee no conflicts
         for (let i = 0; i < columnsToReorder.length; i++) {
           const column = columnsToReorder[i];
@@ -389,16 +387,14 @@ export function TaskColumnManager() {
               .from("task_columns")
               .update({ display_order: tempOrder })
               .eq("id", column.id);
-            
+
             if (error) {
               console.error("Error in phase 1 reorder:", error);
               throw error;
             }
           }
         }
-        
-        console.log("Reordering columns - Phase 2: Moving to final positions");
-        
+
         // Phase 2: Update to final positions
         for (const column of columnsToReorder) {
           if (!column.id.startsWith('temp-')) {
@@ -406,15 +402,13 @@ export function TaskColumnManager() {
               .from("task_columns")
               .update({ display_order: column.display_order })
               .eq("id", column.id);
-            
+
             if (error) {
               console.error("Error in phase 2 reorder:", error);
               throw error;
             }
           }
         }
-        
-        console.log("Reordering complete");
       }
 
       toast({

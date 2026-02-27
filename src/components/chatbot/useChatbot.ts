@@ -386,7 +386,6 @@ export const useChatbot = () => {
       clearTimeout(timeoutId);
       
       if (err.name === 'AbortError') {
-        console.log('Request aborted');
         // Mark the user message as failed
         setMessages(prev => {
           const updated = [...prev];

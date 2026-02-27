@@ -52,13 +52,11 @@ export function BillingTab({ client, isAdmin = false, onUpdate }: BillingTabProp
   useEffect(() => {
     const fetchMissingPlanName = async () => {
       if (client.stripe_subscription_id && !client.stripe_plan_name && !localPlanName && !fetchingPlanName) {
-        console.log('Auto-fetching missing plan name for subscription:', client.stripe_subscription_id);
         setFetchingPlanName(true);
         try {
           // Ensure we have a valid session before making the request
           const { data: { session } } = await supabase.auth.getSession();
           if (!session?.access_token) {
-            console.log('No active session found, skipping plan name fetch');
             setFetchingPlanName(false);
             return;
           }
@@ -77,7 +75,6 @@ export function BillingTab({ client, isAdmin = false, onUpdate }: BillingTabProp
           }
 
           if (data?.success && data?.plan_name) {
-            console.log('Successfully fetched plan name:', data.plan_name);
             // Update local state IMMEDIATELY
             setLocalPlanName(data.plan_name);
             // Then refresh from database (will eventually be consistent)
@@ -176,7 +173,6 @@ export function BillingTab({ client, isAdmin = false, onUpdate }: BillingTabProp
           if (planError) {
             console.error('Error fetching plan name after save:', planError);
           } else if (data?.success && data?.plan_name) {
-            console.log('Successfully fetched plan name after save:', data.plan_name);
             // Update local state IMMEDIATELY
             setLocalPlanName(data.plan_name);
           }

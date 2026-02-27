@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { PRICING } from "@/lib/pricing";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -536,7 +537,7 @@ export function EditClientDialog({ client, assignedUsers, onClientUpdated }: Edi
                 <div className="space-y-1 text-xs text-muted-foreground">
                   <div className="flex items-start gap-2">
                     <span className="font-semibold text-foreground">Starter Plan:</span>
-                    <span>$750 one-time payment required</span>
+                    <span>{PRICING.format(PRICING.WEBSITE_ADDON)} one-time payment required</span>
                   </div>
                   <div className="flex items-start gap-2">
                     <span className="font-semibold text-foreground">Unlimited Plan:</span>

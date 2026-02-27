@@ -1,0 +1,1 @@
+I just cloned this project and need to set up armadillo. There's already a .claude/ directory from a previous manual setup with some custom skills and hooks. Can you help me get this project set up properly with armadillo?

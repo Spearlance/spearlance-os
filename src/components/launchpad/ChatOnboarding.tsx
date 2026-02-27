@@ -231,14 +231,6 @@ export function ChatOnboarding({ submission, onSwitchToForm }: ChatOnboardingPro
 
       if (error) throw error;
 
-      console.log('[Frontend] Received response:', { 
-        hasResponse: !!data.response,
-        responseLength: data.response?.length || 0,
-        responsePreview: data.response?.substring(0, 100),
-        completeness: data.completeness,
-        fullData: data
-      });
-
       if (data.response && data.response.trim()) {
         const assistantMessage: Message = {
           role: 'assistant',

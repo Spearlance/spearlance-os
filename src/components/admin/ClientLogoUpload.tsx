@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Upload, X, Building2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { UPLOAD_LIMITS } from "@/lib/upload-limits";
 
 interface ClientLogoUploadProps {
   clientId: string;
@@ -38,11 +39,11 @@ export function ClientLogoUpload({
       return;
     }
 
-    // Validate file size (5MB max)
-    if (file.size > 5 * 1024 * 1024) {
+    // Validate file size
+    if (file.size > UPLOAD_LIMITS.LOGO) {
       toast({
         title: "File too large",
-        description: "Please upload an image smaller than 5MB",
+        description: `Please upload an image smaller than ${UPLOAD_LIMITS.formatMB(UPLOAD_LIMITS.LOGO)}`,
         variant: "destructive",
       });
       return;
@@ -144,7 +145,7 @@ export function ClientLogoUpload({
           )}
         </div>
         <p className="text-xs text-muted-foreground">
-          PNG, JPG, WEBP, or SVG. Max 5MB. Recommended: 400x400px
+          PNG, JPG, WEBP, or SVG. Max {UPLOAD_LIMITS.formatMB(UPLOAD_LIMITS.LOGO)}. Recommended: 400x400px
         </p>
         <input
           id="logo-upload"

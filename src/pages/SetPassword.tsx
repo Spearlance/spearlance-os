@@ -33,7 +33,6 @@ const SetPassword = () => {
     const errorDescription = hashParams.get('error_description');
     
     if (error || errorDescription?.toLowerCase().includes('expired') || errorDescription?.toLowerCase().includes('invalid')) {
-      console.log('Detected expired/invalid token:', error, errorDescription);
       setTokenExpired(true);
     }
   }, [navigate]);

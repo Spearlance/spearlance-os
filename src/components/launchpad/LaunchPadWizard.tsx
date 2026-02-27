@@ -27,11 +27,9 @@ export function LaunchPadWizard() {
 
   const loadOrCreateSubmission = async () => {
     if (!selectedClient) {
-      console.log('[LaunchPad] No client selected');
       return;
     }
 
-    console.log('[LaunchPad] Loading submission for client:', selectedClient.id);
     setLoading(true);
     
     try {
@@ -44,7 +42,6 @@ export function LaunchPadWizard() {
       if (error && error.code !== "PGRST116") throw error;
 
       if (data) {
-        console.log('[LaunchPad] Found existing submission:', { id: data.id, stage: data.stage, completed_at: data.completed_at });
         setSubmission({
           ...data,
           completed_at: data.completed_at || {}
@@ -62,7 +59,6 @@ export function LaunchPadWizard() {
           setShowModeSelector(true);
         } else if (hasStarted && !completedAt.welcome) {
           // Has mode and started but missing welcome timestamp - backfill it
-          console.log('[LaunchPad] Backfilling missing welcome timestamp');
           await supabase
             .from('launchpad_submissions')
             .update({
@@ -72,7 +68,6 @@ export function LaunchPadWizard() {
         }
         // Otherwise, showModeSelector stays false and they continue where they left off
       } else {
-        console.log('[LaunchPad] No submission found, showing welcome screen');
         // Show welcome screen for new submissions
         setShowModeSelector(true);
       }
