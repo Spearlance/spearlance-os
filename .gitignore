@@ -12,6 +12,20 @@ dist
 dist-ssr
 *.local
 
+# Environment files
+.env
+.env.local
+.env.*.local
+.env.production
+.env.staging
+
+# Windows
+Thumbs.db
+Desktop.ini
+
+# Lockfile (standardized on npm)
+bun.lockb
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
