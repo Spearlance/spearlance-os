@@ -406,7 +406,7 @@ export default function Settings() {
                               <p>Tag any conversation in Front with <code className="bg-blue-100 dark:bg-blue-900 px-1 rounded">{(selectedClient as any).front_tag}</code> to automatically log it in Communications → Logs.</p>
                               <p className="text-xs text-muted-foreground mt-2">
                                 Make sure your Front webhook is configured to send to:<br />
-                                <code className="text-xs break-all">https://hrmhqybdsdngsvhjqwma.supabase.co/functions/v1/front-webhook-handler</code>
+                                <code className="text-xs break-all">{`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/front-webhook-handler`}</code>
                               </p>
                             </AlertDescription>
                           </Alert>
