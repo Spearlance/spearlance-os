@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { AI_CHAT_URL, AI_MODELS, aiHeaders } from '../_shared/aiClient.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -110,19 +111,14 @@ For each topic, provide:
 
 Return as a JSON object with a "topics" array.`;
 
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) throw new Error('LOVABLE_API_KEY not configured');
 
-    console.log('Calling Lovable AI to generate blog topics...');
+    console.log('Calling AI to generate blog topics...');
 
-    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    const aiResponse = await fetch(AI_CHAT_URL, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
+      headers: aiHeaders(),
       body: JSON.stringify({
-        model: 'claude-sonnet-4-5',
+        model: AI_MODELS.TEXT,
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: 'Generate blog topic ideas now.' }

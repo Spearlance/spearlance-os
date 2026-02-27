@@ -1,6 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { AI_CHAT_URL, AI_MODELS, aiHeaders } from '../_shared/aiClient.ts';
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -28,7 +29,6 @@ serve(async (req) => {
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const lovableApiKey = Deno.env.get("LOVABLE_API_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Fetch client marketing profile data
@@ -106,16 +106,13 @@ OUTPUT FORMAT: Generate content as clean HTML with proper heading hierarchy:
 
 Keep the content concise, compelling, and action-oriented.`;
 
-    console.log("Calling Lovable AI...");
+    console.log("Calling AI...");
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetch(AI_CHAT_URL, {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${lovableApiKey}`,
-        "Content-Type": "application/json",
-      },
+      headers: aiHeaders(),
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: AI_MODELS.TEXT,
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: `${template}\n\nPage Name: ${pageName || pageType || "Website Page"}` },

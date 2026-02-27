@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { AI_CHAT_URL, AI_MODELS, aiHeaders } from '../_shared/aiClient.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -214,19 +215,14 @@ ${include_cta ? `\nCALL-TO-ACTION:\nEnd with this CTA (make it natural): ${ctaTe
 
 Write the complete article now. Be natural, helpful, and engaging.`;
 
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) throw new Error('LOVABLE_API_KEY not configured');
 
     console.log('Generating article:', title);
 
-    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    const aiResponse = await fetch(AI_CHAT_URL, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
+      headers: aiHeaders(),
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: AI_MODELS.TEXT,
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: 'Write the complete blog article now.' }
@@ -288,7 +284,7 @@ Write the complete article now. Be natural, helpful, and engaging.`;
         avatar_id: avatar_id || null,
         target_keywords: keywords,
         status: 'draft',
-        ai_model: 'google/gemini-2.5-flash',
+        ai_model: AI_MODELS.TEXT,
         generation_prompt: systemPrompt,
         generation_metadata: {
           word_count: wordCount,
