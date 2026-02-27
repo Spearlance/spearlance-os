@@ -79,12 +79,12 @@ export function PricingModal({ open, onOpenChange, highlightWebsite = false }: P
       users: "1 User",
       monthly: {
         price: 99,
-        priceId: "price_1AbCdEfGhIjKlMnO",
+        priceId: import.meta.env.VITE_STRIPE_STARTER_MONTHLY_PRICE_ID || "",
         perMonth: 99
       },
       annual: {
         price: 499,
-        priceId: "price_1XyZaBcDeFgHiJkL",
+        priceId: import.meta.env.VITE_STRIPE_STARTER_ANNUAL_PRICE_ID || "",
         perMonth: 41.58,
         savings: 689
       },
@@ -105,12 +105,12 @@ export function PricingModal({ open, onOpenChange, highlightWebsite = false }: P
       users: "Unlimited Users",
       monthly: {
         price: 297,
-        priceId: "price_1SKNIdJtbnnNcxGrzgUguBit",
+        priceId: import.meta.env.VITE_STRIPE_UNLIMITED_MONTHLY_PRICE_ID || "",
         perMonth: 297
       },
       annual: {
         price: 2097,
-        priceId: "price_1SKNMHJtbnnNcxGrjN6gcLQB",
+        priceId: import.meta.env.VITE_STRIPE_UNLIMITED_ANNUAL_PRICE_ID || "",
         perMonth: 174.75,
         savings: 1467
       },

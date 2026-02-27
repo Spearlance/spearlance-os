@@ -144,8 +144,8 @@ export default function EmailTemplates() {
       password: "SecurePass123!",
       client_name: "Acme Corp",
       inviter_name: "Jane Smith",
-      app_url: "https://os.spearlance.com",
-      action_link: "https://os.spearlance.com/auth?token=sample",
+      app_url: import.meta.env.VITE_APP_URL || "https://os.spearlance.com",
+      action_link: `${import.meta.env.VITE_APP_URL || "https://os.spearlance.com"}/auth?token=sample`,
     };
 
     Object.entries(sampleData).forEach(([key, value]) => {

@@ -7,7 +7,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Copy, RefreshCw, Eye, EyeOff, Loader2, Link2, Calendar } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import * as bcrypt from "bcryptjs";
 
 interface AssetShareSettingsProps {
   clientId: string;
@@ -99,20 +98,15 @@ export function AssetShareSettings({
 
     setIsLoading(true);
     try {
-      // Hash password client-side
-      const salt = await bcrypt.genSalt(10);
-      const hash = await bcrypt.hash(password, salt);
-
-      const { error } = await supabase
-        .from('clients')
-        .update({ asset_share_password_hash: hash })
-        .eq('id', clientId);
+      const { error } = await supabase.functions.invoke('set-asset-share-password', {
+        body: { clientId, password }
+      });
 
       if (error) throw error;
 
       setPassword('');
       onUpdate();
-      
+
       toast({
         title: "Password set",
         description: "Users can now access the asset portal with this password"
