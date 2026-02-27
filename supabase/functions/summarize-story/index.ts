@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { AI_CHAT_URL, AI_MODELS, aiHeaders } from '../_shared/aiClient.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -16,11 +17,6 @@ serve(async (req) => {
 
     if (!transcript) {
       throw new Error('transcript is required');
-    }
-
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY not configured');
     }
 
     const prompt = `You are a marketing strategist analyzing a client's story recording. Extract key insights that will be used to create authentic marketing campaigns.
@@ -50,15 +46,12 @@ Focus on:
 
 Return ONLY the JSON object, no other text.`;
 
-    console.log('Calling Lovable AI for story analysis...');
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    console.log('Calling AI for story analysis...');
+    const response = await fetch(AI_CHAT_URL, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
+      headers: aiHeaders(),
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: AI_MODELS.TEXT,
         messages: [
           { 
             role: 'system', 

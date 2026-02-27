@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.75.0";
+import { AI_CHAT_URL, AI_MODELS, aiHeaders } from '../_shared/aiClient.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -19,11 +20,10 @@ serve(async (req) => {
       throw new Error('client_id is required');
     }
 
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
-    if (!LOVABLE_API_KEY || !SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+    if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
       throw new Error('Missing required environment variables');
     }
 
@@ -89,15 +89,12 @@ IMPORTANT:
 - Focus on actionable insights for marketing
 - Ensure all fields are filled with realistic, useful data`;
 
-    console.log('Calling Lovable AI to generate avatar...');
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    console.log('Calling AI to generate avatar...');
+    const response = await fetch(AI_CHAT_URL, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
+      headers: aiHeaders(),
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: AI_MODELS.TEXT,
         messages: [
           { role: 'system', content: 'You are a marketing expert. Always respond with valid JSON only.' },
           { role: 'user', content: prompt }

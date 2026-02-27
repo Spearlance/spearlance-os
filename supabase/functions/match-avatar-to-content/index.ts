@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { AI_CHAT_URL, AI_MODELS, aiHeaders } from '../_shared/aiClient.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -23,7 +24,6 @@ serve(async (req) => {
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY')!;
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
@@ -129,17 +129,14 @@ Return your analysis as a JSON object with this structure:
 
 Sort matches by confidence_score (highest first). Only include matches with confidence >= 0.5.`;
 
-    console.log('Calling Lovable AI for avatar matching...');
+    console.log('Calling AI for avatar matching...');
 
-    // Call Lovable AI
-    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    // Call AI
+    const aiResponse = await fetch(AI_CHAT_URL, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${lovableApiKey}`,
-        'Content-Type': 'application/json',
-      },
+      headers: aiHeaders(),
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: AI_MODELS.TEXT,
         messages: [
           {
             role: 'system',
@@ -156,7 +153,7 @@ Sort matches by confidence_score (highest first). Only include matches with conf
 
     if (!aiResponse.ok) {
       const errorText = await aiResponse.text();
-      console.error('Lovable AI error:', aiResponse.status, errorText);
+      console.error('AI error:', aiResponse.status, errorText);
       return new Response(
         JSON.stringify({ success: false, error: 'AI matching failed' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }

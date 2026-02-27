@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.75.0';
+import { AI_CHAT_URL, AI_MODELS, aiHeaders } from '../_shared/aiClient.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -151,17 +152,14 @@ Generate a clean, eye-catching image that REPRESENTS the theme of the caption vi
       ];
     }
 
-    // Call Lovable AI image generation with retry logic
+    // Call AI image generation with retry logic
     console.log('🎨 Generating images with AI...');
     const aiData = await retryWithBackoff(async () => {
-      const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+      const aiResponse = await fetch(AI_CHAT_URL, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${Deno.env.get('LOVABLE_API_KEY')}`,
-          'Content-Type': 'application/json',
-        },
+        headers: aiHeaders(),
         body: JSON.stringify({
-          model: 'google/gemini-2.5-flash-image-preview',
+          model: AI_MODELS.IMAGE,
           messages: messages,
           modalities: ['image', 'text']
         }),

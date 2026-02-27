@@ -2,6 +2,7 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.75.0";
 import { marketingKnowledgeBase } from './marketing-knowledge.ts';
+import { AI_CHAT_URL, AI_MODELS, aiHeaders } from '../_shared/aiClient.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -1561,16 +1562,12 @@ Generate ONLY a JSON response with this structure:
 
 Do not include any markdown formatting, greetings like "Here's the email:", or extra text. Just the JSON.`;
 
-    // Call Lovable AI
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    // Call AI
+    const aiResponse = await fetch(AI_CHAT_URL, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json'
-      },
+      headers: aiHeaders(),
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: AI_MODELS.TEXT,
         messages: [
           { role: 'user', content: prompt }
         ]
@@ -2700,7 +2697,7 @@ async function assessAccountStatus(supabase: any, clientId: string) {
   }
 }
 
-// Tool definitions for Lovable AI
+// Tool definitions for AI
 const tools = [
   {
     type: "function",
@@ -5950,12 +5947,6 @@ ${marketingKnowledgeBase}
 When providing advice, you can reference these frameworks to support your recommendations.
 `;
 
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY not configured');
-    }
-
     // Fetch historical conversation context for cross-conversation memory
     const historicalContext = conversation_id 
       ? await fetchConversationHistory(supabaseClient, client_id, conversation_id, 50000)
@@ -5991,15 +5982,12 @@ ${historicalContext.join('\n\n')}
     console.log(`[${new Date().toISOString()}] Starting AI request for client ${client_id}`);
     const apiStartTime = Date.now();
     
-    // Call Lovable AI with function calling
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    // Call AI with function calling
+    const response = await fetch(AI_CHAT_URL, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json'
-      },
+      headers: aiHeaders(),
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: AI_MODELS.TEXT,
         messages: contextualMessages,
         tools,
         stream: true
@@ -6009,8 +5997,8 @@ ${historicalContext.join('\n\n')}
     if (!response.ok) {
       const apiDuration = Date.now() - apiStartTime;
       const errorText = await response.text();
-      console.error(`[${new Date().toISOString()}] Lovable AI error after ${apiDuration}ms:`, response.status, errorText);
-      throw new Error(`Lovable AI error: ${response.status}`);
+      console.error(`[${new Date().toISOString()}] AI API error after ${apiDuration}ms:`, response.status, errorText);
+      throw new Error(`AI API error: ${response.status}`);
     }
     
     console.log(`[${new Date().toISOString()}] AI response received, starting streaming (${Date.now() - apiStartTime}ms)`);
@@ -6879,14 +6867,11 @@ ${historicalContext.join('\n\n')}
       console.log('Making second API call with function results');
 
       // Make second API call with function results
-      const finalResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+      const finalResponse = await fetch(AI_CHAT_URL, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-          'Content-Type': 'application/json'
-        },
+        headers: aiHeaders(),
         body: JSON.stringify({
-          model: 'google/gemini-2.5-flash',
+          model: AI_MODELS.TEXT,
           messages: messagesWithResults,
           stream: true
         })
@@ -6895,7 +6880,7 @@ ${historicalContext.join('\n\n')}
       if (!finalResponse.ok) {
         const errorText = await finalResponse.text();
         console.error('Final response error:', finalResponse.status, errorText);
-        throw new Error(`Lovable AI error: ${finalResponse.status}`);
+        throw new Error(`AI API error: ${finalResponse.status}`);
       }
 
       // For LaunchPad mode, collect full response and return as JSON

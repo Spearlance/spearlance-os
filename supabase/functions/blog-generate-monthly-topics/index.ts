@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { AI_CHAT_URL, AI_MODELS, aiHeaders } from '../_shared/aiClient.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -199,15 +200,11 @@ Return a JSON array of EXACTLY ${numTopics} objects (one per date listed above) 
 
 Make topics specific, actionable, and valuable. Ensure proper distribution across categories matching the content distribution exactly.`;
 
-    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    const response = await fetch(AI_CHAT_URL, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${lovableApiKey}`,
-        'Content-Type': 'application/json',
-      },
+      headers: aiHeaders(),
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: AI_MODELS.TEXT,
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: `Generate ${numTopics} diverse blog post topics for ${monthName} ${year}. Return ONLY valid JSON array, no markdown formatting.` }
@@ -217,7 +214,7 @@ Make topics specific, actionable, and valuable. Ensure proper distribution acros
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Lovable AI error:', response.status, errorText);
+      console.error('AI API error:', response.status, errorText);
       throw new Error(`AI generation failed: ${response.status}`);
     }
 
