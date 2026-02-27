@@ -335,7 +335,6 @@ export default function PageAssetsTab({ pageId, buildId, clientId, pageType, pag
 
     try {
       const query = generatePageQuery(pageType, pageName);
-      console.log(`Fetching asset recommendations for "${pageName}" (${pageType}): "${query}"`);
 
       const { data, error: fnError } = await supabase.functions.invoke('recommend-assets', {
         body: { 

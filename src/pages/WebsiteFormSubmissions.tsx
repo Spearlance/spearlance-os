@@ -88,11 +88,6 @@ export default function WebsiteFormSubmissions() {
 
       if (error) throw error;
 
-      console.log("📥 Fetched submissions:", data);
-      console.log("📥 First submission:", data?.[0]);
-      console.log("📥 First submission form_data:", data?.[0]?.form_data);
-      console.log("📥 form_data type:", typeof data?.[0]?.form_data);
-
       setSubmissions(data || []);
     } catch (error) {
       console.error('Error fetching submissions:', error);
@@ -178,50 +173,36 @@ export default function WebsiteFormSubmissions() {
   };
 
   const parseFormData = (formData: Json): Record<string, any> | null => {
-    console.log('🔧 parseFormData called with:', formData);
-    console.log('🔧 Type:', typeof formData);
-    
     // If it's null or undefined, return null
     if (!formData) {
-      console.log('❌ formData is null/undefined');
       return null;
     }
-    
+
     // If it's already an object (not a string), return it
     if (typeof formData === 'object' && !Array.isArray(formData)) {
-      console.log('✅ formData is already an object');
       return formData as Record<string, any>;
     }
-    
+
     // If it's a string, try to parse it
     if (typeof formData === 'string') {
       try {
-        console.log('🔄 Attempting to parse JSON string...');
         const parsed = JSON.parse(formData);
-        console.log('✅ Successfully parsed:', parsed);
         return parsed;
       } catch (error) {
         console.error('❌ Failed to parse JSON string:', error);
         return null;
       }
     }
-    
-    console.log('❌ Unexpected formData type:', typeof formData);
+
     return null;
   };
 
   const getSubmitterName = (formData: Json): string => {
-    console.log("🔍 getSubmitterName called with:", formData);
-    
     const data = parseFormData(formData);
     if (!data) {
-      console.log("❌ No valid data to extract name from");
       return 'Anonymous';
     }
-    
-    console.log("🔍 Parsed data keys:", Object.keys(data));
-    console.log("🔍 Data values:", data);
-    
+
     // Try various name field combinations
     const nameFields = ['NAME', 'name', 'full_name', 'Full Name', 'fullName', 'fullname'];
     for (const field of nameFields) {
@@ -229,83 +210,69 @@ export default function WebsiteFormSubmissions() {
       if (value) {
         const trimmed = String(value).trim();
         if (trimmed) {
-          console.log(`✅ Found name in field '${field}':`, trimmed);
           return trimmed;
         }
       }
     }
-    
+
     // Try first + last name combination
     const firstName = data['first_name'] || data['First Name'] || data['firstName'];
     const lastName = data['last_name'] || data['Last Name'] || data['lastName'];
     if (firstName && lastName) {
       const combined = `${String(firstName).trim()} ${String(lastName).trim()}`;
       if (combined.trim()) {
-        console.log("✅ Found combined name:", combined);
         return combined;
       }
     }
     if (firstName) {
       const trimmed = String(firstName).trim();
       if (trimmed) {
-        console.log("✅ Found first name:", trimmed);
         return trimmed;
       }
     }
-    
-    console.log("❌ No name found in formData");
+
     // Fallback to email or anonymous
     const email = getSubmitterEmail(formData);
     return email || 'Anonymous Submission';
   };
 
   const getSubmitterEmail = (formData: Json): string | null => {
-    console.log("📧 getSubmitterEmail called with:", formData);
-    
     const data = parseFormData(formData);
     if (!data) {
-      console.log("❌ No valid data to extract email from");
       return null;
     }
     const emailFields = ['EMAIL', 'email', 'Email', 'email_address', 'emailAddress'];
-    
+
     for (const field of emailFields) {
       const value = data[field];
       if (value) {
         const trimmed = String(value).trim();
         if (trimmed) {
-          console.log(`✅ Found email in field '${field}':`, trimmed);
           return trimmed;
         }
       }
     }
-    
-    console.log("❌ No email found in formData");
+
     return null;
   };
 
   const getSubmitterPhone = (formData: Json): string | null => {
-    console.log("📞 getSubmitterPhone called with:", formData);
-    
     const data = parseFormData(formData);
     if (!data) {
-      console.log("❌ No valid data to extract phone from");
       return null;
     }
     const phoneFields = ['PHONE', 'phone', 'Phone', 'phone_number', 'phoneNumber', 'tel'];
-    
+
     for (const field of phoneFields) {
       const value = data[field];
       if (value) {
         const trimmed = String(value).trim();
         if (trimmed) {
-          console.log(`✅ Found phone in field '${field}':`, trimmed);
           return trimmed;
         }
       }
     }
-    
-    console.log("❌ No phone found in formData");
+
     return null;
   };
 
