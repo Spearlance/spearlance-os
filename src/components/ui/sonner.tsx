@@ -1,6 +1,9 @@
 import { useTheme } from "next-themes";
 import { Toaster as Sonner, toast } from "sonner";
 
+// TODO: Consolidate — project uses both sonner (40 files) and @radix-ui/react-toast (114 files).
+// Target: migrate sonner usages to use-toast hook for consistency.
+
 type ToasterProps = React.ComponentProps<typeof Sonner>;
 
 const Toaster = ({ ...props }: ToasterProps) => {
