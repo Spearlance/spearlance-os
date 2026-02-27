@@ -2,6 +2,7 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.75.0';
 import { Resend } from "https://esm.sh/resend@2.0.0";
+import { AI_CHAT_URL, AI_MODELS, aiHeaders } from '../_shared/aiClient.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -37,11 +38,6 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     
     const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY not configured');
-    }
 
     // Parse optional request body for manual triggers
     let specificClientId: string | null = null;
@@ -234,14 +230,11 @@ ${dataContext}
 
 Generate the JSON response with executive_summary, key_wins, concerns, focus_areas, and full_report.`;
 
-        const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+        const aiResponse = await fetch(AI_CHAT_URL, {
           method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-            'Content-Type': 'application/json',
-          },
+          headers: aiHeaders(),
           body: JSON.stringify({
-            model: 'google/gemini-2.5-flash',
+            model: AI_MODELS.TEXT,
             messages: [
               { role: 'system', content: systemPrompt },
               { role: 'user', content: userPrompt }

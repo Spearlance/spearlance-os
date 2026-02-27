@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { AI_CHAT_URL, AI_MODELS, aiHeaders } from '../_shared/aiClient.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -26,11 +27,6 @@ serve(async (req) => {
     
     if (!client_id) {
       throw new Error('client_id is required');
-    }
-
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY not configured');
     }
 
     const supabaseClient = createClient(
@@ -348,17 +344,14 @@ Return JSON in this exact format:
     userPrompt += 'CRITICAL: For meetings - create a SEPARATE task for EACH distinct action item from next_steps. Do NOT combine multiple meeting action items into one task. Analyze meeting summaries deeply to extract specific tasks. Identify implicit commitments. Think proactively about what needs to happen next to keep projects moving forward.\n\n';
     userPrompt += 'Generate task recommendations based on the above data. Focus on the most urgent and impactful tasks.';
 
-    console.log('Calling Lovable AI...');
+    console.log('Calling AI...');
 
-    // Call Lovable AI
-    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    // Call AI
+    const aiResponse = await fetch(AI_CHAT_URL, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
+      headers: aiHeaders(),
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: AI_MODELS.TEXT,
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
