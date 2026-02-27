@@ -42,7 +42,6 @@ import Admin2FASetup from "./pages/Admin2FASetup";
 import CalendarCallback from "./pages/CalendarCallback";
 import ResetPassword from "./pages/ResetPassword";
 import SetPassword from "./pages/SetPassword";
-import BackfillImages from "./pages/BackfillImages";
 import WebsiteFormSubmissions from "./pages/WebsiteFormSubmissions";
 import SiteComments from "./pages/SiteComments";
 import SiteCommentDetail from "./pages/SiteCommentDetail";
@@ -116,7 +115,6 @@ const App = () => (
             <Route path="/admin/designer-workload" element={<MainLayout><DesignerWorkload /></MainLayout>} />
             <Route path="/admin/2fa-setup" element={<MainLayout><Admin2FASetup /></MainLayout>} />
             <Route path="/admin/user-activity" element={<MainLayout><UserActivity /></MainLayout>} />
-            <Route path="/backfill-images" element={<MainLayout><BackfillImages /></MainLayout>} />
             <Route path="/website/form-submissions" element={<MainLayout><WebsiteFormSubmissions /></MainLayout>} />
             <Route path="/website/comments" element={<MainLayout><SiteComments /></MainLayout>} />
             <Route path="/website/comments/:id" element={<MainLayout><SiteCommentDetail /></MainLayout>} />

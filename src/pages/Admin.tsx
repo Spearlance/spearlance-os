@@ -568,7 +568,6 @@ export default function Admin() {
                               size="sm"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                console.log('Navigating to form submissions for client:', client.id);
                                 try {
                                   navigate(`/website/form-submissions?client=${client.id}`);
                                 } catch (error) {

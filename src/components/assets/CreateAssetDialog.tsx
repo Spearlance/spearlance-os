@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useClient } from "@/contexts/ClientContext";
 import { FileText, X } from "lucide-react";
+import { UPLOAD_LIMITS } from "@/lib/upload-limits";
 
 interface CreateAssetDialogProps {
   open: boolean;
@@ -37,10 +38,10 @@ export function CreateAssetDialog({ open, onOpenChange, folderId, onSuccess }: C
     if (files.length === 0) return;
 
     const validFiles = files.filter(file => {
-      if (file.size > 50 * 1024 * 1024) {
+      if (file.size > UPLOAD_LIMITS.ASSET) {
         toast({
           title: "File too large",
-          description: `${file.name} exceeds 50MB limit`,
+          description: `${file.name} exceeds ${UPLOAD_LIMITS.formatMB(UPLOAD_LIMITS.ASSET)} limit`,
           variant: "destructive",
         });
         return false;
@@ -130,7 +131,13 @@ export function CreateAssetDialog({ open, onOpenChange, folderId, onSuccess }: C
           if (assetData && (type === 'image' || type === 'video')) {
             supabase.functions.invoke('analyze-asset', {
               body: { asset_id: assetData.id }
-            }).catch(err => console.error('AI analysis failed:', err));
+            }).catch(() => {
+              toast({
+                title: "AI Analysis Unavailable",
+                description: "Asset uploaded successfully, but AI analysis could not be started.",
+                variant: "destructive",
+              });
+            });
           }
 
           completed++;

@@ -9,6 +9,7 @@ import { useClient } from "@/contexts/ClientContext";
 import { Upload, FileText, X, Folder, FolderPlus, Home, ChevronRight, FolderOpen } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { CreateFolderDialog } from "@/components/assets/CreateFolderDialog";
+import { UPLOAD_LIMITS } from "@/lib/upload-limits";
 
 interface StageAssetsProps {
   submissionId: string;
@@ -202,9 +203,9 @@ export function StageAssets({ submissionId, onContinue, onBack, onSaveExit }: St
         return null;
       }
 
-      // Validate file size (10MB)
-      if (file.size > 10 * 1024 * 1024) {
-        toast({ title: "File too large (max 10MB)", variant: "destructive" });
+      // Validate file size
+      if (file.size > UPLOAD_LIMITS.GENERAL) {
+        toast({ title: `File too large (max ${UPLOAD_LIMITS.formatMB(UPLOAD_LIMITS.GENERAL)})`, variant: "destructive" });
         return null;
       }
 
@@ -370,7 +371,7 @@ export function StageAssets({ submissionId, onContinue, onBack, onSaveExit }: St
             <div className="space-y-4">
               {/* Logo Upload */}
               <div>
-                <Label htmlFor="logo">Logo Upload * (PNG, JPG, SVG - Max 10MB)</Label>
+                <Label htmlFor="logo">{`Logo Upload * (PNG, JPG, SVG - Max ${UPLOAD_LIMITS.formatMB(UPLOAD_LIMITS.GENERAL)})`}</Label>
                 <div className="mt-2 border-2 border-dashed rounded-lg p-6 text-center hover:border-primary transition-colors">
                   <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
                   <Label htmlFor="logo" className="cursor-pointer text-sm text-primary hover:underline">

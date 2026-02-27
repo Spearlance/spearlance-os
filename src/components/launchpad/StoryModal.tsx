@@ -8,6 +8,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { CheckCircle2, Upload } from "lucide-react";
+import { UPLOAD_LIMITS } from "@/lib/upload-limits";
 
 interface StoryModalProps {
   open: boolean;
@@ -143,11 +144,11 @@ export function StoryModal({ open, onOpenChange, submissionId, clientId, initial
       return;
     }
 
-    // Validate file size (25MB)
-    if (file.size > 25 * 1024 * 1024) {
+    // Validate file size
+    if (file.size > UPLOAD_LIMITS.VIDEO) {
       toast({
         title: "File too large",
-        description: "Maximum file size is 25MB",
+        description: `Maximum file size is ${UPLOAD_LIMITS.formatMB(UPLOAD_LIMITS.VIDEO)}`,
         variant: "destructive",
       });
       return;
@@ -238,7 +239,6 @@ export function StoryModal({ open, onOpenChange, submissionId, clientId, initial
         }
 
         transcript = transcribeData.transcript;
-        console.log('Transcription complete, length:', transcript?.length);
         setTranscribing(false);
         setUploadProgress(70);
       } else {
@@ -260,7 +260,6 @@ export function StoryModal({ open, onOpenChange, submissionId, clientId, initial
       }
 
       const summary = summarizeData.summary;
-      console.log('Summary complete');
       setSummarizing(false);
       setUploadProgress(90);
 
@@ -418,7 +417,7 @@ export function StoryModal({ open, onOpenChange, submissionId, clientId, initial
                 <Upload className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                 <div className="flex-1">
                   <span className="text-foreground">Click to upload</span>
-                  <span className="text-muted-foreground ml-2">(.mp3, .m4a, .wav, .mp4, .mov - max 25MB)</span>
+                  <span className="text-muted-foreground ml-2">{`(.mp3, .m4a, .wav, .mp4, .mov - max ${UPLOAD_LIMITS.formatMB(UPLOAD_LIMITS.VIDEO)})`}</span>
                 </div>
               </label>
               {selectedFile && (

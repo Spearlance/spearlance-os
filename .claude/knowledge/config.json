@@ -1,0 +1,4 @@
+{
+  "agency": { "enabled": true },
+  "client": { "enabled": false }
+}

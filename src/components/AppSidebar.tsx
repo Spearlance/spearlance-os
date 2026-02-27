@@ -1,4 +1,5 @@
 import { NavLink, useNavigate } from "react-router-dom";
+import { PRICING } from "@/lib/pricing";
 import { useClient } from "@/contexts/ClientContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
@@ -448,7 +449,7 @@ export function AppSidebar() {
                         <TooltipContent side="right">
                           <p className="font-medium">Unlock Website Features</p>
                           <p className="text-xs text-muted-foreground">
-                            Add for $750 or upgrade to Unlimited
+                            {`Add for ${PRICING.format(PRICING.WEBSITE_ADDON)} or upgrade to Unlimited`}
                           </p>
                         </TooltipContent>
                       </Tooltip>

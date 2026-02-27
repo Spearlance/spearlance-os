@@ -127,7 +127,6 @@ export default function Tasks() {
 
   useEffect(() => {
     if (selectedClient && currentUserId) {
-      console.log('Filters changed:', { assignmentFilter, channelFilter, priorityFilter });
       loadTasks();
     }
   }, [assignmentFilter, channelFilter, priorityFilter]);
@@ -135,10 +134,8 @@ export default function Tasks() {
   // Listen for column updates from Settings tab
   useEffect(() => {
     const handleColumnsUpdate = async () => {
-      console.log("Columns updated event fired");
       if (selectedClient) {
         const columns = await loadTaskColumns();
-        console.log("Columns loaded after update:", columns);
         // Small delay to ensure state has updated before loading tasks
         setTimeout(() => {
           loadTasks();
@@ -153,8 +150,6 @@ export default function Tasks() {
   // Re-group tasks whenever taskColumns or allTasks changes
   useEffect(() => {
     if (taskColumns.length === 0 || allTasks.length === 0) return;
-
-    console.log("Re-grouping tasks for columns:", taskColumns.map(c => c.key));
     const grouped: Record<string, Task[]> = {};
     taskColumns.forEach(col => {
       grouped[col.key] = [];
@@ -182,7 +177,6 @@ export default function Tasks() {
     });
 
     setTasks(grouped);
-    console.log("Tasks re-grouped:", Object.entries(grouped).map(([key, tasks]) => `${key}: ${tasks.length} tasks`).join(', '));
   }, [taskColumns, allTasks]);
 
   const loadUserRole = async () => {
@@ -201,8 +195,6 @@ export default function Tasks() {
   const loadTaskColumns = async () => {
     if (!selectedClient) return [];
 
-    console.log("Loading task columns for client:", selectedClient.id);
-
     const { data, error } = await supabase
       .from("task_columns")
       .select("id, name, key, color, mapped_status")
@@ -214,7 +206,6 @@ export default function Tasks() {
       return [];
     }
 
-    console.log("Loaded columns:", data?.map(c => c.key));
     setTaskColumns(data || []);
     
     // Initialize tasks state with empty arrays for each column
@@ -275,7 +266,6 @@ export default function Tasks() {
 
     if (data) {
       setMarketingChannels(data);
-      console.log('Loaded channels:', data);
     }
   };
 
@@ -313,8 +303,6 @@ export default function Tasks() {
 
   const loadTasks = async () => {
     if (!selectedClient) return;
-
-    console.log("Loading tasks, current columns:", taskColumns.map(c => c.key));
 
     let query = supabase
       .from("tasks")
@@ -417,13 +405,11 @@ export default function Tasks() {
         return {
           ...task,
         assignees: assigneeProfiles.map((profile: any) => {
-          const assignee = {
+          return {
             id: profile.id,
             name: profile.name || 'Unknown User',
             avatar_url: profile.avatar_url || null
           };
-          console.log('Mapped assignee:', assignee, 'from:', profile);
-          return assignee;
         }) || [],
           subtask_count: subtasks?.length || 0,
           completed_subtasks: subtasks?.filter(st => st.status === "done").length || 0,
@@ -464,7 +450,6 @@ export default function Tasks() {
       }
     });
 
-    console.log("Tasks loaded and grouped:", Object.entries(grouped).map(([key, tasks]) => `${key}: ${tasks.length}`));
     setTasks(grouped);
   };
 
@@ -519,10 +504,8 @@ export default function Tasks() {
   const handleTabChange = async (value: string) => {
     setActiveTab(value);
     if (value === "board" && selectedClient) {
-      console.log("Switching to board tab, reloading columns and tasks");
       // Reload columns first, then tasks
       const columns = await loadTaskColumns();
-      console.log("Columns reloaded:", columns?.map(c => c.key));
       setTimeout(() => {
         loadTasks();
       }, 100);

@@ -1,6 +1,4 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { AlertTriangle } from "lucide-react";
+import { ConfirmDeleteDialog } from "@/components/ui/ConfirmDeleteDialog";
 
 interface DeleteAvatarDialogProps {
   open: boolean;
@@ -10,32 +8,21 @@ interface DeleteAvatarDialogProps {
   loading?: boolean;
 }
 
-export function DeleteAvatarDialog({ 
-  open, 
-  onOpenChange, 
-  avatarName, 
+export function DeleteAvatarDialog({
+  open,
+  onOpenChange,
+  avatarName,
   onConfirm,
-  loading 
+  loading,
 }: DeleteAvatarDialogProps) {
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <div className="flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5 text-destructive" />
-            <DialogTitle>Delete Avatar?</DialogTitle>
-          </div>
-          <DialogDescription className="pt-2">
-            This will permanently delete <span className="font-semibold">"{avatarName}"</span> and cannot be undone.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="flex gap-2 justify-end pt-4">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button variant="destructive" onClick={onConfirm} disabled={loading}>
-            {loading ? "Deleting..." : "Delete"}
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
+    <ConfirmDeleteDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      onConfirm={onConfirm}
+      title="Delete Avatar?"
+      description={`This will permanently delete "${avatarName}" and cannot be undone.`}
+      loading={loading}
+    />
   );
 }
