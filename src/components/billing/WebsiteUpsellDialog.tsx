@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Globe, Sparkles, Users, Award, MessageCircle, Check, Loader2, Edit } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { PRICING } from "@/lib/pricing";
 
 interface WebsiteUpsellDialogProps {
   open: boolean;
@@ -75,13 +76,13 @@ export function WebsiteUpsellDialog({ open, onOpenChange, onUpgradeClick }: Webs
                   <CardTitle>Website Add-on</CardTitle>
                 </div>
               <div className="text-3xl font-bold text-foreground">
-                $750
+                {PRICING.format(PRICING.WEBSITE_ADDON)}
                 <span className="text-base font-normal text-muted-foreground ml-1">
                   one-time
                 </span>
               </div>
               <p className="text-sm text-muted-foreground mt-1">
-                (then just $99/mo after free trial)
+                (then just {PRICING.format(PRICING.STARTER_MONTHLY)}/mo after free trial)
               </p>
                 <CardDescription className="mt-2">
                   Add website features to your current Starter plan
@@ -131,7 +132,7 @@ export function WebsiteUpsellDialog({ open, onOpenChange, onUpgradeClick }: Webs
                   ) : (
                     <>
                       <Globe className="mr-2 h-4 w-4" />
-                      Add Website ($750)
+                      {`Add Website (${PRICING.format(PRICING.WEBSITE_ADDON)})`}
                     </>
                   )}
                 </Button>
@@ -154,7 +155,7 @@ export function WebsiteUpsellDialog({ open, onOpenChange, onUpgradeClick }: Webs
                 <CardTitle>Unlimited Plan</CardTitle>
               </div>
               <div className="text-3xl font-bold text-foreground">
-                $297
+                {PRICING.format(PRICING.UNLIMITED_MONTHLY)}
                 <span className="text-base font-normal text-muted-foreground ml-1">
                   /month
                 </span>

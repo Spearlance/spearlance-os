@@ -9,6 +9,7 @@ import { Check, Loader2, Sparkles, Gift } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { cn } from "@/lib/utils";
+import { PRICING } from "@/lib/pricing";
 
 interface PricingModalProps {
   open: boolean;
@@ -78,15 +79,15 @@ export function PricingModal({ open, onOpenChange, highlightWebsite = false }: P
       description: "Best for small teams or solo operators who want structure and clarity",
       users: "1 User",
       monthly: {
-        price: 99,
+        price: PRICING.STARTER_MONTHLY,
         priceId: import.meta.env.VITE_STRIPE_STARTER_MONTHLY_PRICE_ID || "",
-        perMonth: 99
+        perMonth: PRICING.STARTER_MONTHLY
       },
       annual: {
-        price: 499,
+        price: PRICING.STARTER_ANNUAL,
         priceId: import.meta.env.VITE_STRIPE_STARTER_ANNUAL_PRICE_ID || "",
-        perMonth: 41.58,
-        savings: 689
+        perMonth: PRICING.STARTER_ANNUAL_PER_MONTH,
+        savings: PRICING.STARTER_ANNUAL_SAVINGS
       },
       features: [
         "Full Platform Access – All-in-one marketing hub",
@@ -104,15 +105,15 @@ export function PricingModal({ open, onOpenChange, highlightWebsite = false }: P
       description: "Best for growing teams who want expert help and complete marketing control",
       users: "Unlimited Users",
       monthly: {
-        price: 297,
+        price: PRICING.UNLIMITED_MONTHLY,
         priceId: import.meta.env.VITE_STRIPE_UNLIMITED_MONTHLY_PRICE_ID || "",
-        perMonth: 297
+        perMonth: PRICING.UNLIMITED_MONTHLY
       },
       annual: {
-        price: 2097,
+        price: PRICING.UNLIMITED_ANNUAL,
         priceId: import.meta.env.VITE_STRIPE_UNLIMITED_ANNUAL_PRICE_ID || "",
-        perMonth: 174.75,
-        savings: 1467
+        perMonth: PRICING.UNLIMITED_ANNUAL_PER_MONTH,
+        savings: PRICING.UNLIMITED_ANNUAL_SAVINGS
       },
       features: [
         "Everything in Starter, plus:",
@@ -140,7 +141,7 @@ export function PricingModal({ open, onOpenChange, highlightWebsite = false }: P
             <div className="text-center p-3 bg-primary/10 rounded-lg border border-primary/20">
               <p className="text-sm font-medium flex items-center justify-center gap-2">
                 <span>💡</span>
-                <span>Tip: Unlimited plan includes professional website + unlimited edits for free – a $750 value plus tax credits!</span>
+                <span>{`Tip: Unlimited plan includes professional website + unlimited edits for free – a ${PRICING.format(PRICING.WEBSITE_ADDON)} value plus tax credits!`}</span>
               </p>
             </div>
           )}
