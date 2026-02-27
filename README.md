@@ -1,73 +1,45 @@
-# Welcome to your Lovable project
+# SpearlanceOS
 
-## Project info
+Spearlance's client portal for managing all marketing services.
 
-**URL**: https://lovable.dev/projects/2b1ed44d-05ce-497e-b93f-12844fea7fc9
+## Stack
 
-## How can I edit this code?
+- **Framework:** React + TypeScript + Vite
+- **UI:** shadcn/ui + Tailwind CSS
+- **Backend:** Supabase (auth, database, edge functions, storage)
+- **AI:** OpenRouter (Claude Sonnet, Gemini Flash)
+- **Payments:** Stripe
+- **Scheduling:** Cal.com
+- **Deployment:** Vercel
 
-There are several ways of editing your application.
-
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/2b1ed44d-05ce-497e-b93f-12844fea7fc9) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
+## Development
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+# Install dependencies
+npm install
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Start dev server
 npm run dev
+
+# Run tests
+npm test
+
+# Build for production
+npm run build
 ```
 
-**Edit a file directly in GitHub**
+## Environment Variables
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+Copy `.env.example` to `.env` and fill in the values:
 
-**Use GitHub Codespaces**
+```sh
+cp .env.example .env
+```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+See `.env.example` for all required variables. For Vercel deployment, set these in the Vercel dashboard under Project Settings > Environment Variables.
 
-## What technologies are used for this project?
+## Deployment
 
-This project is built with:
+Deployed on Vercel. Pushes to `main` trigger automatic production deploys.
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/2b1ed44d-05ce-497e-b93f-12844fea7fc9) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+Custom domain: `os.spearlance.com`
