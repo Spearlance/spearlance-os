@@ -65,6 +65,7 @@ import {
   Briefcase,
   Mail,
   Activity,
+  Download,
 } from "lucide-react";
 import { ReportBugDialog } from "@/components/support/ReportBugDialog";
 import { Button } from "@/components/ui/button";
@@ -638,6 +639,14 @@ export function AppSidebar() {
                               <NavLink to="/admin/bug-reports" end className={getNavClass}>
                                 <Bug className="h-4 w-4" />
                                 <span>Bug Reports</span>
+                              </NavLink>
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
+                          <SidebarMenuSubItem>
+                            <SidebarMenuSubButton asChild>
+                              <NavLink to="/admin/export-data" end className={getNavClass}>
+                                <Download className="h-4 w-4" />
+                                <span>Export Data</span>
                               </NavLink>
                             </SidebarMenuSubButton>
                           </SidebarMenuSubItem>

@@ -6109,6 +6109,7 @@ export type Database = {
       }
     }
     Functions: {
+      get_public_tables: { Args: never; Returns: string[] }
       has_client_access: {
         Args: { _client_id: string; _user_id: string }
         Returns: boolean
