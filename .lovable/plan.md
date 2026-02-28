@@ -1,82 +1,17 @@
 
 
-## Admin CSV Export Page
+## Fix Blank Preview
 
-Build an admin-only page with an Edge Function that exports database tables as CSV files, with an option to download all tables at once in a ZIP.
+The blank screen is caused by the `.env` file being deleted or overwritten during the previous code changes. Without it, the backend client can't initialize (error: "supabaseUrl is required").
 
----
+### Fix
 
-### 1. Fix Existing Build Error
+**Restore `.env` file** with the correct environment variables:
 
-**File: `supabase/functions/set-asset-share-password/index.ts` (line 74)**
-
-Cast `err` to `Error` type to fix the TypeScript error:
-```typescript
-} catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    return new Response(JSON.stringify({ error: message }), { ... });
-}
+```
+VITE_SUPABASE_PROJECT_ID="hrmhqybdsdngsvhjqwma"
+VITE_SUPABASE_PUBLISHABLE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhybWhxeWJkc2RuZ3N2aGpxd21hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAxMTk2NjcsImV4cCI6MjA3NTY5NTY2N30.STwk-iXJ1_UqNUOYTXZrsMb-TN3pRraXcJNlBcOld1s"
+VITE_SUPABASE_URL="https://hrmhqybdsdngsvhjqwma.supabase.co"
 ```
 
----
-
-### 2. Create Edge Function: `export-csv`
-
-**File: `supabase/functions/export-csv/index.ts`**
-
-- Authenticates the caller and verifies they have `admin` role via the `profiles` table
-- Accepts two modes:
-  - `POST { table: "table_name" }` -- returns a single CSV
-  - `POST { tables: ["table1", "table2", ...] }` or `POST { all: true }` -- returns a ZIP containing one CSV per table
-- Queries `information_schema.tables` to get the list of public tables
-- For each table, runs `SELECT * FROM <table>` using the service role client, converts rows to CSV
-- For ZIP mode, uses Deno's built-in compression or a lightweight ZIP library to bundle all CSVs
-- Whitelists only `public` schema tables; sanitizes table names to prevent injection
-- Returns appropriate `Content-Type` and `Content-Disposition` headers
-
-**Config: `supabase/config.toml`**
-```toml
-[functions.export-csv]
-verify_jwt = false
-```
-
----
-
-### 3. Create Admin Page: `src/pages/admin/ExportData.tsx`
-
-- Admin access check (same pattern as other admin pages)
-- Fetches available table list from the edge function on load
-- UI with:
-  - Checkbox list of all tables (with "Select All" toggle)
-  - "Download Selected as ZIP" button (primary action)
-  - Individual "Download CSV" button per table row
-- Uses `fetch` to call the edge function, then triggers a browser download via `URL.createObjectURL`
-
----
-
-### 4. Register Route in `App.tsx`
-
-Add route:
-```tsx
-<Route path="/admin/export-data" element={<MainLayout><ExportData /></MainLayout>} />
-```
-
----
-
-### 5. Add Navigation Link
-
-Add an "Export Data" link in the admin section of the sidebar or admin page, using a `Download` icon from lucide-react.
-
----
-
-### Summary
-
-| Step | File(s) | What |
-|------|---------|------|
-| Fix build error | `set-asset-share-password/index.ts` | Type-cast catch variable |
-| Edge function | `supabase/functions/export-csv/index.ts` | CSV/ZIP generation with admin auth |
-| Config | `supabase/config.toml` | Register new function |
-| Admin page | `src/pages/admin/ExportData.tsx` | Table selection UI + download |
-| Route | `src/App.tsx` | Register `/admin/export-data` |
-| Navigation | Sidebar/Admin page | Add link to export page |
-
+This is a one-file fix. The preview will immediately start working again once the file is restored.
