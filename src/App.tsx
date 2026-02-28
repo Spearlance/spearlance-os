@@ -54,6 +54,7 @@ import EmailTemplates from "./pages/admin/EmailTemplates";
 import PromptTemplates from "./pages/admin/PromptTemplates";
 import DesignerWorkload from "./pages/admin/DesignerWorkload";
 import UserActivity from "./pages/admin/UserActivity";
+import ExportData from "./pages/admin/ExportData";
 import BlogWriter from "./pages/BlogWriter";
 import ClientSuccessHub from "./pages/ClientSuccessHub";
 import WebsiteBuilds from "./pages/WebsiteBuilds";
@@ -115,6 +116,7 @@ const App = () => (
             <Route path="/admin/designer-workload" element={<MainLayout><DesignerWorkload /></MainLayout>} />
             <Route path="/admin/2fa-setup" element={<MainLayout><Admin2FASetup /></MainLayout>} />
             <Route path="/admin/user-activity" element={<MainLayout><UserActivity /></MainLayout>} />
+            <Route path="/admin/export-data" element={<MainLayout><ExportData /></MainLayout>} />
             <Route path="/website/form-submissions" element={<MainLayout><WebsiteFormSubmissions /></MainLayout>} />
             <Route path="/website/comments" element={<MainLayout><SiteComments /></MainLayout>} />
             <Route path="/website/comments/:id" element={<MainLayout><SiteCommentDetail /></MainLayout>} />
