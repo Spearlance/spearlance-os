@@ -41,7 +41,7 @@ serve(async (req) => {
         
         // Check if this is a website add-on purchase
         if (session.metadata?.product_type === 'website' && session.metadata?.client_id) {
-          const websiteProductId = 'prod_TKM8ZkU6KtXYPM';
+          const websiteProductId = Deno.env.get('STRIPE_WEBSITE_PRODUCT_ID') || 'prod_TKM8ZkU6KtXYPM';
           
           // Validate product ID for additional security
           if (session.metadata?.product_id === websiteProductId) {

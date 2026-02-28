@@ -52,7 +52,7 @@ serve(async (req) => {
     if (!targetProfile) throw new Error('Profile not found');
 
     // Generate password reset link
-    const appUrl = 'https://os.spearlance.com';
+    const appUrl = Deno.env.get('APP_URL') || 'https://os.spearlance.com';
     const { data: signupData, error: signupError } = await supabaseAdmin.auth.admin.generateLink({
       type: 'recovery',
       email: targetUser.user.email!,

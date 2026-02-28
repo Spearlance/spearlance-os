@@ -248,7 +248,7 @@ serve(async (req) => {
       .single();
 
     const clientName = clientData?.name || 'the team';
-    const appUrl = 'https://os.spearlance.com';
+    const appUrl = Deno.env.get('APP_URL') || 'https://os.spearlance.com';
 
     let emailSubject: string;
     let emailHtml: string;

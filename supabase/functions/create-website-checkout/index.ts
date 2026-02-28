@@ -93,7 +93,7 @@ serve(async (req) => {
 
     // Website add-on price ID (one-time payment of $750)
     const websitePriceId = Deno.env.get('STRIPE_WEBSITE_PRICE_ID');
-    const websiteProductId = 'prod_TKM8ZkU6KtXYPM';
+    const websiteProductId = Deno.env.get('STRIPE_WEBSITE_PRODUCT_ID') || 'prod_TKM8ZkU6KtXYPM';
     
     if (!websitePriceId) {
       throw new Error('Website price ID not configured. Please contact support.');
@@ -117,7 +117,7 @@ serve(async (req) => {
             quantity: 1,
           },
         ],
-        success_url: `${req.headers.get('origin') || 'https://app.spearlance.com'}/dashboard?website_added=true`,
+        success_url: `${req.headers.get('origin') || 'https://os.spearlance.com'}/dashboard?website_added=true`,
         cancel_url: `${req.headers.get('origin') || 'https://os.spearlance.com'}`,
         metadata: {
           client_id: clientId,
@@ -201,7 +201,7 @@ serve(async (req) => {
           },
         ],
         subscription_data: subscriptionData,
-        success_url: `${req.headers.get('origin') || 'https://app.spearlance.com'}/dashboard?website_added=true&subscription=started`,
+        success_url: `${req.headers.get('origin') || 'https://os.spearlance.com'}/dashboard?website_added=true&subscription=started`,
         cancel_url: `${req.headers.get('origin') || 'https://os.spearlance.com'}`,
         metadata: {
           client_id: clientId,

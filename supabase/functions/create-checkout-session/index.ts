@@ -143,7 +143,7 @@ serve(async (req) => {
       console.log(`Trial extended in Stripe: ${daysRemaining} days remaining`);
     }
 
-    const baseUrl = Deno.env.get('VITE_SUPABASE_URL') || 'https://os.spearlance.com';
+    const baseUrl = Deno.env.get('APP_URL') || 'https://os.spearlance.com';
 
     // Create checkout session
     const session = await stripe.checkout.sessions.create({

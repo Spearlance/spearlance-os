@@ -14,7 +14,7 @@
  * - FRONT_API_TOKEN (required): Used to fetch full conversation data from Front API
  * - FRONT_WEBHOOK_SECRET (optional): If provided, enables webhook signature verification
  * 
- * Webhook URL: https://hrmhqybdsdngsvhjqwma.supabase.co/functions/v1/front-webhook-handler
+ * Webhook URL: https://chikljxwgiskyjsnjelf.supabase.co/functions/v1/front-webhook-handler
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.75.0';
 

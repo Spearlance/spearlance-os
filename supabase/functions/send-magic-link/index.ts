@@ -86,7 +86,7 @@ serve(async (req) => {
     const userName = profile?.name || 'there';
 
     // Generate magic link
-    const appUrl = 'https://os.spearlance.com';
+    const appUrl = Deno.env.get('APP_URL') || 'https://os.spearlance.com';
     const { data: magicLinkData, error: magicLinkError } = await supabaseAdmin.auth.admin.generateLink({
       type: 'magiclink',
       email: email,

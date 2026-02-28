@@ -156,7 +156,7 @@ serve(async (req) => {
       });
 
     // Prepare email content
-    const appUrl = 'https://os.spearlance.com';
+    const appUrl = Deno.env.get('APP_URL') || 'https://os.spearlance.com';
     let clientNames = '';
     if (client_ids.length > 0) {
       const { data: clientsData } = await supabaseAdmin

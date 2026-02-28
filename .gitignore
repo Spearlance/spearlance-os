@@ -30,6 +30,7 @@ Desktop.ini
 bun.lockb
 
 # Editor directories and files
+.lovable/
 .vscode/*
 !.vscode/extensions.json
 .idea
@@ -39,3 +40,4 @@ bun.lockb
 *.njsproj
 *.sln
 *.sw?
+supabase/.temp/

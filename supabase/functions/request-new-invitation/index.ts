@@ -58,7 +58,7 @@ serve(async (req) => {
     console.log(`User has unactivated account, generating new invitation link`);
 
     // Generate recovery link (which will act as invitation link)
-    const appUrl = 'https://os.spearlance.com';
+    const appUrl = Deno.env.get('APP_URL') || 'https://os.spearlance.com';
     const { data: resetData, error: resetError } = await supabaseAdmin.auth.admin.generateLink({
       type: 'recovery',
       email: email,

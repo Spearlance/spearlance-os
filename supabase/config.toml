@@ -1,4 +1,4 @@
-project_id = "hrmhqybdsdngsvhjqwma"
+project_id = "chikljxwgiskyjsnjelf"
 
 [functions.analytics-collector]
 verify_jwt = false
@@ -260,3 +260,21 @@ verify_jwt = false
 
 [functions.public-assets-api]
 verify_jwt = false
+
+[functions.blog-generate-monthly-topics]
+verify_jwt = true
+
+[functions.export-csv]
+verify_jwt = true
+
+[functions.generate-page-content]
+verify_jwt = true
+
+[functions.generate-recurring-tasks]
+verify_jwt = true
+
+[functions.search-stock-images]
+verify_jwt = true
+
+[functions.set-asset-share-password]
+verify_jwt = true

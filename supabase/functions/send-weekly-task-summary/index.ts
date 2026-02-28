@@ -64,7 +64,7 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const appUrl = "https://app.spearlance.com";
+    const appUrl = Deno.env.get('APP_URL') || 'https://os.spearlance.com';
     
     // Calculate week boundaries (Monday to Sunday)
     const today = new Date();
