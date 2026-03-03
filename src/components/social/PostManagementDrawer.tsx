@@ -10,31 +10,14 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Card } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import {
-  Send,
-  Instagram,
-  Facebook,
-  Linkedin,
-  Twitter,
-  Video,
-  Loader2,
-  RefreshCw,
-  BarChart3,
-  Info,
-} from "lucide-react";
 import { format } from "date-fns";
 import { AssetRecommendationDialog } from "./AssetRecommendationDialog";
-import { PostAnalytics } from "./PostAnalytics";
 import { ContentTab } from "./post-drawer/ContentTab";
+import { AnalyticsTab } from "./post-drawer/AnalyticsTab";
+import { CommentsTab } from "./post-drawer/CommentsTab";
+import { ChannelsTab } from "./post-drawer/ChannelsTab";
 
 interface Post {
   id: string;
@@ -64,24 +47,6 @@ interface PostManagementDrawerProps {
   onRefresh: () => void;
 }
 
-const SOCIAL_PLATFORMS = [
-  { id: 'instagram', label: 'Instagram', icon: Instagram, limit: 2200 },
-  { id: 'facebook', label: 'Facebook', icon: Facebook, limit: 63206 },
-  { id: 'linkedin', label: 'LinkedIn', icon: Linkedin, limit: 3000 },
-  { id: 'twitter', label: 'Twitter / X', icon: Twitter, limit: 280 },
-  { id: 'tiktok', label: 'TikTok', icon: Video, limit: 2200 },
-];
-
-const POST_CATEGORIES = [
-  { id: 'tips', label: 'Tips & Advice', icon: '💡' },
-  { id: 'promotion', label: 'Promotion', icon: '📣' },
-  { id: 'show_work', label: 'Show Your Work', icon: '🔧' },
-  { id: 'behind_scenes', label: 'Behind the Scenes', icon: '👁️' },
-  { id: 'happy_customer', label: 'Happy Customer', icon: '❤️' },
-  { id: 'team', label: 'Team Spotlight', icon: '👥' },
-  { id: 'community', label: 'Community', icon: '🏢' },
-  { id: 'custom', label: 'Custom / Other', icon: '✏️' },
-];
 
 export const PostManagementDrawer = ({
   post,
@@ -551,34 +516,6 @@ export const PostManagementDrawer = ({
     }
   };
 
-  // Get connection status for a platform
-  const getConnectionStatus = (platformId: string): {
-    label: string;
-    variant: 'default' | 'secondary' | 'outline';
-    isConnected: boolean;
-    requiresManualScheduling: boolean;
-  } => {
-    const comingSoonPlatforms = ['linkedin', 'twitter', 'tiktok'];
-    
-    if (comingSoonPlatforms.includes(platformId)) {
-      return {
-        label: 'Manual Scheduling',
-        variant: 'secondary',
-        isConnected: false,
-        requiresManualScheduling: true
-      };
-    }
-    
-    const isConnected = connectedPlatforms.has(platformId);
-    
-    return {
-      label: isConnected ? 'Connected' : 'Manual Scheduling',
-      variant: isConnected ? 'default' : 'outline',
-      isConnected,
-      requiresManualScheduling: !isConnected
-    };
-  };
-
   // Toggle platform
   const handlePlatformToggle = (platformId: string, checked: boolean) => {
     setSelectedPlatforms((prev) =>
@@ -767,190 +704,35 @@ export const PostManagementDrawer = ({
             </TabsContent>
 
             {/* Analytics Tab */}
-            <TabsContent value="analytics" className="p-6 space-y-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-lg font-semibold">Post Performance</h3>
-                  {analyticsLastSynced && (
-                    <p className="text-sm text-muted-foreground">
-                      Last updated: {format(new Date(analyticsLastSynced), 'MMM d, yyyy \'at\' h:mm a')}
-                    </p>
-                  )}
-                </div>
-                <Button
-                  size="sm"
-                  onClick={handleRefreshAnalytics}
-                  disabled={isRefreshingAnalytics || !(post as any).late_post_id}
-                >
-                  {isRefreshingAnalytics ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Syncing...
-                    </>
-                  ) : (
-                    <>
-                      <RefreshCw className="h-4 w-4 mr-2" />
-                      Refresh
-                    </>
-                  )}
-                </Button>
-              </div>
-
-              <Separator />
-
-              {/* Analytics Cards */}
-              {analytics.length === 0 ? (
-                <Card className="p-8 text-center">
-                  <BarChart3 className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                  <h4 className="font-semibold mb-2">No Analytics Yet</h4>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    {!(post as any).late_post_id
-                      ? "Schedule this post through Late to track analytics."
-                      : (post as any).late_status !== 'published'
-                      ? "Analytics will be available after the post is published."
-                      : "Click 'Refresh' to sync analytics from your social platforms."}
-                  </p>
-                </Card>
-              ) : (
-                <div className="space-y-4">
-                  {analytics.map((analyticsData: any) => (
-                    <PostAnalytics key={analyticsData.id} analytics={analyticsData} />
-                  ))}
-                </div>
-              )}
-
-              {/* Info callout for Late addon */}
-              {(post as any).late_status === 'published' && analytics.length === 0 && (
-                <Card className="p-4 bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
-                  <div className="flex gap-3">
-                    <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
-                    <div className="text-sm">
-                      <p className="font-medium text-blue-900 dark:text-blue-100 mb-1">Analytics Add-on Required</p>
-                      <p className="text-blue-700 dark:text-blue-300">
-                        To track detailed performance metrics for your social posts, you'll need the 
-                        Late Analytics add-on. This provides insights on impressions, reach, engagement, 
-                        and more across all your platforms.
-                      </p>
-                    </div>
-                  </div>
-                </Card>
-              )}
+            <TabsContent value="analytics">
+              <AnalyticsTab
+                post={post}
+                analytics={analytics}
+                analyticsLastSynced={analyticsLastSynced}
+                isRefreshingAnalytics={isRefreshingAnalytics}
+                onRefreshAnalytics={handleRefreshAnalytics}
+              />
             </TabsContent>
 
             {/* Comments Tab */}
-            <TabsContent value="comments" className="p-6 space-y-4">
-              {/* Add Comment */}
-              <div className="space-y-2">
-                <Label>Add Comment</Label>
-                <Textarea
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  placeholder="Leave a comment for your team..."
-                  rows={3}
-                />
-                <Button onClick={handleAddComment} disabled={!newComment.trim()}>
-                  <Send className="h-4 w-4 mr-2" />
-                  Post Comment
-                </Button>
-              </div>
-
-              <Separator />
-
-              {/* Comments List */}
-              <div className="space-y-4">
-                {comments.length === 0 ? (
-                  <p className="text-center text-muted-foreground py-8">
-                    No comments yet. Start the conversation!
-                  </p>
-                ) : (
-                  comments.map((comment) => (
-                    <Card key={comment.id} className="p-4">
-                      <div className="flex items-start justify-between mb-2">
-                        <p className="font-medium">{comment.profiles.name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {format(new Date(comment.created_at), 'MMM d, h:mm a')}
-                        </p>
-                      </div>
-                      <p className="text-sm">{comment.comment_text}</p>
-                    </Card>
-                  ))
-                )}
-              </div>
+            <TabsContent value="comments">
+              <CommentsTab
+                comments={comments}
+                newComment={newComment}
+                setNewComment={setNewComment}
+                onAddComment={handleAddComment}
+              />
             </TabsContent>
 
             {/* Channels Tab */}
-            <TabsContent value="channels" className="p-6 space-y-4">
-              <div>
-                <Label className="text-base">Select Social Platforms</Label>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Choose where this post will be published
-                </p>
-              </div>
-
-              <div className="space-y-3">
-                {SOCIAL_PLATFORMS.map((platform) => {
-                  const PlatformIcon = platform.icon;
-                  const connectionStatus = getConnectionStatus(platform.id);
-                  
-                  return (
-                    <Card key={platform.id} className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <Checkbox
-                            checked={selectedPlatforms.includes(platform.id)}
-                            onCheckedChange={(checked) => 
-                              handlePlatformToggle(platform.id, checked as boolean)
-                            }
-                          />
-                          <PlatformIcon className="h-5 w-5" />
-                          <div className="flex flex-col gap-1">
-                            <div className="flex items-center gap-2">
-                              <Label className="cursor-pointer">
-                                {platform.label}
-                              </Label>
-                              <Badge 
-                                variant={connectionStatus.variant}
-                                className={
-                                  connectionStatus.isConnected
-                                    ? 'bg-green-500/10 text-green-700 dark:text-green-400 border-green-300'
-                                    : 'bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-300'
-                                }
-                              >
-                                {connectionStatus.label}
-                              </Badge>
-                            </div>
-                            {connectionStatus.requiresManualScheduling && (
-                              <p className="text-xs text-muted-foreground">
-                                You'll need to schedule this manually on {platform.label}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                        <Badge variant="outline" className="text-xs">
-                          {platform.limit} chars max
-                        </Badge>
-                      </div>
-                    </Card>
-                  );
-                })}
-              </div>
-
-              {selectedPlatforms.length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-4">
-                  Select at least one platform to publish this post
-                </p>
-              )}
-
-              <Button onClick={handleSave} disabled={isSaving} className="w-full">
-                {isSaving ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Saving...
-                  </>
-                ) : (
-                  'Save Platform Selection'
-                )}
-              </Button>
+            <TabsContent value="channels">
+              <ChannelsTab
+                selectedPlatforms={selectedPlatforms}
+                connectedPlatforms={connectedPlatforms}
+                isSaving={isSaving}
+                onPlatformToggle={handlePlatformToggle}
+                onSave={handleSave}
+              />
             </TabsContent>
           </ScrollArea>
         </Tabs>
