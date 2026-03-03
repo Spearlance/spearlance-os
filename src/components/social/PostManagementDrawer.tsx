@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useClient } from "@/contexts/ClientContext";
@@ -20,10 +20,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import {
-  Sparkles,
-  Image as ImageIcon,
-  Upload,
-  Calendar as CalendarIcon,
   Send,
   Instagram,
   Facebook,
@@ -31,7 +27,6 @@ import {
   Twitter,
   Video,
   Loader2,
-  FolderOpen,
   RefreshCw,
   BarChart3,
   Info,
@@ -39,6 +34,7 @@ import {
 import { format } from "date-fns";
 import { AssetRecommendationDialog } from "./AssetRecommendationDialog";
 import { PostAnalytics } from "./PostAnalytics";
+import { ContentTab } from "./post-drawer/ContentTab";
 
 interface Post {
   id: string;
@@ -732,344 +728,42 @@ export const PostManagementDrawer = ({
 
           <ScrollArea className="h-[calc(100vh-200px)]">
             {/* Content Tab */}
-            <TabsContent value="content" className="p-6 space-y-6">
-              {/* Topic Section - Editable */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <Label>Topic</Label>
-                  {!editingTopic ? (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setEditingTopic(true)}
-                    >
-                      <Sparkles className="h-3 w-3 mr-2" />
-                      Edit Topic
-                    </Button>
-                  ) : (
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          setEditingTopic(false);
-                          // Reset to original values
-                          const idea = post.post_idea_json || {};
-                          setTopicTitle(idea.topic_title || "");
-                          setTopicDescription(idea.topic_description || "");
-                          setTopicCategory(idea.category || "custom");
-                          setGeneratedTopicIdeas([]);
-                        }}
-                      >
-                        Cancel
-                      </Button>
-                      <Button
-                        size="sm"
-                        onClick={handleSaveTopic}
-                        disabled={isSaving || !topicTitle.trim()}
-                      >
-                        {isSaving ? (
-                          <>
-                            <Loader2 className="h-3 w-3 mr-2 animate-spin" />
-                            Saving...
-                          </>
-                        ) : (
-                          'Save Topic'
-                        )}
-                      </Button>
-                    </div>
-                  )}
-                </div>
-
-                {!editingTopic ? (
-                  // Read-only view
-                  <Card className="p-4 bg-muted/50">
-                    <p className="font-medium">{topicTitle}</p>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {topicDescription}
-                    </p>
-                    <Badge variant="outline" className="mt-2">
-                      {POST_CATEGORIES.find(c => c.id === topicCategory)?.icon}{' '}
-                      {POST_CATEGORIES.find(c => c.id === topicCategory)?.label || topicCategory}
-                    </Badge>
-                  </Card>
-                ) : (
-                  // Edit mode
-                  <div className="space-y-4">
-                    {/* Category Selector */}
-                    <div>
-                      <Label className="text-sm mb-2 block">Category</Label>
-                      <div className="grid grid-cols-2 gap-2">
-                        {POST_CATEGORIES.map((cat) => (
-                          <Button
-                            key={cat.id}
-                            type="button"
-                            variant={topicCategory === cat.id ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => setTopicCategory(cat.id)}
-                            className="justify-start"
-                          >
-                            <span className="mr-2">{cat.icon}</span>
-                            {cat.label}
-                          </Button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* AI Topic Generation */}
-                    <div>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={handleGenerateTopicIdeas}
-                        disabled={isGeneratingTopicIdeas || !topicCategory}
-                        className="w-full"
-                      >
-                        {isGeneratingTopicIdeas ? (
-                          <>
-                            <Loader2 className="h-3 w-3 mr-2 animate-spin" />
-                            Generating Ideas...
-                          </>
-                        ) : (
-                          <>
-                            <Sparkles className="h-3 w-3 mr-2" />
-                            Generate AI Topic Ideas
-                          </>
-                        )}
-                      </Button>
-                    </div>
-
-                    {/* Generated Ideas List */}
-                    {generatedTopicIdeas.length > 0 && (
-                      <div className="space-y-2 max-h-64 overflow-y-auto">
-                        <Label className="text-sm">Select a generated idea:</Label>
-                        {generatedTopicIdeas.map((idea, index) => (
-                          <Card 
-                            key={index} 
-                            className="p-3 cursor-pointer hover:bg-accent transition-colors"
-                            onClick={() => handleSelectGeneratedIdea(idea)}
-                          >
-                            <p className="font-medium text-sm">{idea.title}</p>
-                            <p className="text-xs text-muted-foreground mt-1">
-                              {idea.description}
-                            </p>
-                          </Card>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Manual Topic Fields */}
-                    <div>
-                      <Label htmlFor="topic-title">Topic Title</Label>
-                      <Input
-                        id="topic-title"
-                        value={topicTitle}
-                        onChange={(e) => setTopicTitle(e.target.value)}
-                        placeholder="Enter topic title..."
-                        className="mt-2"
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="topic-description">Topic Description</Label>
-                      <Textarea
-                        id="topic-description"
-                        value={topicDescription}
-                        onChange={(e) => setTopicDescription(e.target.value)}
-                        placeholder="Describe what this post is about..."
-                        rows={3}
-                        className="mt-2"
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Caption Editor */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <Label>Caption</Label>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={handleGenerateCaption}
-                    disabled={isGeneratingCaption}
-                  >
-                    {isGeneratingCaption ? (
-                      <>
-                        <Loader2 className="h-3 w-3 mr-2 animate-spin" />
-                        Generating...
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles className="h-3 w-3 mr-2" />
-                        Regenerate
-                      </>
-                    )}
-                  </Button>
-                </div>
-                <Textarea
-                  value={caption}
-                  onChange={(e) => setCaption(e.target.value)}
-                  placeholder="Write your caption or generate one with AI..."
-                  rows={8}
-                  className="resize-none"
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  {caption.length} characters
-                </p>
-              </div>
-
-              {/* Image */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <Label>Image</Label>
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={handleGenerateImage}
-                      disabled={isGeneratingImage}
-                    >
-                      {isGeneratingImage ? (
-                        <>
-                          <Loader2 className="h-3 w-3 mr-2 animate-spin" />
-                          Generating...
-                        </>
-                      ) : (
-                        <>
-                          <ImageIcon className="h-3 w-3 mr-2" />
-                          Generate
-                        </>
-                      )}
-                    </Button>
-                    <Button 
-                      size="sm" 
-                      variant="outline"
-                      onClick={() => setShowAssetDialog(true)}
-                    >
-                      <FolderOpen className="h-3 w-3 mr-2" />
-                      Choose from Assets
-                    </Button>
-                    <Button size="sm" variant="outline">
-                      <Upload className="h-3 w-3 mr-2" />
-                      Upload
-                    </Button>
-                  </div>
-                </div>
-                {post.image_url ? (
-                  <img
-                    src={post.image_url}
-                    alt="Post"
-                    className="w-full rounded-lg border"
-                  />
-                ) : (
-                  <Card className="p-12 text-center border-dashed">
-                    <ImageIcon className="h-12 w-12 mx-auto text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground mt-2">
-                      No image yet
-                    </p>
-                  </Card>
-                )}
-              </div>
-
-              {/* Scheduled Date */}
-              <div>
-                <Label>Scheduled Date</Label>
-                <Input
-                  type="date"
-                  value={scheduledDate.split('T')[0]}
-                  onChange={(e) => {
-                    const newDate = new Date(e.target.value);
-                    const [hours, minutes] = scheduledTime.split(':');
-                    newDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-                    setScheduledDate(newDate.toISOString());
-                  }}
-                  className="mt-2"
-                />
-              </div>
-
-              {/* Time Picker */}
-              <div className="space-y-1">
-                <Label>Time</Label>
-                <Input
-                  type="time"
-                  value={scheduledTime}
-                  onChange={(e) => setScheduledTime(e.target.value)}
-                  className="mt-1"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Time zone: {selectedClient?.timezone || 'America/New_York'}
-                </p>
-              </div>
-
-              <Button onClick={handleSave} disabled={isSaving} className="w-full">
-                {isSaving ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Saving...
-                  </>
-                ) : (
-                  'Save Changes'
-                )}
-              </Button>
-
-              {/* Schedule Button - only show when post is ready and not yet scheduled */}
-              {post.caption_text && post.image_url && selectedPlatforms.length > 0 && !(post as any).late_post_id && (
-                <>
-                  {(() => {
-                    const connectedSelected = selectedPlatforms.filter(p => connectedPlatforms.has(p));
-                    const manualSelected = selectedPlatforms.filter(p => !connectedPlatforms.has(p));
-                    
-                    return (
-                      <>
-                        {connectedSelected.length > 0 && (
-                          <Button
-                            onClick={handleSchedule}
-                            disabled={isScheduling}
-                            className="w-full"
-                            variant="default"
-                          >
-                            {isScheduling ? (
-                              <>
-                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                Scheduling...
-                              </>
-                            ) : (
-                              <>
-                                <Send className="h-4 w-4 mr-2" />
-                                Schedule to {connectedSelected.join(', ')}
-                              </>
-                            )}
-                          </Button>
-                        )}
-                        
-                        {manualSelected.length > 0 && (
-                          <div className="text-center p-3 bg-blue-500/10 rounded-lg border border-blue-300">
-                            <p className="text-sm text-blue-700 dark:text-blue-400">
-                              📝 Remember to manually schedule on: {manualSelected.join(', ')}
-                            </p>
-                          </div>
-                        )}
-                      </>
-                    );
-                  })()}
-                </>
-              )}
-
-              {/* Show status if already scheduled */}
-              {(post as any).late_post_id && (post as any).late_status && (
-                <div className="text-center p-3 bg-muted rounded-lg">
-                  <p className="text-sm text-muted-foreground">
-                    {(post as any).late_status === 'scheduled' && '⏰ Post is scheduled to publish'}
-                    {(post as any).late_status === 'pending_approval' && '⏳ Waiting for approval'}
-                    {(post as any).late_status === 'approved' && '✓ Approved and will publish soon'}
-                    {(post as any).late_status === 'published' && '✓ Post has been published'}
-                    {(post as any).late_status === 'failed' && '✗ Publishing failed - please try again'}
-                  </p>
-                </div>
-              )}
+            <TabsContent value="content">
+              <ContentTab
+                post={post}
+                caption={caption}
+                setCaption={setCaption}
+                scheduledDate={scheduledDate}
+                setScheduledDate={setScheduledDate}
+                scheduledTime={scheduledTime}
+                setScheduledTime={setScheduledTime}
+                selectedPlatforms={selectedPlatforms}
+                connectedPlatforms={connectedPlatforms}
+                isSaving={isSaving}
+                isScheduling={isScheduling}
+                isGeneratingCaption={isGeneratingCaption}
+                isGeneratingImage={isGeneratingImage}
+                editingTopic={editingTopic}
+                setEditingTopic={setEditingTopic}
+                topicTitle={topicTitle}
+                setTopicTitle={setTopicTitle}
+                topicDescription={topicDescription}
+                setTopicDescription={setTopicDescription}
+                topicCategory={topicCategory}
+                setTopicCategory={setTopicCategory}
+                isGeneratingTopicIdeas={isGeneratingTopicIdeas}
+                generatedTopicIdeas={generatedTopicIdeas}
+                setGeneratedTopicIdeas={setGeneratedTopicIdeas}
+                clientTimezone={selectedClient?.timezone}
+                onSave={handleSave}
+                onSaveTopic={handleSaveTopic}
+                onGenerateCaption={handleGenerateCaption}
+                onGenerateImage={handleGenerateImage}
+                onGenerateTopicIdeas={handleGenerateTopicIdeas}
+                onSelectGeneratedIdea={handleSelectGeneratedIdea}
+                onSchedule={handleSchedule}
+                onShowAssetDialog={() => setShowAssetDialog(true)}
+              />
             </TabsContent>
 
             {/* Analytics Tab */}
