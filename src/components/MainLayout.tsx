@@ -17,6 +17,7 @@ import { ReportBugDialog } from "@/components/support/ReportBugDialog";
 import { Button } from "@/components/ui/button";
 import { UserProfileDropdown } from "@/components/UserProfileDropdown";
 import { SaveStatusIndicator } from "@/components/SaveStatusIndicator";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -139,7 +140,9 @@ function MainLayoutContent({ children }: MainLayoutProps) {
                 </p>
               </div>
             ) : (
-              children
+              <ErrorBoundary>
+                {children}
+              </ErrorBoundary>
             )}
           </main>
         </div>
