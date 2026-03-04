@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Connect } from "@calcom/atoms";
 import { AvailabilitySettings } from "@calcom/atoms";
@@ -35,7 +35,6 @@ export default function Settings() {
   const [profileRefresh, setProfileRefresh] = useState(0);
   const [isPrimaryContact, setIsPrimaryContact] = useState(false);
   const [isClientSwitching, setIsClientSwitching] = useState(false);
-  const { toast } = useToast();
   const { isCalReady, isLoading: isCalLoading } = useCalReady();
   const clientIdRef = useRef<string | null>(null);
 
@@ -101,9 +100,9 @@ export default function Settings() {
           .eq("id", user.id);
         
         if (error) {
-          toast({ title: "Error saving settings", variant: "destructive" });
+          toast.error("Error saving settings");
         } else {
-          toast({ title: "Settings saved successfully" });
+          toast.success("Settings saved successfully");
           await refreshClients();
         }
       }
@@ -187,9 +186,9 @@ export default function Settings() {
                               .eq("id", selectedClient.id);
                             
                             if (error) {
-                              toast({ title: "Error updating timezone", variant: "destructive" });
+                              toast.error("Error updating timezone");
                             } else {
-                              toast({ title: "Timezone updated successfully" });
+                              toast.success("Timezone updated successfully");
                               refreshClients();
                             }
                           }
@@ -296,17 +295,10 @@ export default function Settings() {
                     <Connect.GoogleCalendar 
                       className="w-full"
                       onSuccess={() => {
-                        toast({
-                          title: "Calendar Connected",
-                          description: "Your Google Calendar has been connected successfully!"
-                        });
+                        toast.success("Calendar Connected", { description: "Your Google Calendar has been connected successfully!" });
                       }}
                       onCheckError={(error) => {
-                        toast({
-                          title: "Connection Error",
-                          description: "Failed to connect calendar. Please try again.",
-                          variant: "destructive"
-                        });
+                        toast.error("Connection Error", { description: "Failed to connect calendar. Please try again." });
                       }}
                     />
                   </div>
@@ -315,17 +307,10 @@ export default function Settings() {
                     <h3 className="text-sm font-medium mb-3">Availability Settings</h3>
                     <AvailabilitySettings 
                       onUpdateSuccess={() => {
-                        toast({
-                          title: "Availability Updated",
-                          description: "Your availability has been saved"
-                        });
+                        toast.success("Availability Updated", { description: "Your availability has been saved" });
                       }}
                       onUpdateError={() => {
-                        toast({
-                          title: "Update Failed",
-                          description: "Failed to update availability",
-                          variant: "destructive"
-                        });
+                        toast.error("Update Failed", { description: "Failed to update availability" });
                       }}
                     />
                   </div>
@@ -359,7 +344,7 @@ export default function Settings() {
                             navigator.clipboard.writeText(
                               `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/calendar-ical?token=${userProfile.ical_feed_token}`
                             );
-                            toast({ title: "Copied to clipboard" });
+                            toast.success("Copied to clipboard");
                           }}
                         >
                           Copy
@@ -390,7 +375,7 @@ export default function Settings() {
                                 size="sm"
                                 onClick={() => {
                                   navigator.clipboard.writeText((selectedClient as any).front_tag);
-                                  toast({ title: "Front tag copied to clipboard" });
+                                  toast.success("Front tag copied to clipboard");
                                 }}
                               >
                                 <Copy className="h-4 w-4" />
@@ -431,7 +416,7 @@ export default function Settings() {
                             .update({ ical_feed_token: null })
                             .eq("id", user.id);
                           await fetchUserProfile();
-                          toast({ title: "Calendar subscription revoked" });
+                          toast.success("Calendar subscription revoked");
                         }
                       }}
                     >
@@ -449,7 +434,7 @@ export default function Settings() {
                           .update({ ical_feed_token: token })
                           .eq("id", user.id);
                         await fetchUserProfile();
-                        toast({ title: "Calendar subscription URL generated" });
+                        toast.success("Calendar subscription URL generated");
                       }
                     }}
                   >

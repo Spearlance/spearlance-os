@@ -4,7 +4,7 @@ import { useClient } from "@/contexts/ClientContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Plus, Star, Sparkles, Mail, Loader2 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { ReportDrawer } from "@/components/reports/ReportDrawer";
 import { CreateReportDialog } from "@/components/reports/CreateReportDialog";
 import { GenerateReportDialog } from "@/components/reports/GenerateReportDialog";
@@ -80,7 +80,6 @@ const Reports = () => {
   const { selectedClient, loading: clientLoading } = useClient();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { toast } = useToast();
   const [reports, setReports] = useState<Report[]>([]);
   const [aiReports, setAIReports] = useState<AIReport[]>([]);
   const [loading, setLoading] = useState(true);
@@ -117,7 +116,7 @@ const Reports = () => {
   // Check user role and restrict access for web_designer
   useEffect(() => {
     if ((userRole as string) === 'web_designer') {
-      toast({ title: "Access Denied", description: "Web designers don't have access to Reports", variant: "destructive" });
+      toast.error("Access Denied", { description: "Web designers don't have access to Reports" });
       navigate('/');
     }
   }, [userRole, navigate]);
@@ -216,7 +215,7 @@ const Reports = () => {
 
       setReports(filteredData);
     } catch (error: any) {
-      toast({ title: "Error loading reports", description: error.message, variant: "destructive" });
+      toast.error("Error loading reports", { description: error.message });
     } finally {
       setLoading(false);
     }
@@ -226,10 +225,10 @@ const Reports = () => {
     try {
       const { error } = await supabase.from("reports").update({ pinned: !currentPinned }).eq("id", reportId);
       if (error) throw error;
-      toast({ title: currentPinned ? "Report unpinned" : "Report pinned" });
+      toast.success(currentPinned ? "Report unpinned" : "Report pinned");
       loadReports();
     } catch (error: any) {
-      toast({ title: "Error updating pin", description: error.message, variant: "destructive" });
+      toast.error("Error updating pin", { description: error.message });
     }
   };
 
@@ -247,13 +246,10 @@ const Reports = () => {
         body: { test_mode: testMode, client_id: clientId }
       });
       if (error) throw error;
-      toast({
-        title: "Weekly emails sent!",
-        description: `${data.emails_sent} email(s) sent for ${data.clients_processed} client(s)`,
-      });
+      toast.success("Weekly emails sent!", { description: `${data.emails_sent} email(s) sent for ${data.clients_processed} client(s)` });
       loadAIReports();
     } catch (error: any) {
-      toast({ title: "Error sending emails", description: error.message, variant: "destructive" });
+      toast.error("Error sending emails", { description: error.message });
     } finally {
       setSendingWeeklyEmails(false);
     }

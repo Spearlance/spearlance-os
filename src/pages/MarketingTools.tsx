@@ -11,7 +11,7 @@ import { ToolDialog } from "@/components/marketing/ToolDialog";
 import { RecommendedToolDialog } from "@/components/marketing/RecommendedToolDialog";
 import { AddRecommendedToolDialog } from "@/components/marketing/AddRecommendedToolDialog";
 import { Plus, Search, Wrench, Loader2 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { useAccountType } from "@/hooks/useAccountType";
 
 const categories = [
@@ -32,7 +32,6 @@ const categories = [
 export default function MarketingTools() {
   const { selectedClient } = useClient();
   const navigate = useNavigate();
-  const { toast } = useToast();
   const { hasAccess } = useAccountType();
   const [clientTools, setClientTools] = useState<any[]>([]);
   const [recommendedTools, setRecommendedTools] = useState<any[]>([]);
@@ -65,13 +64,13 @@ export default function MarketingTools() {
           .maybeSingle();
         
         if ((profile?.role as string) === 'web_designer') {
-          toast({ title: "Access Denied", description: "Web designers don't have access to Marketing Tools", variant: "destructive" });
+          toast.error("Access Denied", { description: "Web designers don't have access to Marketing Tools" });
           navigate('/');
         }
       }
     };
     checkAccess();
-  }, [navigate, toast]);
+  }, [navigate]);
 
   const checkUserRole = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -132,25 +131,21 @@ export default function MarketingTools() {
           .eq('id', toolData.id);
 
         if (error) throw error;
-        toast({ title: "Tool updated successfully" });
+        toast.success("Tool updated successfully");
       } else {
         const { error } = await supabase
           .from('marketing_tools')
           .insert(toolData);
 
         if (error) throw error;
-        toast({ title: "Tool added successfully" });
+        toast.success("Tool added successfully");
       }
 
       await loadClientTools();
       setToolDialogOpen(false);
       setEditingTool(null);
     } catch (error: any) {
-      toast({ 
-        title: "Error saving tool", 
-        description: error.message,
-        variant: "destructive" 
-      });
+      toast.error("Error saving tool", { description: error.message });
     } finally {
       setSaving(false);
     }
@@ -167,14 +162,10 @@ export default function MarketingTools() {
 
       if (error) throw error;
       
-      toast({ title: "Tool deleted successfully" });
+      toast.success("Tool deleted successfully");
       await loadClientTools();
     } catch (error: any) {
-      toast({ 
-        title: "Error deleting tool", 
-        description: error.message,
-        variant: "destructive" 
-      });
+      toast.error("Error deleting tool", { description: error.message });
     }
   };
 
@@ -188,25 +179,21 @@ export default function MarketingTools() {
           .eq('id', toolData.id);
 
         if (error) throw error;
-        toast({ title: "Recommended tool updated" });
+        toast.success("Recommended tool updated");
       } else {
         const { error } = await supabase
           .from('recommended_tools')
           .insert(toolData);
 
         if (error) throw error;
-        toast({ title: "Recommended tool added" });
+        toast.success("Recommended tool added");
       }
 
       await loadRecommendedTools();
       setRecommendedDialogOpen(false);
       setEditingRecommended(null);
     } catch (error: any) {
-      toast({ 
-        title: "Error saving recommended tool", 
-        description: error.message,
-        variant: "destructive" 
-      });
+      toast.error("Error saving recommended tool", { description: error.message });
     } finally {
       setSaving(false);
     }
@@ -237,26 +224,18 @@ export default function MarketingTools() {
 
       if (error) {
         if (error.code === '23505') {
-          toast({ 
-            title: "Tool already added", 
-            description: `${toolData.name} is already in your tools`,
-            variant: "destructive" 
-          });
+          toast.error("Tool already added", { description: `${toolData.name} is already in your tools` });
           return;
         }
         throw error;
       }
 
-      toast({ title: `${toolData.name} added to your tools` });
+      toast.success(`${toolData.name} added to your tools`);
       await loadClientTools();
       setAddToolDialogOpen(false);
       setSelectedRecommendedTool(null);
     } catch (error: any) {
-      toast({ 
-        title: "Error adding tool", 
-        description: error.message,
-        variant: "destructive" 
-      });
+      toast.error("Error adding tool", { description: error.message });
     } finally {
       setSaving(false);
     }
@@ -273,14 +252,10 @@ export default function MarketingTools() {
 
       if (error) throw error;
       
-      toast({ title: "Recommended tool deleted" });
+      toast.success("Recommended tool deleted");
       await loadRecommendedTools();
     } catch (error: any) {
-      toast({ 
-        title: "Error deleting tool", 
-        description: error.message,
-        variant: "destructive" 
-      });
+      toast.error("Error deleting tool", { description: error.message });
     }
   };
 

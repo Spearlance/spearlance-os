@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Bug, Trophy, TrendingUp, Clock, CheckCircle2, ExternalLink, AlertCircle, XCircle } from "lucide-react";
 import { format } from "date-fns";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -15,7 +15,6 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { BugReportDrawer } from "@/components/admin/BugReportDrawer";
 
 export default function AdminBugReports() {
-  const { toast } = useToast();
   const queryClient = useQueryClient();
   const [statusFilter, setStatusFilter] = useState("all");
   const [severityFilter, setSeverityFilter] = useState("all");
@@ -94,11 +93,11 @@ export default function AdminBugReports() {
 
       if (error) throw error;
 
-      toast({ title: "Status updated successfully" });
+      toast.success("Status updated successfully");
       queryClient.invalidateQueries({ queryKey: ["admin-bug-reports"] });
       queryClient.invalidateQueries({ queryKey: ["bug-report-stats"] });
     } catch (error: any) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast.error("Error", { description: error.message });
     }
   };
 
@@ -111,10 +110,10 @@ export default function AdminBugReports() {
 
       if (error) throw error;
 
-      toast({ title: `Awarded ${points} points!`, description: "Reporter will be notified." });
+      toast.success(`Awarded ${points} points!`, { description: "Reporter will be notified." });
       queryClient.invalidateQueries({ queryKey: ["admin-bug-reports"] });
     } catch (error: any) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast.error("Error", { description: error.message });
     }
   };
 
@@ -122,11 +121,7 @@ export default function AdminBugReports() {
     if (!selectedBugForDenial || !denialReason.trim()) return;
     
     if (denialReason.trim().length < 20) {
-      toast({ 
-        title: "Denial reason too short", 
-        description: "Please provide at least 20 characters explaining why this report is being denied.",
-        variant: "destructive" 
-      });
+      toast.error("Denial reason too short", { description: "Please provide at least 20 characters explaining why this report is being denied." });
       return;
     }
 
@@ -148,18 +143,15 @@ export default function AdminBugReports() {
 
       if (error) throw error;
 
-      toast({ 
-        title: "Bug report denied", 
-        description: "The reporter will be notified with your explanation." 
-      });
-      
+      toast.success("Bug report denied", { description: "The reporter will be notified with your explanation." });
+
       setDenialDialogOpen(false);
       setSelectedBugForDenial(null);
       setDenialReason("");
       queryClient.invalidateQueries({ queryKey: ["admin-bug-reports"] });
       queryClient.invalidateQueries({ queryKey: ["bug-report-stats"] });
     } catch (error: any) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast.error("Error", { description: error.message });
     }
   };
 

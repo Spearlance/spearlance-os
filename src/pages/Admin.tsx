@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -23,7 +23,6 @@ import { FeatureFlagManager } from "@/components/admin/FeatureFlagManager";
 
 export default function Admin() {
   const navigate = useNavigate();
-  const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [userRole, setUserRole] = useState<string>("");
   const [users, setUsers] = useState<any[]>([]);
@@ -50,11 +49,7 @@ export default function Admin() {
       .maybeSingle();
 
     if (profile?.role !== "admin") {
-      toast({
-        title: "Access Denied",
-        description: "You must be an admin to access this page",
-        variant: "destructive",
-      });
+      toast.error("Access Denied", { description: "You must be an admin to access this page" });
       navigate("/");
       return;
     }
@@ -123,14 +118,10 @@ export default function Admin() {
 
       if (error) throw error;
 
-      toast({ title: data?.message || "Role updated successfully" });
+      toast.success(data?.message || "Role updated successfully");
       loadData();
     } catch (error: any) {
-      toast({
-        title: "Error updating role",
-        description: error.message || "Failed to update user role",
-        variant: "destructive",
-      });
+      toast.error("Error updating role", { description: error.message || "Failed to update user role" });
     }
   };
 
@@ -142,28 +133,20 @@ export default function Admin() {
 
       if (error) throw error;
 
-      toast({ 
-        title: data?.message || "Client assignment updated",
-        description: data?.assignedClients?.length > 0 
+      toast.success(data?.message || "Client assignment updated", {
+        description: data?.assignedClients?.length > 0
           ? `Assigned to: ${data.assignedClients.join(', ')}`
           : undefined
       });
       loadData();
     } catch (error: any) {
-      toast({
-        title: "Error updating client assignment",
-        description: error.message || "Failed to assign clients",
-        variant: "destructive",
-      });
+      toast.error("Error updating client assignment", { description: error.message || "Failed to assign clients" });
     }
   };
 
   const handleCreateClient = async () => {
     if (!newClientName.trim()) {
-      toast({
-        title: "Client name is required",
-        variant: "destructive",
-      });
+      toast.error("Client name is required");
       return;
     }
 
@@ -174,18 +157,13 @@ export default function Admin() {
 
       if (error) throw error;
 
-      toast({ 
-        title: data?.message || "Client created successfully",
+      toast.success(data?.message || "Client created successfully", {
         description: data?.client?.front_tag ? `Front tag: ${data.client.front_tag}` : undefined
       });
       setNewClientName("");
       loadData();
     } catch (error: any) {
-      toast({
-        title: "Error creating client",
-        description: error.message || "Failed to create client",
-        variant: "destructive",
-      });
+      toast.error("Error creating client", { description: error.message || "Failed to create client" });
     }
   };
 
@@ -197,16 +175,9 @@ export default function Admin() {
 
       if (error) throw error;
 
-      toast({
-        title: "Password reset email sent",
-        description: `A password reset link has been sent to ${userName} at ${email}`,
-      });
+      toast.success("Password reset email sent", { description: `A password reset link has been sent to ${userName} at ${email}` });
     } catch (error: any) {
-      toast({
-        title: "Error sending password reset",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast.error("Error sending password reset", { description: error.message });
     }
   };
 
@@ -218,16 +189,9 @@ export default function Admin() {
 
       if (error) throw error;
 
-      toast({
-        title: "Invitation resent",
-        description: `A new invitation link has been sent to ${userName} at ${userEmail}`,
-      });
+      toast.success("Invitation resent", { description: `A new invitation link has been sent to ${userName} at ${userEmail}` });
     } catch (error: any) {
-      toast({
-        title: "Error resending invitation",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast.error("Error resending invitation", { description: error.message });
     }
   };
 
@@ -239,17 +203,10 @@ export default function Admin() {
 
       if (error) throw error;
 
-      toast({
-        title: "User deleted",
-        description: `${userName} (${userEmail}) has been permanently deleted`,
-      });
+      toast.success("User deleted", { description: `${userName} (${userEmail}) has been permanently deleted` });
       loadData();
     } catch (error: any) {
-      toast({
-        title: "Error deleting user",
-        description: error.message || "Failed to delete user",
-        variant: "destructive",
-      });
+      toast.error("Error deleting user", { description: error.message || "Failed to delete user" });
     }
   };
 
@@ -261,17 +218,10 @@ export default function Admin() {
 
       if (error) throw error;
 
-      toast({
-        title: "Client deleted",
-        description: `${clientName} has been permanently deleted`,
-      });
+      toast.success("Client deleted", { description: `${clientName} has been permanently deleted` });
       loadData();
     } catch (error: any) {
-      toast({
-        title: "Error deleting client",
-        description: error.message || "Failed to delete client",
-        variant: "destructive",
-      });
+      toast.error("Error deleting client", { description: error.message || "Failed to delete client" });
     }
   };
 
@@ -571,11 +521,7 @@ export default function Admin() {
                                 try {
                                   navigate(`/website/form-submissions?client=${client.id}`);
                                 } catch (error) {
-                                  toast({
-                                    title: "Navigation Error",
-                                    description: "Failed to navigate to form submissions",
-                                    variant: "destructive",
-                                  });
+                                  toast.error("Navigation Error", { description: "Failed to navigate to form submissions" });
                                   // Fallback to window.location
                                   window.location.href = `/website/form-submissions?client=${client.id}`;
                                 }

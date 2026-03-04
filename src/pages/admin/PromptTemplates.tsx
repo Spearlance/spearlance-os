@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Loader2, FileText, Save, ArrowLeft, Copy, Home, Briefcase, Users, Phone, Image, Target } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -47,7 +47,6 @@ const AVAILABLE_VARIABLES = [
 
 export default function PromptTemplates() {
   const navigate = useNavigate();
-  const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [templates, setTemplates] = useState<PromptTemplate[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<PromptTemplate | null>(null);
@@ -79,11 +78,7 @@ export default function PromptTemplates() {
       .single();
 
     if (profile?.role !== "admin") {
-      toast({
-        title: "Access Denied",
-        description: "You must be an admin to access this page",
-        variant: "destructive",
-      });
+      toast.error("Access Denied", { description: "You must be an admin to access this page" });
       navigate("/admin");
       return;
     }
@@ -102,11 +97,7 @@ export default function PromptTemplates() {
       if (error) throw error;
       setTemplates(data || []);
     } catch (error: any) {
-      toast({
-        title: "Error loading templates",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast.error("Error loading templates", { description: error.message });
     } finally {
       setLoading(false);
     }
@@ -131,11 +122,7 @@ export default function PromptTemplates() {
       try {
         parsedOutput = JSON.parse(outputStructure);
       } catch {
-        toast({
-          title: "Invalid JSON",
-          description: "Output structure must be valid JSON",
-          variant: "destructive",
-        });
+        toast.error("Invalid JSON", { description: "Output structure must be valid JSON" });
         setSaving(false);
         return;
       }
@@ -154,19 +141,12 @@ export default function PromptTemplates() {
 
       if (error) throw error;
 
-      toast({
-        title: "Template saved",
-        description: "Prompt template updated successfully",
-      });
+      toast.success("Template saved", { description: "Prompt template updated successfully" });
 
       loadTemplates();
       setEditMode(false);
     } catch (error: any) {
-      toast({
-        title: "Error saving template",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast.error("Error saving template", { description: error.message });
     } finally {
       setSaving(false);
     }
@@ -188,16 +168,12 @@ export default function PromptTemplates() {
 
       if (error) throw error;
 
-      toast({ title: "Template created" });
+      toast.success("Template created");
       loadTemplates();
       if (data) handleSelectTemplate(data);
       setEditMode(true);
     } catch (error: any) {
-      toast({
-        title: "Error creating template",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast.error("Error creating template", { description: error.message });
     }
   };
 
@@ -388,7 +364,7 @@ export default function PromptTemplates() {
                               size="sm"
                               onClick={() => {
                                 navigator.clipboard.writeText(`{${variable.key}}`);
-                                toast({ title: "Copied to clipboard" });
+                                toast.success("Copied to clipboard");
                               }}
                             >
                               <Copy className="h-4 w-4" />

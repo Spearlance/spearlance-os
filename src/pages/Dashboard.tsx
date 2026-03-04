@@ -10,7 +10,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useLaunchPadStatus } from "@/hooks/useLaunchPadStatus";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { WebsiteUpsellBanner } from "@/components/billing/WebsiteUpsellBanner";
 import { PricingModal } from "@/components/billing/PricingModal";
 
@@ -52,7 +52,6 @@ interface DailyActionPlan {
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
   const { selectedClient, loading: clientLoading } = useClient();
   const { isComplete, loading: launchPadLoading } = useLaunchPadStatus();
   const [stats, setStats] = useState<DashboardStats>({
@@ -115,21 +114,14 @@ const Dashboard = () => {
       });
 
       if (error) {
-        toast({
-          title: "Failed to generate action plan",
-          description: error.message || "Please try again later",
-          variant: "destructive"
-        });
+        toast.error("Failed to generate action plan", { description: error.message || "Please try again later" });
       } else if (data) {
         setActionPlan({
           ...data,
           priority_actions: data.priority_actions as unknown as PriorityAction[]
         });
         if (force) {
-          toast({
-            title: "Action plan refreshed",
-            description: "Your daily plan has been updated"
-          });
+          toast.success("Action plan refreshed", { description: "Your daily plan has been updated" });
         }
       }
     } catch (error) {
@@ -152,17 +144,10 @@ const Dashboard = () => {
       
       if (data?.avatar_story) {
         setActionPlan(prev => prev ? { ...prev, avatar_story: data.avatar_story } : null);
-        toast({
-          title: "Story Generated!",
-          description: "Your customer's story is ready to read.",
-        });
+        toast.success("Story Generated!", { description: "Your customer's story is ready to read." });
       }
     } catch (error) {
-      toast({
-        title: "Generation Failed",
-        description: "Could not generate the avatar story. Please try again.",
-        variant: "destructive",
-      });
+      toast.error("Generation Failed", { description: "Could not generate the avatar story. Please try again." });
     } finally {
       setGeneratingStory(false);
     }

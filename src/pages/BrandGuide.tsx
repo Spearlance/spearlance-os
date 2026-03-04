@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useClient } from "@/contexts/ClientContext";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -14,7 +14,6 @@ import BrandGuidePreview from "@/components/brand/BrandGuidePreview";
 
 export default function BrandGuide() {
   const { selectedClient, loading: clientLoading } = useClient();
-  const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [brandGuideId, setBrandGuideId] = useState<string | null>(null);
@@ -143,11 +142,7 @@ export default function BrandGuide() {
         await loadLaunchPadData();
       }
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: "Failed to load brand guide",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "Failed to load brand guide" });
     } finally {
       setLoading(false);
     }
@@ -211,16 +206,9 @@ export default function BrandGuide() {
         setBrandGuideId(data.id);
       }
 
-      toast({
-        title: "Success",
-        description: "Brand guide saved successfully"
-      });
+      toast.success("Success", { description: "Brand guide saved successfully" });
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: "Failed to save brand guide",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "Failed to save brand guide" });
     } finally {
       setSaving(false);
     }

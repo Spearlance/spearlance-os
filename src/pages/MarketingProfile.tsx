@@ -10,13 +10,12 @@ import { GoalsTab } from "@/pages/marketing-profile/GoalsTab";
 import { CompetitionTab } from "@/pages/marketing-profile/CompetitionTab";
 import { BrandVoiceTab } from "@/pages/marketing-profile/BrandVoiceTab";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { DiscoveryData } from "@/lib/launchpadTypes";
 import { StoryModal } from "@/components/launchpad/StoryModal";
 
 export default function MarketingProfile() {
   const { selectedClient, loading: clientLoading } = useClient();
-  const { toast } = useToast();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [discoveryData, setDiscoveryData] = useState<DiscoveryData | null>(null);
@@ -193,11 +192,7 @@ export default function MarketingProfile() {
       if (error) throw error;
       setQuarterlyGoals(data || []);
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: "Failed to load quarterly goals",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: "Failed to load quarterly goals" });
     } finally {
       setGoalsLoading(false);
     }
@@ -217,11 +212,7 @@ export default function MarketingProfile() {
       if (error) throw error;
       setCompetitors(data || []);
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: "Failed to load competitors",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: "Failed to load competitors" });
     } finally {
       setLoadingCompetitors(false);
     }
@@ -238,17 +229,10 @@ export default function MarketingProfile() {
 
       if (error) throw error;
 
-      toast({
-        title: "Success",
-        description: "Competitor deleted successfully",
-      });
+      toast.success("Success", { description: "Competitor deleted successfully" });
       loadCompetitors();
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to delete competitor",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: error.message || "Failed to delete competitor" });
     }
   };
 
@@ -287,18 +271,11 @@ export default function MarketingProfile() {
 
       if (error) throw error;
 
-      toast({
-        title: "Success",
-        description: "Goal updated successfully",
-      });
+      toast.success("Success", { description: "Goal updated successfully" });
       loadQuarterlyGoals();
       setEditingGoal(null);
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to update goal",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: error.message || "Failed to update goal" });
     } finally {
       setSavingGoalId(null);
     }
@@ -315,17 +292,10 @@ export default function MarketingProfile() {
 
       if (error) throw error;
 
-      toast({
-        title: "Success",
-        description: "Goal deleted successfully",
-      });
+      toast.success("Success", { description: "Goal deleted successfully" });
       loadQuarterlyGoals();
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to delete goal",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: error.message || "Failed to delete goal" });
     }
   };
 
@@ -348,19 +318,12 @@ export default function MarketingProfile() {
 
       if (error) throw error;
 
-      toast({
-        title: "Success",
-        description: "Current state updated successfully",
-      });
+      toast.success("Success", { description: "Current state updated successfully" });
       
       await loadProfileData();
       setEditingCurrentState(false);
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to update current state",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: error.message || "Failed to update current state" });
     } finally {
       setSavingCurrentState(false);
     }
@@ -397,19 +360,12 @@ export default function MarketingProfile() {
 
       if (error) throw error;
 
-      toast({
-        title: "Success",
-        description: "Company details updated successfully",
-      });
+      toast.success("Success", { description: "Company details updated successfully" });
       
       setEditingCompanyDetails(false);
       await loadProfileData();
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: "Failed to update company details",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: "Failed to update company details" });
     } finally {
       setSavingCompanyDetails(false);
     }
@@ -431,19 +387,12 @@ export default function MarketingProfile() {
 
       if (error) throw error;
 
-      toast({
-        title: "Success",
-        description: "Primary contact updated successfully",
-      });
+      toast.success("Success", { description: "Primary contact updated successfully" });
       
       setEditingPrimaryContact(false);
       await loadProfileData();
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: "Failed to update primary contact",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: "Failed to update primary contact" });
     } finally {
       setSavingPrimaryContact(false);
     }
@@ -469,19 +418,12 @@ export default function MarketingProfile() {
 
       if (error) throw error;
 
-      toast({
-        title: "Success",
-        description: "Business economics updated successfully",
-      });
+      toast.success("Success", { description: "Business economics updated successfully" });
       
       setEditingEconomics(false);
       await loadProfileData();
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: "Failed to update business economics",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: "Failed to update business economics" });
     } finally {
       setSavingEconomics(false);
     }
@@ -505,19 +447,12 @@ export default function MarketingProfile() {
 
       if (error) throw error;
 
-      toast({
-        title: "Success",
-        description: "Brand voice updated successfully",
-      });
+      toast.success("Success", { description: "Brand voice updated successfully" });
       
       setEditingBrandVoice(false);
       await loadProfileData();
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: "Failed to update brand voice",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: "Failed to update brand voice" });
     } finally {
       setSavingBrandVoice(false);
     }
@@ -564,19 +499,12 @@ export default function MarketingProfile() {
 
       if (error) throw error;
 
-      toast({
-        title: "Success",
-        description: "Brand story updated successfully",
-      });
+      toast.success("Success", { description: "Brand story updated successfully" });
       
       setEditingBrandStory(false);
       await loadProfileData();
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: "Failed to update brand story",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: "Failed to update brand story" });
     } finally {
       setSavingBrandStory(false);
     }
@@ -692,11 +620,7 @@ export default function MarketingProfile() {
       setSummary(brandVoice?.story_summary || null);
 
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: "Failed to load marketing profile",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: "Failed to load marketing profile" });
     } finally {
       setLoading(false);
     }
@@ -726,16 +650,9 @@ export default function MarketingProfile() {
       await loadProfileData();
       setStoryModalOpen(false);
       
-      toast({
-        title: "Story Updated",
-        description: "Your brand story has been updated successfully",
-      });
+      toast.success("Story Updated", { description: "Your brand story has been updated successfully" });
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: "Failed to save story data",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: "Failed to save story data" });
     }
   };
 

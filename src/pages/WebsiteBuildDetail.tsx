@@ -11,13 +11,12 @@ import { BuildPagesTab } from "@/components/website-builds/BuildPagesTab";
 import { BuildDevNotesTab } from "@/components/website-builds/BuildDevNotesTab";
 import { BuildLinkedTasksTab } from "@/components/website-builds/BuildLinkedTasksTab";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 export default function WebsiteBuildDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { selectedClient, setSelectedClient, clients } = useClient();
-  const { toast } = useToast();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("overview");
   const [searchParams, setSearchParams] = useSearchParams();
@@ -66,11 +65,7 @@ export default function WebsiteBuildDetail() {
       queryClient.invalidateQueries({ queryKey: ["website-build", id] });
     },
     onError: (error) => {
-      toast({
-        title: "Error saving",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast.error("Error saving", { description: error.message });
     },
   });
 

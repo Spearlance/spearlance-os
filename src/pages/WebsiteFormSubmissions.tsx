@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Search, FileText, Calendar, User, ExternalLink, Mail, Phone, CheckSquare, LayoutGrid, LayoutList, Clock, TrendingUp } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
@@ -34,7 +34,6 @@ interface FormSubmission {
 
 export default function WebsiteFormSubmissions() {
   const { selectedClient, clients, setSelectedClient } = useClient();
-  const { toast } = useToast();
   const [searchParams] = useSearchParams();
   const [submissions, setSubmissions] = useState<FormSubmission[]>([]);
   const [loading, setLoading] = useState(true);
@@ -90,11 +89,7 @@ export default function WebsiteFormSubmissions() {
 
       setSubmissions(data || []);
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to load form submissions",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: "Failed to load form submissions" });
     } finally {
       setLoading(false);
     }
@@ -118,16 +113,9 @@ export default function WebsiteFormSubmissions() {
         setSelectedSubmission({ ...selectedSubmission, status: newStatus });
       }
 
-      toast({
-        title: "Success",
-        description: "Submission status updated",
-      });
+      toast.success("Success", { description: "Submission status updated" });
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to update status",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: "Failed to update status" });
     }
   };
 
@@ -146,16 +134,9 @@ export default function WebsiteFormSubmissions() {
         sub.id === selectedSubmission.id ? { ...sub, notes } : sub
       ));
 
-      toast({
-        title: "Success",
-        description: "Notes saved",
-      });
+      toast.success("Success", { description: "Notes saved" });
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to save notes",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: "Failed to save notes" });
     }
   };
 
@@ -353,10 +334,7 @@ export default function WebsiteFormSubmissions() {
 
   const handleCreateTask = () => {
     if (!selectedSubmission) return;
-    toast({
-      title: "Coming Soon",
-      description: "Task creation integration will be available soon",
-    });
+    toast.info("Coming Soon", { description: "Task creation integration will be available soon" });
   };
 
 

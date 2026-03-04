@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Shield, Copy, Check, ArrowLeft } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import QRCode from "qrcode";
 
 export default function Admin2FASetup() {
@@ -19,7 +19,6 @@ export default function Admin2FASetup() {
   const [backupCodes, setBackupCodes] = useState<string[]>([]);
   const [copied, setCopied] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const { toast } = useToast();
   const navigate = useNavigate();
 
   const generateQRCode = async () => {
@@ -49,11 +48,7 @@ export default function Admin2FASetup() {
         setStep('verify');
       }
     } catch (error: any) {
-      toast({
-        title: "Error generating 2FA",
-        description: error.message,
-        variant: "destructive"
-      });
+      toast.error("Error generating 2FA", { description: error.message });
     } finally {
       setIsLoading(false);
     }
@@ -87,19 +82,12 @@ export default function Admin2FASetup() {
           });
         }
 
-        toast({
-          title: "2FA enabled successfully",
-          description: "Your account is now protected with two-factor authentication"
-        });
-        
+        toast.success("2FA enabled successfully", { description: "Your account is now protected with two-factor authentication" });
+
         setStep('complete');
       }
     } catch (error: any) {
-      toast({
-        title: "Invalid verification code",
-        description: error.message,
-        variant: "destructive"
-      });
+      toast.error("Invalid verification code", { description: error.message });
     } finally {
       setIsLoading(false);
     }
@@ -109,10 +97,7 @@ export default function Admin2FASetup() {
     navigator.clipboard.writeText(backupCodes.join('\n'));
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-    toast({
-      title: "Backup codes copied",
-      description: "Store these codes in a safe place"
-    });
+    toast.success("Backup codes copied", { description: "Store these codes in a safe place" });
   };
 
   if (step === 'generate') {

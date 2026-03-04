@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Sparkles, ImageIcon, Copy, Download, Check, Plus, Trash2, CopyPlus, AlertCircle, RefreshCw } from "lucide-react";
@@ -30,7 +30,6 @@ export default function Avatar() {
   const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [generateAIDialogOpen, setGenerateAIDialogOpen] = useState(false);
-  const { toast } = useToast();
 
   const selectedAvatar = avatars.find(a => a.id === selectedAvatarId);
   const filteredAvatars = avatars.filter(a => 
@@ -53,7 +52,7 @@ export default function Avatar() {
       .order("updated_at", { ascending: false });
 
     if (error) {
-      toast({ title: "Error loading avatars", variant: "destructive" });
+      toast.error("Error loading avatars");
       return;
     }
 
@@ -81,16 +80,12 @@ export default function Avatar() {
 
       if (error) throw error;
 
-      toast({ title: "Avatar created successfully" });
+      toast.success("Avatar created successfully");
       setCreateDialogOpen(false);
       await loadAvatars();
       setSelectedAvatarId(data.id);
     } catch (error: any) {
-      toast({ 
-        title: "Error", 
-        description: error.message || "Failed to create avatar",
-        variant: "destructive" 
-      });
+      toast.error("Error", { description: error.message || "Failed to create avatar" });
     } finally {
       setLoading(false);
     }
@@ -135,16 +130,12 @@ export default function Avatar() {
 
       if (error) throw error;
 
-      toast({ title: "Avatar duplicated successfully" });
+      toast.success("Avatar duplicated successfully");
       setDuplicateDialogOpen(false);
       await loadAvatars();
       setSelectedAvatarId(data.id);
     } catch (error: any) {
-      toast({ 
-        title: "Error", 
-        description: error.message || "Failed to duplicate avatar",
-        variant: "destructive" 
-      });
+      toast.error("Error", { description: error.message || "Failed to duplicate avatar" });
     } finally {
       setLoading(false);
     }
@@ -162,16 +153,12 @@ export default function Avatar() {
 
       if (error) throw error;
 
-      toast({ title: "Avatar deleted successfully" });
+      toast.success("Avatar deleted successfully");
       setDeleteDialogOpen(false);
       setSelectedAvatarId(null);
       await loadAvatars();
     } catch (error: any) {
-      toast({ 
-        title: "Error", 
-        description: error.message || "Failed to delete avatar",
-        variant: "destructive" 
-      });
+      toast.error("Error", { description: error.message || "Failed to delete avatar" });
     } finally {
       setLoading(false);
     }
@@ -199,11 +186,7 @@ export default function Avatar() {
       );
       setAvatars(updatedAvatars);
     } catch (error: any) {
-      toast({ 
-        title: "Error", 
-        description: "Failed to save",
-        variant: "destructive" 
-      });
+      toast.error("Error", { description: "Failed to save" });
     }
   };
 
@@ -219,17 +202,10 @@ export default function Avatar() {
 
       if (error) throw error;
 
-      toast({ 
-        title: "AI Summary Generated",
-        description: "Your 250-400 word customer narrative is ready."
-      });
+      toast.success("AI Summary Generated", { description: "Your 250-400 word customer narrative is ready." });
       await loadAvatars();
     } catch (error: any) {
-      toast({ 
-        title: "Error", 
-        description: error.message || "Failed to generate AI summary",
-        variant: "destructive" 
-      });
+      toast.error("Error", { description: error.message || "Failed to generate AI summary" });
     } finally {
       setLoading(false);
     }
@@ -240,26 +216,15 @@ export default function Avatar() {
     
     try {
       await navigator.clipboard.writeText(selectedAvatar.ai_summary);
-      toast({
-        title: "Copied!",
-        description: "AI summary copied to clipboard.",
-      });
+      toast.success("Copied!", { description: "AI summary copied to clipboard." });
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to copy to clipboard.",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: "Failed to copy to clipboard." });
     }
   };
 
   const handleGenerateImage = async () => {
     if (!selectedAvatar?.ai_summary) {
-      toast({
-        title: "Generate AI Summary First",
-        description: "You need an AI summary before generating avatar images.",
-        variant: "destructive",
-      });
+      toast.error("Generate AI Summary First", { description: "You need an AI summary before generating avatar images." });
       return;
     }
 
@@ -271,17 +236,10 @@ export default function Avatar() {
 
       if (error) throw error;
 
-      toast({ 
-        title: "Avatar Images Generated",
-        description: "3 customer avatar portraits have been created successfully."
-      });
+      toast.success("Avatar Images Generated", { description: "3 customer avatar portraits have been created successfully." });
       await loadAvatars();
     } catch (error: any) {
-      toast({ 
-        title: "Error",
-        description: error.message || "Failed to generate avatar images",
-        variant: "destructive" 
-      });
+      toast.error("Error", { description: error.message || "Failed to generate avatar images" });
     } finally {
       setLoadingImage(false);
     }
@@ -303,16 +261,9 @@ export default function Avatar() {
       );
       setAvatars(updatedAvatars);
       
-      toast({
-        title: "Primary Image Set",
-        description: "This image is now your primary avatar.",
-      });
+      toast.success("Primary Image Set", { description: "This image is now your primary avatar." });
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: "Failed to set primary image",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: "Failed to set primary image" });
     }
   };
 
@@ -347,20 +298,13 @@ export default function Avatar() {
 
       if (error) throw error;
 
-      toast({
-        title: "Avatar Generated!",
-        description: "Your AI-powered customer avatar has been created.",
-      });
+      toast.success("Avatar Generated!", { description: "Your AI-powered customer avatar has been created." });
       
       setGenerateAIDialogOpen(false);
       await loadAvatars();
       setSelectedAvatarId(data.avatar_id);
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to generate avatar with AI",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: error.message || "Failed to generate avatar with AI" });
     } finally {
       setLoading(false);
     }
