@@ -110,8 +110,7 @@ serve(async (req) => {
 
         console.log('Updated subscription:', subscription.id, subscription.status, 'plan:', productName);
 
-        // TODO: Replace this with your actual Unlimited plan product ID from Stripe Dashboard
-        const unlimitedProductId = 'prod_UNLIMITED_PLAN_ID';
+        const unlimitedProductId = Deno.env.get('STRIPE_UNLIMITED_PRODUCT_ID') || '';
 
         if (productId === unlimitedProductId) {
           console.log('Unlimited plan detected - ending trial and unlocking website');

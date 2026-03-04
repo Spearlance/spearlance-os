@@ -99,8 +99,7 @@ serve(async (req) => {
       throw new Error('Website price ID not configured. Please contact support.');
     }
 
-    // Starter plan monthly price ID ($99/mo) - TODO: Replace with your actual Stripe price ID
-    const starterMonthlyPriceId = 'price_STARTER_MONTHLY_REPLACE_ME';
+    const starterMonthlyPriceId = Deno.env.get('STRIPE_STARTER_PRICE_ID') || '';
 
     let session;
 

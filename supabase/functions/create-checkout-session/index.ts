@@ -119,8 +119,7 @@ serve(async (req) => {
       metadata: { client_id: clientId }
     };
 
-    // Check if this is the Unlimited plan - TODO: Replace with your actual Unlimited product ID
-    const unlimitedProductId = 'prod_UNLIMITED_PLAN_ID';
+    const unlimitedProductId = Deno.env.get('STRIPE_UNLIMITED_PRODUCT_ID') || '';
 
     // Get price details to check product
     const priceDetails = await stripe.prices.retrieve(priceId, {
