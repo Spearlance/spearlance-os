@@ -42,7 +42,7 @@ export default function TicketDetail() {
         .from("profiles")
         .select("role")
         .eq("id", user.id)
-        .single();
+        .maybeSingle();
       setUserRole(profile?.role || "");
     }
   };
@@ -56,7 +56,7 @@ export default function TicketDetail() {
         owner:owner_user_id (id, name, email)
       `)
       .eq("id", id)
-      .single();
+      .maybeSingle();
 
     if (error) {
       toast.error("Error loading ticket");

@@ -256,7 +256,7 @@ export function StoryModal({ open, onOpenChange, submissionId, clientId, initial
         .from('launchpad_submissions')
         .select('responses_json')
         .eq('id', submissionId)
-        .single();
+        .maybeSingle();
 
       const currentResponses = submissionData?.responses_json as any || {};
       const currentDiscovery = currentResponses.discovery || {};

@@ -69,7 +69,7 @@ function MainLayoutContent({ children }: MainLayoutProps) {
           .from("profiles")
           .select("name")
           .eq("id", session.user.id)
-          .single()
+          .maybeSingle()
           .then(({ data }) => {
             if (data?.name) {
               const firstName = data.name.split(" ")[0];

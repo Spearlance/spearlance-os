@@ -392,7 +392,7 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
       .from("marketing_flows")
       .select("id")
       .eq("client_id", task.client_id)
-      .single();
+      .maybeSingle();
     
     if (!flow) {
       setAvailableChannels([]);
@@ -695,7 +695,7 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
           .from("profiles")
           .select("name")
           .eq("id", user.id)
-          .single();
+          .maybeSingle();
 
         // Create notifications for mentioned users
         for (const userId of mentionedUserIds) {

@@ -50,7 +50,7 @@ export default function CommunicationDetail() {
       .from("communication_logs")
       .select("*")
       .eq("id", id)
-      .single();
+      .maybeSingle();
 
     if (error || !data) {
       toast.error("Error loading communication");

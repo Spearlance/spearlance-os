@@ -427,7 +427,7 @@ export default function PageAssetsTab({ pageId, buildId, clientId, pageType, pag
       .eq('client_id', targetClientId)
       .eq('name', 'Stock Images')
       .is('parent_folder_id', null)
-      .single();
+      .maybeSingle();
 
     if (existingFolder) {
       return existingFolder.id;
@@ -541,7 +541,7 @@ export default function PageAssetsTab({ pageId, buildId, clientId, pageType, pag
       .from('assets')
       .select('*')
       .eq('id', asset.id)
-      .single();
+      .maybeSingle();
     
     if (data) {
       setSelectedAsset(data);

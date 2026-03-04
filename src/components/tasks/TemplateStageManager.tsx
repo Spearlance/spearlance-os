@@ -94,7 +94,7 @@ export function TemplateStageManager() {
         .from("profiles")
         .select("role")
         .eq("id", user.id)
-        .single();
+        .maybeSingle();
       if (data) setUserRole(data.role);
     }
   };

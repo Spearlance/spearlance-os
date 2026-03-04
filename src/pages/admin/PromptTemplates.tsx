@@ -75,7 +75,7 @@ export default function PromptTemplates() {
       .from("profiles")
       .select("role")
       .eq("id", user.id)
-      .single();
+      .maybeSingle();
 
     if (profile?.role !== "admin") {
       toast.error("Access Denied", { description: "You must be an admin to access this page" });

@@ -57,7 +57,7 @@ export default function CommunicationLogs() {
       .from('profiles')
       .select('role')
       .eq('id', user.id)
-      .single();
+      .maybeSingle();
 
     setUserRole(data?.role || null);
   };

@@ -49,7 +49,7 @@ export default function MeetingDetail() {
         .from("profiles")
         .select("role")
         .eq("id", user.id)
-        .single();
+        .maybeSingle();
       if (profile) {
         setUserRole(profile.role);
       }
@@ -61,7 +61,7 @@ export default function MeetingDetail() {
       .from("meetings")
       .select("*")
       .eq("id", id)
-      .single();
+      .maybeSingle();
 
     if (error) {
       toast.error("Error loading meeting");

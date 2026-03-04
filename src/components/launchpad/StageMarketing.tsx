@@ -102,7 +102,7 @@ export function StageMarketing({ submissionId, onContinue, onBack, onSaveExit }:
       .from("launchpad_submissions")
       .select("responses_json")
       .eq("id", submissionId)
-      .single();
+      .maybeSingle();
 
     if (!submissionData) {
       setSaveStatus('error', "Failed to load submission data");

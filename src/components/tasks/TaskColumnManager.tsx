@@ -291,7 +291,7 @@ export function TaskColumnManager() {
               .eq("is_default", true)
               .order("display_order")
               .limit(1)
-              .single();
+              .maybeSingle();
 
             if (toDoColumn) {
               await supabase

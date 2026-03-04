@@ -28,7 +28,7 @@ export function UserProfileDropdown() {
           .from("profiles")
           .select("id, name, email, role, avatar_url")
           .eq("id", user.id)
-          .single();
+          .maybeSingle();
         
         setUserProfile(profile);
 
@@ -39,8 +39,8 @@ export function UserProfileDropdown() {
             .select("id")
             .eq("client_id", selectedClient.id)
             .eq("user_id", user.id)
-            .single();
-          
+            .maybeSingle();
+
           setIsPrimaryContact(!!primaryContact);
         }
       }

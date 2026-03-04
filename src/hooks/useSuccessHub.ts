@@ -226,7 +226,7 @@ export function useSuccessHub() {
       .from('clients')
       .select('id, name, segment, meeting_cadence, csm_owner_id, delivery_owner_ids, business_outcomes, kpis')
       .eq('id', selectedClient!.id)
-      .single();
+      .maybeSingle();
 
     if (client) {
       let csmOwner: { id: string; name: string; avatar_url: string | null } | null = null;
@@ -237,7 +237,7 @@ export function useSuccessHub() {
           .from('profiles')
           .select('id, name, avatar_url')
           .eq('id', client.csm_owner_id)
-          .single();
+          .maybeSingle();
         csmOwner = csm;
       }
 

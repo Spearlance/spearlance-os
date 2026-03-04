@@ -68,7 +68,7 @@ const SiteCommentDetail = () => {
         .from("duda_conversations")
         .select("id, conversation_number, duda_page_uuid, status, created_by_account, created_at, title")
         .eq("id", id)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
       setConversation(data);

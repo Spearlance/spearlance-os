@@ -58,7 +58,7 @@ export function RecommendedTasksDialog({
         .eq('client_id', clientId)
         .eq('mapped_status', 'to_do')
         .limit(1)
-        .single();
+        .maybeSingle();
 
       const { error } = await supabase
         .from('tasks')
@@ -111,7 +111,7 @@ export function RecommendedTasksDialog({
         .eq('client_id', clientId)
         .eq('mapped_status', 'to_do')
         .limit(1)
-        .single();
+        .maybeSingle();
 
       const tasksToInsert = recommendations.map(rec => ({
         client_id: clientId,

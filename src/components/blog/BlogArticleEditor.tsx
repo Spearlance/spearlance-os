@@ -54,7 +54,7 @@ export function BlogArticleEditor({
         .from('blog_posts')
         .select('*')
         .eq('id', blogPostId)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
 

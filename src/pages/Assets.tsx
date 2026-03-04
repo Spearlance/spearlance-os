@@ -125,7 +125,7 @@ export default function Assets() {
       .from("asset_folders")
       .select("*")
       .eq("id", folderId)
-      .single();
+      .maybeSingle();
 
     if (data) {
       const newBreadcrumbs: Breadcrumb[] = [{ id: null, name: 'Root' }];
@@ -139,7 +139,7 @@ export default function Assets() {
           .from("asset_folders")
           .select("*")
           .eq("id", currentFolder.parent_folder_id)
-          .single();
+          .maybeSingle();
 
         if (parentData) {
           folderChain.unshift({ id: parentData.id, name: parentData.name });

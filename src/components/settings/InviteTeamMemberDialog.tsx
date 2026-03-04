@@ -35,7 +35,7 @@ export function InviteTeamMemberDialog({ clientId, canManageTeam, onInviteSucces
         .from('profiles')
         .select('role')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
       
       return data;
     },
@@ -56,7 +56,7 @@ export function InviteTeamMemberDialog({ clientId, canManageTeam, onInviteSucces
           billing_plans!inner(max_team_members, name)
         `)
         .eq('id', clientId)
-        .single();
+        .maybeSingle();
 
       if (clientError) throw clientError;
 

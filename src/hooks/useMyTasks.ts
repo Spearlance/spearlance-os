@@ -133,7 +133,7 @@ export function useMyTasks() {
               .from("marketing_flow_channels")
               .select("name")
               .eq("id", task.linked_channel_id)
-              .single();
+              .maybeSingle();
             linkedChannelName = channel?.name;
           }
 

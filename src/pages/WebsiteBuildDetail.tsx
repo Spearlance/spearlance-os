@@ -44,7 +44,7 @@ export default function WebsiteBuildDetail() {
         .from("website_builds")
         .select("*")
         .eq("id", id)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
       return data;

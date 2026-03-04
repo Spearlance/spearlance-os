@@ -67,7 +67,7 @@ export default function SupportDocsArticle() {
         .select("*")
         .eq("slug", slug)
         .eq("is_published", true)
-        .single();
+        .maybeSingle();
 
       if (articleError) throw articleError;
       setArticle(articleData);

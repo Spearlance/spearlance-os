@@ -35,7 +35,7 @@ export function CalProvider({ children }: CalProviderProps) {
           .from("profiles")
           .select("cal_access_token, cal_token_expires_at, role")
           .eq("id", user.id)
-          .single();
+          .maybeSingle();
 
         if (profile) {
           setUserRole(profile.role);

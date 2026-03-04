@@ -77,7 +77,7 @@ export function StageAvatar({ submissionId, onFinish, onBack, onSaveExit }: Stag
       .from("launchpad_submissions")
       .select("ideal_client_story, avatar_image_url")
       .eq("id", submissionId)
-      .single();
+      .maybeSingle();
 
     if (submission) {
       setIdealClientStory(submission.ideal_client_story || "");
@@ -107,7 +107,7 @@ export function StageAvatar({ submissionId, onFinish, onBack, onSaveExit }: Stag
         .from("launchpad_submissions")
         .select("completed_at")
         .eq("id", submissionId)
-        .single();
+        .maybeSingle();
 
       await supabase
         .from("launchpad_submissions")

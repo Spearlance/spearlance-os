@@ -219,26 +219,26 @@ export function EditClientDialog({ client, assignedUsers, onClientUpdated }: Edi
             .from("profiles")
             .select("associated_client_ids")
             .eq("id", userId)
-            .single();
-          
+            .maybeSingle();
+
           const currentClientIds = profile?.associated_client_ids || [];
           if (!currentClientIds.includes(client.id)) {
             await supabase
               .from("profiles")
-              .update({ 
-                associated_client_ids: [...currentClientIds, client.id] 
+              .update({
+                associated_client_ids: [...currentClientIds, client.id]
               })
               .eq("id", userId);
           }
         }
-        
+
         // Remove client from users' associated_client_ids
         for (const userId of usersToRemove) {
           const { data: profile } = await supabase
             .from("profiles")
             .select("associated_client_ids")
             .eq("id", userId)
-            .single();
+            .maybeSingle();
           
           const currentClientIds = profile?.associated_client_ids || [];
           await supabase

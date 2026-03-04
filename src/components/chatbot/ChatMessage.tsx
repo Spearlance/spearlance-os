@@ -45,7 +45,7 @@ export const ChatMessage = ({ message, onRetry }: ChatMessageProps) => {
           .from('profiles')
           .select('name, avatar_url')
           .eq('id', user.id)
-          .single();
+          .maybeSingle();
         
         if (data) {
           setUserProfile(data);

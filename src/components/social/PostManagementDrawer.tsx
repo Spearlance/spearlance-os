@@ -115,7 +115,7 @@ export const PostManagementDrawer = ({
         .from('late_profiles')
         .select('id')
         .eq('client_id', selectedClient.id)
-        .single();
+        .maybeSingle();
 
       if (!lateProfile) return;
 
@@ -142,7 +142,7 @@ export const PostManagementDrawer = ({
         .from('late_profiles')
         .select('id')
         .eq('client_id', selectedClient.id)
-        .single();
+        .maybeSingle();
 
       if (!lateProfile) return;
 
@@ -348,7 +348,7 @@ export const PostManagementDrawer = ({
         .from('social_media_posts')
         .select('*')
         .eq('id', post.id)
-        .single();
+        .maybeSingle();
 
       if (updatedPost) {
         setCaption(updatedPost.caption_text || "");

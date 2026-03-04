@@ -77,7 +77,7 @@ export function StageAssets({ submissionId, onContinue, onBack, onSaveExit }: St
         .from("asset_folders")
         .select("id, name, color")
         .eq("id", folderId)
-        .single();
+        .maybeSingle();
       
       setCurrentFolder(data || null);
     } else {
@@ -97,7 +97,7 @@ export function StageAssets({ submissionId, onContinue, onBack, onSaveExit }: St
       .from("launchpad_submissions")
       .select("brand_colors")
       .eq("id", submissionId)
-      .single();
+      .maybeSingle();
 
     if (error) {
       console.error("Error loading brand colors:", error);
@@ -319,7 +319,7 @@ export function StageAssets({ submissionId, onContinue, onBack, onSaveExit }: St
         .from("launchpad_submissions")
         .select("responses_json, completed_at")
         .eq("id", submissionId)
-        .single();
+        .maybeSingle();
 
       // Update with asset IDs and brand colors
       const { error } = await supabase

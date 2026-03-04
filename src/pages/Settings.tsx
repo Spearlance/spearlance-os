@@ -60,7 +60,7 @@ export default function Settings() {
         .from("profiles")
         .select("id, name, email, role, avatar_url, job_title, department, bio, expertise_level, preferred_communication_style, focus_areas")
         .eq("id", user.id)
-        .single();
+        .maybeSingle();
       setUserProfile(profile);
       setUserRole(profile?.role || "");
 
@@ -71,7 +71,7 @@ export default function Settings() {
           .select("id")
           .eq("client_id", selectedClient.id)
           .eq("user_id", user.id)
-          .single();
+          .maybeSingle();
         
         setIsPrimaryContact(!!primaryContact);
       }

@@ -84,7 +84,7 @@ export function TeamMembersList({ clientId, canManageTeam, refreshTrigger, userP
         .from("profiles")
         .select("associated_client_ids")
         .eq("id", memberId)
-        .single();
+        .maybeSingle();
 
       if (profile) {
         const updatedClientIds = (profile.associated_client_ids || []).filter(

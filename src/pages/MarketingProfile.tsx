@@ -541,7 +541,7 @@ export default function MarketingProfile() {
           .from("clients")
           .select("*")
           .eq("id", selectedClient.id)
-          .single(),
+          .maybeSingle(),
         supabase
           .from("client_business_model")
           .select("*")

@@ -184,7 +184,7 @@ export function StageDiscovery({ submissionId, initialData, onContinue, onSaveEx
         .from("launchpad_submissions")
         .select("responses_json")
         .eq("id", submissionId)
-        .single();
+        .maybeSingle();
 
       if (!submissionData) throw new Error("Submission not found");
 

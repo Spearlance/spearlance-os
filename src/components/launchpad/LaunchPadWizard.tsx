@@ -113,7 +113,7 @@ export function LaunchPadWizard() {
         .from("launchpad_submissions")
         .select("completed_at")
         .eq("id", submission.id)
-        .single();
+        .maybeSingle();
 
       await supabase
         .from("launchpad_submissions")
