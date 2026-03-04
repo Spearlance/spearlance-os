@@ -81,7 +81,6 @@ export function AddChannelDialog({ open, onOpenChange, stages, selectedStageId, 
 
         setTeamMembers(filteredMembers);
       } catch (error) {
-        console.error("Error fetching team members:", error);
         toast({
           title: "Error",
           description: "Failed to load team members",
@@ -141,7 +140,6 @@ export function AddChannelDialog({ open, onOpenChange, stages, selectedStageId, 
       onSuccess();
       onOpenChange(false);
     } catch (error) {
-      console.error("Error adding channel:", error);
       toast({
         title: "Error",
         description: "Failed to add channel",

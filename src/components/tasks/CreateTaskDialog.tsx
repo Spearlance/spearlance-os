@@ -219,7 +219,6 @@ export function CreateTaskDialog({ open, onOpenChange, onSuccess }: CreateTaskDi
       setEndDate('');
       onSuccess?.();
     } catch (error) {
-      console.error("Error creating task:", error);
       toast({
         title: "Error",
         description: "Failed to create task",

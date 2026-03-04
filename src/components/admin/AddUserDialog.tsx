@@ -52,7 +52,6 @@ export function AddUserDialog({ clients, onUserCreated }: AddUserDialogProps) {
       setOpen(false);
       onUserCreated();
     } catch (error: any) {
-      console.error("Error creating user:", error);
       toast({
         title: "Failed to create user",
         description: error.message || "Please try again",

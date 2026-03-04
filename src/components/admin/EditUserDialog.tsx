@@ -146,7 +146,6 @@ export function EditUserDialog({ user, clients, onUserUpdated }: EditUserDialogP
       onUserUpdated();
       setOpen(false);
     } catch (error: any) {
-      console.error('Error saving user:', error);
       toast({
         title: "Error saving changes",
         description: error.message || "Failed to update user",

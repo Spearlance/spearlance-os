@@ -143,7 +143,6 @@ export default function BrandGuide() {
         await loadLaunchPadData();
       }
     } catch (error: any) {
-      console.error("Error loading brand guide:", error);
       toast({
         title: "Error",
         description: "Failed to load brand guide",
@@ -217,7 +216,6 @@ export default function BrandGuide() {
         description: "Brand guide saved successfully"
       });
     } catch (error: any) {
-      console.error("Error saving brand guide:", error);
       toast({
         title: "Error",
         description: "Failed to save brand guide",

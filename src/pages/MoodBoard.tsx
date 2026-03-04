@@ -46,7 +46,6 @@ export default function MoodBoard() {
       if (error) throw error;
       setMoodBoards(boards || []);
     } catch (error: any) {
-      console.error("Error loading data:", error);
       toast({
         title: "Error",
         description: "Failed to load mood boards",

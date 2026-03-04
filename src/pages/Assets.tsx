@@ -105,7 +105,6 @@ export default function Assets() {
     const { data, error } = await query.order("created_at", { ascending: false });
 
     if (error) {
-      console.error("Error loading folders:", error);
       toast({
         title: "Error",
         description: "Failed to load folders",
@@ -248,7 +247,6 @@ export default function Assets() {
       supabase.functions.invoke('analyze-asset', {
         body: { asset_id: assetData.id }
       }).catch(err => {
-        console.error('AI analysis failed:', err);
         toast({
           title: "AI analysis skipped",
           description: "Asset uploaded successfully but AI analysis couldn't run.",
@@ -288,7 +286,6 @@ export default function Assets() {
       loadAssets();
       
     } catch (error: any) {
-      console.error('Backfill error:', error);
       toast({
         title: "Analysis Failed",
         description: error.message || "Failed to analyze assets",

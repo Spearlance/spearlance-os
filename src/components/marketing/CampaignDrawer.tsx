@@ -100,7 +100,6 @@ export function CampaignDrawer({
       });
       onUpdate();
     } catch (error) {
-      console.error("Error updating campaign:", error);
       toast({
         title: "Error",
         description: "Failed to update campaign",
@@ -135,7 +134,6 @@ export function CampaignDrawer({
       onOpenChange(false);
       onUpdate();
     } catch (error) {
-      console.error("Error deleting campaign:", error);
       toast({
         title: "Error",
         description: "Failed to delete campaign",

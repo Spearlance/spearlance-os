@@ -92,7 +92,6 @@ export function RecommendedTasksDialog({
       onTaskAdded();
       
     } catch (error) {
-      console.error('Error adding task:', error);
       toast({
         title: "Failed to add task",
         description: error instanceof Error ? error.message : "An error occurred",
@@ -156,7 +155,6 @@ export function RecommendedTasksDialog({
       onOpenChange(false);
       
     } catch (error) {
-      console.error('Error adding all tasks:', error);
       toast({
         title: "Failed to add tasks",
         description: error instanceof Error ? error.message : "An error occurred",

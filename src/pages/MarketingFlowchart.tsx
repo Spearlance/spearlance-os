@@ -184,7 +184,6 @@ const MarketingFlowchart = () => {
 
       setChannels(channelsWithCounts);
     } catch (error) {
-      console.error("Error loading flow data:", error);
       toast({
         title: "Error",
         description: "Failed to load marketing flow",

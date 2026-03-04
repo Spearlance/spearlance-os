@@ -725,7 +725,6 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
           : undefined,
       });
     } catch (error) {
-      console.error("Error adding comment:", error);
       toast({
         title: "Error",
         description: "Failed to add comment",
@@ -768,7 +767,6 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
       onOpenChange(false);
       onUpdate();
     } catch (error) {
-      console.error("Error deleting task:", error);
       toast({
         title: "Error",
         description: "Failed to delete task",

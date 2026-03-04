@@ -82,7 +82,6 @@ export function EditChannelDialog({ open, onOpenChange, channel, stages, onSucce
 
         setTeamMembers(filteredMembers);
       } catch (error) {
-        console.error("Error fetching team members:", error);
         toast({
           title: "Error",
           description: "Failed to load team members",
@@ -132,7 +131,6 @@ export function EditChannelDialog({ open, onOpenChange, channel, stages, onSucce
       onSuccess();
       onOpenChange(false);
     } catch (error) {
-      console.error("Error updating channel:", error);
       toast({
         title: "Error",
         description: "Failed to update channel",

@@ -106,7 +106,6 @@ export function UserProfileTab({ profile, onProfileUpdated }: UserProfileTabProp
 
       onProfileUpdated();
     } catch (error) {
-      console.error("Error uploading avatar:", error);
       toast({
         title: "Upload failed",
         description: "Failed to upload profile picture. Please try again.",
@@ -133,7 +132,6 @@ export function UserProfileTab({ profile, onProfileUpdated }: UserProfileTabProp
 
       onProfileUpdated();
     } catch (error) {
-      console.error("Error removing avatar:", error);
       toast({
         title: "Error",
         description: "Failed to remove profile picture",
@@ -169,7 +167,6 @@ export function UserProfileTab({ profile, onProfileUpdated }: UserProfileTabProp
 
       onProfileUpdated();
     } catch (error) {
-      console.error("Error updating profile:", error);
       toast({
         title: "Update failed",
         description: "Failed to update your profile. Please try again.",
@@ -214,7 +211,6 @@ export function UserProfileTab({ profile, onProfileUpdated }: UserProfileTabProp
 
       onProfileUpdated();
     } catch (error) {
-      console.error("Error updating professional details:", error);
       toast({
         title: "Update failed",
         description: "Failed to update your professional details. Please try again.",
@@ -246,7 +242,6 @@ export function UserProfileTab({ profile, onProfileUpdated }: UserProfileTabProp
         description: "Check your email for a link to reset your password",
       });
     } catch (error) {
-      console.error("Error sending password reset:", error);
       toast({
         title: "Error",
         description: "Failed to send password reset email",

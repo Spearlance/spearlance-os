@@ -79,7 +79,6 @@ export const useChatbot = () => {
         setActiveConversationId(conversationsWithCreator[0].id);
       }
     } catch (err: any) {
-      console.error('Error loading conversations:', err);
       toast({
         title: "Error",
         description: "Failed to load conversations.",
@@ -109,7 +108,6 @@ export const useChatbot = () => {
 
       setMessages(loadedMessages);
     } catch (err: any) {
-      console.error('Error loading messages:', err);
       toast({
         title: "Error",
         description: "Failed to load conversation.",
@@ -145,7 +143,6 @@ export const useChatbot = () => {
 
       return data.id;
     } catch (err: any) {
-      console.error('Error creating conversation:', err);
       toast({
         title: "Error",
         description: "Failed to create conversation.",
@@ -220,7 +217,6 @@ export const useChatbot = () => {
         description: "This conversation will be auto-deleted in 30 days.",
       });
     } catch (err: any) {
-      console.error('Error archiving conversation:', err);
       toast({
         title: "Error",
         description: "Failed to archive conversation.",
@@ -371,7 +367,7 @@ export const useChatbot = () => {
               });
             }
           } catch (e) {
-            console.debug('Parse error (expected for incomplete chunks):', e);
+            // Expected for incomplete streaming chunks — no action needed
           }
         }
       }

@@ -39,7 +39,6 @@ export function WebsiteUpsellDialog({ open, onOpenChange, onUpgradeClick }: Webs
         throw new Error('No checkout URL returned');
       }
     } catch (error: any) {
-      console.error('Website checkout error:', error);
       toast({
         title: "Error",
         description: error.message || "Failed to start checkout",

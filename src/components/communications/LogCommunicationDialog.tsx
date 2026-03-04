@@ -183,7 +183,6 @@ export function LogCommunicationDialog({ open, onOpenChange }: LogCommunicationD
       resetForm();
       onOpenChange(false);
     } catch (error) {
-      console.error('Error logging communication:', error);
       toast({
         title: "Error logging communication",
         description: error instanceof Error ? error.message : "Unknown error",

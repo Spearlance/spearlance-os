@@ -158,7 +158,7 @@ export function EditClientDialog({ client, assignedUsers, onClientUpdated }: Edi
         return data.plan_name;
       }
     } catch (error: any) {
-      console.error('Error fetching plan name:', error);
+      // silent — plan name fetch is non-critical
     } finally {
       setFetchingPlanName(false);
     }
@@ -268,7 +268,6 @@ export function EditClientDialog({ client, assignedUsers, onClientUpdated }: Edi
       setOpen(false);
       onClientUpdated();
     } catch (error) {
-      console.error("Error updating client:", error);
       toast({
         title: "Error updating client",
         description: "Please try again later",

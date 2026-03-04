@@ -90,7 +90,6 @@ const SiteComments = () => {
 
       setConversations(conversationsWithCounts);
     } catch (error: any) {
-      console.error("Error loading conversations:", error);
       toast.error("Failed to load site comments");
     } finally {
       setLoading(false);

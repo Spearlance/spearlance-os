@@ -67,7 +67,6 @@ export function AssetRecommendationDialog({
         setError('no_results');
       }
     } catch (err) {
-      console.error('Error fetching recommendations:', err);
       const errorMessage = err instanceof Error ? err.message : 'Failed to load recommendations';
       
       if (errorMessage.includes('Rate limit')) {

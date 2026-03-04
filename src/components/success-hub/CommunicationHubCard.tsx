@@ -5,10 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { MessageSquare, Mail, Phone, Video, Plus, Trash2, HelpCircle } from "lucide-react";
 import { format } from "date-fns";
-import { OpenThread } from "@/hooks/useSuccessHub";
+import { OpenThread, SuccessHubCommunication } from "@/hooks/useSuccessHub";
 
 interface CommunicationHubCardProps {
-  communications: any[];
+  communications: SuccessHubCommunication[];
   openThreads: OpenThread[];
   onUpdateThreads: (threads: OpenThread[]) => void;
 }

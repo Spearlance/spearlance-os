@@ -102,8 +102,6 @@ export const ImageSelector = ({ caption, onComplete, onBack }: ImageSelectorProp
       setGeneratedImages(data.images || []);
       setShowRetry(false);
     } catch (error: any) {
-      console.error('Error generating image:', error);
-      
       let errorMessage = "Please try again";
       
       if (error.name === 'AbortError') {

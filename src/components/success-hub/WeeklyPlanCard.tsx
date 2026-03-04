@@ -4,9 +4,10 @@ import { Badge } from "@/components/ui/badge";
 import { format, isPast, isToday } from "date-fns";
 import { cn } from "@/lib/utils";
 import { CheckCircle2, Circle, Clock } from "lucide-react";
+import { SuccessHubTask } from "@/hooks/useSuccessHub";
 
 interface WeeklyPlanCardProps {
-  tasks: any[];
+  tasks: SuccessHubTask[];
   onTaskClick?: (taskId: string) => void;
 }
 

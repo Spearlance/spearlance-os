@@ -78,7 +78,6 @@ export function AssetDrawer({ asset, open, onOpenChange, onUpdate }: AssetDrawer
         // Clean up the object URL
         window.URL.revokeObjectURL(url);
       } catch (error) {
-        console.error('Download failed:', error);
         toast({ title: "Download failed", variant: "destructive" });
       }
     } else {
@@ -146,8 +145,7 @@ export function AssetDrawer({ asset, open, onOpenChange, onUpdate }: AssetDrawer
       onUpdate();
       onOpenChange(false);
     } catch (error) {
-      console.error("Error deleting asset:", error);
-      toast({ 
+      toast({
         title: "Error deleting asset", 
         description: error instanceof Error ? error.message : "Unknown error",
         variant: "destructive" 

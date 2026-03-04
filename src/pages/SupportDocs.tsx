@@ -131,7 +131,6 @@ export default function SupportDocs() {
       setCategoryCounts(countMap);
 
     } catch (error: any) {
-      console.error("Error fetching articles:", error);
       toast.error("Failed to load articles");
     } finally {
       setLoading(false);

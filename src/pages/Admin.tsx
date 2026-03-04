@@ -571,7 +571,6 @@ export default function Admin() {
                                 try {
                                   navigate(`/website/form-submissions?client=${client.id}`);
                                 } catch (error) {
-                                  console.error('Navigation error:', error);
                                   toast({
                                     title: "Navigation Error",
                                     description: "Failed to navigate to form submissions",

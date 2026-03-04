@@ -75,7 +75,6 @@ export function AssetShareSettings({
           : "The share link is now inactive"
       });
     } catch (error) {
-      console.error('Toggle error:', error);
       toast({
         title: "Error",
         description: "Failed to update sharing settings",
@@ -112,7 +111,6 @@ export function AssetShareSettings({
         description: "Users can now access the asset portal with this password"
       });
     } catch (error) {
-      console.error('Set password error:', error);
       toast({
         title: "Error",
         description: "Failed to set password",
@@ -143,7 +141,6 @@ export function AssetShareSettings({
         description: "The old share link is now invalid"
       });
     } catch (error) {
-      console.error('Regenerate error:', error);
       toast({
         title: "Error",
         description: "Failed to generate new link",
@@ -175,7 +172,6 @@ export function AssetShareSettings({
           : "Link will not expire"
       });
     } catch (error) {
-      console.error('Update expiration error:', error);
       toast({
         title: "Error",
         description: "Failed to update expiration",

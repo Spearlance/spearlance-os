@@ -87,7 +87,6 @@ export function ClientLogoUpload({
         onLogoSaved();
       }
     } catch (error) {
-      console.error("Error uploading logo:", error);
       toast({
         title: "Upload failed",
         description: "Failed to upload logo. Please try again.",

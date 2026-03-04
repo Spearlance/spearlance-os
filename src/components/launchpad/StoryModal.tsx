@@ -321,7 +321,6 @@ export function StoryModal({ open, onOpenChange, submissionId, clientId, initial
         onOpenChange(false);
       }, 1500);
     } catch (error) {
-      console.error("Error saving story:", error);
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to process your story. Please try again.",

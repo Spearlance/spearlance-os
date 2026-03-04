@@ -85,7 +85,6 @@ export function BlogArticleWizard({ topic, onComplete, onCancel }: BlogArticleWi
         throw new Error("Failed to generate brief");
       }
     } catch (error: any) {
-      console.error('Error generating brief:', error);
       setError(error.message || "Failed to generate brief");
       toast.error("Failed to generate brief. Please try again.");
     } finally {

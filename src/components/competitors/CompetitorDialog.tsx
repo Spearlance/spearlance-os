@@ -125,7 +125,6 @@ export function CompetitorDialog({ open, onOpenChange, competitor, clientId, onS
 
       onSuccess();
     } catch (error: any) {
-      console.error("Error saving competitor:", error);
       toast({
         title: "Error",
         description: error.message || "Failed to save competitor",

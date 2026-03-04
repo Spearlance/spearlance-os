@@ -76,7 +76,6 @@ export default function AdminSupportDocs() {
       setArticles(data || []);
       setFilteredArticles(data || []);
     } catch (error: any) {
-      console.error("Error fetching articles:", error);
       toast.error("Failed to load articles");
     } finally {
       setLoading(false);
@@ -97,7 +96,6 @@ export default function AdminSupportDocs() {
       toast.success("Article deleted successfully");
       fetchArticles();
     } catch (error: any) {
-      console.error("Error deleting article:", error);
       toast.error("Failed to delete article");
     } finally {
       setDeleteArticleId(null);
@@ -123,7 +121,6 @@ export default function AdminSupportDocs() {
       );
       fetchArticles();
     } catch (error: any) {
-      console.error("Error toggling publish status:", error);
       toast.error("Failed to update article");
     }
   };

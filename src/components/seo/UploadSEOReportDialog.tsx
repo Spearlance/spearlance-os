@@ -84,7 +84,6 @@ export function UploadSEOReportDialog({ open, onOpenChange, clientId }: UploadSE
       onOpenChange(false);
 
     } catch (error) {
-      console.error('Upload error:', error);
       toast({
         title: "Upload failed",
         description: error instanceof Error ? error.message : "Failed to process the report",

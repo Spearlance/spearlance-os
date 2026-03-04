@@ -285,7 +285,6 @@ export function ChannelKPIsTab({ channelId, channelName, isAdminOrFMM }: Channel
       });
       loadHistory();
     } catch (error) {
-      console.error("Error saving KPIs:", error);
       toast({
         title: "Error",
         description: "Failed to save KPIs",

@@ -63,7 +63,6 @@ export function PricingModal({ open, onOpenChange, highlightWebsite = false }: P
       }
     } catch (error: any) {
       clearTimeout(timeoutId);
-      console.error('Checkout error:', error);
       toast({
         title: "Error",
         description: error.message || "Failed to start checkout",

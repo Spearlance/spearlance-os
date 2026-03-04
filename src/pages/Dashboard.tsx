@@ -115,7 +115,6 @@ const Dashboard = () => {
       });
 
       if (error) {
-        console.error('Error generating plan:', error);
         toast({
           title: "Failed to generate action plan",
           description: error.message || "Please try again later",
@@ -159,7 +158,6 @@ const Dashboard = () => {
         });
       }
     } catch (error) {
-      console.error('Error generating avatar story:', error);
       toast({
         title: "Generation Failed",
         description: "Could not generate the avatar story. Please try again.",

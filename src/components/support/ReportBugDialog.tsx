@@ -122,7 +122,6 @@ export function ReportBugDialog({ open, onOpenChange }: ReportBugDialogProps) {
       setScreenshots([]);
       onOpenChange(false);
     } catch (error: any) {
-      console.error("Error submitting bug report:", error);
       toast({
         title: "Error",
         description: "Failed to submit bug report. Please try again.",

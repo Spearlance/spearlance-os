@@ -224,7 +224,6 @@ export function ApplyTemplateDialog({ open, onOpenChange, stages, selectedStageI
       onSuccess();
       onOpenChange(false);
     } catch (error) {
-      console.error("Error applying template:", error);
       toast({
         title: "Error",
         description: "Failed to apply playbook",

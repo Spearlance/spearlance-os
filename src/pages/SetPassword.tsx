@@ -77,8 +77,6 @@ const SetPassword = () => {
         navigate("/");
       }, 2000);
     } catch (error: any) {
-      console.error("Error setting password:", error);
-      
       // Check if error is due to expired/invalid session
       if (error.message?.toLowerCase().includes('session') || 
           error.message?.toLowerCase().includes('token') ||
@@ -136,7 +134,6 @@ const SetPassword = () => {
         });
       }
     } catch (error: any) {
-      console.error("Error requesting new link:", error);
       toast({
         title: "Error",
         description: error.message || "Failed to send new link. Please contact support.",

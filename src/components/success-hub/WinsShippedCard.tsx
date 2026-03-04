@@ -4,11 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, Plus, Trophy, Trash2 } from "lucide-react";
 import { format } from "date-fns";
-import { ManualWin } from "@/hooks/useSuccessHub";
+import { ManualWin, SuccessHubTask } from "@/hooks/useSuccessHub";
 import { AddWinDialog } from "./AddWinDialog";
 
 interface WinsShippedCardProps {
-  completedTasks: any[];
+  completedTasks: SuccessHubTask[];
   manualWins: ManualWin[];
   onAddWin: (win: ManualWin) => void;
   onRemoveWin: (winId: string) => void;

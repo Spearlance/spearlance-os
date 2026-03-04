@@ -88,7 +88,6 @@ export function BlogMonthlyGenerator({
         }, 2000);
 
     } catch (error: any) {
-      console.error('Error generating blog topics:', error);
       toast.error("Generation Failed", {
         description: error.message || "Failed to generate blog topics. Please try again.",
       });

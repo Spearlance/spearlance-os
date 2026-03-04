@@ -60,7 +60,6 @@ export function TeamMembersList({ clientId, canManageTeam, refreshTrigger, userP
 
       setTeamMembers(membersWithPrimaryStatus);
     } catch (error: any) {
-      console.error("Error fetching team members:", error);
       toast({
         title: "Error loading team members",
         description: error.message,
@@ -117,7 +116,6 @@ export function TeamMembersList({ clientId, canManageTeam, refreshTrigger, userP
         fetchTeamMembers();
       }
     } catch (error: any) {
-      console.error("Error removing team member:", error);
       toast({
         title: "Failed to remove team member",
         description: error.message,
@@ -139,7 +137,6 @@ export function TeamMembersList({ clientId, canManageTeam, refreshTrigger, userP
         description: `Password reset link has been sent to ${memberName}`,
       });
     } catch (error: any) {
-      console.error("Error sending password reset:", error);
       toast({
         title: "Failed to send password reset",
         description: error.message,

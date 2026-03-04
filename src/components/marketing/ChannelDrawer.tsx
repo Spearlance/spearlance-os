@@ -178,7 +178,6 @@ export function ChannelDrawer({ open, onOpenChange, channel, onUpdate, isAdminOr
         description: "Note added successfully",
       });
     } catch (error) {
-      console.error("Error adding note:", error);
       toast({
         title: "Error",
         description: "Failed to add note",
@@ -210,7 +209,6 @@ export function ChannelDrawer({ open, onOpenChange, channel, onUpdate, isAdminOr
       });
       onUpdate();
     } catch (error) {
-      console.error("Error updating channel:", error);
       toast({
         title: "Error",
         description: "Failed to update channel",
@@ -255,7 +253,6 @@ export function ChannelDrawer({ open, onOpenChange, channel, onUpdate, isAdminOr
       onOpenChange(false); // Close the drawer
       onUpdate(); // Refresh the parent view
     } catch (error) {
-      console.error("Error deleting channel:", error);
       toast({
         title: "Error",
         description: "Failed to delete channel",

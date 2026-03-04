@@ -290,7 +290,6 @@ export default function Tasks() {
         });
       }
     } catch (error) {
-      console.error('Error loading recommendations:', error);
       toast({
         title: "Failed to load recommendations",
         description: error instanceof Error ? error.message : "An error occurred",

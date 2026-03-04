@@ -71,8 +71,6 @@ export const CaptionEditor = ({ postIdea, onComplete, onBack }: CaptionEditorPro
         }
       }
     } catch (error: any) {
-      console.error('Error generating caption:', error);
-      
       let errorMessage = "Please try again";
       
       if (error.name === 'AbortError') {

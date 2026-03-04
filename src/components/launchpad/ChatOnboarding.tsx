@@ -265,10 +265,6 @@ export function ChatOnboarding({ submission, onSwitchToForm }: ChatOnboardingPro
             content: data.response,
           });
       } else {
-        console.error('[Frontend] Empty response received');
-        console.error('[Frontend] data.response:', data.response);
-        console.error('[Frontend] Full data object:', JSON.stringify(data));
-        console.error('[Frontend] Response type:', typeof data.response);
         toast({
           title: 'No Response',
           description: 'The assistant did not provide a response. Please try again.',
@@ -277,7 +273,6 @@ export function ChatOnboarding({ submission, onSwitchToForm }: ChatOnboardingPro
       }
 
     } catch (error: any) {
-      console.error('Error sending message:', error);
       toast({
         title: 'Error',
         description: error.message || 'Failed to send message',
@@ -347,7 +342,6 @@ export function ChatOnboarding({ submission, onSwitchToForm }: ChatOnboardingPro
 
       setShowRefreshDialog(false);
     } catch (error: any) {
-      console.error('Error refreshing chat:', error);
       toast({
         title: 'Error',
         description: error.message || 'Failed to refresh chat',

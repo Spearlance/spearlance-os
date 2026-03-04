@@ -302,7 +302,6 @@ export const PostManagementDrawer = ({
         description: `Generated ${data.ideas?.length || 0} topic ideas for you.`,
       });
     } catch (error: any) {
-      console.error('Error generating topic ideas:', error);
       toast({
         title: "Generation Failed",
         description: error.message || "Please try again",
@@ -588,7 +587,6 @@ export const PostManagementDrawer = ({
       refetchAnalytics();
       
     } catch (error: any) {
-      console.error('Error refreshing analytics:', error);
       toast({
         title: "Refresh Failed",
         description: error.message || "Failed to sync analytics. Please try again.",

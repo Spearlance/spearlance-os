@@ -119,7 +119,6 @@ export function StageAvatar({ submissionId, onFinish, onBack, onSaveExit }: Stag
         .eq("id", submissionId);
 
     } catch (error: any) {
-      console.error("Analysis error:", error);
       toast({
         title: "Error running analysis",
         description: error.message || "Please try again",
@@ -146,7 +145,6 @@ export function StageAvatar({ submissionId, onFinish, onBack, onSaveExit }: Stag
         toast({ title: "Avatar image generated!", className: "bg-[#13cf48] text-white" });
       }
     } catch (error: any) {
-      console.error("Image generation error:", error);
       toast({
         title: "Error generating image",
         description: error.message || "Please try again",
@@ -175,7 +173,6 @@ export function StageAvatar({ submissionId, onFinish, onBack, onSaveExit }: Stag
 
       toast({ title: "Edits saved" });
     } catch (error) {
-      console.error("Save error:", error);
       toast({ title: "Error saving edits", variant: "destructive" });
     }
   };

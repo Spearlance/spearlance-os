@@ -193,7 +193,6 @@ export default function MarketingProfile() {
       if (error) throw error;
       setQuarterlyGoals(data || []);
     } catch (error: any) {
-      console.error("Error loading quarterly goals:", error);
       toast({
         title: "Error",
         description: "Failed to load quarterly goals",
@@ -218,7 +217,6 @@ export default function MarketingProfile() {
       if (error) throw error;
       setCompetitors(data || []);
     } catch (error: any) {
-      console.error("Error loading competitors:", error);
       toast({
         title: "Error",
         description: "Failed to load competitors",
@@ -246,7 +244,6 @@ export default function MarketingProfile() {
       });
       loadCompetitors();
     } catch (error: any) {
-      console.error("Error deleting competitor:", error);
       toast({
         title: "Error",
         description: error.message || "Failed to delete competitor",
@@ -297,7 +294,6 @@ export default function MarketingProfile() {
       loadQuarterlyGoals();
       setEditingGoal(null);
     } catch (error: any) {
-      console.error("Error updating goal:", error);
       toast({
         title: "Error",
         description: error.message || "Failed to update goal",
@@ -325,7 +321,6 @@ export default function MarketingProfile() {
       });
       loadQuarterlyGoals();
     } catch (error: any) {
-      console.error("Error deleting goal:", error);
       toast({
         title: "Error",
         description: error.message || "Failed to delete goal",
@@ -361,7 +356,6 @@ export default function MarketingProfile() {
       await loadProfileData();
       setEditingCurrentState(false);
     } catch (error: any) {
-      console.error("Error updating current state:", error);
       toast({
         title: "Error",
         description: error.message || "Failed to update current state",
@@ -411,7 +405,6 @@ export default function MarketingProfile() {
       setEditingCompanyDetails(false);
       await loadProfileData();
     } catch (error: any) {
-      console.error("Error updating company details:", error);
       toast({
         title: "Error",
         description: "Failed to update company details",
@@ -446,7 +439,6 @@ export default function MarketingProfile() {
       setEditingPrimaryContact(false);
       await loadProfileData();
     } catch (error: any) {
-      console.error("Error updating primary contact:", error);
       toast({
         title: "Error",
         description: "Failed to update primary contact",
@@ -485,7 +477,6 @@ export default function MarketingProfile() {
       setEditingEconomics(false);
       await loadProfileData();
     } catch (error: any) {
-      console.error("Error updating economics:", error);
       toast({
         title: "Error",
         description: "Failed to update business economics",
@@ -522,7 +513,6 @@ export default function MarketingProfile() {
       setEditingBrandVoice(false);
       await loadProfileData();
     } catch (error: any) {
-      console.error("Error updating brand voice:", error);
       toast({
         title: "Error",
         description: "Failed to update brand voice",
@@ -582,7 +572,6 @@ export default function MarketingProfile() {
       setEditingBrandStory(false);
       await loadProfileData();
     } catch (error: any) {
-      console.error("Error updating brand story:", error);
       toast({
         title: "Error",
         description: "Failed to update brand story",
@@ -703,7 +692,6 @@ export default function MarketingProfile() {
       setSummary(brandVoice?.story_summary || null);
 
     } catch (error: any) {
-      console.error("Error loading profile:", error);
       toast({
         title: "Error",
         description: "Failed to load marketing profile",
@@ -743,7 +731,6 @@ export default function MarketingProfile() {
         description: "Your brand story has been updated successfully",
       });
     } catch (error: any) {
-      console.error("Error saving story:", error);
       toast({
         title: "Error",
         description: "Failed to save story data",

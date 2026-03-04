@@ -270,7 +270,6 @@ export const GenerateReportDialog = ({
       onSuccess(data);
       onOpenChange(false);
     } catch (error: any) {
-      console.error('Error generating report:', error);
       toast({
         title: "Failed to generate report",
         description: error.message || "An error occurred while generating the report.",

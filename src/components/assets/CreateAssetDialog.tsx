@@ -181,7 +181,6 @@ export function CreateAssetDialog({ open, onOpenChange, folderId, onSuccess }: C
       setUploadProgress(0);
       onSuccess?.();
     } catch (error) {
-      console.error("Error creating asset:", error);
       toast({
         title: "Error",
         description: "Failed to create asset",

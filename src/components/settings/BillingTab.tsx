@@ -186,11 +186,10 @@ export function BillingTab({ client, isAdmin = false, onUpdate }: BillingTabProp
       // Call onUpdate AFTER we've updated local state
       onUpdate?.();
     } catch (error: any) {
-      console.error("Error saving Stripe IDs:", error);
-      toast({ 
-        title: "Error saving", 
-        description: error.message || "Please try again later", 
-        variant: "destructive" 
+      toast({
+        title: "Error saving",
+        description: error.message || "Please try again later",
+        variant: "destructive"
       });
     } finally {
       setSavingStripeIds(false);
@@ -212,7 +211,6 @@ export function BillingTab({ client, isAdmin = false, onUpdate }: BillingTabProp
         throw new Error("No portal URL returned");
       }
     } catch (error: any) {
-      console.error("Error creating portal session:", error);
       toast({
         title: "Failed to open billing portal",
         description: error.message || "Please try again later",

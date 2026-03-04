@@ -72,7 +72,6 @@ export const SaveOfferDialog = ({ open, onOpenChange, content, defaultTitle }: S
       setTags('');
       setNotes('');
     } catch (error: any) {
-      console.error('Error saving offer:', error);
       toast.error('Failed to save offer: ' + error.message);
     } finally {
       setSaving(false);

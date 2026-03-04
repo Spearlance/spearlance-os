@@ -64,7 +64,6 @@ export const PostSaver = ({ postData, onBack, onComplete }: PostSaverProps) => {
         }, 1500);
       }
     } catch (error: any) {
-      console.error('Error saving post:', error);
       toast({
         title: "Couldn't save post",
         description: error.message,

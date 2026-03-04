@@ -91,7 +91,6 @@ export function PublicAssetManager({ sessionToken, clientName }: PublicAssetMana
       setAssets(assetsData.assets || []);
       setBreadcrumbs(breadcrumbsData.breadcrumbs || []);
     } catch (error) {
-      console.error('Error loading data:', error);
       toast({
         title: "Error",
         description: "Failed to load assets",

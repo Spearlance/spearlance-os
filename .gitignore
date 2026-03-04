@@ -41,3 +41,13 @@ bun.lockb
 *.sln
 *.sw?
 supabase/.temp/
+
+# Sensitive migration files (password hashes, PII)
+supabase/migrations/20260303200000_restore-password-hashes.sql
+
+# One-time migration scripts (already applied)
+scripts/auth-users-insert.sql
+
+# Claude Code artifacts
+.claude/worktrees/
+.claude/progress/

@@ -102,7 +102,6 @@ export default function SupportDocsArticle() {
         }
       }
     } catch (error: any) {
-      console.error("Error fetching article:", error);
       toast.error("Failed to load article");
       navigate("/support/docs");
     } finally {
@@ -143,7 +142,6 @@ export default function SupportDocsArticle() {
       setFeedback(helpful);
       toast.success("Thank you for your feedback!");
     } catch (error: any) {
-      console.error("Error submitting feedback:", error);
       toast.error("Failed to submit feedback");
     }
   };

@@ -54,7 +54,6 @@ export function CreateFolderDialog({
       onSuccess?.();
       onOpenChange(false);
     } catch (error) {
-      console.error("Error creating folder:", error);
       toast({
         title: "Error",
         description: "Failed to create folder",

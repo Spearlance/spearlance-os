@@ -302,7 +302,6 @@ export default function Settings() {
                         });
                       }}
                       onCheckError={(error) => {
-                        console.error("Calendar connection error:", error);
                         toast({
                           title: "Connection Error",
                           description: "Failed to connect calendar. Please try again.",

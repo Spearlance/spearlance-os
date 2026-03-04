@@ -77,7 +77,6 @@ export function PublicCreateFolderDialog({
       onFolderCreated();
 
     } catch (error) {
-      console.error('Create folder error:', error);
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to create folder",

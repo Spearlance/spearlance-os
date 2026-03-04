@@ -211,7 +211,6 @@ export function StageDiscovery({ submissionId, initialData, onContinue, onSaveEx
         toast({ title: "Progress saved" });
       }
     } catch (error) {
-      console.error("Save error:", error);
       setSaveStatus("idle");
       toast({ title: "Error saving", variant: "destructive" });
     }
@@ -277,7 +276,6 @@ export function StageDiscovery({ submissionId, initialData, onContinue, onSaveEx
           );
 
         if (servicesError) {
-          console.error("Error creating services:", servicesError);
           toast({
             title: "Error",
             description: servicesError.message || "Failed to save services",
@@ -323,8 +321,7 @@ export function StageDiscovery({ submissionId, initialData, onContinue, onSaveEx
             .insert(newGoals);
 
           if (goalsError) {
-            console.error("Error syncing goals to quarterly_goals:", goalsError);
-            // Don't block progression if goals fail - just log it
+            // Don't block progression if goals fail
             toast({
               title: "Warning",
               description: "Goals saved in LaunchPad but couldn't sync to Goals tracker",
@@ -347,7 +344,6 @@ export function StageDiscovery({ submissionId, initialData, onContinue, onSaveEx
 
       onContinue();
     } catch (error) {
-      console.error("Continue error:", error);
       toast({ title: "Error advancing stage", variant: "destructive" });
     } finally {
       setIsSaving(false);

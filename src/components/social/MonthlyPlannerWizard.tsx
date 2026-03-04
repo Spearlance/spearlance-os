@@ -168,7 +168,6 @@ export const MonthlyPlannerWizard = ({
       }, 2000);
 
     } catch (error: any) {
-      console.error('Error generating monthly plan:', error);
       toast({
         title: "Generation Failed",
         description: error.message || "Failed to generate monthly plan. Please try again.",

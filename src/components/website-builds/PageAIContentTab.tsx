@@ -108,7 +108,6 @@ export default function PageAIContentTab({
         toast.success("Content generated successfully");
       }
     } catch (error) {
-      console.error("Error generating content:", error);
       toast.error("Failed to generate content");
     } finally {
       setIsGenerating(false);

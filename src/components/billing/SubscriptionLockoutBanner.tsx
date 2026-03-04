@@ -23,7 +23,6 @@ export const SubscriptionLockoutBanner = () => {
         window.location.href = data.url;
       }
     } catch (error) {
-      console.error("Error opening billing portal:", error);
       toast.error("Failed to open billing portal. Please contact support.");
     }
   };

@@ -60,7 +60,6 @@ export function AddCampaignDialog({ channelId, channelName, onSuccess, trigger }
       setOpen(false);
       onSuccess();
     } catch (error) {
-      console.error("Error creating campaign:", error);
       toast({
         title: "Error",
         description: "Failed to create campaign",

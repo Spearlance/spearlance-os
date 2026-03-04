@@ -71,7 +71,6 @@ export default function CreateChannelTaskDialog({
       if (error) throw error;
       setUsers(data || []);
     } catch (error) {
-      console.error("Error loading users:", error);
       toast({
         variant: "destructive",
         title: "Error",
@@ -189,7 +188,6 @@ export default function CreateChannelTaskDialog({
       onOpenChange(false);
       onSuccess?.();
     } catch (error) {
-      console.error("Error creating task:", error);
       toast({
         variant: "destructive",
         title: "Error",

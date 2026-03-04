@@ -45,7 +45,6 @@ export function ApiErrorsTab({ clients }: ApiErrorsTabProps) {
       if (error) throw error;
       setErrors(data || []);
     } catch (err) {
-      console.error('Error loading API errors:', err);
       toast({
         title: "Error loading API errors",
         description: err instanceof Error ? err.message : 'Unknown error',
@@ -75,7 +74,6 @@ export function ApiErrorsTab({ clients }: ApiErrorsTabProps) {
       toast({ title: "Error marked as resolved" });
       loadErrors();
     } catch (err) {
-      console.error('Error resolving:', err);
       toast({
         title: "Failed to resolve error",
         variant: "destructive",

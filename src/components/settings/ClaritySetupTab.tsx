@@ -103,7 +103,6 @@ export function ClaritySetupTab({ client }: ClaritySetupTabProps) {
         });
       }
     } catch (error: any) {
-      console.error('Error testing connection:', error);
       setTestResult('error');
       toast({
         title: "Connection failed",
@@ -158,7 +157,6 @@ export function ClaritySetupTab({ client }: ClaritySetupTabProps) {
         description: "Microsoft Clarity settings have been updated",
       });
     } catch (error: any) {
-      console.error('Error saving config:', error);
       toast({
         title: "Error saving configuration",
         description: error.message,
@@ -236,7 +234,6 @@ export function ClaritySetupTab({ client }: ClaritySetupTabProps) {
         });
       }
     } catch (error: any) {
-      console.error('Error syncing:', error);
       toast({
         title: "Sync failed",
         description: error.message || "Could not sync Clarity data",

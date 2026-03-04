@@ -84,7 +84,6 @@ export const TopicSelector = ({ onComplete }: TopicSelectorProps) => {
 
       setIdeas(data.ideas || []);
     } catch (error: any) {
-      console.error('Error generating ideas:', error);
       toast({
         title: "Couldn't generate ideas",
         description: error.message || "Please try again",

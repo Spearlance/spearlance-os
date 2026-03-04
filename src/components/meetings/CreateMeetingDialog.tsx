@@ -101,7 +101,6 @@ export function CreateMeetingDialog({ open, onOpenChange }: CreateMeetingDialogP
       });
       navigate("/meetings");
     } catch (error) {
-      console.error("Error creating meeting:", error);
       toast({
         title: "Error",
         description: "Failed to create meeting",

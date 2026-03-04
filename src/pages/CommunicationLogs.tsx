@@ -121,7 +121,6 @@ export default function CommunicationLogs() {
 
       loadLogs();
     } catch (error) {
-      console.error('Error syncing from Front:', error);
       toast({
         title: "Sync failed",
         description: "Failed to sync conversations from Front",

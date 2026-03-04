@@ -78,7 +78,6 @@ export function TaskColumnManager() {
       });
       setHasUnsavedChanges(false);
     } catch (error) {
-      console.error("Error loading columns:", error);
       toast({
         title: "Error",
         description: "Failed to load task columns",
@@ -221,7 +220,6 @@ export function TaskColumnManager() {
       // Trigger update event for Tasks.tsx
       window.dispatchEvent(new CustomEvent('taskColumnsUpdated'));
     } catch (error: any) {
-      console.error("Error updating column:", error);
       toast({
         title: "Error",
         description: error.message || "Failed to update column",
@@ -389,7 +387,6 @@ export function TaskColumnManager() {
               .eq("id", column.id);
 
             if (error) {
-              console.error("Error in phase 1 reorder:", error);
               throw error;
             }
           }
@@ -404,7 +401,6 @@ export function TaskColumnManager() {
               .eq("id", column.id);
 
             if (error) {
-              console.error("Error in phase 2 reorder:", error);
               throw error;
             }
           }
@@ -422,7 +418,6 @@ export function TaskColumnManager() {
       // Trigger update event for Tasks.tsx
       window.dispatchEvent(new CustomEvent('taskColumnsUpdated'));
     } catch (error: any) {
-      console.error("Error saving settings:", error);
       toast({
         title: "Error",
         description: error.message || "Failed to save settings",

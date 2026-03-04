@@ -108,7 +108,6 @@ export function InviteTeamMemberDialog({ clientId, canManageTeam, onInviteSucces
       setOpen(false);
       onInviteSuccess();
     } catch (error: any) {
-      console.error("Error inviting team member:", error);
       toast({
         title: "Failed to invite team member",
         description: error.message || "Please try again",

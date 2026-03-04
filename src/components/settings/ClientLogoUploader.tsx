@@ -79,7 +79,6 @@ export function ClientLogoUploader({
         description: "Your logo has been updated successfully",
       });
     } catch (error) {
-      console.error("Error uploading logo:", error);
       toast({
         title: "Upload failed",
         description: "Failed to upload logo. Please try again.",
@@ -107,7 +106,6 @@ export function ClientLogoUploader({
         description: "Your logo has been removed",
       });
     } catch (error) {
-      console.error("Error removing logo:", error);
       toast({
         title: "Error",
         description: "Failed to remove logo",

@@ -76,7 +76,6 @@ export function BlogArticleEditor({
         });
       }
     } catch (error) {
-      console.error('Error loading post:', error);
       toast.error("Failed to load post");
     } finally {
       setLoading(false);
@@ -112,7 +111,6 @@ export function BlogArticleEditor({
       onSave?.();
       onOpenChange(false);
     } catch (error) {
-      console.error('Error saving post:', error);
       toast.error("Failed to save changes");
     } finally {
       setSaving(false);

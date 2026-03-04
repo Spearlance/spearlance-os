@@ -50,7 +50,6 @@ export default function MoodBoardGallery({ moodBoards, onRefresh }: MoodBoardGal
 
       onRefresh();
     } catch (error: any) {
-      console.error("Error deleting mood board:", error);
       toast({
         title: "Error",
         description: "Failed to delete mood board",

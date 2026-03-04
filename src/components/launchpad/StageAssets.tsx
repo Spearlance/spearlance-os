@@ -276,7 +276,6 @@ export function StageAssets({ submissionId, onContinue, onBack, onSaveExit }: St
 
       return { id: asset.id, name: file.name, category };
     } catch (error) {
-      console.error("Upload error:", error);
       toast({ title: "Error uploading file", variant: "destructive" });
       return null;
     }
@@ -342,7 +341,6 @@ export function StageAssets({ submissionId, onContinue, onBack, onSaveExit }: St
 
       onContinue();
     } catch (error) {
-      console.error("Continue error:", error);
       toast({ title: "Error advancing stage", variant: "destructive" });
     } finally {
       setIsSaving(false);

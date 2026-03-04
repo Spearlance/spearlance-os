@@ -42,7 +42,6 @@ export function BlogPostsList({ status }: BlogPostsListProps) {
 
       setPosts(data || []);
     } catch (error) {
-      console.error('Error loading posts:', error);
       toast.error("Failed to load blog posts");
     } finally {
       setLoading(false);
@@ -63,7 +62,6 @@ export function BlogPostsList({ status }: BlogPostsListProps) {
       toast.success("Blog post deleted");
       loadPosts();
     } catch (error) {
-      console.error('Error deleting post:', error);
       toast.error("Failed to delete blog post");
     }
   };

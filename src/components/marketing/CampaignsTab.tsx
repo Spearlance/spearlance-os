@@ -45,7 +45,6 @@ export function CampaignsTab({ channelId, channelName, isAdminOrFMM }: Campaigns
       if (error) throw error;
       setCampaigns(data || []);
     } catch (error) {
-      console.error("Error loading campaigns:", error);
       toast({
         title: "Error",
         description: "Failed to load campaigns",
@@ -71,7 +70,6 @@ export function CampaignsTab({ channelId, channelName, isAdminOrFMM }: Campaigns
       });
       loadCampaigns();
     } catch (error) {
-      console.error("Error updating campaign status:", error);
       toast({
         title: "Error",
         description: "Failed to update campaign status",
@@ -95,7 +93,6 @@ export function CampaignsTab({ channelId, channelName, isAdminOrFMM }: Campaigns
       });
       loadCampaigns();
     } catch (error) {
-      console.error("Error deleting campaign:", error);
       toast({
         title: "Error",
         description: "Failed to delete campaign",

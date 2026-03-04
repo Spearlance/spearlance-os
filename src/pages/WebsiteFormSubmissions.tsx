@@ -90,7 +90,6 @@ export default function WebsiteFormSubmissions() {
 
       setSubmissions(data || []);
     } catch (error) {
-      console.error('Error fetching submissions:', error);
       toast({
         title: "Error",
         description: "Failed to load form submissions",
@@ -124,7 +123,6 @@ export default function WebsiteFormSubmissions() {
         description: "Submission status updated",
       });
     } catch (error) {
-      console.error('Error updating status:', error);
       toast({
         title: "Error",
         description: "Failed to update status",
@@ -153,7 +151,6 @@ export default function WebsiteFormSubmissions() {
         description: "Notes saved",
       });
     } catch (error) {
-      console.error('Error saving notes:', error);
       toast({
         title: "Error",
         description: "Failed to save notes",

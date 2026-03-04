@@ -127,7 +127,6 @@ export const MonthlyCalendarTable = ({ posts, onRefresh, selectedMonth, selected
       setSelectedPosts([]);
       onRefresh();
     } catch (error: any) {
-      console.error('Error generating captions:', error);
       toast({
         title: "Generation Failed",
         description: error.message || "Failed to generate captions.",
@@ -165,7 +164,6 @@ export const MonthlyCalendarTable = ({ posts, onRefresh, selectedMonth, selected
       setSelectedPosts([]);
       onRefresh();
     } catch (error: any) {
-      console.error('Error generating images:', error);
       toast({
         title: "Generation Failed",
         description: error.message || "Failed to generate images.",
@@ -220,7 +218,6 @@ export const MonthlyCalendarTable = ({ posts, onRefresh, selectedMonth, selected
         setDrawerOpen(true);
       }
     } catch (error: any) {
-      console.error('Error creating post:', error);
       toast({
         title: "Creation Failed",
         description: error.message || "Failed to create post.",

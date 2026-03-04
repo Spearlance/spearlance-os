@@ -114,7 +114,6 @@ export function AnalyticsSetupTab({ client }: AnalyticsSetupTabProps) {
       // Update local client object
       client.website_url = websiteUrl.trim();
     } catch (error) {
-      console.error('Error updating website URL:', error);
       toast({
         title: "Error",
         description: "Failed to save website URL",
@@ -172,7 +171,6 @@ export function AnalyticsSetupTab({ client }: AnalyticsSetupTabProps) {
         description: "Your analytics tracking key has been created",
       });
     } catch (error) {
-      console.error('Error generating key:', error);
       toast({
         title: "Error",
         description: "Failed to generate workspace key",

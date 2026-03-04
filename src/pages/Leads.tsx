@@ -84,7 +84,6 @@ export default function Leads() {
       if (error) throw error;
       setLeads(data || []);
     } catch (error) {
-      console.error('Error fetching leads:', error);
       toast.error('Failed to load leads');
     } finally {
       setLoading(false);
@@ -110,7 +109,6 @@ export default function Leads() {
 
       toast.success('Lead status updated');
     } catch (error) {
-      console.error('Error updating lead:', error);
       toast.error('Failed to update lead status');
     }
   };

@@ -72,7 +72,6 @@ export function LaunchPadWizard() {
         setShowModeSelector(true);
       }
     } catch (error) {
-      console.error("[LaunchPad] Error loading submission:", error);
       toast({ title: "Error loading Launchpad", variant: "destructive" });
     } finally {
       setLoading(false);
@@ -97,7 +96,6 @@ export function LaunchPadWizard() {
       // Reload to get fresh data
       loadOrCreateSubmission();
     } catch (error) {
-      console.error("Error changing stage:", error);
       toast({
         title: "Error changing stage",
         variant: "destructive",
@@ -131,7 +129,6 @@ export function LaunchPadWizard() {
 
       handleStageChange("complete");
     } catch (error) {
-      console.error("Finish error:", error);
       toast({ title: "Error completing Launchpad", variant: "destructive" });
     }
   };
@@ -179,7 +176,6 @@ export function LaunchPadWizard() {
 
       setShowModeSelector(false);
     } catch (error) {
-      console.error("Error setting mode:", error);
       toast({ title: "Error", variant: "destructive" });
     }
   };
@@ -200,7 +196,6 @@ export function LaunchPadWizard() {
         description: "Your progress has been saved.",
       });
     } catch (error) {
-      console.error("Error switching mode:", error);
       toast({ title: "Error switching mode", variant: "destructive" });
     }
   };
