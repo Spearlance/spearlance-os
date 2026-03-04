@@ -1,5 +1,5 @@
-// Toast components removed - using SaveStatusIndicator in header instead
 import { lazy, Suspense } from "react";
+import { Toaster as SonnerToaster } from "sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
@@ -159,6 +159,7 @@ const App = () => (
         </FeatureFlagProvider>
       </TooltipProvider>
     </HelmetProvider>
+    <SonnerToaster richColors position="top-right" duration={3000} />
   </QueryClientProvider>
 );
 
