@@ -120,7 +120,7 @@ export const useAnalyzePage = () => {
         description: `Overall grade: ${getLetterGrade(data.overall_score)}${avatarInfo}`,
       });
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       const errorMessage = error.message || "Failed to analyze page";
       
       if (errorMessage.includes('Avatar not found')) {
@@ -169,7 +169,7 @@ export const useDeleteAnalysis = () => {
       queryClient.invalidateQueries({ queryKey: ['page-analysis'] });
       toast({ title: "Analysis disregarded" });
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
         title: "Error",
         description: error.message || "Failed to disregard analysis.",

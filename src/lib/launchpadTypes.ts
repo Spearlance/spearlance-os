@@ -44,7 +44,7 @@ export interface DiscoveryData {
     recording_asset_id?: string;
     completed: boolean;
     transcript?: string;
-    summary?: any;
+    summary?: string | Record<string, unknown>;
   };
 }
 

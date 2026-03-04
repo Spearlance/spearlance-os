@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { Json } from "@/integrations/supabase/types";
 
 export interface Notification {
   id: string;
@@ -8,7 +9,7 @@ export interface Notification {
   type: string;
   title: string | null;
   description: string | null;
-  payload_json: any;
+  payload_json: Json;
   read_flag: boolean;
   action_url: string | null;
   client_id: string | null;
