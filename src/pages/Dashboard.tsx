@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { useClient } from "@/contexts/ClientContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,24 +15,15 @@ import { toast } from "sonner";
 import { WebsiteUpsellBanner } from "@/components/billing/WebsiteUpsellBanner";
 import { PricingModal } from "@/components/billing/PricingModal";
 
-interface DashboardStats {
-  nextMeeting?: any;
-  taskCounts: {
-    to_do: number;
-    in_progress: number;
-  };
-  formSubmissions: {
-    last30Days: number;
-    last7Days: number;
-    previous30Days: number;
-    previous7Days: number;
-    trend30Days: 'up' | 'down' | 'neutral';
-    trend7Days: 'up' | 'down' | 'neutral';
-    percentChange30Days: number;
-    percentChange7Days: number;
-  };
-  recentMeetings: any[];
-  marketingTools: any[];
+interface FormSubmissions {
+  last30Days: number;
+  last7Days: number;
+  previous30Days: number;
+  previous7Days: number;
+  trend30Days: 'up' | 'down' | 'neutral';
+  trend7Days: 'up' | 'down' | 'neutral';
+  percentChange30Days: number;
+  percentChange7Days: number;
 }
 
 interface PriorityAction {
@@ -54,30 +46,154 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const { selectedClient, loading: clientLoading } = useClient();
   const { isComplete, loading: launchPadLoading } = useLaunchPadStatus();
-  const [stats, setStats] = useState<DashboardStats>({
-    taskCounts: { to_do: 0, in_progress: 0 },
-    formSubmissions: {
-      last30Days: 0,
-      last7Days: 0,
-      previous30Days: 0,
-      previous7Days: 0,
-      trend30Days: 'neutral',
-      trend7Days: 'neutral',
-      percentChange30Days: 0,
-      percentChange7Days: 0,
-    },
-    recentMeetings: [],
-    marketingTools: [],
-  });
   const [actionPlan, setActionPlan] = useState<DailyActionPlan | null>(null);
-  const [dataLoading, setDataLoading] = useState(true);
   const [generatingPlan, setGeneratingPlan] = useState(false);
   const [generatingStory, setGeneratingStory] = useState(false);
   const [pricingModalOpen, setPricingModalOpen] = useState(false);
 
+  // Task counts query
+  const { data: taskCounts = { to_do: 0, in_progress: 0 }, isLoading: tasksLoading } = useQuery({
+    queryKey: ['dashboard-tasks', selectedClient?.id],
+    enabled: !!selectedClient,
+    queryFn: async () => {
+      const { data: tasks } = await supabase
+        .from('tasks')
+        .select('status')
+        .eq('client_id', selectedClient!.id);
+      return {
+        to_do: tasks?.filter(t => t.status === 'to_do').length || 0,
+        in_progress: tasks?.filter(t => t.status === 'in_progress').length || 0,
+      };
+    },
+  });
+
+  // Form submissions query (all 4 date ranges + trend calculations)
+  const { data: formSubmissions = {
+    last30Days: 0,
+    last7Days: 0,
+    previous30Days: 0,
+    previous7Days: 0,
+    trend30Days: 'neutral' as const,
+    trend7Days: 'neutral' as const,
+    percentChange30Days: 0,
+    percentChange7Days: 0,
+  }, isLoading: submissionsLoading } = useQuery({
+    queryKey: ['dashboard-submissions', selectedClient?.id],
+    enabled: !!selectedClient,
+    queryFn: async (): Promise<FormSubmissions> => {
+      const now = new Date();
+      const last7Days = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      const last30Days = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      const previous7DaysStart = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+      const previous30DaysStart = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
+
+      const [s30, s7, sp30, sp7] = await Promise.all([
+        supabase
+          .from('website_form_submissions')
+          .select('submitted_at')
+          .eq('client_id', selectedClient!.id)
+          .gte('submitted_at', last30Days.toISOString()),
+        supabase
+          .from('website_form_submissions')
+          .select('submitted_at')
+          .eq('client_id', selectedClient!.id)
+          .gte('submitted_at', last7Days.toISOString()),
+        supabase
+          .from('website_form_submissions')
+          .select('submitted_at')
+          .eq('client_id', selectedClient!.id)
+          .gte('submitted_at', previous30DaysStart.toISOString())
+          .lt('submitted_at', last30Days.toISOString()),
+        supabase
+          .from('website_form_submissions')
+          .select('submitted_at')
+          .eq('client_id', selectedClient!.id)
+          .gte('submitted_at', previous7DaysStart.toISOString())
+          .lt('submitted_at', last7Days.toISOString()),
+      ]);
+
+      const count30Days = s30.data?.length || 0;
+      const count7Days = s7.data?.length || 0;
+      const countPrevious30Days = sp30.data?.length || 0;
+      const countPrevious7Days = sp7.data?.length || 0;
+
+      const calculateTrend = (current: number, previous: number) => {
+        if (previous === 0 && current === 0) return { trend: 'neutral' as const, percentChange: 0 };
+        if (previous === 0) return { trend: 'up' as const, percentChange: 100 };
+        const change = ((current - previous) / previous) * 100;
+        return {
+          trend: change > 0 ? 'up' as const : change < 0 ? 'down' as const : 'neutral' as const,
+          percentChange: Math.round(Math.abs(change)),
+        };
+      };
+
+      const trend30 = calculateTrend(count30Days, countPrevious30Days);
+      const trend7 = calculateTrend(count7Days, countPrevious7Days);
+
+      return {
+        last30Days: count30Days,
+        last7Days: count7Days,
+        previous30Days: countPrevious30Days,
+        previous7Days: countPrevious7Days,
+        trend30Days: trend30.trend,
+        trend7Days: trend7.trend,
+        percentChange30Days: trend30.percentChange,
+        percentChange7Days: trend7.percentChange,
+      };
+    },
+  });
+
+  // Recent meetings query
+  const { data: recentMeetings = [], isLoading: meetingsLoading } = useQuery({
+    queryKey: ['dashboard-recent-meetings', selectedClient?.id],
+    enabled: !!selectedClient,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('meetings')
+        .select('*')
+        .eq('client_id', selectedClient!.id)
+        .order('date_time', { ascending: false })
+        .limit(3);
+      return data || [];
+    },
+  });
+
+  // Next meeting query
+  const { data: nextMeeting } = useQuery({
+    queryKey: ['dashboard-next-meeting', selectedClient?.id],
+    enabled: !!selectedClient,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('meetings')
+        .select('*')
+        .eq('client_id', selectedClient!.id)
+        .gte('date_time', new Date().toISOString())
+        .order('date_time', { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      return data || null;
+    },
+  });
+
+  // Marketing tools query
+  const { data: marketingTools = [] } = useQuery({
+    queryKey: ['dashboard-marketing-tools', selectedClient?.id],
+    enabled: !!selectedClient,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('marketing_tools')
+        .select('id, name, url, logo_url, category')
+        .eq('client_id', selectedClient!.id)
+        .order('name')
+        .limit(8);
+      return data || [];
+    },
+  });
+
+  const dataLoading = tasksLoading || submissionsLoading || meetingsLoading;
+
   useEffect(() => {
     if (selectedClient) {
-      loadDashboardData();
       loadDailyActionPlan();
     }
   }, [selectedClient]);
@@ -150,131 +266,6 @@ const Dashboard = () => {
       toast.error("Generation Failed", { description: "Could not generate the avatar story. Please try again." });
     } finally {
       setGeneratingStory(false);
-    }
-  };
-
-  const loadDashboardData = async () => {
-    if (!selectedClient) return;
-
-    try {
-      setDataLoading(true);
-
-      // Load task counts
-      const { data: tasks } = await supabase
-        .from('tasks')
-        .select('status')
-        .eq('client_id', selectedClient.id);
-
-      const taskCounts = {
-        to_do: tasks?.filter(t => t.status === 'to_do').length || 0,
-        in_progress: tasks?.filter(t => t.status === 'in_progress').length || 0,
-      };
-
-      // Calculate date ranges for form submissions
-      const now = new Date();
-      const last7Days = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-      const last30Days = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-      const previous7DaysStart = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
-      const previous30DaysStart = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
-
-      // Query form submissions for past 30 days
-      const { data: submissions30Days } = await supabase
-        .from('website_form_submissions')
-        .select('submitted_at')
-        .eq('client_id', selectedClient.id)
-        .gte('submitted_at', last30Days.toISOString());
-
-      // Query form submissions for past 7 days
-      const { data: submissions7Days } = await supabase
-        .from('website_form_submissions')
-        .select('submitted_at')
-        .eq('client_id', selectedClient.id)
-        .gte('submitted_at', last7Days.toISOString());
-
-      // Query previous 30 days (for comparison)
-      const { data: submissionsPrevious30Days } = await supabase
-        .from('website_form_submissions')
-        .select('submitted_at')
-        .eq('client_id', selectedClient.id)
-        .gte('submitted_at', previous30DaysStart.toISOString())
-        .lt('submitted_at', last30Days.toISOString());
-
-      // Query previous 7 days (for comparison)
-      const { data: submissionsPrevious7Days } = await supabase
-        .from('website_form_submissions')
-        .select('submitted_at')
-        .eq('client_id', selectedClient.id)
-        .gte('submitted_at', previous7DaysStart.toISOString())
-        .lt('submitted_at', last7Days.toISOString());
-
-      // Calculate counts
-      const count30Days = submissions30Days?.length || 0;
-      const count7Days = submissions7Days?.length || 0;
-      const countPrevious30Days = submissionsPrevious30Days?.length || 0;
-      const countPrevious7Days = submissionsPrevious7Days?.length || 0;
-
-      // Calculate trends and percent changes
-      const calculateTrend = (current: number, previous: number) => {
-        if (previous === 0 && current === 0) return { trend: 'neutral' as const, percentChange: 0 };
-        if (previous === 0) return { trend: 'up' as const, percentChange: 100 };
-        const change = ((current - previous) / previous) * 100;
-        return {
-          trend: change > 0 ? 'up' as const : change < 0 ? 'down' as const : 'neutral' as const,
-          percentChange: Math.round(Math.abs(change))
-        };
-      };
-
-      const trend30 = calculateTrend(count30Days, countPrevious30Days);
-      const trend7 = calculateTrend(count7Days, countPrevious7Days);
-
-      const formSubmissions = {
-        last30Days: count30Days,
-        last7Days: count7Days,
-        previous30Days: countPrevious30Days,
-        previous7Days: countPrevious7Days,
-        trend30Days: trend30.trend,
-        trend7Days: trend7.trend,
-        percentChange30Days: trend30.percentChange,
-        percentChange7Days: trend7.percentChange,
-      };
-
-      // Load recent meetings
-      const { data: meetings } = await supabase
-        .from('meetings')
-        .select('*')
-        .eq('client_id', selectedClient.id)
-        .order('date_time', { ascending: false })
-        .limit(3);
-
-      // Load next meeting
-      const { data: nextMeeting } = await supabase
-        .from('meetings')
-        .select('*')
-        .eq('client_id', selectedClient.id)
-        .gte('date_time', new Date().toISOString())
-        .order('date_time', { ascending: true })
-        .limit(1)
-        .maybeSingle();
-
-      // Load marketing tools
-      const { data: tools } = await supabase
-        .from('marketing_tools')
-        .select('id, name, url, logo_url, category')
-        .eq('client_id', selectedClient.id)
-        .order('name')
-        .limit(8);
-
-      setStats({
-        nextMeeting: nextMeeting || undefined,
-        taskCounts: { to_do: taskCounts.to_do, in_progress: taskCounts.in_progress },
-        formSubmissions,
-        recentMeetings: meetings || [],
-        marketingTools: tools || [],
-      });
-    } catch (error) {
-      console.error('Error loading dashboard data:', error);
-    } finally {
-      setDataLoading(false);
     }
   };
 
@@ -455,7 +446,7 @@ const Dashboard = () => {
             <CheckSquare className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.taskCounts.to_do}</div>
+            <div className="text-2xl font-bold">{taskCounts.to_do}</div>
             <p className="text-xs text-muted-foreground">Tasks pending</p>
           </CardContent>
         </Card>
@@ -466,7 +457,7 @@ const Dashboard = () => {
             <CheckSquare className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.taskCounts.in_progress}</div>
+            <div className="text-2xl font-bold">{taskCounts.in_progress}</div>
             <p className="text-xs text-muted-foreground">Active tasks</p>
           </CardContent>
         </Card>
@@ -475,10 +466,10 @@ const Dashboard = () => {
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Form Submissions</CardTitle>
             <div className="flex items-center gap-1">
-              {stats.formSubmissions.trend30Days === 'up' && (
+              {formSubmissions.trend30Days === 'up' && (
                 <ArrowUp className="h-4 w-4 text-green-500" />
               )}
-              {stats.formSubmissions.trend30Days === 'down' && (
+              {formSubmissions.trend30Days === 'down' && (
                 <ArrowDown className="h-4 w-4 text-red-500" />
               )}
               <FileText className="h-4 w-4 text-muted-foreground" />
@@ -487,24 +478,24 @@ const Dashboard = () => {
           <CardContent>
             <div className="space-y-2">
               <div>
-                <div className="text-2xl font-bold">{stats.formSubmissions.last30Days}</div>
+                <div className="text-2xl font-bold">{formSubmissions.last30Days}</div>
                 <div className="flex items-center gap-1 text-xs text-muted-foreground">
                   <span>Past 30 days</span>
-                  {stats.formSubmissions.trend30Days !== 'neutral' && (
-                    <span className={stats.formSubmissions.trend30Days === 'up' ? 'text-green-500' : 'text-red-500'}>
-                      {stats.formSubmissions.trend30Days === 'up' ? '↑' : '↓'} {stats.formSubmissions.percentChange30Days}%
+                  {formSubmissions.trend30Days !== 'neutral' && (
+                    <span className={formSubmissions.trend30Days === 'up' ? 'text-green-500' : 'text-red-500'}>
+                      {formSubmissions.trend30Days === 'up' ? '↑' : '↓'} {formSubmissions.percentChange30Days}%
                     </span>
                   )}
                 </div>
               </div>
               <div className="pt-1 border-t">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">{stats.formSubmissions.last7Days}</span>
+                  <span className="text-sm font-medium">{formSubmissions.last7Days}</span>
                   <div className="flex items-center gap-1">
                     <span className="text-xs text-muted-foreground">Past 7 days</span>
-                    {stats.formSubmissions.trend7Days !== 'neutral' && (
-                      <span className={`text-xs font-medium ${stats.formSubmissions.trend7Days === 'up' ? 'text-green-500' : 'text-red-500'}`}>
-                        {stats.formSubmissions.trend7Days === 'up' ? '↑' : '↓'} {stats.formSubmissions.percentChange7Days}%
+                    {formSubmissions.trend7Days !== 'neutral' && (
+                      <span className={`text-xs font-medium ${formSubmissions.trend7Days === 'up' ? 'text-green-500' : 'text-red-500'}`}>
+                        {formSubmissions.trend7Days === 'up' ? '↑' : '↓'} {formSubmissions.percentChange7Days}%
                       </span>
                     )}
                   </div>
@@ -521,12 +512,12 @@ const Dashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="text-sm font-medium">
-              {stats.nextMeeting
-                ? new Date(stats.nextMeeting.date_time).toLocaleDateString()
+              {nextMeeting
+                ? new Date(nextMeeting.date_time).toLocaleDateString()
                 : "No upcoming"}
             </div>
             <p className="text-xs text-muted-foreground">
-              {stats.nextMeeting ? "Scheduled" : "meetings"}
+              {nextMeeting ? "Scheduled" : "meetings"}
             </p>
           </CardContent>
         </Card>
@@ -602,10 +593,10 @@ const Dashboard = () => {
             <CardDescription>Latest meeting summaries</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {stats.recentMeetings.length === 0 ? (
+            {recentMeetings.length === 0 ? (
               <p className="text-sm text-muted-foreground">No meetings yet</p>
             ) : (
-              stats.recentMeetings.map((meeting) => (
+              recentMeetings.map((meeting) => (
                 <div 
                   key={meeting.id} 
                   className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted cursor-pointer transition-colors"
@@ -631,7 +622,7 @@ const Dashboard = () => {
           </CardContent>
         </Card>
 
-        {stats.marketingTools.length > 0 && (
+        {marketingTools.length > 0 && (
           <Card className="shadow-elegant">
             <CardHeader>
               <div className="flex items-center justify-between">
@@ -650,7 +641,7 @@ const Dashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 gap-3">
-                {stats.marketingTools.slice(0, 4).map((tool) => (
+                {marketingTools.slice(0, 4).map((tool) => (
                   <Button
                     key={tool.id}
                     variant="outline"
