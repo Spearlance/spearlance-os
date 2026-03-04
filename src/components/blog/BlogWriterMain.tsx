@@ -23,13 +23,14 @@ import { BlogPostsList } from "./BlogPostsList";
 import { BlogCalendarTable } from "./BlogCalendarTable";
 import { BlogCalendarGrid } from "./BlogCalendarGrid";
 import { BlogWeeklyCalendarView } from "./BlogWeeklyCalendarView";
+import { BlogCreationDialog } from "./BlogCreationDialog";
 import { CalendarViewSelector } from "@/components/social/CalendarViewSelector";
-import { toast } from "sonner";
 
 export function BlogWriterMain() {
   const { selectedClient, loading: clientLoading } = useClient();
   const [activeTab, setActiveTab] = useState<'planner' | 'drafts' | 'strategy'>('planner');
   const [showMonthlyWizard, setShowMonthlyWizard] = useState(false);
+  const [showSinglePostDialog, setShowSinglePostDialog] = useState(false);
   const [generationType, setGenerationType] = useState<'all' | 'missing'>('all');
   const [viewType, setViewType] = useState<'table' | 'monthly' | 'weekly'>('table');
 
@@ -207,7 +208,7 @@ export function BlogWriterMain() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-64">
-                  <DropdownMenuItem onClick={() => toast.info("Manual post creation coming soon")}>
+                  <DropdownMenuItem onClick={() => setShowSinglePostDialog(true)}>
                     <FileText className="h-4 w-4 mr-2" />
                     <div className="flex-1">
                       <div>Write Single Post</div>
@@ -305,7 +306,14 @@ export function BlogWriterMain() {
         </TabsContent>
       </Tabs>
 
-      <BlogMonthlyGenerator 
+      <BlogCreationDialog
+        open={showSinglePostDialog}
+        onOpenChange={setShowSinglePostDialog}
+        onComplete={refetch}
+        creationType="single"
+      />
+
+      <BlogMonthlyGenerator
         clientId={selectedClient.id}
         open={showMonthlyWizard}
         onOpenChange={setShowMonthlyWizard}

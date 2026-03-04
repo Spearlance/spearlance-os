@@ -6,7 +6,6 @@ import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { PostManagementDrawer } from "./PostManagementDrawer";
 import { supabase } from "@/integrations/supabase/client";
 import { useClient } from "@/contexts/ClientContext";
-import { toast } from "sonner";
 import { parseUTCDate } from "@/lib/utils";
 
 interface Post {
@@ -25,13 +24,15 @@ interface WeeklyCalendarViewProps {
   onRefresh: () => void;
   selectedMonth: number;
   selectedYear: number;
+  onAddPost?: () => void;
 }
 
-export const WeeklyCalendarView = ({ 
-  posts, 
-  onRefresh, 
-  selectedMonth, 
-  selectedYear 
+export const WeeklyCalendarView = ({
+  posts,
+  onRefresh,
+  selectedMonth,
+  selectedYear,
+  onAddPost,
 }: WeeklyCalendarViewProps) => {
   const { selectedClient } = useClient();
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
@@ -101,8 +102,8 @@ export const WeeklyCalendarView = ({
     }
   };
 
-  const handleAddPost = (date: Date) => {
-    toast('Add post functionality coming soon');
+  const handleAddPost = (_date: Date) => {
+    onAddPost?.();
   };
 
   const weekDays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];

@@ -247,21 +247,23 @@ const SocialMedia = () => {
           )}
           
           {viewType === 'monthly' && (
-            <MonthlyCalendarGrid 
-              posts={monthlyPosts || []} 
+            <MonthlyCalendarGrid
+              posts={monthlyPosts || []}
               onRefresh={refetch}
               selectedMonth={selectedMonth}
               selectedYear={selectedYear}
               activeStrategy={activeStrategy}
+              onAddPost={() => setShowPostCreator(true)}
             />
           )}
-          
+
           {viewType === 'weekly' && (
-            <WeeklyCalendarView 
-              posts={monthlyPosts || []} 
+            <WeeklyCalendarView
+              posts={monthlyPosts || []}
               onRefresh={refetch}
               selectedMonth={selectedMonth}
               selectedYear={selectedYear}
+              onAddPost={() => setShowPostCreator(true)}
             />
           )}
         </TabsContent>
