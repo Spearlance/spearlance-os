@@ -6,7 +6,7 @@ import { X, Globe, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PRICING } from "@/lib/pricing";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 interface WebsiteUpsellBannerProps {
   onUpgradeClick: () => void;
@@ -14,7 +14,6 @@ interface WebsiteUpsellBannerProps {
 
 export function WebsiteUpsellBanner({ onUpgradeClick }: WebsiteUpsellBannerProps) {
   const { selectedClient } = useClient();
-  const { toast } = useToast();
   const [dismissed, setDismissed] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -51,11 +50,7 @@ export function WebsiteUpsellBanner({ onUpgradeClick }: WebsiteUpsellBannerProps
         throw new Error('No checkout URL returned');
       }
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to start checkout",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: error.message || "Failed to start checkout" });
       setLoading(false);
     }
   };

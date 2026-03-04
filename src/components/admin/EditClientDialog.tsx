@@ -4,7 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -80,7 +80,6 @@ interface EditClientDialogProps {
 }
 
 export function EditClientDialog({ client, assignedUsers, onClientUpdated }: EditClientDialogProps) {
-  const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>(
@@ -175,11 +174,7 @@ export function EditClientDialog({ client, assignedUsers, onClientUpdated }: Edi
           data.stripe_subscription_id || ''
         );
         if (validationErrors.length > 0) {
-          toast({
-            title: "Invalid Stripe IDs",
-            description: validationErrors.join('. '),
-            variant: "destructive",
-          });
+          toast.error("Invalid Stripe IDs", { description: validationErrors.join('. ') });
           setIsLoading(false);
           return;
         }
@@ -260,19 +255,12 @@ export function EditClientDialog({ client, assignedUsers, onClientUpdated }: Edi
         await fetchStripePlanName(data.stripe_subscription_id);
       }
 
-      toast({
-        title: "Client updated successfully",
-        description: `${data.name} has been updated.`,
-      });
+      toast.success("Client updated successfully", { description: `${data.name} has been updated.` });
 
       setOpen(false);
       onClientUpdated();
     } catch (error) {
-      toast({
-        title: "Error updating client",
-        description: "Please try again later",
-        variant: "destructive",
-      });
+      toast.error("Error updating client", { description: "Please try again later" });
     } finally {
       setIsLoading(false);
     }
@@ -320,7 +308,7 @@ export function EditClientDialog({ client, assignedUsers, onClientUpdated }: Edi
                     size="sm"
                     onClick={() => {
                       navigator.clipboard.writeText((client as any).front_tag);
-                      toast({ title: "Front tag copied" });
+                      toast.success("Front tag copied");
                     }}
                   >
                     <Copy className="h-4 w-4" />

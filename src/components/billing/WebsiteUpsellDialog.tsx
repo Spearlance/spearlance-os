@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Globe, Sparkles, Users, Award, MessageCircle, Check, Loader2, Edit } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { PRICING } from "@/lib/pricing";
 
@@ -17,7 +17,6 @@ interface WebsiteUpsellDialogProps {
 
 export function WebsiteUpsellDialog({ open, onOpenChange, onUpgradeClick }: WebsiteUpsellDialogProps) {
   const { selectedClient } = useClient();
-  const { toast } = useToast();
   const [loading, setLoading] = useState(false);
 
   const handleAddWebsite = async () => {
@@ -39,11 +38,7 @@ export function WebsiteUpsellDialog({ open, onOpenChange, onUpgradeClick }: Webs
         throw new Error('No checkout URL returned');
       }
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to start checkout",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: error.message || "Failed to start checkout" });
       setLoading(false);
     }
   };

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Calendar, Sparkles, Trash2, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,7 +29,6 @@ interface MoodBoardGalleryProps {
 }
 
 export default function MoodBoardGallery({ moodBoards, onRefresh }: MoodBoardGalleryProps) {
-  const { toast } = useToast();
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [selectedBoard, setSelectedBoard] = useState<any | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -43,18 +42,11 @@ export default function MoodBoardGallery({ moodBoards, onRefresh }: MoodBoardGal
 
       if (error) throw error;
 
-      toast({
-        title: "Success",
-        description: "Mood board deleted successfully"
-      });
+      toast.success("Success", { description: "Mood board deleted successfully" });
 
       onRefresh();
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: "Failed to delete mood board",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "Failed to delete mood board" });
     }
   };
 

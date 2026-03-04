@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { AssigneeSelector } from "../tasks/AssigneeSelector";
 
 interface CreateChannelTaskDialogProps {
@@ -44,7 +44,6 @@ export default function CreateChannelTaskDialog({
   const [taskColumns, setTaskColumns] = useState<TaskColumn[]>([]);
   const [selectedAssignees, setSelectedAssignees] = useState<string[]>([]);
   const [selectedColor, setSelectedColor] = useState("#6B7280");
-  const { toast } = useToast();
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -71,11 +70,7 @@ export default function CreateChannelTaskDialog({
       if (error) throw error;
       setUsers(data || []);
     } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to load team members",
-      });
+      toast.error("Error", { description: "Failed to load team members" });
     }
   };
 
@@ -168,11 +163,8 @@ export default function CreateChannelTaskDialog({
 
       if (linkError) throw linkError;
 
-      toast({
-        title: "Success",
-        description: "Task created and linked to channel",
-      });
-      
+      toast.success("Success", { description: "Task created and linked to channel" });
+
       // Reset form
       setFormData({
         title: "",
@@ -188,11 +180,7 @@ export default function CreateChannelTaskDialog({
       onOpenChange(false);
       onSuccess?.();
     } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to create task",
-      });
+      toast.error("Error", { description: "Failed to create task" });
     } finally {
       setLoading(false);
     }

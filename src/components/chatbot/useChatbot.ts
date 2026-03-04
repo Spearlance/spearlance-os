@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { ChatMessage, Conversation } from './types';
 import { useClient } from '@/contexts/ClientContext';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 export const useChatbot = () => {
   const { selectedClient } = useClient();
@@ -79,11 +79,7 @@ export const useChatbot = () => {
         setActiveConversationId(conversationsWithCreator[0].id);
       }
     } catch (err: any) {
-      toast({
-        title: "Error",
-        description: "Failed to load conversations.",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "Failed to load conversations." });
     } finally {
       setIsLoadingConversations(false);
     }
@@ -108,11 +104,7 @@ export const useChatbot = () => {
 
       setMessages(loadedMessages);
     } catch (err: any) {
-      toast({
-        title: "Error",
-        description: "Failed to load conversation.",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "Failed to load conversation." });
     } finally {
       setIsLoading(false);
     }
@@ -143,11 +135,7 @@ export const useChatbot = () => {
 
       return data.id;
     } catch (err: any) {
-      toast({
-        title: "Error",
-        description: "Failed to create conversation.",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "Failed to create conversation." });
       return null;
     }
   };
@@ -212,16 +200,9 @@ export const useChatbot = () => {
         setMessages([]);
       }
 
-      toast({
-        title: "Conversation Archived",
-        description: "This conversation will be auto-deleted in 30 days.",
-      });
+      toast.info("Conversation Archived", { description: "This conversation will be auto-deleted in 30 days." });
     } catch (err: any) {
-      toast({
-        title: "Error",
-        description: "Failed to archive conversation.",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "Failed to archive conversation." });
     }
   };
 
@@ -259,11 +240,7 @@ export const useChatbot = () => {
       abortControllerRef.current?.abort();
       setError("Request timed out. The AI is taking longer than expected.");
       setIsLoading(false);
-      toast({
-        title: "Timeout",
-        description: "AI response took too long. Please try again.",
-        variant: "destructive"
-      });
+      toast.error("Timeout", { description: "AI response took too long. Please try again." });
     }, 30000); // 30 seconds
 
     try {
@@ -296,21 +273,13 @@ export const useChatbot = () => {
 
       if (response.status === 429) {
         setError("Rate limit exceeded. Please try again in a few minutes.");
-        toast({
-          title: "Rate Limit Exceeded",
-          description: "You've reached the maximum number of requests. Please wait a bit.",
-          variant: "destructive"
-        });
+        toast.error("Rate Limit Exceeded", { description: "You've reached the maximum number of requests. Please wait a bit." });
         return;
       }
 
       if (response.status === 403) {
         setError("Access denied to this client.");
-        toast({
-          title: "Access Denied",
-          description: "You don't have permission to access this client's data.",
-          variant: "destructive"
-        });
+        toast.error("Access Denied", { description: "You don't have permission to access this client's data." });
         return;
       }
 
@@ -424,11 +393,7 @@ export const useChatbot = () => {
       });
       
       setError(err.message);
-      toast({
-        title: "Error",
-        description: "Failed to communicate with assistant. Click retry to try again.",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "Failed to communicate with assistant. Click retry to try again." });
     } finally {
       setIsLoading(false);
       abortControllerRef.current = null;

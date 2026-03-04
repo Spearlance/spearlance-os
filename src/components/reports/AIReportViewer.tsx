@@ -25,8 +25,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { useToast } from "@/hooks/use-toast";
-import { 
+import { toast } from "sonner";
+import {
   Sparkles, 
   Copy, 
   MoreVertical,
@@ -69,7 +69,6 @@ export const AIReportViewer = ({
   onOpenChange,
   onDelete,
 }: AIReportViewerProps) => {
-  const { toast } = useToast();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
@@ -78,13 +77,9 @@ export const AIReportViewer = ({
     
     try {
       await navigator.clipboard.writeText(report.report_content);
-      toast({ title: "Report copied to clipboard" });
+      toast.success("Report copied to clipboard");
     } catch {
-      toast({
-        title: "Failed to copy",
-        description: "Could not copy report to clipboard",
-        variant: "destructive",
-      });
+      toast.error("Failed to copy", { description: "Could not copy report to clipboard" });
     }
   };
 
@@ -100,15 +95,11 @@ export const AIReportViewer = ({
 
       if (error) throw error;
 
-      toast({ title: "Report deleted" });
+      toast.success("Report deleted");
       onOpenChange(false);
       onDelete();
     } catch (error: any) {
-      toast({
-        title: "Error deleting report",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast.error("Error deleting report", { description: error.message });
     } finally {
       setDeleting(false);
       setDeleteDialogOpen(false);

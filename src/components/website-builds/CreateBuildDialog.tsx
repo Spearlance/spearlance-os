@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 interface CreateBuildDialogProps {
   open: boolean;
@@ -27,7 +27,6 @@ export function CreateBuildDialog({
   clientId,
   onSuccess,
 }: CreateBuildDialogProps) {
-  const { toast } = useToast();
   const [formData, setFormData] = useState({
     name: "",
     scope_summary: "",
@@ -49,16 +48,12 @@ export function CreateBuildDialog({
       if (error) throw error;
     },
     onSuccess: () => {
-      toast({ title: "Build created successfully" });
+      toast.success("Build created successfully");
       setFormData({ name: "", scope_summary: "", target_launch_date: "" });
       onSuccess();
     },
     onError: (error) => {
-      toast({
-        title: "Error creating build",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast.error("Error creating build", { description: error.message });
     },
   });
 

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Loader2, Image as ImageIcon, CheckCircle2, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 interface Asset {
   id: string;
@@ -33,7 +33,6 @@ export function AssetRecommendationDialog({
   const [recommendations, setRecommendations] = useState<Asset[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { toast } = useToast();
 
   useEffect(() => {
     if (open && caption && clientId) {
@@ -77,11 +76,7 @@ export function AssetRecommendationDialog({
         setError('general');
       }
       
-      toast({
-        title: "Couldn't load recommendations",
-        description: errorMessage,
-        variant: "destructive"
-      });
+      toast.error("Couldn't load recommendations", { description: errorMessage });
     } finally {
       setIsLoading(false);
     }
@@ -90,10 +85,7 @@ export function AssetRecommendationDialog({
   const handleSelectAsset = (asset: Asset) => {
     onSelectAsset(asset.file_url, 'brand_asset');
     onOpenChange(false);
-    toast({
-      title: "Asset selected!",
-      description: `Using "${asset.title}" for your post`,
-    });
+    toast.success("Asset selected!", { description: `Using "${asset.title}" for your post` });
   };
 
   const getSimilarityColor = (similarity: number) => {

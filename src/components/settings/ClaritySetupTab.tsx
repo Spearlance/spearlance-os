@@ -7,7 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Eye, EyeOff, CheckCircle2, XCircle, Loader2, ExternalLink, RefreshCw } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDistanceToNow } from "date-fns";
 
@@ -19,7 +19,6 @@ interface ClaritySetupTabProps {
 }
 
 export function ClaritySetupTab({ client }: ClaritySetupTabProps) {
-  const { toast } = useToast();
   const [projectId, setProjectId] = useState("");
   const [apiToken, setApiToken] = useState("");
   const [showToken, setShowToken] = useState(false);
@@ -70,11 +69,7 @@ export function ClaritySetupTab({ client }: ClaritySetupTabProps) {
 
   const testConnection = async () => {
     if (!projectId.trim() || !apiToken.trim()) {
-      toast({
-        title: "Missing credentials",
-        description: "Please enter both Project ID and API Token",
-        variant: "destructive",
-      });
+      toast.error("Missing credentials", { description: "Please enter both Project ID and API Token" });
       return;
     }
 
@@ -90,25 +85,14 @@ export function ClaritySetupTab({ client }: ClaritySetupTabProps) {
 
       if (data?.success) {
         setTestResult('success');
-        toast({
-          title: "Connection successful",
-          description: "Your Clarity credentials are valid",
-        });
+        toast.success("Connection successful", { description: "Your Clarity credentials are valid" });
       } else {
         setTestResult('error');
-        toast({
-          title: "Connection failed",
-          description: data?.error || "Could not connect to Microsoft Clarity",
-          variant: "destructive",
-        });
+        toast.error("Connection failed", { description: data?.error || "Could not connect to Microsoft Clarity" });
       }
     } catch (error: any) {
       setTestResult('error');
-      toast({
-        title: "Connection failed",
-        description: error.message || "Could not verify credentials",
-        variant: "destructive",
-      });
+      toast.error("Connection failed", { description: error.message || "Could not verify credentials" });
     } finally {
       setTesting(false);
     }
@@ -116,11 +100,7 @@ export function ClaritySetupTab({ client }: ClaritySetupTabProps) {
 
   const saveConfig = async () => {
     if (!projectId.trim() || !apiToken.trim()) {
-      toast({
-        title: "Missing credentials",
-        description: "Please enter both Project ID and API Token",
-        variant: "destructive",
-      });
+      toast.error("Missing credentials", { description: "Please enter both Project ID and API Token" });
       return;
     }
 
@@ -152,16 +132,9 @@ export function ClaritySetupTab({ client }: ClaritySetupTabProps) {
         setConfigExists(true);
       }
 
-      toast({
-        title: "Configuration saved",
-        description: "Microsoft Clarity settings have been updated",
-      });
+      toast.success("Configuration saved", { description: "Microsoft Clarity settings have been updated" });
     } catch (error: any) {
-      toast({
-        title: "Error saving configuration",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast.error("Error saving configuration", { description: error.message });
     } finally {
       setSaving(false);
     }
@@ -184,29 +157,18 @@ export function ClaritySetupTab({ client }: ClaritySetupTabProps) {
 
       if (error) throw error;
 
-      toast({
-        title: newState ? "Clarity enabled" : "Clarity disabled",
-        description: newState 
-          ? "Daily data sync is now active" 
-          : "Daily data sync has been paused",
+      toast.success(newState ? "Clarity enabled" : "Clarity disabled", {
+        description: newState ? "Daily data sync is now active" : "Daily data sync has been paused",
       });
     } catch (error: any) {
       setIsActive(!newState); // Revert on error
-      toast({
-        title: "Error updating status",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast.error("Error updating status", { description: error.message });
     }
   };
 
   const syncNow = async () => {
     if (!configExists) {
-      toast({
-        title: "No configuration",
-        description: "Please save your Clarity configuration first",
-        variant: "destructive",
-      });
+      toast.error("No configuration", { description: "Please save your Clarity configuration first" });
       return;
     }
 
@@ -220,25 +182,14 @@ export function ClaritySetupTab({ client }: ClaritySetupTabProps) {
 
       if (data?.success) {
         setLastSyncedAt(new Date());
-        toast({
-          title: "Sync completed",
-          description: data.metricDate 
-            ? `Successfully synced metrics for ${data.metricDate}` 
-            : "Successfully synced Clarity metrics",
+        toast.success("Sync completed", {
+          description: data.metricDate ? `Successfully synced metrics for ${data.metricDate}` : "Successfully synced Clarity metrics",
         });
       } else {
-        toast({
-          title: "Sync failed",
-          description: data?.error || "Could not sync Clarity data",
-          variant: "destructive",
-        });
+        toast.error("Sync failed", { description: data?.error || "Could not sync Clarity data" });
       }
     } catch (error: any) {
-      toast({
-        title: "Sync failed",
-        description: error.message || "Could not sync Clarity data",
-        variant: "destructive",
-      });
+      toast.error("Sync failed", { description: error.message || "Could not sync Clarity data" });
     } finally {
       setSyncing(false);
     }

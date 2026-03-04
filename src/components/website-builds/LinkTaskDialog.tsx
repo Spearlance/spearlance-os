@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Search } from "lucide-react";
 
 interface LinkTaskDialogProps {
@@ -33,7 +33,6 @@ export function LinkTaskDialog({
   existingTaskIds,
   onSuccess,
 }: LinkTaskDialogProps) {
-  const { toast } = useToast();
   const [search, setSearch] = useState("");
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
 
@@ -68,16 +67,12 @@ export function LinkTaskDialog({
       if (error) throw error;
     },
     onSuccess: () => {
-      toast({ title: `${selectedTaskIds.length} task(s) linked` });
+      toast.success(`${selectedTaskIds.length} task(s) linked`);
       setSelectedTaskIds([]);
       onSuccess();
     },
     onError: (error) => {
-      toast({
-        title: "Error linking tasks",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast.error("Error linking tasks", { description: error.message });
     },
   });
 

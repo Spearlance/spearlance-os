@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Json } from "@/integrations/supabase/types";
 
 export interface Notification {
@@ -21,7 +21,6 @@ export const useNotifications = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
 
   const fetchNotifications = async () => {
     try {
@@ -79,7 +78,7 @@ export const useNotifications = () => {
 
       setNotifications(prev => prev.map(n => ({ ...n, read_flag: true })));
       setUnreadCount(0);
-      toast({ title: "All notifications marked as read" });
+      toast.success("All notifications marked as read");
     } catch (error) {
       console.error("Error marking all as read:", error);
     }
@@ -123,9 +122,8 @@ export const useNotifications = () => {
               setUnreadCount(prev => prev + 1);
               
               // Show toast for new notification
-              toast({
-                title: newNotification.title || "New notification",
-                description: newNotification.description,
+              toast.info(newNotification.title || "New notification", {
+                description: newNotification.description ?? undefined,
               });
             }
           });

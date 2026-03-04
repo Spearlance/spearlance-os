@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 interface AddPageDialogProps {
   open: boolean;
@@ -55,7 +55,6 @@ export function AddPageDialog({
   buildId,
   onSuccess,
 }: AddPageDialogProps) {
-  const { toast } = useToast();
   const [pageName, setPageName] = useState("");
   const [pageType, setPageType] = useState("content");
 
@@ -81,17 +80,13 @@ export function AddPageDialog({
       if (error) throw error;
     },
     onSuccess: () => {
-      toast({ title: "Page added" });
+      toast.success("Page added");
       setPageName("");
       setPageType("content");
       onSuccess();
     },
     onError: (error) => {
-      toast({
-        title: "Error adding page",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast.error("Error adding page", { description: error.message });
     },
   });
 

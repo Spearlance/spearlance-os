@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Upload, X, Key, Briefcase } from "lucide-react";
 
 interface UserProfileTabProps {
@@ -34,7 +34,6 @@ const FOCUS_AREA_OPTIONS = [
 ];
 
 export function UserProfileTab({ profile, onProfileUpdated }: UserProfileTabProps) {
-  const { toast } = useToast();
   const [isUploading, setIsUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [name, setName] = useState(profile.name || "");
@@ -59,20 +58,12 @@ export function UserProfileTab({ profile, onProfileUpdated }: UserProfileTabProp
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
-      toast({
-        title: "Invalid file type",
-        description: "Please select an image file",
-        variant: "destructive",
-      });
+      toast.error("Invalid file type", { description: "Please select an image file" });
       return;
     }
 
     if (file.size > 2 * 1024 * 1024) {
-      toast({
-        title: "File too large",
-        description: "Please select an image under 2MB",
-        variant: "destructive",
-      });
+      toast.error("File too large", { description: "Please select an image under 2MB" });
       return;
     }
 
@@ -99,18 +90,11 @@ export function UserProfileTab({ profile, onProfileUpdated }: UserProfileTabProp
 
       if (updateError) throw updateError;
 
-      toast({
-        title: "Profile picture updated",
-        description: "Your profile picture has been updated successfully",
-      });
+      toast.success("Profile picture updated", { description: "Your profile picture has been updated successfully" });
 
       onProfileUpdated();
     } catch (error) {
-      toast({
-        title: "Upload failed",
-        description: "Failed to upload profile picture. Please try again.",
-        variant: "destructive",
-      });
+      toast.error("Upload failed", { description: "Failed to upload profile picture. Please try again." });
     } finally {
       setIsUploading(false);
     }
@@ -125,28 +109,17 @@ export function UserProfileTab({ profile, onProfileUpdated }: UserProfileTabProp
 
       if (error) throw error;
 
-      toast({
-        title: "Profile picture removed",
-        description: "Your profile picture has been removed",
-      });
+      toast.success("Profile picture removed", { description: "Your profile picture has been removed" });
 
       onProfileUpdated();
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to remove profile picture",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: "Failed to remove profile picture" });
     }
   };
 
   const handleSaveName = async () => {
     if (!name.trim()) {
-      toast({
-        title: "Name required",
-        description: "Please enter your name",
-        variant: "destructive",
-      });
+      toast.error("Name required", { description: "Please enter your name" });
       return;
     }
 
@@ -160,18 +133,11 @@ export function UserProfileTab({ profile, onProfileUpdated }: UserProfileTabProp
 
       if (error) throw error;
 
-      toast({
-        title: "Profile updated",
-        description: "Your name has been updated successfully",
-      });
+      toast.success("Profile updated", { description: "Your name has been updated successfully" });
 
       onProfileUpdated();
     } catch (error) {
-      toast({
-        title: "Update failed",
-        description: "Failed to update your profile. Please try again.",
-        variant: "destructive",
-      });
+      toast.error("Update failed", { description: "Failed to update your profile. Please try again." });
     } finally {
       setIsSaving(false);
     }
@@ -179,11 +145,7 @@ export function UserProfileTab({ profile, onProfileUpdated }: UserProfileTabProp
 
   const handleSaveProfessionalDetails = async () => {
     if (bio && bio.length > 500) {
-      toast({
-        title: "Bio too long",
-        description: "Please keep your bio under 500 characters",
-        variant: "destructive",
-      });
+      toast.error("Bio too long", { description: "Please keep your bio under 500 characters" });
       return;
     }
 
@@ -204,18 +166,11 @@ export function UserProfileTab({ profile, onProfileUpdated }: UserProfileTabProp
 
       if (error) throw error;
 
-      toast({
-        title: "Professional details updated",
-        description: "Your profile has been updated successfully",
-      });
+      toast.success("Professional details updated", { description: "Your profile has been updated successfully" });
 
       onProfileUpdated();
     } catch (error) {
-      toast({
-        title: "Update failed",
-        description: "Failed to update your professional details. Please try again.",
-        variant: "destructive",
-      });
+      toast.error("Update failed", { description: "Failed to update your professional details. Please try again." });
     } finally {
       setIsSaving(false);
     }
@@ -237,16 +192,9 @@ export function UserProfileTab({ profile, onProfileUpdated }: UserProfileTabProp
 
       if (error) throw error;
 
-      toast({
-        title: "Password reset email sent",
-        description: "Check your email for a link to reset your password",
-      });
+      toast.success("Password reset email sent", { description: "Check your email for a link to reset your password" });
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to send password reset email",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: "Failed to send password reset email" });
     }
   };
 

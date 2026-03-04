@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { useClient } from "@/contexts/ClientContext";
 import {
   Sheet,
@@ -54,7 +54,6 @@ export const PostManagementDrawer = ({
   onOpenChange,
   onRefresh,
 }: PostManagementDrawerProps) => {
-  const { toast } = useToast();
   const { selectedClient } = useClient();
   const queryClient = useQueryClient();
 
@@ -224,17 +223,10 @@ export const PostManagementDrawer = ({
 
       if (error) throw error;
 
-      toast({
-        title: "Post Updated",
-        description: "Your changes have been saved.",
-      });
+      toast.success("Post Updated", { description: "Your changes have been saved." });
       onRefresh();
     } catch (error: any) {
-      toast({
-        title: "Save Failed",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast.error("Save Failed", { description: error.message });
     } finally {
       setIsSaving(false);
     }
@@ -262,19 +254,12 @@ export const PostManagementDrawer = ({
 
       if (error) throw error;
 
-      toast({
-        title: "Topic Updated",
-        description: "Your topic changes have been saved.",
-      });
+      toast.success("Topic Updated", { description: "Your topic changes have been saved." });
       
       setEditingTopic(false);
       onRefresh();
     } catch (error: any) {
-      toast({
-        title: "Save Failed",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast.error("Save Failed", { description: error.message });
     } finally {
       setIsSaving(false);
     }
@@ -297,16 +282,9 @@ export const PostManagementDrawer = ({
 
       setGeneratedTopicIdeas(data.ideas || []);
       
-      toast({
-        title: "Ideas Generated!",
-        description: `Generated ${data.ideas?.length || 0} topic ideas for you.`,
-      });
+      toast.success("Ideas Generated!", { description: `Generated ${data.ideas?.length || 0} topic ideas for you.` });
     } catch (error: any) {
-      toast({
-        title: "Generation Failed",
-        description: error.message || "Please try again",
-        variant: "destructive",
-      });
+      toast.error("Generation Failed", { description: error.message || "Please try again" });
     } finally {
       setIsGeneratingTopicIdeas(false);
     }
@@ -337,19 +315,12 @@ export const PostManagementDrawer = ({
 
       if (error) throw error;
 
-      toast({
-        title: "Topic Updated",
-        description: idea.title,
-      });
+      toast.success("Topic Updated", { description: idea.title });
       
       setEditingTopic(false);
       onRefresh();
     } catch (error: any) {
-      toast({
-        title: "Save Failed",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast.error("Save Failed", { description: error.message });
     } finally {
       setIsSaving(false);
     }
@@ -370,10 +341,7 @@ export const PostManagementDrawer = ({
 
       if (error) throw error;
 
-      toast({
-        title: "Caption Generated!",
-        description: "AI has created a new caption for this post.",
-      });
+      toast.success("Caption Generated!", { description: "AI has created a new caption for this post." });
 
       // Refetch the post data
       const { data: updatedPost } = await supabase
@@ -387,11 +355,7 @@ export const PostManagementDrawer = ({
       }
       onRefresh();
     } catch (error: any) {
-      toast({
-        title: "Generation Failed",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast.error("Generation Failed", { description: error.message });
     } finally {
       setIsGeneratingCaption(false);
     }
@@ -412,17 +376,10 @@ export const PostManagementDrawer = ({
 
       if (error) throw error;
 
-      toast({
-        title: "Image Generated!",
-        description: "AI has created a new image for this post.",
-      });
+      toast.success("Image Generated!", { description: "AI has created a new image for this post." });
       onRefresh();
     } catch (error: any) {
-      toast({
-        title: "Generation Failed",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast.error("Generation Failed", { description: error.message });
     } finally {
       setIsGeneratingImage(false);
     }
@@ -443,18 +400,11 @@ export const PostManagementDrawer = ({
 
       if (error) throw error;
 
-      toast({
-        title: "Comment Added",
-        description: "Your comment has been posted.",
-      });
+      toast.success("Comment Added", { description: "Your comment has been posted." });
       setNewComment("");
       queryClient.invalidateQueries({ queryKey: ['post-comments', post.id] });
     } catch (error: any) {
-      toast({
-        title: "Comment Failed",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast.error("Comment Failed", { description: error.message });
     }
   };
 
@@ -473,11 +423,7 @@ export const PostManagementDrawer = ({
       const connectedSelected = selectedPlatforms.filter(p => connectedPlatforms.has(p));
       
       if (connectedSelected.length === 0) {
-        toast({
-          title: "No Connected Platforms",
-          description: "Please connect at least one platform or schedule manually.",
-          variant: "default",
-        });
+        toast.info("No Connected Platforms", { description: "Please connect at least one platform or schedule manually." });
         setIsScheduling(false);
         return;
       }
@@ -498,18 +444,11 @@ export const PostManagementDrawer = ({
         ? `Scheduled to ${connectedSelected.join(', ')}! Don't forget to manually schedule on ${manualPlatforms.join(', ')}.`
         : `Your post will publish on ${format(scheduledFor, 'MMMM d, yyyy')} at ${scheduledTime}`;
 
-      toast({
-        title: "Post Scheduled!",
-        description: message,
-      });
+      toast.success("Post Scheduled!", { description: message });
       
       onRefresh();
     } catch (error: any) {
-      toast({
-        title: "Scheduling Failed",
-        description: error.message || "Failed to schedule post.",
-        variant: "destructive",
-      });
+      toast.error("Scheduling Failed", { description: error.message || "Failed to schedule post." });
     } finally {
       setIsScheduling(false);
     }
@@ -528,21 +467,13 @@ export const PostManagementDrawer = ({
     
     // Check if post has been published via Late
     if (!(post as any).late_post_id) {
-      toast({
-        title: "Analytics Not Available",
-        description: "This post hasn't been scheduled through Late yet.",
-        variant: "default",
-      });
+      toast.info("Analytics Not Available", { description: "This post hasn't been scheduled through Late yet." });
       return;
     }
 
     // Check if post is published
     if ((post as any).late_status !== 'published') {
-      toast({
-        title: "Post Not Published",
-        description: "Analytics are only available for published posts.",
-        variant: "default",
-      });
+      toast.info("Post Not Published", { description: "Analytics are only available for published posts." });
       return;
     }
 
@@ -558,40 +489,25 @@ export const PostManagementDrawer = ({
       if (error) {
         // Handle specific Late API errors
         if (error.message?.includes('analytics_addon_required')) {
-          toast({
-            title: "Analytics Add-on Required",
-            description: "The Late Analytics add-on is required to access post performance data. Please upgrade your Late plan.",
-            variant: "default",
-          });
+          toast.info("Analytics Add-on Required", { description: "The Late Analytics add-on is required to access post performance data. Please upgrade your Late plan." });
           return;
         }
         
         if (error.message?.includes('429')) {
-          toast({
-            title: "Rate Limit Reached",
-            description: "You've reached the analytics API rate limit (30 requests/hour). Please try again later.",
-            variant: "default",
-          });
+          toast.info("Rate Limit Reached", { description: "You've reached the analytics API rate limit (30 requests/hour). Please try again later." });
           return;
         }
         
         throw error;
       }
 
-      toast({
-        title: "Analytics Updated",
-        description: `Synced analytics for ${data.platforms?.length || 0} platform(s).`,
-      });
+      toast.success("Analytics Updated", { description: `Synced analytics for ${data.platforms?.length || 0} platform(s).` });
       
       // Refetch analytics data
       refetchAnalytics();
       
     } catch (error: any) {
-      toast({
-        title: "Refresh Failed",
-        description: error.message || "Failed to sync analytics. Please try again.",
-        variant: "destructive",
-      });
+      toast.error("Refresh Failed", { description: error.message || "Failed to sync analytics. Please try again." });
     } finally {
       setIsRefreshingAnalytics(false);
     }
@@ -755,19 +671,12 @@ export const PostManagementDrawer = ({
 
             if (error) throw error;
 
-            toast({
-              title: "Asset Applied",
-              description: "Image updated from your brand assets.",
-            });
+            toast.success("Asset Applied", { description: "Image updated from your brand assets." });
             
             setShowAssetDialog(false);
             onRefresh();
           } catch (error: any) {
-            toast({
-              title: "Update Failed",
-              description: error.message,
-              variant: "destructive",
-            });
+            toast.error("Update Failed", { description: error.message });
           }
         }}
       />

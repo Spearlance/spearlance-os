@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useClient } from "@/contexts/ClientContext";
 import { Upload, Trophy, X } from "lucide-react";
@@ -16,7 +16,6 @@ interface ReportBugDialogProps {
 }
 
 export function ReportBugDialog({ open, onOpenChange }: ReportBugDialogProps) {
-  const { toast } = useToast();
   const { selectedClient } = useClient();
   const [loading, setLoading] = useState(false);
   const [screenshots, setScreenshots] = useState<File[]>([]);
@@ -42,7 +41,7 @@ export function ReportBugDialog({ open, onOpenChange }: ReportBugDialogProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedClient) {
-      toast({ title: "Error", description: "No client selected", variant: "destructive" });
+      toast.error("Error", { description: "No client selected" });
       return;
     }
 
@@ -105,10 +104,7 @@ export function ReportBugDialog({ open, onOpenChange }: ReportBugDialogProps) {
 
       if (insertError) throw insertError;
 
-      toast({
-        title: "Bug Report Submitted! 🎉",
-        description: "Thank you for helping us improve! Our team will review it soon.",
-      });
+      toast.success("Bug Report Submitted!", { description: "Thank you for helping us improve! Our team will review it soon." });
 
       // Reset form
       setFormData({
@@ -122,11 +118,7 @@ export function ReportBugDialog({ open, onOpenChange }: ReportBugDialogProps) {
       setScreenshots([]);
       onOpenChange(false);
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: "Failed to submit bug report. Please try again.",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: "Failed to submit bug report. Please try again." });
     } finally {
       setLoading(false);
     }

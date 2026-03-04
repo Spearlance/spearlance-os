@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { CalendarIcon, Trash2, Upload, X } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -32,7 +32,6 @@ export function EditPostDialog({ post, open, onOpenChange }: EditPostDialogProps
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   
-  const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const updateMutation = useMutation({
@@ -72,18 +71,11 @@ export function EditPostDialog({ post, open, onOpenChange }: EditPostDialogProps
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['social-posts'] });
-      toast({
-        title: "Post updated",
-        description: "Your changes have been saved successfully.",
-      });
+      toast.success("Post updated", { description: "Your changes have been saved successfully." });
       onOpenChange(false);
     },
     onError: (error: Error) => {
-      toast({
-        title: "Error updating post",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast.error("Error updating post", { description: error.message });
     },
   });
 
@@ -98,19 +90,12 @@ export function EditPostDialog({ post, open, onOpenChange }: EditPostDialogProps
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['social-posts'] });
-      toast({
-        title: "Post deleted",
-        description: "The post has been permanently deleted.",
-      });
+      toast.success("Post deleted", { description: "The post has been permanently deleted." });
       setShowDeleteDialog(false);
       onOpenChange(false);
     },
     onError: (error: Error) => {
-      toast({
-        title: "Error deleting post",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast.error("Error deleting post", { description: error.message });
     },
   });
 

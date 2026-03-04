@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Check, Loader2, Sparkles, Gift } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { cn } from "@/lib/utils";
 import { PRICING } from "@/lib/pricing";
@@ -19,7 +19,6 @@ interface PricingModalProps {
 
 export function PricingModal({ open, onOpenChange, highlightWebsite = false }: PricingModalProps) {
   const { selectedClient } = useClient();
-  const { toast } = useToast();
   const [loading, setLoading] = useState<string | null>(null);
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'annual'>('annual');
 

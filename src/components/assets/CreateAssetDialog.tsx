@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { useClient } from "@/contexts/ClientContext";
 import { FileText, X } from "lucide-react";
 import { UPLOAD_LIMITS } from "@/lib/upload-limits";
@@ -20,7 +20,6 @@ interface CreateAssetDialogProps {
 }
 
 export function CreateAssetDialog({ open, onOpenChange, folderId, onSuccess }: CreateAssetDialogProps) {
-  const { toast } = useToast();
   const { selectedClient } = useClient();
   const [loading, setLoading] = useState(false);
   const [uploadMode, setUploadMode] = useState<'file' | 'url'>('file');

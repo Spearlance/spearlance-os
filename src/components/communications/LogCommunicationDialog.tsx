@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useClient } from "@/contexts/ClientContext";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -28,7 +28,6 @@ interface Participant {
 
 export function LogCommunicationDialog({ open, onOpenChange }: LogCommunicationDialogProps) {
   const { selectedClient } = useClient();
-  const { toast } = useToast();
   const [loading, setLoading] = useState(false);
 
   const [type, setType] = useState<'email' | 'text' | 'call'>('email');
@@ -105,18 +104,18 @@ export function LogCommunicationDialog({ open, onOpenChange }: LogCommunicationD
 
   const handleSubmit = async () => {
     if (!selectedClient) {
-      toast({ title: "Please select a client first", variant: "destructive" });
+      toast.error("Please select a client first");
       return;
     }
 
     if (!subject.trim()) {
-      toast({ title: "Subject is required", variant: "destructive" });
+      toast.error("Subject is required");
       return;
     }
 
     const validParticipants = participants.filter(p => p.email.trim());
     if (validParticipants.length === 0) {
-      toast({ title: "At least one participant is required", variant: "destructive" });
+      toast.error("At least one participant is required");
       return;
     }
 
@@ -124,18 +123,18 @@ export function LogCommunicationDialog({ open, onOpenChange }: LogCommunicationD
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     for (const p of validParticipants) {
       if (!emailRegex.test(p.email)) {
-        toast({ title: `Invalid email: ${p.email}`, variant: "destructive" });
+        toast.error(`Invalid email: ${p.email}`);
         return;
       }
     }
 
     if (!messageBody.trim()) {
-      toast({ title: "Message content is required", variant: "destructive" });
+      toast.error("Message content is required");
       return;
     }
 
     if (type === 'call' && callDuration && parseInt(callDuration) <= 0) {
-      toast({ title: "Call duration must be greater than 0", variant: "destructive" });
+      toast.error("Call duration must be greater than 0");
       return;
     }
 
@@ -179,15 +178,11 @@ export function LogCommunicationDialog({ open, onOpenChange }: LogCommunicationD
 
       if (error) throw error;
 
-      toast({ title: "Communication logged successfully" });
+      toast.success("Communication logged successfully");
       resetForm();
       onOpenChange(false);
     } catch (error) {
-      toast({
-        title: "Error logging communication",
-        description: error instanceof Error ? error.message : "Unknown error",
-        variant: "destructive",
-      });
+      toast.error("Error logging communication", { description: error instanceof Error ? error.message : "Unknown error" });
     } finally {
       setLoading(false);
     }

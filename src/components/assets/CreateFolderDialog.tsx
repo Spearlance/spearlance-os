@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 interface CreateFolderDialogProps {
   open: boolean;
@@ -22,7 +22,6 @@ export function CreateFolderDialog({
 }: CreateFolderDialogProps) {
   const [name, setName] = useState("");
   const { selectedClient } = useClient();
-  const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   
   const handleSubmit = async (e: React.FormEvent) => {

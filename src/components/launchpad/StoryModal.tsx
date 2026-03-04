@@ -6,7 +6,7 @@ import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { CheckCircle2, Upload } from "lucide-react";
 import { UPLOAD_LIMITS } from "@/lib/upload-limits";
 
@@ -118,7 +118,6 @@ const questionSections = [
 ];
 
 export function StoryModal({ open, onOpenChange, submissionId, clientId, initialData, onSuccess }: StoryModalProps) {
-  const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [pastedTranscript, setPastedTranscript] = useState("");
@@ -136,21 +135,13 @@ export function StoryModal({ open, onOpenChange, submissionId, clientId, initial
     const validTypes = ['.mp3', '.m4a', '.wav', '.mp4', '.mov'];
     const fileExt = '.' + file.name.split('.').pop()?.toLowerCase();
     if (!validTypes.includes(fileExt)) {
-      toast({
-        title: "Invalid file type",
-        description: "Please upload .mp3, .m4a, .wav, .mp4, or .mov files",
-        variant: "destructive",
-      });
+      toast.error("Invalid file type", { description: "Please upload .mp3, .m4a, .wav, .mp4, or .mov files" });
       return;
     }
 
     // Validate file size
     if (file.size > UPLOAD_LIMITS.VIDEO) {
-      toast({
-        title: "File too large",
-        description: `Maximum file size is ${UPLOAD_LIMITS.formatMB(UPLOAD_LIMITS.VIDEO)}`,
-        variant: "destructive",
-      });
+      toast.error("File too large", { description: `Maximum file size is ${UPLOAD_LIMITS.formatMB(UPLOAD_LIMITS.VIDEO)}` });
       return;
     }
 
@@ -200,11 +191,7 @@ export function StoryModal({ open, onOpenChange, submissionId, clientId, initial
   const handleSave = async () => {
     // Validation: need either file or transcript
     if (!selectedFile && !pastedTranscript.trim()) {
-      toast({
-        title: "Recording Required",
-        description: "Please upload a file or paste a transcript",
-        variant: "destructive",
-      });
+      toast.error("Recording Required", { description: "Please upload a file or paste a transcript" });
       return;
     }
 
@@ -308,9 +295,8 @@ export function StoryModal({ open, onOpenChange, submissionId, clientId, initial
       setUploadSuccess(true);
       setProcessingStatus("");
 
-      toast({
-        title: "Success!",
-        description: selectedFile 
+      toast.success("Success!", {
+        description: selectedFile
           ? "Your recording has been transcribed and analyzed successfully."
           : "Your transcript has been analyzed and optimized successfully.",
       });
@@ -321,11 +307,7 @@ export function StoryModal({ open, onOpenChange, submissionId, clientId, initial
         onOpenChange(false);
       }, 1500);
     } catch (error) {
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to process your story. Please try again.",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: error instanceof Error ? error.message : "Failed to process your story. Please try again." });
       setTranscribing(false);
       setSummarizing(false);
       setProcessingStatus("");

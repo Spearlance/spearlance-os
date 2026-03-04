@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { MapPin, Target, Globe, FileText, Loader2 } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -47,7 +47,6 @@ const CADENCE_TO_RECURRENCE: Record<string, { frequency: string; interval: numbe
 };
 
 export function ApplyTemplateDialog({ open, onOpenChange, stages, selectedStageId, clientId, onSuccess }: ApplyTemplateDialogProps) {
-  const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [playbooks, setPlaybooks] = useState<PlaybookInfo[]>([]);
   const [selectedPlaybooks, setSelectedPlaybooks] = useState<Set<string>>(new Set());
@@ -115,11 +114,7 @@ export function ApplyTemplateDialog({ open, onOpenChange, stages, selectedStageI
 
   const handleApply = async () => {
     if (selectedPlaybooks.size === 0) {
-      toast({
-        title: "Error",
-        description: "Please select at least one playbook",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: "Please select at least one playbook" });
       return;
     }
 
@@ -131,11 +126,7 @@ export function ApplyTemplateDialog({ open, onOpenChange, stages, selectedStageI
       // Use a default stage (first one) since we're not using stages for playbooks
       const defaultStage = stages[0];
       if (!defaultStage) {
-        toast({
-          title: "Error",
-          description: "No marketing stages available",
-          variant: "destructive",
-        });
+        toast.error("Error", { description: "No marketing stages available" });
         setLoading(false);
         return;
       }
@@ -215,20 +206,13 @@ export function ApplyTemplateDialog({ open, onOpenChange, stages, selectedStageI
         }
       }
 
-      toast({
-        title: "Success",
-        description: `Created ${selectedPlaybooks.size} channel(s)${includeTasks ? ` with ${totalTasksCreated} tasks` : ''}`,
-      });
+      toast.success("Success", { description: `Created ${selectedPlaybooks.size} channel(s)${includeTasks ? ` with ${totalTasksCreated} tasks` : ''}` });
 
       setSelectedPlaybooks(new Set());
       onSuccess();
       onOpenChange(false);
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to apply playbook",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: "Failed to apply playbook" });
     } finally {
       setLoading(false);
     }

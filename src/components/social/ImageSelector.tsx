@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Upload, FolderOpen, Sparkles, ChevronLeft, Loader2 } from "lucide-react";
 import { useClient } from "@/contexts/ClientContext";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -22,7 +22,6 @@ interface ImageSelectorProps {
 
 export const ImageSelector = ({ caption, onComplete, onBack }: ImageSelectorProps) => {
   const { selectedClient } = useClient();
-  const { toast } = useToast();
   const [showAIDialog, setShowAIDialog] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedImages, setGeneratedImages] = useState<any[]>([]);
@@ -50,11 +49,7 @@ export const ImageSelector = ({ caption, onComplete, onBack }: ImageSelectorProp
 
       onComplete(data.publicUrl, 'uploaded', '');
     } catch (error: any) {
-      toast({
-        title: "Upload failed",
-        description: error.message,
-        variant: "destructive"
-      });
+      toast.error("Upload failed", { description: error.message });
     }
   };
 
@@ -116,11 +111,7 @@ export const ImageSelector = ({ caption, onComplete, onBack }: ImageSelectorProp
         errorMessage = error.message;
       }
       
-      toast({
-        title: "Couldn't generate image",
-        description: errorMessage,
-        variant: "destructive"
-      });
+      toast.error("Couldn't generate image", { description: errorMessage });
       
       setShowRetry(true);
     } finally {

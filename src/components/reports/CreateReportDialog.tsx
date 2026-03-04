@@ -19,7 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Info } from "lucide-react";
 import {
   Tooltip,
@@ -41,7 +41,6 @@ export const CreateReportDialog = ({
   clientId,
   onSuccess,
 }: CreateReportDialogProps) => {
-  const { toast } = useToast();
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
@@ -97,39 +96,23 @@ export const CreateReportDialog = ({
 
     // Validation
     if (!formData.name.trim()) {
-      toast({
-        title: "Validation Error",
-        description: "Report name is required",
-        variant: "destructive",
-      });
+      toast.error("Validation Error", { description: "Report name is required" });
       return;
     }
 
     if (!formData.oviond_url.trim()) {
-      toast({
-        title: "Validation Error",
-        description: "Oviond URL is required",
-        variant: "destructive",
-      });
+      toast.error("Validation Error", { description: "Oviond URL is required" });
       return;
     }
 
     if (!formData.oviond_url.startsWith("https://")) {
-      toast({
-        title: "Validation Error",
-        description: "Oviond URL must start with https://",
-        variant: "destructive",
-      });
+      toast.error("Validation Error", { description: "Oviond URL must start with https://" });
       return;
     }
 
     if (formData.date_range_start && formData.date_range_end) {
       if (new Date(formData.date_range_end) < new Date(formData.date_range_start)) {
-        toast({
-          title: "Validation Error",
-          description: "End date must be after start date",
-          variant: "destructive",
-        });
+        toast.error("Validation Error", { description: "End date must be after start date" });
         return;
       }
     }
@@ -154,16 +137,12 @@ export const CreateReportDialog = ({
 
       if (error) throw error;
 
-      toast({ title: "Report created successfully" });
+      toast.success("Report created successfully");
       onSuccess(data);
       resetForm();
       onOpenChange(false);
     } catch (error: any) {
-      toast({
-        title: "Error creating report",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast.error("Error creating report", { description: error.message });
     } finally {
       setSaving(false);
     }

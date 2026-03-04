@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import type { Database } from "@/integrations/supabase/types";
 
 type Stage = Database["public"]["Tables"]["marketing_flow_stages"]["Row"];
@@ -21,7 +21,6 @@ interface EditChannelDialogProps {
 }
 
 export function EditChannelDialog({ open, onOpenChange, channel, stages, onSuccess, selectedClient }: EditChannelDialogProps) {
-  const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [currentUserRole, setCurrentUserRole] = useState<string>("");
   const [teamMembers, setTeamMembers] = useState<Array<{ id: string; name: string; role: string }>>([]);
@@ -82,11 +81,7 @@ export function EditChannelDialog({ open, onOpenChange, channel, stages, onSucce
 
         setTeamMembers(filteredMembers);
       } catch (error) {
-        toast({
-          title: "Error",
-          description: "Failed to load team members",
-          variant: "destructive",
-        });
+        toast.error("Error", { description: "Failed to load team members" });
       } finally {
         setLoadingMembers(false);
       }
@@ -101,11 +96,7 @@ export function EditChannelDialog({ open, onOpenChange, channel, stages, onSucce
     e.preventDefault();
     
     if (!formData.stageId || !formData.name.trim()) {
-      toast({
-        title: "Error",
-        description: "Please fill in all required fields",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: "Please fill in all required fields" });
       return;
     }
 
@@ -123,19 +114,12 @@ export function EditChannelDialog({ open, onOpenChange, channel, stages, onSucce
 
       if (error) throw error;
 
-      toast({
-        title: "Success",
-        description: "Channel updated successfully",
-      });
+      toast.success("Channel updated successfully");
 
       onSuccess();
       onOpenChange(false);
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to update channel",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: "Failed to update channel" });
     } finally {
       setLoading(false);
     }

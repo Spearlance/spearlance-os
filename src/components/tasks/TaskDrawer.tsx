@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Trash2 } from "lucide-react";
 import { DeleteTaskDialog } from "./DeleteTaskDialog";
@@ -67,7 +67,6 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
   const [availablePages, setAvailablePages] = useState<any[]>([]);
   const [subtasks, setSubtasks] = useState<any[]>([]);
   const [taskColumns, setTaskColumns] = useState<Array<{ id: string; name: string; key: string; color: string; mapped_status: 'to_do' | 'in_progress' | 'done' }>>([]);
-  const { toast } = useToast();
   const navigate = useNavigate();
 
   // Normalize editedTask.status based on column_id to prevent enum errors
@@ -329,7 +328,7 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
         .eq("id", existing.id);
       
       if (error) {
-        toast({ title: "Error linking website", variant: "destructive" });
+        toast.error("Error linking website");
         return;
       }
     } else {
@@ -341,14 +340,14 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
           build_id: buildId,
           page_id: pageId || null
         });
-      
+
       if (error) {
-        toast({ title: "Error linking website", variant: "destructive" });
+        toast.error("Error linking website");
         return;
       }
     }
     
-    toast({ title: pageId ? "Page linked successfully" : "Build linked successfully" });
+    toast.success(pageId ? "Page linked successfully" : "Build linked successfully");
     loadLinkedWebsitePage();
     setShowLinkWebsiteDialog(false);
     setSelectedBuildForPage(null);
@@ -362,11 +361,11 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
       .eq("task_id", task.id);
     
     if (error) {
-      toast({ title: "Error unlinking website", variant: "destructive" });
+      toast.error("Error unlinking website");
       return;
     }
     
-    toast({ title: "Website unlinked successfully" });
+    toast.success("Website unlinked successfully");
     setLinkedWebsitePage(null);
   };
 
@@ -420,7 +419,7 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
   const handleLinkAsset = async (assetId: string) => {
     const currentIds = task.related_asset_ids || [];
     if (currentIds.includes(assetId)) {
-      toast({ title: "Asset already linked" });
+      toast.info("Asset already linked");
       return;
     }
 
@@ -430,11 +429,11 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
       .eq("id", task.id);
 
     if (error) {
-      toast({ title: "Error linking asset", variant: "destructive" });
+      toast.error("Error linking asset");
       return;
     }
 
-    toast({ title: "Asset linked successfully" });
+    toast.success("Asset linked successfully");
     task.related_asset_ids = [...currentIds, assetId];
     loadRelatedItems();
     setShowLinkAssetDialog(false);
@@ -448,11 +447,11 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
       .eq("id", task.id);
 
     if (error) {
-      toast({ title: "Error unlinking asset", variant: "destructive" });
+      toast.error("Error unlinking asset");
       return;
     }
 
-    toast({ title: "Asset unlinked successfully" });
+    toast.success("Asset unlinked successfully");
     task.related_asset_ids = currentIds.filter(id => id !== assetId);
     loadRelatedItems();
   };
@@ -460,7 +459,7 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
   const handleLinkMeeting = async (meetingId: string) => {
     const currentIds = task.related_meeting_ids || [];
     if (currentIds.includes(meetingId)) {
-      toast({ title: "Meeting already linked" });
+      toast.info("Meeting already linked");
       return;
     }
 
@@ -470,11 +469,11 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
       .eq("id", task.id);
 
     if (error) {
-      toast({ title: "Error linking meeting", variant: "destructive" });
+      toast.error("Error linking meeting");
       return;
     }
 
-    toast({ title: "Meeting linked successfully" });
+    toast.success("Meeting linked successfully");
     task.related_meeting_ids = [...currentIds, meetingId];
     loadRelatedItems();
     setShowLinkMeetingDialog(false);
@@ -488,11 +487,11 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
       .eq("id", task.id);
 
     if (error) {
-      toast({ title: "Error unlinking meeting", variant: "destructive" });
+      toast.error("Error unlinking meeting");
       return;
     }
 
-    toast({ title: "Meeting unlinked successfully" });
+    toast.success("Meeting unlinked successfully");
     task.related_meeting_ids = currentIds.filter(id => id !== meetingId);
     loadRelatedItems();
   };
@@ -506,7 +505,7 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
       .maybeSingle();
     
     if (existingLink) {
-      toast({ title: "Channel already linked" });
+      toast.info("Channel already linked");
       return;
     }
     
@@ -522,11 +521,11 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
       });
     
     if (error) {
-      toast({ title: "Error linking channel", variant: "destructive" });
+      toast.error("Error linking channel");
       return;
     }
     
-    toast({ title: "Channel linked successfully" });
+    toast.success("Channel linked successfully");
     loadRelatedItems();
     setShowLinkChannelDialog(false);
   };
@@ -539,11 +538,11 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
       .eq("channel_id", channelId);
     
     if (error) {
-      toast({ title: "Error unlinking channel", variant: "destructive" });
+      toast.error("Error unlinking channel");
       return;
     }
     
-    toast({ title: "Channel unlinked successfully" });
+    toast.success("Channel unlinked successfully");
     setRelatedChannels(relatedChannels.filter(c => c.id !== channelId));
   };
 
@@ -578,7 +577,7 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
       .eq("id", task.id);
 
     if (taskError) {
-      toast({ title: "Error updating task", variant: "destructive" });
+      toast.error("Error updating task");
       return;
     }
 
@@ -589,7 +588,7 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
       .eq("task_id", task.id);
 
     if (deleteError) {
-      toast({ title: "Error updating assignees", variant: "destructive" });
+      toast.error("Error updating assignees");
       return;
     }
 
@@ -605,7 +604,7 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
         .insert(assigneeInserts);
 
       if (insertError) {
-        toast({ title: "Error updating assignees", variant: "destructive" });
+        toast.error("Error updating assignees");
         return;
       }
     }
@@ -617,7 +616,7 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
       .eq("task_id", task.id);
 
     if (deleteWatchersError) {
-      toast({ title: "Error updating watchers", variant: "destructive" });
+      toast.error("Error updating watchers");
       return;
     }
 
@@ -636,12 +635,12 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
         .insert(watcherInserts);
 
       if (insertWatchersError) {
-        toast({ title: "Error updating watchers", variant: "destructive" });
+        toast.error("Error updating watchers");
         return;
       }
     }
 
-    toast({ title: "Task updated successfully" });
+    toast.success("Task updated successfully");
     onUpdate();
     onOpenChange(false);
   };
@@ -718,18 +717,9 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
 
       setNewComment("");
       loadComments();
-      toast({
-        title: "Comment added",
-        description: mentionedUserIds.length > 0 
-          ? `${mentionedUserIds.length} user(s) will be notified`
-          : undefined,
-      });
+      toast.success("Comment added", mentionedUserIds.length > 0 ? { description: `${mentionedUserIds.length} user(s) will be notified` } : undefined);
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to add comment",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: "Failed to add comment" });
     }
   };
 
@@ -759,19 +749,12 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
 
       if (taskError) throw taskError;
 
-      toast({
-        title: "Success",
-        description: "Task deleted successfully",
-      });
+      toast.success("Task deleted successfully");
       
       onOpenChange(false);
       onUpdate();
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to delete task",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: "Failed to delete task" });
       throw error;
     }
   };

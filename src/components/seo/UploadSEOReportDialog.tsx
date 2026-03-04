@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Upload, FileSpreadsheet, Loader2 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -17,18 +17,13 @@ interface UploadSEOReportDialogProps {
 export function UploadSEOReportDialog({ open, onOpenChange, clientId }: UploadSEOReportDialogProps) {
   const [file, setFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (selectedFile) {
       if (!selectedFile.name.endsWith('.csv') && selectedFile.type !== 'text/csv') {
-        toast({
-          title: "Invalid file type",
-          description: "Please upload a CSV file",
-          variant: "destructive",
-        });
+        toast.error("Invalid file type", { description: "Please upload a CSV file" });
         return;
       }
       setFile(selectedFile);
@@ -37,11 +32,7 @@ export function UploadSEOReportDialog({ open, onOpenChange, clientId }: UploadSE
 
   const handleUpload = async () => {
     if (!file) {
-      toast({
-        title: "No file selected",
-        description: "Please select a CSV file to upload",
-        variant: "destructive",
-      });
+      toast.error("No file selected", { description: "Please select a CSV file to upload" });
       return;
     }
 
@@ -71,10 +62,7 @@ export function UploadSEOReportDialog({ open, onOpenChange, clientId }: UploadSE
         throw new Error(result.error || 'Failed to process report');
       }
 
-      toast({
-        title: "Report uploaded successfully",
-        description: `Imported ${result.keywords_count} keywords from ${result.region}`,
-      });
+      toast.success("Report uploaded successfully", { description: `Imported ${result.keywords_count} keywords from ${result.region}` });
 
       // Refresh the data
       queryClient.invalidateQueries({ queryKey: ['seo-reports'] });
@@ -84,11 +72,7 @@ export function UploadSEOReportDialog({ open, onOpenChange, clientId }: UploadSE
       onOpenChange(false);
 
     } catch (error) {
-      toast({
-        title: "Upload failed",
-        description: error instanceof Error ? error.message : "Failed to process the report",
-        variant: "destructive",
-      });
+      toast.error("Upload failed", { description: error instanceof Error ? error.message : "Failed to process the report" });
     } finally {
       setIsUploading(false);
     }

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 interface PublicCreateFolderDialogProps {
   open: boolean;
@@ -37,7 +37,6 @@ export function PublicCreateFolderDialog({
   const [name, setName] = useState("");
   const [color, setColor] = useState(FOLDER_COLORS[0]);
   const [isLoading, setIsLoading] = useState(false);
-  const { toast } = useToast();
 
   const handleCreate = async () => {
     if (!name.trim()) return;
@@ -66,10 +65,7 @@ export function PublicCreateFolderDialog({
         throw new Error(data.error || 'Failed to create folder');
       }
 
-      toast({
-        title: "Folder created",
-        description: `"${name}" has been created`
-      });
+      toast.success("Folder created", { description: `"${name}" has been created` });
 
       setName("");
       setColor(FOLDER_COLORS[0]);
@@ -77,11 +73,7 @@ export function PublicCreateFolderDialog({
       onFolderCreated();
 
     } catch (error) {
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to create folder",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: error instanceof Error ? error.message : "Failed to create folder" });
     } finally {
       setIsLoading(false);
     }

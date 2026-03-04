@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { useClient } from "@/contexts/ClientContext";
 import { Loader2, Sparkles, Image as ImageIcon } from "lucide-react";
 
@@ -19,7 +19,6 @@ interface StageAvatarProps {
 
 export function StageAvatar({ submissionId, onFinish, onBack, onSaveExit }: StageAvatarProps) {
   const { selectedClient } = useClient();
-  const { toast } = useToast();
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [hasAnalyzed, setHasAnalyzed] = useState(false);
@@ -97,7 +96,7 @@ export function StageAvatar({ submissionId, onFinish, onBack, onSaveExit }: Stag
 
       if (error) throw error;
 
-      toast({ title: "Analysis complete!", className: "bg-[#13cf48] text-white" });
+      toast.success("Analysis complete!");
       
       // Reload data
       await loadExistingData();
@@ -119,11 +118,7 @@ export function StageAvatar({ submissionId, onFinish, onBack, onSaveExit }: Stag
         .eq("id", submissionId);
 
     } catch (error: any) {
-      toast({
-        title: "Error running analysis",
-        description: error.message || "Please try again",
-        variant: "destructive",
-      });
+      toast.error("Error running analysis", { description: error.message || "Please try again" });
     } finally {
       setIsAnalyzing(false);
     }
@@ -142,14 +137,10 @@ export function StageAvatar({ submissionId, onFinish, onBack, onSaveExit }: Stag
 
       if (data?.image_url) {
         setAvatarImageUrl(data.image_url);
-        toast({ title: "Avatar image generated!", className: "bg-[#13cf48] text-white" });
+        toast.success("Avatar image generated!");
       }
     } catch (error: any) {
-      toast({
-        title: "Error generating image",
-        description: error.message || "Please try again",
-        variant: "destructive",
-      });
+      toast.error("Error generating image", { description: error.message || "Please try again" });
     } finally {
       setIsGeneratingImage(false);
     }
@@ -171,9 +162,9 @@ export function StageAvatar({ submissionId, onFinish, onBack, onSaveExit }: Stag
 
       if (error) throw error;
 
-      toast({ title: "Edits saved" });
+      toast.success("Edits saved");
     } catch (error) {
-      toast({ title: "Error saving edits", variant: "destructive" });
+      toast.error("Error saving edits");
     }
   };
 

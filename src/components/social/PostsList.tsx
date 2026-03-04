@@ -8,14 +8,12 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { PostManagementDrawer } from "./PostManagementDrawer";
-import { useToast } from "@/hooks/use-toast";
 import { Search, Grid3x3, List } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 
 export function PostsList() {
   const { selectedClient } = useClient();
-  const { toast } = useToast();
   const queryClient = useQueryClient();
   
   const [statusFilter, setStatusFilter] = useState<string>("all");

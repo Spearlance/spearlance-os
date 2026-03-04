@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Loader2, Plus, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { PostManagementDrawer } from "./PostManagementDrawer";
 import { parseUTCDate } from "@/lib/utils";
 import { useClient } from "@/contexts/ClientContext";
@@ -42,7 +42,6 @@ interface MonthlyCalendarTableProps {
 }
 
 export const MonthlyCalendarTable = ({ posts, onRefresh, selectedMonth, selectedYear, expectedPostCount }: MonthlyCalendarTableProps) => {
-  const { toast } = useToast();
   const { selectedClient } = useClient();
   const [selectedPosts, setSelectedPosts] = useState<string[]>([]);
   const [generatingCaptions, setGeneratingCaptions] = useState(false);
@@ -119,19 +118,12 @@ export const MonthlyCalendarTable = ({ posts, onRefresh, selectedMonth, selected
 
       if (error) throw error;
 
-      toast({
-        title: "Captions Generated!",
-        description: `Successfully generated ${data.successful} of ${data.total} captions.`,
-      });
+      toast.success("Captions Generated!", { description: `Successfully generated ${data.successful} of ${data.total} captions.` });
 
       setSelectedPosts([]);
       onRefresh();
     } catch (error: any) {
-      toast({
-        title: "Generation Failed",
-        description: error.message || "Failed to generate captions.",
-        variant: "destructive",
-      });
+      toast.error("Generation Failed", { description: error.message || "Failed to generate captions." });
     } finally {
       setGeneratingCaptions(false);
       setProgress("");
@@ -156,19 +148,12 @@ export const MonthlyCalendarTable = ({ posts, onRefresh, selectedMonth, selected
 
       if (error) throw error;
 
-      toast({
-        title: "Images Generated!",
-        description: `Successfully generated ${data.successful} of ${data.total} images.`,
-      });
+      toast.success("Images Generated!", { description: `Successfully generated ${data.successful} of ${data.total} images.` });
 
       setSelectedPosts([]);
       onRefresh();
     } catch (error: any) {
-      toast({
-        title: "Generation Failed",
-        description: error.message || "Failed to generate images.",
-        variant: "destructive",
-      });
+      toast.error("Generation Failed", { description: error.message || "Failed to generate images." });
     } finally {
       setGeneratingImages(false);
       setProgress("");
@@ -178,11 +163,7 @@ export const MonthlyCalendarTable = ({ posts, onRefresh, selectedMonth, selected
   const handleAddPost = async (date: Date) => {
     try {
       if (!selectedClient?.id) {
-        toast({
-          title: "Error",
-          description: "Please select a client first.",
-          variant: "destructive",
-        });
+        toast.error("Error", { description: "Please select a client first." });
         return;
       }
 
@@ -205,10 +186,7 @@ export const MonthlyCalendarTable = ({ posts, onRefresh, selectedMonth, selected
 
       if (error) throw error;
 
-      toast({
-        title: "Post Created",
-        description: `New post created for ${format(date, 'MMMM d, yyyy')}`,
-      });
+      toast.success("Post Created", { description: `New post created for ${format(date, 'MMMM d, yyyy')}` });
 
       onRefresh();
       
@@ -218,11 +196,7 @@ export const MonthlyCalendarTable = ({ posts, onRefresh, selectedMonth, selected
         setDrawerOpen(true);
       }
     } catch (error: any) {
-      toast({
-        title: "Creation Failed",
-        description: error.message || "Failed to create post.",
-        variant: "destructive",
-      });
+      toast.error("Creation Failed", { description: error.message || "Failed to create post." });
     }
   };
 
@@ -241,18 +215,11 @@ export const MonthlyCalendarTable = ({ posts, onRefresh, selectedMonth, selected
 
       if (error) throw error;
 
-      toast({
-        title: "Post Deleted",
-        description: "The post has been removed.",
-      });
+      toast.success("Post Deleted", { description: "The post has been removed." });
 
       onRefresh();
     } catch (error: any) {
-      toast({
-        title: "Delete Failed",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast.error("Delete Failed", { description: error.message });
     } finally {
       setDeletingPostId(null);
     }
@@ -260,11 +227,7 @@ export const MonthlyCalendarTable = ({ posts, onRefresh, selectedMonth, selected
 
   const handleBulkDelete = async () => {
     if (deleteConfirmationText !== "DELETE") {
-      toast({
-        title: "Invalid Confirmation",
-        description: "Please type DELETE to confirm deletion.",
-        variant: "destructive",
-      });
+      toast.error("Invalid Confirmation", { description: "Please type DELETE to confirm deletion." });
       return;
     }
 
@@ -276,21 +239,14 @@ export const MonthlyCalendarTable = ({ posts, onRefresh, selectedMonth, selected
 
       if (error) throw error;
 
-      toast({
-        title: "Posts Deleted",
-        description: `Successfully deleted ${selectedPosts.length} posts.`,
-      });
+      toast.success("Posts Deleted", { description: `Successfully deleted ${selectedPosts.length} posts.` });
 
       setSelectedPosts([]);
       setShowBulkDeleteDialog(false);
       setDeleteConfirmationText("");
       onRefresh();
     } catch (error: any) {
-      toast({
-        title: "Delete Failed",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast.error("Delete Failed", { description: error.message });
     }
   };
 

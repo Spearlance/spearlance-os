@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Sparkles } from "lucide-react";
 
@@ -15,7 +15,6 @@ interface MoodBoardGeneratorProps {
 }
 
 export default function MoodBoardGenerator({ brandGuide, clientId, onComplete }: MoodBoardGeneratorProps) {
-  const { toast } = useToast();
   const [generating, setGenerating] = useState(false);
   const [title, setTitle] = useState("");
   const [keywords, setKeywords] = useState("");
@@ -23,11 +22,7 @@ export default function MoodBoardGenerator({ brandGuide, clientId, onComplete }:
 
   const handleGenerate = async () => {
     if (!title.trim()) {
-      toast({
-        title: "Error",
-        description: "Please enter a title for your mood board",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "Please enter a title for your mood board" });
       return;
     }
 
@@ -52,21 +47,14 @@ export default function MoodBoardGenerator({ brandGuide, clientId, onComplete }:
 
       if (error) throw error;
 
-      toast({
-        title: "Success",
-        description: "Mood board generated successfully!"
-      });
+      toast.success("Success", { description: "Mood board generated successfully!" });
 
       setTitle("");
       setKeywords("");
       setCustomNotes("");
       onComplete();
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to generate mood board",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: error.message || "Failed to generate mood board" });
     } finally {
       setGenerating(false);
     }

@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar, Save, CheckCircle, ChevronLeft } from "lucide-react";
 import { useClient } from "@/contexts/ClientContext";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -23,7 +23,6 @@ interface PostSaverProps {
 
 export const PostSaver = ({ postData, onBack, onComplete }: PostSaverProps) => {
   const { selectedClient } = useClient();
-  const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
   const [showScheduler, setShowScheduler] = useState(false);
   const [scheduledDate, setScheduledDate] = useState<Date>();
@@ -48,8 +47,7 @@ export const PostSaver = ({ postData, onBack, onComplete }: PostSaverProps) => {
 
       if (error) throw error;
 
-      toast({
-        title: "✅ Post saved!",
+      toast.success("Post saved!", {
         description: `Your post has been ${status === 'draft' ? 'saved as a draft' : status === 'scheduled' ? 'scheduled' : 'marked as posted'}`,
       });
 
@@ -64,11 +62,7 @@ export const PostSaver = ({ postData, onBack, onComplete }: PostSaverProps) => {
         }, 1500);
       }
     } catch (error: any) {
-      toast({
-        title: "Couldn't save post",
-        description: error.message,
-        variant: "destructive"
-      });
+      toast.error("Couldn't save post", { description: error.message });
     } finally {
       setIsSaving(false);
     }
@@ -76,11 +70,7 @@ export const PostSaver = ({ postData, onBack, onComplete }: PostSaverProps) => {
 
   const handleSchedule = () => {
     if (!scheduledDate) {
-      toast({
-        title: "Pick a date",
-        description: "Please select when you want to post this",
-        variant: "destructive"
-      });
+      toast.error("Pick a date", { description: "Please select when you want to post this" });
       return;
     }
     savePost('scheduled');

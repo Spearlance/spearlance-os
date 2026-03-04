@@ -17,7 +17,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { 
   KeyRound, 
   Mail, 
@@ -138,19 +138,12 @@ export function EditUserDialog({ user, clients, onUserUpdated }: EditUserDialogP
 
       if (profileError) throw profileError;
 
-      toast({
-        title: "User updated",
-        description: "User profile and access settings have been saved",
-      });
+      toast.success("User updated", { description: "User profile and access settings have been saved" });
 
       onUserUpdated();
       setOpen(false);
     } catch (error: any) {
-      toast({
-        title: "Error saving changes",
-        description: error.message || "Failed to update user",
-        variant: "destructive",
-      });
+      toast.error("Error saving changes", { description: error.message || "Failed to update user" });
     } finally {
       setIsSaving(false);
     }
@@ -165,16 +158,9 @@ export function EditUserDialog({ user, clients, onUserUpdated }: EditUserDialogP
 
       if (error) throw error;
 
-      toast({
-        title: "Password reset email sent",
-        description: `A password reset link has been sent to ${user.email}`,
-      });
+      toast.success("Password reset email sent", { description: `A password reset link has been sent to ${user.email}` });
     } catch (error: any) {
-      toast({
-        title: "Error sending password reset",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast.error("Error sending password reset", { description: error.message });
     } finally {
       setIsSendingReset(false);
     }
@@ -189,16 +175,9 @@ export function EditUserDialog({ user, clients, onUserUpdated }: EditUserDialogP
 
       if (error) throw error;
 
-      toast({
-        title: "Invitation resent",
-        description: `A new invitation has been sent to ${user.email}`,
-      });
+      toast.success("Invitation resent", { description: `A new invitation has been sent to ${user.email}` });
     } catch (error: any) {
-      toast({
-        title: "Error resending invitation",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast.error("Error resending invitation", { description: error.message });
     } finally {
       setIsSendingInvite(false);
     }

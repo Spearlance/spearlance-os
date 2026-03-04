@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Calendar, CheckCircle2, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { useClient } from "@/contexts/ClientContext";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
@@ -73,7 +73,6 @@ export const MonthlyPlannerWizard = ({
   activeStrategy,
 }: MonthlyPlannerWizardProps) => {
   const { selectedClient } = useClient();
-  const { toast } = useToast();
   const [isGenerating, setIsGenerating] = useState(false);
   const [progress, setProgress] = useState<string>("");
   const [isComplete, setIsComplete] = useState(false);
@@ -154,10 +153,7 @@ export const MonthlyPlannerWizard = ({
       setIsComplete(true);
       setProgress(`🎉 Success! ${data.posts_created} posts created for ${selectedMonthName}`);
 
-      toast({
-        title: "Monthly Plan Created!",
-        description: `${data.posts_created} posts ready for ${selectedMonthName}. Let's add captions and images!`,
-      });
+      toast.success("Monthly Plan Created!", { description: `${data.posts_created} posts ready for ${selectedMonthName}. Let's add captions and images!` });
 
       setTimeout(() => {
         onComplete();
@@ -168,11 +164,7 @@ export const MonthlyPlannerWizard = ({
       }, 2000);
 
     } catch (error: any) {
-      toast({
-        title: "Generation Failed",
-        description: error.message || "Failed to generate monthly plan. Please try again.",
-        variant: "destructive",
-      });
+      toast.error("Generation Failed", { description: error.message || "Failed to generate monthly plan. Please try again." });
       setIsGenerating(false);
       setProgress("");
     }

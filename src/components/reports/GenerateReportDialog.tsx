@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { 
   Sparkles, 
@@ -79,7 +79,6 @@ export const GenerateReportDialog = ({
   clientId,
   onSuccess,
 }: GenerateReportDialogProps) => {
-  const { toast } = useToast();
   const [step, setStep] = useState(1);
   const [generating, setGenerating] = useState(false);
   
@@ -229,20 +228,12 @@ export const GenerateReportDialog = ({
     const { start, end } = getDateRange();
     
     if (!start || !end) {
-      toast({
-        title: "Date range required",
-        description: "Please select a date range for the report.",
-        variant: "destructive",
-      });
+      toast.error("Date range required", { description: "Please select a date range for the report." });
       return;
     }
 
     if (reportType === 'channel_deep_dive' && selectedChannels.length === 0) {
-      toast({
-        title: "Channel selection required",
-        description: "Please select at least one channel to analyze.",
-        variant: "destructive",
-      });
+      toast.error("Channel selection required", { description: "Please select at least one channel to analyze." });
       return;
     }
 
@@ -262,19 +253,12 @@ export const GenerateReportDialog = ({
 
       if (error) throw error;
 
-      toast({
-        title: "Report generated!",
-        description: "Your AI report has been created successfully.",
-      });
+      toast.success("Report generated!", { description: "Your AI report has been created successfully." });
 
       onSuccess(data);
       onOpenChange(false);
     } catch (error: any) {
-      toast({
-        title: "Failed to generate report",
-        description: error.message || "An error occurred while generating the report.",
-        variant: "destructive",
-      });
+      toast.error("Failed to generate report", { description: error.message || "An error occurred while generating the report." });
     } finally {
       setGenerating(false);
     }

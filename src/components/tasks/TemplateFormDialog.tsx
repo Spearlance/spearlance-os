@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 interface TaskTemplate {
   id: string;
@@ -81,7 +81,6 @@ export function TemplateFormDialog({
   onSuccess,
   selectedChannel 
 }: TemplateFormDialogProps) {
-  const { toast } = useToast();
   const [formData, setFormData] = useState({
     channel_name: template?.channel_name || selectedChannel || '',
     title: template?.title || '',
@@ -136,10 +135,7 @@ export function TemplateFormDialog({
     e.preventDefault();
     
     if (!formData.channel_name.trim() || !formData.title.trim()) {
-      toast({ 
-        title: "Please fill in all required fields", 
-        variant: "destructive" 
-      });
+      toast.error("Please fill in all required fields");
       return;
     }
 
@@ -147,7 +143,7 @@ export function TemplateFormDialog({
     
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
-      toast({ title: "Not authenticated", variant: "destructive" });
+      toast.error("Not authenticated");
       setLoading(false);
       return;
     }
@@ -174,9 +170,9 @@ export function TemplateFormDialog({
         .eq('id', template.id);
       
       if (error) {
-        toast({ title: "Error updating template", variant: "destructive" });
+        toast.error("Error updating template");
       } else {
-        toast({ title: "Template updated successfully" });
+        toast.success("Template updated successfully");
         onSuccess();
         onOpenChange(false);
       }
@@ -189,9 +185,9 @@ export function TemplateFormDialog({
         });
       
       if (error) {
-        toast({ title: "Error creating template", variant: "destructive" });
+        toast.error("Error creating template");
       } else {
-        toast({ title: "Template created successfully" });
+        toast.success("Template created successfully");
         onSuccess();
         onOpenChange(false);
       }

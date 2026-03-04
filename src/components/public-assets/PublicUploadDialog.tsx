@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Upload, X, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 interface PublicUploadDialogProps {
   open: boolean;
@@ -29,7 +29,6 @@ export function PublicUploadDialog({
 }: PublicUploadDialogProps) {
   const [files, setFiles] = useState<FileUpload[]>([]);
   const [isUploading, setIsUploading] = useState(false);
-  const { toast } = useToast();
 
   const apiCall = useCallback(async (action: string, options?: { method?: string; body?: unknown }) => {
     const url = new URL(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/public-assets-api`);
@@ -140,10 +139,7 @@ export function PublicUploadDialog({
     setIsUploading(false);
 
     if (successCount > 0) {
-      toast({
-        title: "Upload complete",
-        description: `${successCount} file(s) uploaded successfully`
-      });
+      toast.success("Upload complete", { description: `${successCount} file(s) uploaded successfully` });
       onUploadComplete();
     }
   };

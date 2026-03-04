@@ -8,7 +8,7 @@ import { Plus, Link2, Unlink, CheckSquare, ExternalLink } from "lucide-react";
 import { LinkTaskDialog } from "./LinkTaskDialog";
 import { CreateTaskDialog } from "@/components/tasks/CreateTaskDialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 
 interface BuildLinkedTasksTabProps {
@@ -26,7 +26,6 @@ export function BuildLinkedTasksTab({ buildId, clientId }: BuildLinkedTasksTabPr
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const queryClient = useQueryClient();
-  const { toast } = useToast();
   const navigate = useNavigate();
 
   const { data: linkedTasks, isLoading } = useQuery({
@@ -62,14 +61,10 @@ export function BuildLinkedTasksTab({ buildId, clientId }: BuildLinkedTasksTabPr
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["website-build-tasks", buildId] });
-      toast({ title: "Task unlinked" });
+      toast.success("Task unlinked");
     },
     onError: (error) => {
-      toast({
-        title: "Error unlinking task",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast.error("Error unlinking task", { description: error.message });
     },
   });
 

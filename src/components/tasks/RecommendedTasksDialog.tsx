@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Plus, RefreshCw, Sparkles } from "lucide-react";
 import { format } from "date-fns";
@@ -37,7 +37,6 @@ export function RecommendedTasksDialog({
   onRefresh,
   isRefreshing
 }: RecommendedTasksDialogProps) {
-  const { toast } = useToast();
   const [addingTasks, setAddingTasks] = useState<string[]>([]);
   const [addingAll, setAddingAll] = useState(false);
 
@@ -84,19 +83,12 @@ export function RecommendedTasksDialog({
       
       if (error) throw error;
       
-      toast({
-        title: "Task added",
-        description: recommendation.title
-      });
+      toast.success("Task added", { description: recommendation.title });
       
       onTaskAdded();
       
     } catch (error) {
-      toast({
-        title: "Failed to add task",
-        description: error instanceof Error ? error.message : "An error occurred",
-        variant: "destructive"
-      });
+      toast.error("Failed to add task", { description: error instanceof Error ? error.message : "An error occurred" });
     } finally {
       setAddingTasks(prev => prev.filter(id => id !== taskId));
     }
@@ -146,20 +138,13 @@ export function RecommendedTasksDialog({
       
       if (error) throw error;
       
-      toast({
-        title: "All tasks added",
-        description: `${recommendations.length} tasks added to your board`
-      });
+      toast.success("All tasks added", { description: `${recommendations.length} tasks added to your board` });
       
       onTaskAdded();
       onOpenChange(false);
       
     } catch (error) {
-      toast({
-        title: "Failed to add tasks",
-        description: error instanceof Error ? error.message : "An error occurred",
-        variant: "destructive"
-      });
+      toast.error("Failed to add tasks", { description: error instanceof Error ? error.message : "An error occurred" });
     } finally {
       setAddingAll(false);
     }

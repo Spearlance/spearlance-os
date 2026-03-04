@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Copy, Eye, EyeOff, RefreshCw, CheckCircle2, Circle, AlertTriangle } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDistanceToNow } from "date-fns";
 
@@ -22,7 +22,6 @@ interface AnalyticsSetupTabProps {
 }
 
 export function AnalyticsSetupTab({ client }: AnalyticsSetupTabProps) {
-  const { toast } = useToast();
   const [workspaceKey, setWorkspaceKey] = useState<string | null>(null);
   const [showKey, setShowKey] = useState(false);
   const [lastEventAt, setLastEventAt] = useState<Date | null>(null);
@@ -89,11 +88,7 @@ export function AnalyticsSetupTab({ client }: AnalyticsSetupTabProps) {
 
   const updateWebsiteUrl = async () => {
     if (!client?.id || !websiteUrl.trim()) {
-      toast({
-        title: "Error",
-        description: "Please enter a valid website URL",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: "Please enter a valid website URL" });
       return;
     }
 
@@ -106,19 +101,12 @@ export function AnalyticsSetupTab({ client }: AnalyticsSetupTabProps) {
 
       if (error) throw error;
 
-      toast({
-        title: "Website URL Saved",
-        description: "You can now generate a workspace key",
-      });
+      toast.success("Website URL Saved", { description: "You can now generate a workspace key" });
 
       // Update local client object
       client.website_url = websiteUrl.trim();
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to save website URL",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: "Failed to save website URL" });
     } finally {
       setIsUpdatingUrl(false);
     }
@@ -126,20 +114,12 @@ export function AnalyticsSetupTab({ client }: AnalyticsSetupTabProps) {
 
   const generateWorkspaceKey = async () => {
     if (!client?.id) {
-      toast({
-        title: "Error",
-        description: "No client selected",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: "No client selected" });
       return;
     }
 
     if (!client.website_url) {
-      toast({
-        title: "Error",
-        description: "Please add a website URL first",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: "Please add a website URL first" });
       return;
     }
 
@@ -166,16 +146,9 @@ export function AnalyticsSetupTab({ client }: AnalyticsSetupTabProps) {
 
       setWorkspaceKey(newKey);
       setShowConfirmDialog(false);
-      toast({
-        title: "Workspace Key Generated",
-        description: "Your analytics tracking key has been created",
-      });
+      toast.success("Workspace Key Generated", { description: "Your analytics tracking key has been created" });
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to generate workspace key",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: "Failed to generate workspace key" });
     } finally {
       setLoading(false);
     }
@@ -183,7 +156,7 @@ export function AnalyticsSetupTab({ client }: AnalyticsSetupTabProps) {
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
-    toast({ title: "Copied to clipboard" });
+    toast.success("Copied to clipboard");
   };
 
   const maskKey = (key: string) => {

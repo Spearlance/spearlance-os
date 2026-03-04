@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, Wrench, Eye, Lightbulb, Heart, Megaphone, Users, Building2, Sparkles, Camera } from "lucide-react";
 import { useClient } from "@/contexts/ClientContext";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 const AI_READY_TOPICS = [
   {
@@ -62,7 +62,6 @@ interface TopicSelectorProps {
 
 export const TopicSelector = ({ onComplete }: TopicSelectorProps) => {
   const { selectedClient } = useClient();
-  const { toast } = useToast();
   const [selectedTopic, setSelectedTopic] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [ideas, setIdeas] = useState<any[]>([]);
@@ -84,11 +83,7 @@ export const TopicSelector = ({ onComplete }: TopicSelectorProps) => {
 
       setIdeas(data.ideas || []);
     } catch (error: any) {
-      toast({
-        title: "Couldn't generate ideas",
-        description: error.message || "Please try again",
-        variant: "destructive"
-      });
+      toast.error("Couldn't generate ideas", { description: error.message || "Please try again" });
     } finally {
       setIsGenerating(false);
     }
