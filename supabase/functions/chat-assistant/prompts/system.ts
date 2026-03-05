@@ -1,19 +1,16 @@
-import { getExpertiseGuidelines, getCommunicationGuidelines } from './personalization.ts';
+export { getExpertiseGuidelines, getCommunicationGuidelines } from './personalization.ts';
 import { marketingKnowledgeBase } from '../marketing-knowledge.ts';
 
 export interface SystemPromptContext {
-  client_id: string;
-  user_id: string;
-  userRole: string;
+  clientId: string;
+  clientName: string;
+  submissionId: string | null;
+  currentStage: string | null;
+  existingLaunchpadData: any;
   userContext: string;
-  submission_id?: string | null;
-  current_stage?: string | null;
-  existingLaunchpadData?: {
-    responses_json?: Record<string, unknown>;
-    discovery_completeness?: number;
-    marketing_completeness?: number;
-    avatar_completeness?: number;
-  } | null;
+  userRole: string;
+  marketingKnowledge: string;
+  today: string;
 }
 
 export function buildSystemPrompt(
@@ -21,23 +18,23 @@ export function buildSystemPrompt(
   context: SystemPromptContext
 ): string {
   const {
-    client_id,
-    user_id,
-    userRole,
-    userContext,
-    submission_id,
-    current_stage,
+    clientId,
+    submissionId,
+    currentStage,
     existingLaunchpadData,
+    userContext,
+    userRole,
+    today,
   } = context;
 
   if (mode === 'launchpad') {
     return `You are a friendly marketing AI assistant helping a client complete their Launchpad onboarding through natural conversation.
 
 CONTEXT:
-- client_id: ${client_id}
-- submission_id: ${submission_id}
-- current_stage: ${current_stage}
-- today: ${new Date().toISOString().split('T')[0]}
+- client_id: ${clientId}
+- submission_id: ${submissionId}
+- current_stage: ${currentStage}
+- today: ${today}
 - existing_data: ${JSON.stringify(existingLaunchpadData?.responses_json || {})}
 - existing_completeness: discovery=${existingLaunchpadData?.discovery_completeness || 0}%, marketing=${existingLaunchpadData?.marketing_completeness || 0}%, avatar=${existingLaunchpadData?.avatar_completeness || 0}%
 
@@ -84,10 +81,10 @@ When user says "let's get started" or "yes":
 
 STAGES & REQUIRED DATA:
 
-**Discovery Stage (current: ${current_stage === 'discovery' ? 'ACTIVE' : 'done'}):**
+**Discovery Stage (current: ${currentStage === 'discovery' ? 'ACTIVE' : 'done'}):**
 Extract: company (legal_name, brand_name, website_url, hq_city, industry), contacts (primary_name, primary_email), services (array of names), model (aov, ltv, sales_process), goals (quarter_goals array, annual_revenue_goal), state (working, not_working, constraints), competition (competitors array), voice (tone, words_to_avoid)
 
-**Marketing Stage (current: ${current_stage === 'marketing' ? 'ACTIVE' : 'pending'}):**
+**Marketing Stage (current: ${currentStage === 'marketing' ? 'ACTIVE' : 'pending'}):**
 For each service: description, differentiators, key_benefits
 
 **HANDLING SERVICE NAME CHANGES:**
@@ -136,7 +133,7 @@ When you detect a rename:
 4. Respond: "✓ Renamed '[old]' to '[new]'!"
 5. Continue conversation about the newly named service
 
-**Avatar Stage (current: ${current_stage === 'avatar' ? 'ACTIVE' : 'pending'}):**
+**Avatar Stage (current: ${currentStage === 'avatar' ? 'ACTIVE' : 'pending'}):**
 When user confirms readiness, acknowledge they can run analysis from the main form.
 
 EXTRACTION STRATEGY:
@@ -178,9 +175,9 @@ You can work on ANY stage regardless of current submission.stage. Pass the appro
     return `You are SpearlanceAI, Spearlance's intelligent marketing co-pilot in OFFER MODE. You are guiding the user through a structured 6-step Complete Offer creation workflow. You are client scoped at all times.
 
 Context you always have:
-- client_id: ${client_id}
+- client_id: ${clientId}
 - user_role: ${userRole}
-- today: ${new Date().toISOString().split('T')[0]}
+- today: ${today}
 
 ${userContext}
 
@@ -553,13 +550,13 @@ When writing creative, reference these frameworks. Cite the source framework whe
   }
 
   // DEFAULT MODE: Data Retrieval & Advisory
-  return `You are SpearlanceAI, a Senior-Level Marketing Strategist and friendly co-pilot for ${client_id}.
+  return `You are SpearlanceAI, a Senior-Level Marketing Strategist and friendly co-pilot for ${clientId}.
 
 Context you always have:
-- client_id: ${client_id} (this is the ORGANIZATION/BUSINESS ID, never use as assignee_id)
-- current_user_id: ${user_id} (this is YOUR user ID, automatically used for task creation)
+- client_id: ${clientId} (this is the ORGANIZATION/BUSINESS ID, never use as assignee_id)
+- current_user_id: (this is YOUR user ID, automatically used for task creation)
 - user_role: ${userRole}
-- today: ${new Date().toISOString().split('T')[0]}
+- today: ${today}
 
 IMPORTANT: When creating tasks:
 - DO NOT pass assignee_id unless you have explicitly retrieved a valid user_id from the profiles table
@@ -1091,7 +1088,7 @@ Call get_form_submissions() when user asks EXPLICITLY about submissions:
 Default behavior: If no timeframe specified, use last 30 days (date_from: 30 days ago, date_to: today).
 
 UNDERSTANDING TIME CONTEXT
-- Today's date: ${new Date().toISOString().split('T')[0]}
+- Today's date: ${today}
 - When user asks "this month," "this week," "recently":
   * Calculate date ranges automatically
   * Query relevant data for that period
@@ -1111,7 +1108,7 @@ UNDERSTANDING TIME CONTEXT
 
 HANDLING TEMPORAL REFERENCES
 - When user says "the meeting today" or "today's meeting":
-  * Calculate today's date range: ${new Date().toISOString().split('T')[0]}
+  * Calculate today's date range: ${today}
   * Call get_meetings with date_from and date_to for today
   * If no meetings today, check yesterday or suggest upcoming meetings
 
@@ -1170,7 +1167,7 @@ Combined Multi-Filter Queries:
 
 DATE CALCULATIONS:
 
-Current date: ${new Date().toISOString().split('T')[0]}
+Current date: ${today}
 
 Calculate automatically:
 - Today: Use current date
@@ -1486,7 +1483,7 @@ Format response:
 ### DATE CALCULATION REFERENCE
 
 Calculate dates automatically (same logic as task queries):
-- "today" = current date (${new Date().toISOString().split('T')[0]})
+- "today" = current date (${today})
 - "tomorrow" = current date + 1 day
 - "yesterday" = current date - 1 day
 - "this week" = current Monday to current Sunday
