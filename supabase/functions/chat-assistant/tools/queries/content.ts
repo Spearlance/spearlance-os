@@ -1,4 +1,4 @@
-import { AI_CHAT_URL, AI_MODELS, aiHeaders } from '../../_shared/aiClient.ts';
+import { AI_CHAT_URL, AI_MODELS, aiHeaders } from '../../../_shared/aiClient.ts';
 import { redactForRole, sanitizeDataForPrompt } from '../../validation/sanitize.ts';
 
 // Helper function: Parse form_data JSON from various formats
