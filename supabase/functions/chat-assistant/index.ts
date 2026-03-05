@@ -13,6 +13,7 @@ import { getToolsForMode } from './tools/registry.ts';
 import { validateArgs, executeTool } from './tools/executor.ts';
 import type { ExecutorContext } from './tools/types.ts';
 import { buildSystemPrompt, type SystemPromptContext } from './prompts/system.ts';
+import { buildClientSnapshot } from './prompts/snapshot.ts';
 import { fetchConversationHistory } from './tools/queries/history.ts';
 import { AI_CHAT_URL, AI_MODELS, aiHeaders } from '../_shared/aiClient.ts';
 
@@ -106,8 +107,11 @@ serve(async (req) => {
       ? await fetchConversationHistory(supabaseClient, client_id, conversation_id, 50000)
       : [];
 
+    const clientSnapshot = await buildClientSnapshot(supabaseClient, client_id);
+
     const contextualMessages: Array<{ role: string; content: string }> = [
       { role: 'system', content: systemPrompt },
+      { role: 'system', content: clientSnapshot },
     ];
 
     if (historicalContext.length > 0) {
@@ -310,6 +314,7 @@ ${historicalContext.join('\n\n')}
       // ── Second AI call with tool results ────────────────────────────────
       const messagesWithResults = [
         { role: 'system', content: systemPrompt },
+        { role: 'system', content: clientSnapshot },
         ...messages,
         {
           role: 'assistant',
