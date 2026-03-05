@@ -15,9 +15,9 @@ export interface ChatMessage {
   role: 'user' | 'assistant' | 'system';
   content: string;
   timestamp: Date;
-  data?: any; // Structured data for cards
-  failed?: boolean; // Flag to indicate message send failure
-  errorMessage?: string; // Specific error message for this failed message
+  data?: StructuredData;
+  failed?: boolean;
+  errorMessage?: string;
 }
 
 export interface PersistedChatMessage {
@@ -35,9 +35,13 @@ export interface ChatbotState {
   isOpen: boolean;
 }
 
-export interface StructuredData {
-  type: 'task' | 'report' | 'ticket' | 'meeting' | 'service' | 'avatar' | 'asset' | 'channel';
-  items: any[];
-  total_count?: number;
-  next_offset?: number | null;
-}
+export type StructuredData =
+  | { type: 'task'; items: Record<string, unknown>[]; total_count?: number; next_offset?: number | null }
+  | { type: 'report'; items: Record<string, unknown>[]; total_count?: number; next_offset?: number | null }
+  | { type: 'ticket'; items: Record<string, unknown>[]; total_count?: number; next_offset?: number | null }
+  | { type: 'meeting'; items: Record<string, unknown>[]; total_count?: number; next_offset?: number | null }
+  | { type: 'service'; items: Record<string, unknown>[]; total_count?: number; next_offset?: number | null }
+  | { type: 'avatar'; items: Record<string, unknown>[]; total_count?: number; next_offset?: number | null }
+  | { type: 'asset'; items: Record<string, unknown>[]; total_count?: number; next_offset?: number | null }
+  | { type: 'channel'; items: Record<string, unknown>[]; total_count?: number; next_offset?: number | null }
+  | { type: 'pending_action'; action: string; confirm_id: string; preview: Record<string, unknown> };

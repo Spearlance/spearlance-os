@@ -5,20 +5,21 @@ import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { SaveOfferDialog } from '@/components/marketing/SaveOfferDialog';
 import ReactMarkdown from 'react-markdown';
 import spearlanceLogo from '@/assets/spearlance-logo.png';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { useClient } from '@/contexts/ClientContext';
-import { supabase } from '@/integrations/supabase/client';
+import type { UserProfile } from './useChatbot';
 
 interface ChatMessageProps {
   message: ChatMessageType;
   onRetry?: (content: string) => void;
+  userProfile?: UserProfile | null;
 }
 
-export const ChatMessage = ({ message, onRetry }: ChatMessageProps) => {
+export const ChatMessage = ({ message, onRetry, userProfile }: ChatMessageProps) => {
   // Guard against undefined content
   if (!message || !message.content) {
     console.error('ChatMessage received invalid message:', message);
@@ -30,31 +31,6 @@ export const ChatMessage = ({ message, onRetry }: ChatMessageProps) => {
   const navigate = useNavigate();
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const { selectedClient } = useClient();
-  
-  const [userProfile, setUserProfile] = useState<{
-    name: string | null;
-    avatar_url: string | null;
-  } | null>(null);
-
-  // Fetch current user's profile
-  useEffect(() => {
-    const fetchUserProfile = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data } = await supabase
-          .from('profiles')
-          .select('name, avatar_url')
-          .eq('id', user.id)
-          .maybeSingle();
-        
-        if (data) {
-          setUserProfile(data);
-        }
-      }
-    };
-    
-    fetchUserProfile();
-  }, []);
 
   // Get user initials helper
   const getUserInitials = () => {

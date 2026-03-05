@@ -4,6 +4,11 @@ import { useClient } from '@/contexts/ClientContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
+export interface UserProfile {
+  name: string | null;
+  avatar_url: string | null;
+}
+
 export const useChatbot = () => {
   const { selectedClient } = useClient();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -14,7 +19,27 @@ export const useChatbot = () => {
   const [error, setError] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [isOfferMode, setIsOfferMode] = useState(false);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+
+  // Fetch user profile once when chat opens
+  useEffect(() => {
+    if (!isOpen) return;
+    let cancelled = false;
+    const fetchProfile = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user && !cancelled) {
+        const { data } = await supabase
+          .from('profiles')
+          .select('name, avatar_url')
+          .eq('id', user.id)
+          .maybeSingle();
+        if (data && !cancelled) setUserProfile(data);
+      }
+    };
+    fetchProfile();
+    return () => { cancelled = true; };
+  }, [isOpen]);
 
   // Load conversations when chat opens or client changes
   useEffect(() => {
@@ -446,6 +471,7 @@ export const useChatbot = () => {
     error,
     isOpen,
     isOfferMode,
+    userProfile,
     setIsOpen,
     setIsOfferMode,
     setActiveConversationId,
