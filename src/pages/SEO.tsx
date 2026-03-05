@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useClient } from "@/contexts/ClientContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,7 @@ import { Search, Lock, MapPin, Upload } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { PricingModal } from "@/components/billing/PricingModal";
 import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 import { useLatestSEOReport } from "@/hooks/useSEOReports";
 import { useLatestSEOKeywords, useUniqueRegions } from "@/hooks/useSEOKeywords";
 import { UploadSEOReportDialog } from "@/components/seo/UploadSEOReportDialog";
@@ -18,22 +19,21 @@ export default function SEO() {
   const { selectedClient } = useClient();
   const [pricingModalOpen, setPricingModalOpen] = useState(false);
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
-  const [userRole, setUserRole] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchUserRole = async () => {
+  const { data: userRole = null } = useQuery({
+    queryKey: ['user-role'],
+    queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', user.id)
-          .maybeSingle();
-        if (profile) setUserRole(profile.role);
-      }
-    };
-    fetchUserRole();
-  }, []);
+      if (!user) return null;
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .maybeSingle();
+      return profile?.role ?? null;
+    },
+    staleTime: 5 * 60 * 1000,
+  });
 
   // SEO Reports data
   const { data: latestReport, isLoading: reportsLoading } = useLatestSEOReport(selectedClient?.id);
