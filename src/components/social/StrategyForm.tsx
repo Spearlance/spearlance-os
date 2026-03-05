@@ -168,7 +168,7 @@ export function StrategyForm({
     saveMutation.mutate();
   };
 
-  const monthName = month ? new Date(2025, month - 1).toLocaleString('default', { month: 'long' }) : '';
+  const monthName = month ? new Date(0, month - 1).toLocaleString('default', { month: 'long' }) : '';
 
   if (isLoading) {
     return <div>Loading strategy...</div>;
