@@ -8,6 +8,7 @@ import { getMeetings, searchMeetingNotes } from './queries/meetings.ts';
 import { searchAssets, getServices, getAvatars, getMarketingTools, getMarketingChannels } from './queries/assets.ts';
 import { getCommunicationLogs, getTickets } from './queries/communication.ts';
 import { extractLaunchpadData, gatherGSOInputs } from './queries/launchpad.ts';
+import { semanticSearch } from './queries/knowledge.ts';
 
 // ─── Dispatch map ────────────────────────────────────────────────────────────
 const TOOL_HANDLERS: Record<string, (ctx: ExecutorContext, args: any) => Promise<any>> = {
@@ -59,6 +60,9 @@ const TOOL_HANDLERS: Record<string, (ctx: ExecutorContext, args: any) => Promise
   // Launchpad / GSO
   gather_gso_inputs:    (ctx) => gatherGSOInputs(ctx.supabase, ctx.clientId),
   extract_launchpad_data:(ctx, args) => extractLaunchpadData(ctx.supabase, args, ctx.clientId, ctx.submissionId),
+
+  // Knowledge / semantic search
+  semantic_search: (ctx, args) => semanticSearch(ctx.supabase, args, ctx.clientId),
 };
 
 // ─── Validation ──────────────────────────────────────────────────────────────

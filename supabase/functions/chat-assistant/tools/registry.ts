@@ -742,6 +742,34 @@ export const QUERY_TOOLS: ToolDefinition[] = [
     }
   },
 
+  // ─── Knowledge / Semantic Search ────────────────────────────────────────────
+  {
+    type: "function",
+    function: {
+      name: "semantic_search",
+      description: "Search the client's entire knowledge base using semantic/meaning-based search. Use this when the user asks about past decisions, meeting discussions, specific leads, historical context, or anything that requires searching across meetings, tasks, reports, leads, communications, social posts, and blog content. Returns the most relevant pieces of information ranked by relevance.",
+      parameters: {
+        type: "object",
+        properties: {
+          query: {
+            type: "string",
+            description: "Natural language search query describing what information to find. Be specific and descriptive for best results."
+          },
+          source_types: {
+            type: "array",
+            items: { type: "string" },
+            description: "Optional filter to specific data types. Values: meetings, tasks, quarterly_goals, website_form_submissions, reports, communication_logs, social_media_posts, blog_posts, marketing_ideas"
+          },
+          limit: {
+            type: "number",
+            description: "Max results to return. Default 8."
+          }
+        },
+        required: ["query"]
+      }
+    }
+  },
+
   // ─── GSO / Offer ────────────────────────────────────────────────────────────
   {
     type: "function",
