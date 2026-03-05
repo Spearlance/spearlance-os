@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useClient } from "@/contexts/ClientContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -38,37 +38,22 @@ interface Lead {
 }
 
 export default function Leads() {
-  const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
   const { selectedClient } = useClient();
   const selectedClientId = selectedClient?.id;
   
-  const [leads, setLeads] = useState<Lead[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [urgencyFilter, setUrgencyFilter] = useState<string>("all");
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
 
-  useEffect(() => {
-    const clientId = searchParams.get("client");
-    if (clientId && clientId !== selectedClientId) {
-      navigate(`/leads?client=${selectedClientId}`);
-    }
-  }, [selectedClientId, searchParams, navigate]);
-
-  useEffect(() => {
-    if (!selectedClientId) return;
-    fetchLeads();
-  }, [selectedClientId, statusFilter, urgencyFilter]);
-
-  const fetchLeads = async () => {
-    setLoading(true);
-    try {
+  const { data: leads = [], isLoading: loading } = useQuery({
+    queryKey: ['leads', selectedClientId, statusFilter, urgencyFilter],
+    queryFn: async () => {
       let query = supabase
         .from('leads')
         .select('*')
-        .eq('client_id', selectedClientId)
+        .eq('client_id', selectedClientId!)
         .order('created_at', { ascending: false });
 
       if (statusFilter !== 'all') {
@@ -80,15 +65,11 @@ export default function Leads() {
       }
 
       const { data, error } = await query;
-
       if (error) throw error;
-      setLeads(data || []);
-    } catch (error) {
-      toast.error('Failed to load leads');
-    } finally {
-      setLoading(false);
-    }
-  };
+      return data || [];
+    },
+    enabled: !!selectedClientId,
+  });
 
   const updateLeadStatus = async (leadId: string, newStatus: string) => {
     try {
@@ -99,9 +80,10 @@ export default function Leads() {
 
       if (error) throw error;
 
-      setLeads(prev => prev.map(lead => 
-        lead.id === leadId ? { ...lead, status: newStatus } : lead
-      ));
+      queryClient.setQueryData<Lead[]>(
+        ['leads', selectedClientId, statusFilter, urgencyFilter],
+        (old) => old?.map(lead => lead.id === leadId ? { ...lead, status: newStatus } : lead) ?? []
+      );
 
       if (selectedLead?.id === leadId) {
         setSelectedLead(prev => prev ? { ...prev, status: newStatus } : null);
