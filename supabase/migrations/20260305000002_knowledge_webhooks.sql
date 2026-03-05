@@ -1,0 +1,28 @@
+-- Knowledge Base Webhook Configuration
+--
+-- Configure these webhooks via Supabase Dashboard → Database → Webhooks:
+--
+-- For each of these 9 tables, create a webhook:
+--   Name: embed_{table_name}
+--   Table: {table_name}
+--   Events: INSERT, UPDATE
+--   Type: Supabase Edge Function
+--   Function: embed-knowledge
+--   HTTP Headers: Authorization: Bearer {SUPABASE_SERVICE_ROLE_KEY}
+--
+-- Tables:
+--   1. meetings
+--   2. tasks
+--   3. quarterly_goals
+--   4. website_form_submissions
+--   5. reports
+--   6. communication_logs
+--   7. social_media_posts
+--   8. blog_posts
+--   9. marketing_ideas
+--
+-- The edge function URL is automatically resolved by Supabase when using
+-- the "Supabase Edge Function" webhook type.
+
+-- No SQL needed — webhooks are configured via Dashboard UI.
+-- This file serves as documentation for the required webhook configuration.
