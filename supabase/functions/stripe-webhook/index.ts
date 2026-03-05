@@ -41,7 +41,7 @@ serve(async (req) => {
         
         // Check if this is a website add-on purchase
         if (session.metadata?.product_type === 'website' && session.metadata?.client_id) {
-          const websiteProductId = 'prod_TKM8ZkU6KtXYPM';
+          const websiteProductId = Deno.env.get('STRIPE_WEBSITE_PRODUCT_ID') || 'prod_TKM8ZkU6KtXYPM';
           
           // Validate product ID for additional security
           if (session.metadata?.product_id === websiteProductId) {
@@ -110,8 +110,7 @@ serve(async (req) => {
 
         console.log('Updated subscription:', subscription.id, subscription.status, 'plan:', productName);
 
-        // TODO: Replace this with your actual Unlimited plan product ID from Stripe Dashboard
-        const unlimitedProductId = 'prod_UNLIMITED_PLAN_ID';
+        const unlimitedProductId = Deno.env.get('STRIPE_UNLIMITED_PRODUCT_ID') || '';
 
         if (productId === unlimitedProductId) {
           console.log('Unlimited plan detected - ending trial and unlocking website');

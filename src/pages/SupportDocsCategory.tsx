@@ -124,7 +124,6 @@ export default function SupportDocsCategory() {
       setArticles(data || []);
       setFilteredArticles(data || []);
     } catch (error: any) {
-      console.error("Error fetching articles:", error);
       toast.error("Failed to load articles");
     } finally {
       setLoading(false);

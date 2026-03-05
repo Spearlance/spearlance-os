@@ -9,7 +9,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { useClient } from "@/contexts/ClientContext";
 import { AssigneeSelector } from "./AssigneeSelector";
 import { WatcherSelector } from "./WatcherSelector";
@@ -36,7 +36,6 @@ interface TaskColumn {
 }
 
 export function CreateTaskDialog({ open, onOpenChange, onSuccess }: CreateTaskDialogProps) {
-  const { toast } = useToast();
   const { selectedClient } = useClient();
   const [loading, setLoading] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
@@ -117,11 +116,7 @@ export function CreateTaskDialog({ open, onOpenChange, onSuccess }: CreateTaskDi
     e.preventDefault();
     
     if (!selectedClient) {
-      toast({
-        title: "Error",
-        description: "Please select a client first",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: "Please select a client first" });
       return;
     }
 
@@ -204,10 +199,7 @@ export function CreateTaskDialog({ open, onOpenChange, onSuccess }: CreateTaskDi
         if (watcherError) throw watcherError;
       }
 
-      toast({
-        title: "Success",
-        description: "Task created successfully",
-      });
+      toast.success("Task created successfully");
 
       onOpenChange(false);
       setFormData({ title: "", description: "", column_id: "", status: "to_do", priority: "normal", due_date: "" });
@@ -219,12 +211,7 @@ export function CreateTaskDialog({ open, onOpenChange, onSuccess }: CreateTaskDi
       setEndDate('');
       onSuccess?.();
     } catch (error) {
-      console.error("Error creating task:", error);
-      toast({
-        title: "Error",
-        description: "Failed to create task",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: "Failed to create task" });
     } finally {
       setLoading(false);
     }

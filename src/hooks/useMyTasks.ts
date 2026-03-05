@@ -94,9 +94,24 @@ export function useMyTasks() {
 
       if (tasksError) throw tasksError;
 
+      type RawTask = {
+        id: string;
+        title: string;
+        description: string | null;
+        status: string | null;
+        priority: string | null;
+        due_date: string | null;
+        color: string | null;
+        is_recurring: boolean | null;
+        is_recurring_instance: boolean | null;
+        client_id: string;
+        linked_channel_id: string | null;
+        clients: { id: string; name: string; logo_url: string | null } | null;
+      };
+
       // Enrich tasks with additional data
       const enrichedTasks: MyTask[] = await Promise.all(
-        (tasksData || []).map(async (task: any) => {
+        (tasksData || []).map(async (task: RawTask) => {
           // Load subtasks
           const { data: subtasks } = await supabase
             .from("tasks")
@@ -118,7 +133,7 @@ export function useMyTasks() {
               .from("marketing_flow_channels")
               .select("name")
               .eq("id", task.linked_channel_id)
-              .single();
+              .maybeSingle();
             linkedChannelName = channel?.name;
           }
 
@@ -133,7 +148,8 @@ export function useMyTasks() {
             .maybeSingle();
           
           if (pageLink && pageLink.website_build_pages) {
-            linkedPageName = (pageLink.website_build_pages as any).name;
+            const buildPage = pageLink.website_build_pages as { name: string };
+            linkedPageName = buildPage.name;
           }
 
           return {

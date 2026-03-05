@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Copy, Check, ChevronDown } from "lucide-react";
 import { useState } from "react";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 const COLOR_PRESETS = [
   {
@@ -62,16 +62,12 @@ export default function ColorPalettePicker({
   notes,
   onNotesChange
 }: ColorPalettePickerProps) {
-  const { toast } = useToast();
   const [copiedColor, setCopiedColor] = useState<string | null>(null);
 
   const copyToClipboard = (color: string, label: string) => {
     navigator.clipboard.writeText(color);
     setCopiedColor(color);
-    toast({
-      title: "Copied!",
-      description: `${label} color ${color} copied to clipboard`
-    });
+    toast.success("Copied!", { description: `${label} color ${color} copied to clipboard` });
     setTimeout(() => setCopiedColor(null), 2000);
   };
 
@@ -79,10 +75,7 @@ export default function ColorPalettePicker({
     onPrimaryChange(preset.primary);
     onSecondaryChange(preset.secondary);
     onAccentChange(preset.accent);
-    toast({
-      title: "Preset Applied",
-      description: `Applied ${preset.name} color palette`
-    });
+    toast.success("Preset Applied", { description: `Applied ${preset.name} color palette` });
   };
 
   return (

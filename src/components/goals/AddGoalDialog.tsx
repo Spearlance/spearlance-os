@@ -69,7 +69,6 @@ export function AddGoalDialog({
       setQuarter(currentQuarter);
       setYear(currentYear);
     } catch (error: any) {
-      console.error("Error adding goal:", error);
       toast.error(error.message || "Failed to add goal");
     } finally {
       setLoading(false);

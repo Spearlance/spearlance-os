@@ -11,7 +11,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Trophy, ExternalLink, XCircle, AlertCircle, Save, User } from "lucide-react";
 import { format } from "date-fns";
 
@@ -23,7 +23,6 @@ interface BugReportDrawerProps {
 }
 
 export function BugReportDrawer({ bug, open, onOpenChange, onUpdate }: BugReportDrawerProps) {
-  const { toast } = useToast();
   const [adminNotes, setAdminNotes] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
@@ -49,10 +48,10 @@ export function BugReportDrawer({ bug, open, onOpenChange, onUpdate }: BugReport
 
       if (error) throw error;
 
-      toast({ title: "Status updated successfully" });
+      toast.success("Status updated successfully");
       onUpdate();
     } catch (error: any) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast.error("Error", { description: error.message });
     }
   };
 
@@ -65,10 +64,10 @@ export function BugReportDrawer({ bug, open, onOpenChange, onUpdate }: BugReport
 
       if (error) throw error;
 
-      toast({ title: `Awarded ${points} points!`, description: "Reporter will be notified." });
+      toast.success(`Awarded ${points} points!`, { description: "Reporter will be notified." });
       onUpdate();
     } catch (error: any) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast.error("Error", { description: error.message });
     }
   };
 
@@ -82,10 +81,10 @@ export function BugReportDrawer({ bug, open, onOpenChange, onUpdate }: BugReport
 
       if (error) throw error;
 
-      toast({ title: "Admin notes saved" });
+      toast.success("Admin notes saved");
       onUpdate();
     } catch (error: any) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast.error("Error", { description: error.message });
     } finally {
       setIsSaving(false);
     }

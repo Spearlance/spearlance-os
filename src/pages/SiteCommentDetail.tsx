@@ -68,12 +68,11 @@ const SiteCommentDetail = () => {
         .from("duda_conversations")
         .select("id, conversation_number, duda_page_uuid, status, created_by_account, created_at, title")
         .eq("id", id)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
       setConversation(data);
     } catch (error: any) {
-      console.error("Error loading conversation:", error);
       toast.error("Failed to load conversation");
     } finally {
       setLoading(false);
@@ -102,7 +101,6 @@ const SiteCommentDetail = () => {
 
       setComments(commentsWithAuthor);
     } catch (error: any) {
-      console.error("Error loading comments:", error);
       toast.error("Failed to load comments");
     }
   };
@@ -155,7 +153,6 @@ const SiteCommentDetail = () => {
       toast.success("Internal reply added");
       loadComments();
     } catch (error: any) {
-      console.error("Error submitting reply:", error);
       toast.error("Failed to add reply");
     } finally {
       setSubmitting(false);
@@ -181,7 +178,6 @@ const SiteCommentDetail = () => {
       setConversation({ ...conversation, status: newStatus });
       toast.success(`Conversation ${newStatus}`);
     } catch (error: any) {
-      console.error("Error updating status:", error);
       toast.error("Failed to update status");
     }
   };

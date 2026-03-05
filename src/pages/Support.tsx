@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { MessageSquare, BookOpen, Plus, Clock, CheckCircle2, AlertCircle } from "lucide-react";
 import { CreateTicketDialog } from "@/components/support/CreateTicketDialog";
 
@@ -35,7 +35,6 @@ export default function Support() {
   const [stats, setStats] = useState<TicketStats>({ open: 0, avgResponseMinutes: 0, resolvedThisWeek: 0 });
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const navigate = useNavigate();
-  const { toast } = useToast();
 
   useEffect(() => {
     if (selectedClient) {
@@ -175,7 +174,7 @@ export default function Support() {
               className="h-24 flex flex-col items-center justify-center gap-2"
               onClick={() => {
                 // Open chatbot widget - this would need to be implemented in ChatbotWidget
-                toast({ title: "Opening SpearlanceAI...", description: "Let's find an answer for you!" });
+                toast.info("Opening SpearlanceAI...", { description: "Let's find an answer for you!" });
               }}
             >
               <MessageSquare className="h-6 w-6" />

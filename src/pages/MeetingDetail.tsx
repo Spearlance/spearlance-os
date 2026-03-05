@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { CheckSquare, Edit, Save, X } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
@@ -34,7 +34,6 @@ export default function MeetingDetail() {
   const [userRole, setUserRole] = useState<string>("");
   const [newDecision, setNewDecision] = useState("");
   const [newNextStep, setNewNextStep] = useState("");
-  const { toast } = useToast();
 
   useEffect(() => {
     if (id) {
@@ -50,7 +49,7 @@ export default function MeetingDetail() {
         .from("profiles")
         .select("role")
         .eq("id", user.id)
-        .single();
+        .maybeSingle();
       if (profile) {
         setUserRole(profile.role);
       }
@@ -62,10 +61,10 @@ export default function MeetingDetail() {
       .from("meetings")
       .select("*")
       .eq("id", id)
-      .single();
+      .maybeSingle();
 
     if (error) {
-      toast({ title: "Error loading meeting", variant: "destructive" });
+      toast.error("Error loading meeting");
       return;
     }
 
@@ -93,11 +92,11 @@ export default function MeetingDetail() {
       .eq("id", meeting.id);
 
     if (error) {
-      toast({ title: "Error saving changes", variant: "destructive" });
+      toast.error("Error saving changes");
       return;
     }
 
-    toast({ title: "Changes saved successfully" });
+    toast.success("Changes saved successfully");
     setIsEditing(false);
     loadMeeting();
   };
@@ -131,7 +130,7 @@ export default function MeetingDetail() {
       .single();
 
     if (error) {
-      toast({ title: "Error creating task", variant: "destructive" });
+      toast.error("Error creating task");
       return;
     }
 
@@ -143,7 +142,7 @@ export default function MeetingDetail() {
         task_id: taskData.id,
       });
 
-    toast({ title: "Task created successfully" });
+    toast.success("Task created successfully");
     setSelectedText("");
   };
 

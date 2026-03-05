@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Trash2 } from "lucide-react";
 import { ConfirmDeleteDialog } from "@/components/ui/ConfirmDeleteDialog";
@@ -15,7 +15,6 @@ interface DeleteTicketDialogProps {
 export function DeleteTicketDialog({ ticketTitle, ticketId, trigger }: DeleteTicketDialogProps) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { toast } = useToast();
   const navigate = useNavigate();
 
   const handleConfirm = async () => {
@@ -26,19 +25,12 @@ export function DeleteTicketDialog({ ticketTitle, ticketId, trigger }: DeleteTic
       .eq("id", ticketId);
 
     if (error) {
-      toast({
-        title: "Error deleting ticket",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast.error("Error deleting ticket", { description: error.message });
       setLoading(false);
       return;
     }
 
-    toast({
-      title: "Ticket deleted successfully",
-      description: "This action will not affect your support metrics.",
-    });
+    toast.success("Ticket deleted successfully", { description: "This action will not affect your support metrics." });
 
     setOpen(false);
     navigate("/support");

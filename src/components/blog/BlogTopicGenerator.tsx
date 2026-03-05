@@ -45,7 +45,6 @@ export function BlogTopicGenerator() {
         toast.success(`Generated ${data.topics.length} topic ideas!`);
       }
     } catch (error) {
-      console.error('Error generating topics:', error);
       toast.error("Failed to generate topics");
     } finally {
       setLoading(false);

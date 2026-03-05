@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
@@ -17,7 +17,6 @@ import { DeleteTicketDialog } from "@/components/support/DeleteTicketDialog";
 export default function TicketDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { toast } = useToast();
   const [ticket, setTicket] = useState<any>(null);
   const [messages, setMessages] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
@@ -43,7 +42,7 @@ export default function TicketDetail() {
         .from("profiles")
         .select("role")
         .eq("id", user.id)
-        .single();
+        .maybeSingle();
       setUserRole(profile?.role || "");
     }
   };
@@ -57,10 +56,10 @@ export default function TicketDetail() {
         owner:owner_user_id (id, name, email)
       `)
       .eq("id", id)
-      .single();
+      .maybeSingle();
 
     if (error) {
-      toast({ title: "Error loading ticket", variant: "destructive" });
+      toast.error("Error loading ticket");
       return;
     }
 
@@ -133,7 +132,7 @@ export default function TicketDetail() {
       });
 
     if (error) {
-      toast({ title: "Error sending message", variant: "destructive" });
+      toast.error("Error sending message");
       return;
     }
 
@@ -149,12 +148,12 @@ export default function TicketDetail() {
       .eq("id", id);
 
     if (error) {
-      toast({ title: "Error updating status", variant: "destructive" });
+      toast.error("Error updating status");
       return;
     }
 
     setTicket({ ...ticket, status });
-    toast({ title: "Status updated" });
+    toast.success("Status updated");
   };
 
   const handleUpdatePriority = async (priority: any) => {
@@ -164,12 +163,12 @@ export default function TicketDetail() {
       .eq("id", id);
 
     if (error) {
-      toast({ title: "Error updating priority", variant: "destructive" });
+      toast.error("Error updating priority");
       return;
     }
 
     setTicket({ ...ticket, priority });
-    toast({ title: "Priority updated" });
+    toast.success("Priority updated");
   };
 
   const handleUpdateOwner = async (ownerId: string) => {
@@ -179,13 +178,13 @@ export default function TicketDetail() {
       .eq("id", id);
 
     if (error) {
-      toast({ title: "Error updating owner", variant: "destructive" });
+      toast.error("Error updating owner");
       return;
     }
 
     const owner = users.find(u => u.id === ownerId);
     setTicket({ ...ticket, owner_user_id: ownerId, owner });
-    toast({ title: "Owner updated" });
+    toast.success("Owner updated");
   };
 
   if (loading) {

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useClient } from "@/contexts/ClientContext";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader2, Sparkles, Plus } from "lucide-react";
@@ -10,7 +10,6 @@ import MoodBoardGallery from "@/components/brand/MoodBoardGallery";
 
 export default function MoodBoard() {
   const { selectedClient, loading: clientLoading } = useClient();
-  const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [moodBoards, setMoodBoards] = useState<any[]>([]);
   const [brandGuide, setBrandGuide] = useState<any>(null);
@@ -46,12 +45,7 @@ export default function MoodBoard() {
       if (error) throw error;
       setMoodBoards(boards || []);
     } catch (error: any) {
-      console.error("Error loading data:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load mood boards",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "Failed to load mood boards" });
     } finally {
       setLoading(false);
     }

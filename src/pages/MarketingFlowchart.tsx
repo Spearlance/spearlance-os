@@ -22,7 +22,7 @@ import { ChannelDrawer } from "@/components/marketing/ChannelDrawer";
 import { AddChannelDialog } from "@/components/marketing/AddChannelDialog";
 import { ApplyTemplateDialog } from "@/components/marketing/ApplyTemplateDialog";
 import { TaskDrawer } from "@/components/tasks/TaskDrawer";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -38,7 +38,6 @@ type Task = Database["public"]["Tables"]["tasks"]["Row"];
 const MarketingFlowchart = () => {
   const { selectedClient } = useClient();
   const navigate = useNavigate();
-  const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [flowId, setFlowId] = useState<string | null>(null);
   const [stages, setStages] = useState<Stage[]>([]);
@@ -69,13 +68,13 @@ const MarketingFlowchart = () => {
         
         // Restrict access for web_designer
         if ((profile?.role as string) === 'web_designer') {
-          toast({ title: "Access Denied", description: "Web designers don't have access to Marketing Flow", variant: "destructive" });
+          toast.error("Access Denied", { description: "Web designers don't have access to Marketing Flow" });
           navigate('/');
         }
       }
     };
     fetchUserRole();
-  }, [navigate, toast]);
+  }, [navigate]);
 
   useEffect(() => {
     if (selectedClient?.id) {
@@ -184,12 +183,7 @@ const MarketingFlowchart = () => {
 
       setChannels(channelsWithCounts);
     } catch (error) {
-      console.error("Error loading flow data:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load marketing flow",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: "Failed to load marketing flow" });
     } finally {
       setLoading(false);
     }

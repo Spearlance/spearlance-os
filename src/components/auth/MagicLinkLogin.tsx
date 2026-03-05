@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Mail, ArrowLeft } from "lucide-react";
 
@@ -11,7 +11,6 @@ interface MagicLinkLoginProps {
 }
 
 export const MagicLinkLogin = ({ onBack }: MagicLinkLoginProps) => {
-  const { toast } = useToast();
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);

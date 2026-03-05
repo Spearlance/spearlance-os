@@ -25,7 +25,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Trash2, Loader2 } from "lucide-react";
 import { CampaignKPIsTab } from "./CampaignKPIsTab";
 
@@ -62,7 +62,6 @@ export function CampaignDrawer({
   onUpdate, 
   isAdminOrFMM 
 }: CampaignDrawerProps) {
-  const { toast } = useToast();
   const [name, setName] = useState(campaign.name);
   const [description, setDescription] = useState(campaign.description || "");
   const [status, setStatus] = useState(campaign.status);
@@ -94,18 +93,10 @@ export function CampaignDrawer({
 
       if (error) throw error;
 
-      toast({
-        title: "Success",
-        description: "Campaign updated successfully",
-      });
+      toast.success("Success", { description: "Campaign updated successfully" });
       onUpdate();
     } catch (error) {
-      console.error("Error updating campaign:", error);
-      toast({
-        title: "Error",
-        description: "Failed to update campaign",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: "Failed to update campaign" });
     } finally {
       setSaving(false);
     }
@@ -128,19 +119,11 @@ export function CampaignDrawer({
 
       if (error) throw error;
 
-      toast({
-        title: "Success",
-        description: "Campaign deleted successfully",
-      });
+      toast.success("Success", { description: "Campaign deleted successfully" });
       onOpenChange(false);
       onUpdate();
     } catch (error) {
-      console.error("Error deleting campaign:", error);
-      toast({
-        title: "Error",
-        description: "Failed to delete campaign",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: "Failed to delete campaign" });
     } finally {
       setDeleting(false);
     }

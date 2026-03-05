@@ -42,7 +42,6 @@ export default function ExportData() {
       setTables(data.tables || []);
     } catch (err) {
       toast.error("Failed to load table list");
-      console.error(err);
     } finally {
       setLoading(false);
     }

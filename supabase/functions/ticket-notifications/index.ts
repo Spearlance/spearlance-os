@@ -55,7 +55,7 @@ serve(async (req: Request) => {
       throw new Error("Ticket not found");
     }
 
-    const ticketUrl = `${Deno.env.get("SUPABASE_URL")?.replace('.supabase.co', '')}/support`;
+    const ticketUrl = `${Deno.env.get("APP_URL") ?? 'https://os.spearlance.com'}/support`;
 
     // Handle different notification types
     switch (type) {

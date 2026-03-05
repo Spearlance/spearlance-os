@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Plus, ExternalLink, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import type { Database } from "@/integrations/supabase/types";
@@ -30,7 +30,6 @@ interface ChannelDrawerProps {
 }
 
 export function ChannelDrawer({ open, onOpenChange, channel, onUpdate, isAdminOrFMM, clientName, clientId }: ChannelDrawerProps) {
-  const { toast } = useToast();
   const navigate = useNavigate();
   const [notes, setNotes] = useState<Note[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -173,17 +172,9 @@ export function ChannelDrawer({ open, onOpenChange, channel, onUpdate, isAdminOr
       setNewNote("");
       setNoteVisibility("internal");
       loadNotes();
-      toast({
-        title: "Success",
-        description: "Note added successfully",
-      });
+      toast.success("Success", { description: "Note added successfully" });
     } catch (error) {
-      console.error("Error adding note:", error);
-      toast({
-        title: "Error",
-        description: "Failed to add note",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: "Failed to add note" });
     } finally {
       setLoading(false);
     }
@@ -204,18 +195,10 @@ export function ChannelDrawer({ open, onOpenChange, channel, onUpdate, isAdminOr
 
       if (error) throw error;
 
-      toast({
-        title: "Success",
-        description: "Channel updated successfully",
-      });
+      toast.success("Success", { description: "Channel updated successfully" });
       onUpdate();
     } catch (error) {
-      console.error("Error updating channel:", error);
-      toast({
-        title: "Error",
-        description: "Failed to update channel",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: "Failed to update channel" });
     } finally {
       setLoading(false);
     }
@@ -247,20 +230,12 @@ export function ChannelDrawer({ open, onOpenChange, channel, onUpdate, isAdminOr
 
       if (channelError) throw channelError;
 
-      toast({
-        title: "Success",
-        description: "Channel deleted successfully",
-      });
-      
+      toast.success("Success", { description: "Channel deleted successfully" });
+
       onOpenChange(false); // Close the drawer
       onUpdate(); // Refresh the parent view
     } catch (error) {
-      console.error("Error deleting channel:", error);
-      toast({
-        title: "Error",
-        description: "Failed to delete channel",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: "Failed to delete channel" });
       throw error; // Re-throw so DeleteChannelDialog can handle loading state
     }
   };

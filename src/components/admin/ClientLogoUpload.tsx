@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Upload, X, Building2 } from "lucide-react";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { UPLOAD_LIMITS } from "@/lib/upload-limits";
 
 interface ClientLogoUploadProps {
@@ -31,21 +31,13 @@ export function ClientLogoUpload({
     // Validate file type
     const validTypes = ["image/png", "image/jpeg", "image/webp", "image/svg+xml"];
     if (!validTypes.includes(file.type)) {
-      toast({
-        title: "Invalid file type",
-        description: "Please upload a PNG, JPG, WEBP, or SVG image",
-        variant: "destructive",
-      });
+      toast.error("Invalid file type", { description: "Please upload a PNG, JPG, WEBP, or SVG image" });
       return;
     }
 
     // Validate file size
     if (file.size > UPLOAD_LIMITS.LOGO) {
-      toast({
-        title: "File too large",
-        description: `Please upload an image smaller than ${UPLOAD_LIMITS.formatMB(UPLOAD_LIMITS.LOGO)}`,
-        variant: "destructive",
-      });
+      toast.error("File too large", { description: `Please upload an image smaller than ${UPLOAD_LIMITS.formatMB(UPLOAD_LIMITS.LOGO)}` });
       return;
     }
 
@@ -77,22 +69,14 @@ export function ClientLogoUpload({
       setPreviewUrl(data.publicUrl);
       onLogoChange(data.publicUrl);
 
-      toast({
-        title: "Logo saved",
-        description: "Client logo has been updated successfully",
-      });
+      toast.success("Logo saved", { description: "Client logo has been updated successfully" });
 
       // Notify parent to refresh
       if (onLogoSaved) {
         onLogoSaved();
       }
     } catch (error) {
-      console.error("Error uploading logo:", error);
-      toast({
-        title: "Upload failed",
-        description: "Failed to upload logo. Please try again.",
-        variant: "destructive",
-      });
+      toast.error("Upload failed", { description: "Failed to upload logo. Please try again." });
     } finally {
       setIsUploading(false);
     }
@@ -101,10 +85,7 @@ export function ClientLogoUpload({
   const handleRemoveLogo = () => {
     setPreviewUrl(null);
     onLogoChange(null);
-    toast({
-      title: "Logo removed",
-      description: "Client logo has been removed",
-    });
+    toast.success("Logo removed", { description: "Client logo has been removed" });
   };
 
   return (

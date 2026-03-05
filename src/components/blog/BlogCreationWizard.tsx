@@ -69,7 +69,6 @@ export function BlogCreationWizard({ onComplete }: BlogCreationWizardProps) {
         toast.success("Outline generated!");
       }
     } catch (error) {
-      console.error('Error generating outline:', error);
       toast.error("Failed to generate outline");
     } finally {
       setLoading(false);
@@ -103,7 +102,6 @@ export function BlogCreationWizard({ onComplete }: BlogCreationWizardProps) {
         toast.success("Article generated!");
       }
     } catch (error) {
-      console.error('Error generating article:', error);
       toast.error("Failed to generate article");
     } finally {
       setLoading(false);
@@ -130,7 +128,6 @@ export function BlogCreationWizard({ onComplete }: BlogCreationWizardProps) {
         toast.success("Images generated!");
       }
     } catch (error) {
-      console.error('Error generating images:', error);
       toast.error("Failed to generate images");
     } finally {
       setLoading(false);

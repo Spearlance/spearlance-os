@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { UserPlus, AlertCircle } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
@@ -24,8 +24,6 @@ export function InviteTeamMemberDialog({ clientId, canManageTeam, onInviteSucces
     name: "",
     role: "client" as "client" | "fmm",
   });
-  const { toast } = useToast();
-
   // Fetch current user's role
   const { data: userProfile } = useQuery({
     queryKey: ['user-profile'],
@@ -37,7 +35,7 @@ export function InviteTeamMemberDialog({ clientId, canManageTeam, onInviteSucces
         .from('profiles')
         .select('role')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
       
       return data;
     },
@@ -58,7 +56,7 @@ export function InviteTeamMemberDialog({ clientId, canManageTeam, onInviteSucces
           billing_plans!inner(max_team_members, name)
         `)
         .eq('id', clientId)
-        .single();
+        .maybeSingle();
 
       if (clientError) throw clientError;
 
@@ -99,21 +97,13 @@ export function InviteTeamMemberDialog({ clientId, canManageTeam, onInviteSucces
 
       if (error) throw error;
 
-      toast({
-        title: "Invitation sent",
-        description: `Invitation email sent to ${formData.email}`,
-      });
+      toast.success("Invitation sent", { description: `Invitation email sent to ${formData.email}` });
 
       setFormData({ email: "", name: "", role: "client" });
       setOpen(false);
       onInviteSuccess();
     } catch (error: any) {
-      console.error("Error inviting team member:", error);
-      toast({
-        title: "Failed to invite team member",
-        description: error.message || "Please try again",
-        variant: "destructive",
-      });
+      toast.error("Failed to invite team member", { description: error.message || "Please try again" });
     } finally {
       setLoading(false);
     }

@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, ChevronLeft, Sparkles } from "lucide-react";
 import { useClient } from "@/contexts/ClientContext";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 
@@ -18,7 +18,6 @@ interface CaptionEditorProps {
 
 export const CaptionEditor = ({ postIdea, onComplete, onBack }: CaptionEditorProps) => {
   const { selectedClient } = useClient();
-  const { toast } = useToast();
   const [isGenerating, setIsGenerating] = useState(true);
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [caption, setCaption] = useState<any>(null);
@@ -71,8 +70,6 @@ export const CaptionEditor = ({ postIdea, onComplete, onBack }: CaptionEditorPro
         }
       }
     } catch (error: any) {
-      console.error('Error generating caption:', error);
-      
       let errorMessage = "Please try again";
       
       if (error.name === 'AbortError') {
@@ -85,11 +82,7 @@ export const CaptionEditor = ({ postIdea, onComplete, onBack }: CaptionEditorPro
         errorMessage = error.message;
       }
       
-      toast({
-        title: "Couldn't generate caption",
-        description: errorMessage,
-        variant: "destructive"
-      });
+      toast.error("Couldn't generate caption", { description: errorMessage });
     } finally {
       setIsGenerating(false);
       setIsRegenerating(false);
@@ -102,11 +95,7 @@ export const CaptionEditor = ({ postIdea, onComplete, onBack }: CaptionEditorPro
 
   const handleContinue = () => {
     if (!editedCaption.trim()) {
-      toast({
-        title: "Caption required",
-        description: "Please write a caption for your post",
-        variant: "destructive"
-      });
+      toast.error("Caption required", { description: "Please write a caption for your post" });
       return;
     }
 

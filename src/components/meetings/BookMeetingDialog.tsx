@@ -1,7 +1,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 interface BookMeetingDialogProps {
   open: boolean;
@@ -16,7 +16,6 @@ export function BookMeetingDialog({
   fmmUsername,
   fmmEventTypeId,
 }: BookMeetingDialogProps) {
-  const { toast } = useToast();
   const [embedUrl, setEmbedUrl] = useState<string>("");
 
   useEffect(() => {
@@ -33,17 +32,14 @@ export function BookMeetingDialog({
     // Listen for booking confirmation messages from Cal.com iframe
     const handleMessage = (event: MessageEvent) => {
       if (event.data?.type === "booking:success") {
-        toast({
-          title: "Meeting booked successfully",
-          description: "Your meeting has been scheduled.",
-        });
+        toast.success("Meeting booked successfully", { description: "Your meeting has been scheduled." });
         onOpenChange(false);
       }
     };
 
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
-  }, [open, onOpenChange, toast]);
+  }, [open, onOpenChange]);
 
   if (!fmmUsername || !fmmEventTypeId) {
     return (

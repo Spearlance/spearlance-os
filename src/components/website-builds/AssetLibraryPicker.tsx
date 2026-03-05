@@ -120,7 +120,6 @@ export function AssetLibraryPicker({
       const { data: assetsData } = await assetQuery;
       setAssets(assetsData || []);
     } catch (err) {
-      console.error('Error loading assets:', err);
       toast.error('Failed to load assets');
     } finally {
       setLoading(false);
@@ -174,7 +173,6 @@ export function AssetLibraryPicker({
       onAssetsLinked();
       onOpenChange(false);
     } catch (err) {
-      console.error('Error linking assets:', err);
       toast.error('Failed to add assets');
     } finally {
       setLinking(false);

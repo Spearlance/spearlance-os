@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { AddCampaignDialog } from "./AddCampaignDialog";
 import { CampaignCard } from "./CampaignCard";
@@ -23,7 +23,6 @@ interface CampaignsTabProps {
 }
 
 export function CampaignsTab({ channelId, channelName, isAdminOrFMM }: CampaignsTabProps) {
-  const { toast } = useToast();
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
@@ -45,12 +44,7 @@ export function CampaignsTab({ channelId, channelName, isAdminOrFMM }: Campaigns
       if (error) throw error;
       setCampaigns(data || []);
     } catch (error) {
-      console.error("Error loading campaigns:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load campaigns",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: "Failed to load campaigns" });
     } finally {
       setLoading(false);
     }
@@ -65,18 +59,10 @@ export function CampaignsTab({ channelId, channelName, isAdminOrFMM }: Campaigns
 
       if (error) throw error;
 
-      toast({
-        title: "Success",
-        description: "Campaign status updated",
-      });
+      toast.success("Success", { description: "Campaign status updated" });
       loadCampaigns();
     } catch (error) {
-      console.error("Error updating campaign status:", error);
-      toast({
-        title: "Error",
-        description: "Failed to update campaign status",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: "Failed to update campaign status" });
     }
   };
 
@@ -89,18 +75,10 @@ export function CampaignsTab({ channelId, channelName, isAdminOrFMM }: Campaigns
 
       if (error) throw error;
 
-      toast({
-        title: "Success",
-        description: "Campaign deleted",
-      });
+      toast.success("Success", { description: "Campaign deleted" });
       loadCampaigns();
     } catch (error) {
-      console.error("Error deleting campaign:", error);
-      toast({
-        title: "Error",
-        description: "Failed to delete campaign",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: "Failed to delete campaign" });
     }
   };
 

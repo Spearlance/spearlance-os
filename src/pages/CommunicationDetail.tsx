@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -32,7 +32,6 @@ interface CommunicationLog {
 export default function CommunicationDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { toast } = useToast();
   const [log, setLog] = useState<CommunicationLog | null>(null);
   const [internalNotes, setInternalNotes] = useState<string>("");
   const [tags, setTags] = useState<string>("");
@@ -51,10 +50,10 @@ export default function CommunicationDetail() {
       .from("communication_logs")
       .select("*")
       .eq("id", id)
-      .single();
+      .maybeSingle();
 
     if (error || !data) {
-      toast({ title: "Error loading communication", variant: "destructive" });
+      toast.error("Error loading communication");
       navigate("/communications/logs");
       return;
     }
@@ -80,11 +79,11 @@ export default function CommunicationDetail() {
     setIsSaving(false);
 
     if (error) {
-      toast({ title: "Error saving changes", variant: "destructive" });
+      toast.error("Error saving changes");
       return;
     }
 
-    toast({ title: "Changes saved successfully" });
+    toast.success("Changes saved successfully");
     loadLog();
   };
 

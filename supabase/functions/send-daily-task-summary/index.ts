@@ -41,7 +41,7 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const appUrl = "https://app.spearlance.com";
+    const appUrl = Deno.env.get('APP_URL') || 'https://os.spearlance.com';
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const todayStr = today.toISOString().split('T')[0];

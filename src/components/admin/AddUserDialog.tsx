@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { UserPlus } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -24,8 +24,6 @@ export function AddUserDialog({ clients, onUserCreated }: AddUserDialogProps) {
     role: "client" as "admin" | "fmm" | "client" | "web_designer",
   });
   const [selectedClientIds, setSelectedClientIds] = useState<string[]>([]);
-  const { toast } = useToast();
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -42,22 +40,14 @@ export function AddUserDialog({ clients, onUserCreated }: AddUserDialogProps) {
 
       if (error) throw error;
 
-      toast({
-        title: "User created successfully",
-        description: `Invitation email sent to ${formData.email}`,
-      });
+      toast.success("User created successfully", { description: `Invitation email sent to ${formData.email}` });
 
       setFormData({ email: "", name: "", role: "client" });
       setSelectedClientIds([]);
       setOpen(false);
       onUserCreated();
     } catch (error: any) {
-      console.error("Error creating user:", error);
-      toast({
-        title: "Failed to create user",
-        description: error.message || "Please try again",
-        variant: "destructive",
-      });
+      toast.error("Failed to create user", { description: error.message || "Please try again" });
     } finally {
       setLoading(false);
     }

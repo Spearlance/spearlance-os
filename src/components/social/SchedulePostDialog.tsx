@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useClient } from "@/contexts/ClientContext";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { FileUp, Sparkles, FileText, Calendar, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -23,7 +23,6 @@ type DialogMode = 'select' | 'drafts' | 'upload';
 
 export const SchedulePostDialog = ({ open, onOpenChange, selectedDate, onCreateWithAI }: SchedulePostDialogProps) => {
   const { selectedClient } = useClient();
-  const { toast } = useToast();
   const queryClient = useQueryClient();
   const [mode, setMode] = useState<DialogMode>('select');
   const [uploadImage, setUploadImage] = useState<File | null>(null);
@@ -60,18 +59,11 @@ export const SchedulePostDialog = ({ open, onOpenChange, selectedDate, onCreateW
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['social-posts'] });
-      toast({
-        title: "✅ Post scheduled!",
-        description: `Scheduled for ${selectedDate ? format(selectedDate, 'MMM d, yyyy') : ''}`,
-      });
+      toast.success("Post scheduled!", { description: `Scheduled for ${selectedDate ? format(selectedDate, 'MMM d, yyyy') : ''}` });
       handleClose();
     },
     onError: (error: any) => {
-      toast({
-        title: "Couldn't schedule post",
-        description: error.message,
-        variant: "destructive"
-      });
+      toast.error("Couldn't schedule post", { description: error.message });
     }
   });
 
@@ -112,18 +104,11 @@ export const SchedulePostDialog = ({ open, onOpenChange, selectedDate, onCreateW
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['social-posts'] });
-      toast({
-        title: "✅ Post created!",
-        description: `Scheduled for ${selectedDate ? format(selectedDate, 'MMM d, yyyy') : ''}`,
-      });
+      toast.success("Post created!", { description: `Scheduled for ${selectedDate ? format(selectedDate, 'MMM d, yyyy') : ''}` });
       handleClose();
     },
     onError: (error: any) => {
-      toast({
-        title: "Couldn't create post",
-        description: error.message,
-        variant: "destructive"
-      });
+      toast.error("Couldn't create post", { description: error.message });
     }
   });
 
@@ -149,11 +134,7 @@ export const SchedulePostDialog = ({ open, onOpenChange, selectedDate, onCreateW
 
   const handleUploadSubmit = () => {
     if (!uploadImage || !uploadCaption.trim()) {
-      toast({
-        title: "Missing information",
-        description: "Please add both an image and caption",
-        variant: "destructive"
-      });
+      toast.error("Missing information", { description: "Please add both an image and caption" });
       return;
     }
     uploadMutation.mutate();

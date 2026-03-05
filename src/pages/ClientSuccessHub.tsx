@@ -56,7 +56,7 @@ export default function ClientSuccessHub() {
         .from('profiles')
         .select('role')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
 
       // web_designer is also restricted along with admin/fmm check
       if (profile?.role !== 'admin' && profile?.role !== 'fmm') {

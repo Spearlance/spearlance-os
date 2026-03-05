@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { z } from "zod";
 import { AnimatedCarousel } from "@/components/auth/AnimatedCarousel";
@@ -39,7 +39,6 @@ const signinSchema = z.object({
 
 const Auth = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
   const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
@@ -122,18 +121,11 @@ const Auth = () => {
         }
       }
 
-      toast({
-        title: "Welcome to Spearlance!",
-        description: "Your 90-day free trial has started. Redirecting...",
-      });
-      
+      toast.success("Welcome to Spearlance!", { description: "Your 90-day free trial has started. Redirecting..." });
+
       navigate("/");
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to create account",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: error.message || "Failed to create account" });
     } finally {
       setLoading(false);
     }
@@ -180,11 +172,7 @@ const Auth = () => {
 
       navigate("/");
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to sign in",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: error.message || "Failed to sign in" });
     } finally {
       setLoading(false);
     }
@@ -192,11 +180,7 @@ const Auth = () => {
 
   const handleForgotPassword = async () => {
     if (!resetEmail.trim()) {
-      toast({
-        title: "Email required",
-        description: "Please enter your email address",
-        variant: "destructive",
-      });
+      toast.error("Email required", { description: "Please enter your email address" });
       return;
     }
 
@@ -209,18 +193,11 @@ const Auth = () => {
 
       if (error) throw error;
 
-      toast({
-        title: "Password reset email sent",
-        description: "Check your email for a link to reset your password",
-      });
+      toast.success("Password reset email sent", { description: "Check your email for a link to reset your password" });
       setShowForgotPassword(false);
       setResetEmail("");
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to send reset email",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: error.message || "Failed to send reset email" });
     } finally {
       setSendingReset(false);
     }

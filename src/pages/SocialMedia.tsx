@@ -164,7 +164,7 @@ const SocialMedia = () => {
               >
                 {Array.from({ length: 12 }, (_, i) => i + 1).map(month => (
                   <option key={month} value={month}>
-                    {new Date(2025, month - 1).toLocaleString('default', { month: 'long' })}
+                    {new Date(0, month - 1).toLocaleString('default', { month: 'long' })}
                   </option>
                 ))}
               </select>
@@ -247,21 +247,23 @@ const SocialMedia = () => {
           )}
           
           {viewType === 'monthly' && (
-            <MonthlyCalendarGrid 
-              posts={monthlyPosts || []} 
+            <MonthlyCalendarGrid
+              posts={monthlyPosts || []}
               onRefresh={refetch}
               selectedMonth={selectedMonth}
               selectedYear={selectedYear}
               activeStrategy={activeStrategy}
+              onAddPost={() => setShowPostCreator(true)}
             />
           )}
-          
+
           {viewType === 'weekly' && (
-            <WeeklyCalendarView 
-              posts={monthlyPosts || []} 
+            <WeeklyCalendarView
+              posts={monthlyPosts || []}
               onRefresh={refetch}
               selectedMonth={selectedMonth}
               selectedYear={selectedYear}
+              onAddPost={() => setShowPostCreator(true)}
             />
           )}
         </TabsContent>

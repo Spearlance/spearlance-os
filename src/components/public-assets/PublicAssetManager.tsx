@@ -7,7 +7,7 @@ import { PublicFolderCard } from "./PublicFolderCard";
 import { PublicAssetCard } from "./PublicAssetCard";
 import { PublicUploadDialog } from "./PublicUploadDialog";
 import { PublicCreateFolderDialog } from "./PublicCreateFolderDialog";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import spearlanceLogo from "@/assets/spearlance-logo-white.png";
 
 interface Folder {
@@ -48,7 +48,6 @@ export function PublicAssetManager({ sessionToken, clientName }: PublicAssetMana
   const [showUploadDialog, setShowUploadDialog] = useState(false);
   const [showFolderDialog, setShowFolderDialog] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
-  const { toast } = useToast();
 
   const apiCall = useCallback(async (action: string, options?: { method?: string; body?: unknown; params?: Record<string, string> }) => {
     const url = new URL(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/public-assets-api`);
@@ -91,16 +90,11 @@ export function PublicAssetManager({ sessionToken, clientName }: PublicAssetMana
       setAssets(assetsData.assets || []);
       setBreadcrumbs(breadcrumbsData.breadcrumbs || []);
     } catch (error) {
-      console.error('Error loading data:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load assets",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "Failed to load assets" });
     } finally {
       setIsLoading(false);
     }
-  }, [apiCall, currentFolderId, toast]);
+  }, [apiCall, currentFolderId]);
 
   useEffect(() => {
     loadData();

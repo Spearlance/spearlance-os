@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { CreditCard, ExternalLink, Users } from "lucide-react";
 import { PricingModal } from "@/components/billing/PricingModal";
@@ -38,7 +38,6 @@ export function BillingTab({ client, isAdmin = false, onUpdate }: BillingTabProp
   const [savingStripeIds, setSavingStripeIds] = useState(false);
   const [fetchingPlanName, setFetchingPlanName] = useState(false);
   const [localPlanName, setLocalPlanName] = useState<string | null>(null);
-  const { toast } = useToast();
   const { trialDaysRemaining, isInTrial } = useAccountType();
 
   // Reset Stripe ID fields when client changes
@@ -123,11 +122,7 @@ export function BillingTab({ client, isAdmin = false, onUpdate }: BillingTabProp
   const handleSaveStripeIds = async () => {
     const validation = validateStripeIds();
     if (!validation.valid) {
-      toast({ 
-        title: "Invalid Format", 
-        description: validation.error, 
-        variant: "destructive" 
-      });
+      toast.error("Invalid Format", { description: validation.error });
       return;
     }
 
@@ -145,10 +140,7 @@ export function BillingTab({ client, isAdmin = false, onUpdate }: BillingTabProp
 
       if (error) throw error;
 
-      toast({ 
-        title: "Stripe IDs saved", 
-        description: "Billing will now sync with Stripe" 
-      });
+      toast.success("Stripe IDs saved", { description: "Billing will now sync with Stripe" });
 
       // Fetch the plan name if subscription ID was provided
       if (stripeSubscriptionId) {
@@ -186,12 +178,7 @@ export function BillingTab({ client, isAdmin = false, onUpdate }: BillingTabProp
       // Call onUpdate AFTER we've updated local state
       onUpdate?.();
     } catch (error: any) {
-      console.error("Error saving Stripe IDs:", error);
-      toast({ 
-        title: "Error saving", 
-        description: error.message || "Please try again later", 
-        variant: "destructive" 
-      });
+      toast.error("Error saving", { description: error.message || "Please try again later" });
     } finally {
       setSavingStripeIds(false);
     }
@@ -212,12 +199,7 @@ export function BillingTab({ client, isAdmin = false, onUpdate }: BillingTabProp
         throw new Error("No portal URL returned");
       }
     } catch (error: any) {
-      console.error("Error creating portal session:", error);
-      toast({
-        title: "Failed to open billing portal",
-        description: error.message || "Please try again later",
-        variant: "destructive",
-      });
+      toast.error("Failed to open billing portal", { description: error.message || "Please try again later" });
     } finally {
       setLoadingPortal(false);
     }

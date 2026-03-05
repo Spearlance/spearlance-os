@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -63,7 +63,6 @@ const CADENCE_LABELS: Record<string, string> = {
 };
 
 export function TemplateStageManager() {
-  const { toast } = useToast();
   const [channels, setChannels] = useState<ChannelInfo[]>([]);
   const [selectedChannel, setSelectedChannel] = useState<string | null>(null);
   const [templates, setTemplates] = useState<TemplatesByTaskType>({
@@ -95,7 +94,7 @@ export function TemplateStageManager() {
         .from("profiles")
         .select("role")
         .eq("id", user.id)
-        .single();
+        .maybeSingle();
       if (data) setUserRole(data.role);
     }
   };
@@ -173,9 +172,9 @@ export function TemplateStageManager() {
       .eq("id", templateId);
 
     if (error) {
-      toast({ title: "Error deleting template", variant: "destructive" });
+      toast.error("Error deleting template");
     } else {
-      toast({ title: "Template deleted successfully" });
+      toast.success("Template deleted successfully");
       loadChannels();
       if (selectedChannel) {
         loadTemplatesForChannel(selectedChannel);

@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 export const usePageAnalysis = (clientId: string) => {
   return useQuery({
@@ -35,7 +35,6 @@ export const usePageAnalysis = (clientId: string) => {
 
 export const useAnalyzePage = () => {
   const queryClient = useQueryClient();
-  const { toast } = useToast();
 
   return useMutation({
     mutationFn: async ({
@@ -59,10 +58,7 @@ export const useAnalyzePage = () => {
 
       // Step 2: Crawl page if not already crawled
       if (!pageId) {
-        toast({
-          title: "Crawling page...",
-          description: "Extracting content from your website.",
-        });
+        toast.info("Crawling page...", { description: "Extracting content from your website." });
 
         const { data: crawlData, error: crawlError } = await supabase.functions.invoke(
           'crawl-website-page',
@@ -82,16 +78,10 @@ export const useAnalyzePage = () => {
 
       // Step 3: Match avatar and analyze content
       if (!avatarId) {
-        toast({
-          title: "Matching to customer avatar...",
-          description: "Finding the best avatar match for this content.",
-        });
+        toast.info("Matching to customer avatar...", { description: "Finding the best avatar match for this content." });
       }
 
-      toast({
-        title: "Analyzing content...",
-        description: "AI is evaluating your page. This may take 30-60 seconds.",
-      });
+      toast.info("Analyzing content...", { description: "AI is evaluating your page. This may take 30-60 seconds." });
 
       const { data: analysisData, error: analysisError } = await supabase.functions.invoke(
         'analyze-page-content',
@@ -110,43 +100,24 @@ export const useAnalyzePage = () => {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['page-analysis'] });
-      
-      const avatarInfo = data.matched_avatar_name 
-        ? ` (Matched to: ${data.matched_avatar_name})` 
+
+      const avatarInfo = data.matched_avatar_name
+        ? ` (Matched to: ${data.matched_avatar_name})`
         : '';
-      
-      toast({
-        title: "Analysis Complete",
-        description: `Overall grade: ${getLetterGrade(data.overall_score)}${avatarInfo}`,
-      });
+
+      toast.success("Analysis Complete", { description: `Overall grade: ${getLetterGrade(data.overall_score)}${avatarInfo}` });
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       const errorMessage = error.message || "Failed to analyze page";
-      
+
       if (errorMessage.includes('Avatar not found')) {
-        toast({
-          title: "Customer Avatar Required",
-          description: "Please create a customer avatar in the Avatar section.",
-          variant: "destructive",
-        });
+        toast.error("Customer Avatar Required", { description: "Please create a customer avatar in the Avatar section." });
       } else if (errorMessage.includes('website URL') || errorMessage.includes('Website URL')) {
-        toast({
-          title: "Website URL Required",
-          description: "Please add your website URL in LaunchPad > Discovery.",
-          variant: "destructive",
-        });
+        toast.error("Website URL Required", { description: "Please add your website URL in LaunchPad > Discovery." });
       } else if (errorMessage.includes('timeout') || errorMessage.includes('took too long') || errorMessage.includes('10')) {
-        toast({
-          title: "Page Took Too Long",
-          description: "Your website didn't respond in time. Try again or check your website URL.",
-          variant: "destructive",
-        });
+        toast.error("Page Took Too Long", { description: "Your website didn't respond in time. Try again or check your website URL." });
       } else {
-        toast({
-          title: "Analysis Failed",
-          description: errorMessage,
-          variant: "destructive",
-        });
+        toast.error("Analysis Failed", { description: errorMessage });
       }
     },
   });
@@ -154,7 +125,6 @@ export const useAnalyzePage = () => {
 
 export const useDeleteAnalysis = () => {
   const queryClient = useQueryClient();
-  const { toast } = useToast();
 
   return useMutation({
     mutationFn: async (analysisId: string) => {
@@ -167,14 +137,10 @@ export const useDeleteAnalysis = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['page-analysis'] });
-      toast({ title: "Analysis disregarded" });
+      toast.success("Analysis disregarded");
     },
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to disregard analysis.",
-        variant: "destructive",
-      });
+    onError: (error: Error) => {
+      toast.error("Error", { description: error.message || "Failed to disregard analysis." });
     },
   });
 };

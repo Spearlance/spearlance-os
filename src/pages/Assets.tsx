@@ -10,7 +10,7 @@ import { CreateAssetDialog } from "@/components/assets/CreateAssetDialog";
 import { CreateFolderDialog } from "@/components/assets/CreateFolderDialog";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 interface Asset {
   id: string;
@@ -44,7 +44,6 @@ interface Breadcrumb {
 
 export default function Assets() {
   const { selectedClient } = useClient();
-  const { toast } = useToast();
   const [assets, setAssets] = useState<Asset[]>([]);
   const [folders, setFolders] = useState<Folder[]>([]);
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
@@ -105,12 +104,7 @@ export default function Assets() {
     const { data, error } = await query.order("created_at", { ascending: false });
 
     if (error) {
-      console.error("Error loading folders:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load folders",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: "Failed to load folders" });
       return;
     }
 
@@ -131,7 +125,7 @@ export default function Assets() {
       .from("asset_folders")
       .select("*")
       .eq("id", folderId)
-      .single();
+      .maybeSingle();
 
     if (data) {
       const newBreadcrumbs: Breadcrumb[] = [{ id: null, name: 'Root' }];
@@ -145,7 +139,7 @@ export default function Assets() {
           .from("asset_folders")
           .select("*")
           .eq("id", currentFolder.parent_folder_id)
-          .single();
+          .maybeSingle();
 
         if (parentData) {
           folderChain.unshift({ id: parentData.id, name: parentData.name });
@@ -194,10 +188,7 @@ export default function Assets() {
     
     if (successCount > 0) {
       loadAssets();
-      toast({
-        title: "Success",
-        description: `${successCount} file(s) uploaded successfully`,
-      });
+      toast.success("Success", { description: `${successCount} file(s) uploaded successfully` });
     }
   };
 
@@ -205,11 +196,7 @@ export default function Assets() {
     if (!selectedClient) return;
     
     if (file.size > 50 * 1024 * 1024) {
-      toast({
-        title: "File too large",
-        description: `${file.name} exceeds 50MB limit`,
-        variant: "destructive",
-      });
+      toast.error("File too large", { description: `${file.name} exceeds 50MB limit` });
       return;
     }
     
@@ -248,11 +235,7 @@ export default function Assets() {
       supabase.functions.invoke('analyze-asset', {
         body: { asset_id: assetData.id }
       }).catch(err => {
-        console.error('AI analysis failed:', err);
-        toast({
-          title: "AI analysis skipped",
-          description: "Asset uploaded successfully but AI analysis couldn't run.",
-        });
+        toast.info("AI analysis skipped", { description: "Asset uploaded successfully but AI analysis couldn't run." });
       });
     }
   };
@@ -267,10 +250,7 @@ export default function Assets() {
     
     setIsBackfilling(true);
     
-    toast({
-      title: "Starting AI Analysis",
-      description: "Analyzing assets without AI descriptions. This may take a few minutes...",
-    });
+    toast.info("Starting AI Analysis", { description: "Analyzing assets without AI descriptions. This may take a few minutes..." });
     
     try {
       const { data, error } = await supabase.functions.invoke('backfill-asset-embeddings', {
@@ -279,21 +259,13 @@ export default function Assets() {
       
       if (error) throw error;
       
-      toast({
-        title: "AI Analysis Complete",
-        description: `Processed ${data.processed} of ${data.total} assets${data.errors ? ` (${data.errors} errors)` : ''}`,
-      });
-      
+      toast.success("AI Analysis Complete", { description: `Processed ${data.processed} of ${data.total} assets${data.errors ? ` (${data.errors} errors)` : ''}` });
+
       // Refresh assets to show updated AI descriptions
       loadAssets();
-      
+
     } catch (error: any) {
-      console.error('Backfill error:', error);
-      toast({
-        title: "Analysis Failed",
-        description: error.message || "Failed to analyze assets",
-        variant: "destructive",
-      });
+      toast.error("Analysis Failed", { description: error.message || "Failed to analyze assets" });
     } finally {
       setIsBackfilling(false);
     }

@@ -35,7 +35,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { ExternalLink, MoreVertical, Star } from "lucide-react";
 import { format } from "date-fns";
 import { Input } from "@/components/ui/input";
@@ -74,7 +74,6 @@ export const ReportDrawer = ({
   onUpdate,
   isAdminOrFMM,
 }: ReportDrawerProps) => {
-  const { toast } = useToast();
   const [editedSummary, setEditedSummary] = useState("");
   const [editedTags, setEditedTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
@@ -134,14 +133,10 @@ export const ReportDrawer = ({
 
       if (error) throw error;
 
-      toast({ title: "Report updated successfully" });
+      toast.success("Report updated successfully");
       onUpdate();
     } catch (error: any) {
-      toast({
-        title: "Error updating report",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast.error("Error updating report", { description: error.message });
     } finally {
       setSaving(false);
     }
@@ -158,15 +153,11 @@ export const ReportDrawer = ({
 
       if (error) throw error;
 
-      toast({ title: "Report deleted" });
+      toast.success("Report deleted");
       onOpenChange(false);
       onUpdate();
     } catch (error: any) {
-      toast({
-        title: "Error deleting report",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast.error("Error deleting report", { description: error.message });
     }
   };
 
@@ -189,14 +180,10 @@ export const ReportDrawer = ({
 
       if (error) throw error;
 
-      toast({ title: "Report duplicated" });
+      toast.success("Report duplicated");
       onUpdate();
     } catch (error: any) {
-      toast({
-        title: "Error duplicating report",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast.error("Error duplicating report", { description: error.message });
     }
   };
 
@@ -212,14 +199,10 @@ export const ReportDrawer = ({
 
       if (error) throw error;
 
-      toast({ title: `Report ${newStatus === 'Archived' ? 'archived' : 'unarchived'}` });
+      toast.success(`Report ${newStatus === 'Archived' ? 'archived' : 'unarchived'}`);
       onUpdate();
     } catch (error: any) {
-      toast({
-        title: "Error updating report",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast.error("Error updating report", { description: error.message });
     }
   };
 

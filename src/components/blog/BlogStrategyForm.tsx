@@ -87,7 +87,6 @@ export function BlogStrategyForm({ clientId, month, year }: BlogStrategyFormProp
       setSaveStatus('saved');
     },
     onError: (error) => {
-      console.error("Error saving strategy:", error);
       toast.error("Failed to save strategy");
     },
   });

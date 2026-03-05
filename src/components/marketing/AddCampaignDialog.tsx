@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Loader2, Plus } from "lucide-react";
 
 interface AddCampaignDialogProps {
@@ -24,7 +24,6 @@ interface AddCampaignDialogProps {
 }
 
 export function AddCampaignDialog({ channelId, channelName, onSuccess, trigger }: AddCampaignDialogProps) {
-  const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -50,22 +49,14 @@ export function AddCampaignDialog({ channelId, channelName, onSuccess, trigger }
 
       if (error) throw error;
 
-      toast({
-        title: "Success",
-        description: "Campaign created successfully",
-      });
+      toast.success("Success", { description: "Campaign created successfully" });
 
       setName("");
       setDescription("");
       setOpen(false);
       onSuccess();
     } catch (error) {
-      console.error("Error creating campaign:", error);
-      toast({
-        title: "Error",
-        description: "Failed to create campaign",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: "Failed to create campaign" });
     } finally {
       setSaving(false);
     }

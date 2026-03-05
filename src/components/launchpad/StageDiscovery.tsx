@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { X, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { DiscoveryData } from "@/lib/launchpadTypes";
 import { useClient } from "@/contexts/ClientContext";
 import { StoryModal } from "./StoryModal";
@@ -90,7 +90,6 @@ const normalizeUrl = (url: string): string => {
 
 export function StageDiscovery({ submissionId, initialData, onContinue, onSaveExit }: StageDiscoveryProps) {
   const { selectedClient } = useClient();
-  const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
   const [goalInput, setGoalInput] = useState("");
@@ -185,7 +184,7 @@ export function StageDiscovery({ submissionId, initialData, onContinue, onSaveEx
         .from("launchpad_submissions")
         .select("responses_json")
         .eq("id", submissionId)
-        .single();
+        .maybeSingle();
 
       if (!submissionData) throw new Error("Submission not found");
 
@@ -208,12 +207,11 @@ export function StageDiscovery({ submissionId, initialData, onContinue, onSaveEx
       setTimeout(() => setSaveStatus("idle"), 2000);
 
       if (showToast) {
-        toast({ title: "Progress saved" });
+        toast.success("Progress saved");
       }
     } catch (error) {
-      console.error("Save error:", error);
       setSaveStatus("idle");
-      toast({ title: "Error saving", variant: "destructive" });
+      toast.error("Error saving");
     }
   };
 
@@ -245,12 +243,10 @@ export function StageDiscovery({ submissionId, initialData, onContinue, onSaveEx
         missingSections.push("Services (need at least 1)");
       }
       
-      toast({
-        title: "Please complete required fields",
-        description: missingSections.length > 0 
+      toast.error("Please complete required fields", {
+        description: missingSections.length > 0
           ? `Missing: ${missingSections.join(", ")}`
           : "Please fill in all required fields",
-        variant: "destructive",
       });
       
       return;
@@ -277,12 +273,7 @@ export function StageDiscovery({ submissionId, initialData, onContinue, onSaveEx
           );
 
         if (servicesError) {
-          console.error("Error creating services:", servicesError);
-          toast({
-            title: "Error",
-            description: servicesError.message || "Failed to save services",
-            variant: "destructive",
-          });
+          toast.error("Error", { description: servicesError.message || "Failed to save services" });
           setIsSaving(false);
           return;
         }
@@ -323,13 +314,8 @@ export function StageDiscovery({ submissionId, initialData, onContinue, onSaveEx
             .insert(newGoals);
 
           if (goalsError) {
-            console.error("Error syncing goals to quarterly_goals:", goalsError);
-            // Don't block progression if goals fail - just log it
-            toast({
-              title: "Warning",
-              description: "Goals saved in LaunchPad but couldn't sync to Goals tracker",
-              variant: "default",
-            });
+            // Don't block progression if goals fail
+            toast.info("Warning", { description: "Goals saved in LaunchPad but couldn't sync to Goals tracker" });
           }
         }
       }
@@ -347,8 +333,7 @@ export function StageDiscovery({ submissionId, initialData, onContinue, onSaveEx
 
       onContinue();
     } catch (error) {
-      console.error("Continue error:", error);
-      toast({ title: "Error advancing stage", variant: "destructive" });
+      toast.error("Error advancing stage");
     } finally {
       setIsSaving(false);
     }

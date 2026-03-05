@@ -15,7 +15,7 @@ import { TaskListView } from "@/components/tasks/TaskListView";
 import { TaskTableView } from "@/components/tasks/TaskTableView";
 import { WeeklyPlanView } from "@/components/tasks/WeeklyPlanView";
 import { RecommendedTasksDialog } from "@/components/tasks/RecommendedTasksDialog";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Button } from "@/components/ui/button";
@@ -70,7 +70,6 @@ export default function Tasks() {
     const saved = localStorage.getItem(`kanban-done-expanded-${selectedClient?.id}`);
     return saved === 'true';
   });
-  const { toast } = useToast();
 
   const isAdminOrFMM = userRole === 'admin' || userRole === 'fmm';
 
@@ -187,7 +186,7 @@ export default function Tasks() {
       .from('user_roles')
       .select('role')
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
     
     if (data) setUserRole(data.role);
   };
@@ -284,18 +283,10 @@ export default function Tasks() {
       setShowRecommendations(true);
       
       if (data.recommendations?.length === 0) {
-        toast({
-          title: "No recommendations",
-          description: "No task recommendations found. Great job staying on top of everything!",
-        });
+        toast.info("No recommendations", { description: "No task recommendations found. Great job staying on top of everything!" });
       }
     } catch (error) {
-      console.error('Error loading recommendations:', error);
-      toast({
-        title: "Failed to load recommendations",
-        description: error instanceof Error ? error.message : "An error occurred",
-        variant: "destructive"
-      });
+      toast.error("Failed to load recommendations", { description: error instanceof Error ? error.message : "An error occurred" });
     } finally {
       setLoadingRecommendations(false);
     }
@@ -349,7 +340,7 @@ export default function Tasks() {
     const { data, error } = await query.order("created_at", { ascending: false });
 
     if (error) {
-      toast({ title: "Error loading tasks", variant: "destructive" });
+      toast.error("Error loading tasks");
       return;
     }
 
@@ -462,7 +453,7 @@ export default function Tasks() {
     // Find the destination column to get its mapped_status
     const destTaskColumn = taskColumns.find(col => col.key === destination.droppableId);
     if (!destTaskColumn) {
-      toast({ title: "Error: Invalid column", variant: "destructive" });
+      toast.error("Error: Invalid column");
       return;
     }
 
@@ -492,7 +483,7 @@ export default function Tasks() {
       .eq("id", draggableId);
 
     if (error) {
-      toast({ title: "Error updating task", variant: "destructive" });
+      toast.error("Error updating task");
       loadTasks();
     }
   };

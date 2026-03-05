@@ -61,7 +61,6 @@ export function BlogAIPreferencesForm({ clientId }: BlogAIPreferencesFormProps) 
       setSaveStatus('saved');
     },
     onError: (error) => {
-      console.error("Error saving preferences:", error);
       toast.error("Failed to save preferences");
     },
   });

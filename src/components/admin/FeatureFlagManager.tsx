@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from "sonner";
 import { Loader2, Check, X } from 'lucide-react';
 import {
   Table,
@@ -32,7 +32,6 @@ export function FeatureFlagManager({ onFlagsUpdated }: FeatureFlagManagerProps) 
   const [flags, setFlags] = useState<FeatureFlag[]>([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
-  const { toast } = useToast();
 
   const loadFlags = async () => {
     setLoading(true);
@@ -46,11 +45,7 @@ export function FeatureFlagManager({ onFlagsUpdated }: FeatureFlagManagerProps) 
       if (error) throw error;
       setFlags(data || []);
     } catch (error: any) {
-      toast({
-        title: 'Error loading feature flags',
-        description: error.message,
-        variant: 'destructive',
-      });
+      toast.error('Error loading feature flags', { description: error.message });
     } finally {
       setLoading(false);
     }
@@ -70,19 +65,12 @@ export function FeatureFlagManager({ onFlagsUpdated }: FeatureFlagManagerProps) 
 
       if (error) throw error;
 
-      toast({
-        title: 'Feature flag updated',
-        description: `Feature ${!currentState ? 'enabled' : 'disabled'} successfully`,
-      });
+      toast.success('Feature flag updated', { description: `Feature ${!currentState ? 'enabled' : 'disabled'} successfully` });
 
       loadFlags();
       onFlagsUpdated?.();
     } catch (error: any) {
-      toast({
-        title: 'Error updating feature flag',
-        description: error.message,
-        variant: 'destructive',
-      });
+      toast.error('Error updating feature flag', { description: error.message });
     } finally {
       setUpdating(null);
     }

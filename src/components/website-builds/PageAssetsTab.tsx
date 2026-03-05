@@ -281,7 +281,6 @@ export default function PageAssetsTab({ pageId, buildId, clientId, pageType, pag
       toast.success('Asset removed from page');
       fetchPageAssets();
     } catch (err) {
-      console.error('Error unlinking asset:', err);
       toast.error('Failed to remove asset');
     } finally {
       setUnlinkingAsset(null);
@@ -301,7 +300,6 @@ export default function PageAssetsTab({ pageId, buildId, clientId, pageType, pag
         setStockImages(data.images);
       }
     } catch (err) {
-      console.error('Error fetching stock images:', err);
       toast.error('Failed to load stock images');
     } finally {
       setLoadingStock(false);
@@ -389,7 +387,6 @@ export default function PageAssetsTab({ pageId, buildId, clientId, pageType, pag
         fetchStockImages(stockSearchQuery);
       }
     } catch (err) {
-      console.error('Error fetching asset recommendations:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch recommendations');
       // Still try to get stock images on error
       fetchStockImages(pageName);
@@ -415,7 +412,6 @@ export default function PageAssetsTab({ pageId, buildId, clientId, pageType, pag
       // Remove from recommendations list
       setAssets(prev => prev.filter(a => a.id !== assetId));
     } catch (err) {
-      console.error('Error linking recommended asset:', err);
       toast.error('Failed to add asset');
     } finally {
       setLinkingRecommendedAsset(null);
@@ -431,7 +427,7 @@ export default function PageAssetsTab({ pageId, buildId, clientId, pageType, pag
       .eq('client_id', targetClientId)
       .eq('name', 'Stock Images')
       .is('parent_folder_id', null)
-      .single();
+      .maybeSingle();
 
     if (existingFolder) {
       return existingFolder.id;
@@ -513,7 +509,6 @@ export default function PageAssetsTab({ pageId, buildId, clientId, pageType, pag
       supabase.functions.invoke('analyze-asset', {
         body: { asset_id: assetData.id }
       }).catch(err => {
-        console.error('AI analysis failed:', err);
         toast.error('Asset saved but AI analysis couldn\'t run.');
       });
 
@@ -525,7 +520,6 @@ export default function PageAssetsTab({ pageId, buildId, clientId, pageType, pag
       // Refresh page assets to show the new one
       fetchPageAssets();
     } catch (err) {
-      console.error('Error saving stock image:', err);
       toast.error('Failed to save image');
     } finally {
       setSavingStock(null);
@@ -547,7 +541,7 @@ export default function PageAssetsTab({ pageId, buildId, clientId, pageType, pag
       .from('assets')
       .select('*')
       .eq('id', asset.id)
-      .single();
+      .maybeSingle();
     
     if (data) {
       setSelectedAsset(data);

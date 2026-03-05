@@ -5,14 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Loader2, CheckCircle2 } from "lucide-react";
 import { PasswordStrengthIndicator } from "@/components/auth/PasswordStrengthIndicator";
 import logo from "@/assets/spearlance-logo.png";
 
 const ResetPassword = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -22,20 +21,12 @@ const ResetPassword = () => {
     e.preventDefault();
 
     if (password !== confirmPassword) {
-      toast({
-        title: "Passwords don't match",
-        description: "Please ensure both passwords are identical.",
-        variant: "destructive",
-      });
+      toast.error("Passwords don't match", { description: "Please ensure both passwords are identical." });
       return;
     }
 
     if (password.length < 6) {
-      toast({
-        title: "Password too short",
-        description: "Password must be at least 6 characters long.",
-        variant: "destructive",
-      });
+      toast.error("Password too short", { description: "Password must be at least 6 characters long." });
       return;
     }
 
@@ -50,21 +41,14 @@ const ResetPassword = () => {
 
       setSuccess(true);
       
-      toast({
-        title: "Password updated!",
-        description: "Your password has been successfully reset.",
-      });
+      toast.success("Password updated!", { description: "Your password has been successfully reset." });
 
       // Redirect to dashboard after 2 seconds
       setTimeout(() => {
         navigate("/");
       }, 2000);
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to reset password",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: error.message || "Failed to reset password" });
     } finally {
       setLoading(false);
     }

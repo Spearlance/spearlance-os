@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { GripVertical, Trash2, PanelRightOpen, FileText, Sparkles, ListTodo } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -78,7 +78,6 @@ const pageTypeLabels: Record<string, string> = {
 
 export function PageCard({ page, buildId, isDragging, onClick }: PageCardProps) {
   const queryClient = useQueryClient();
-  const { toast } = useToast();
 
   const updatePage = useMutation({
     mutationFn: async (updates: Partial<typeof page>) => {
@@ -92,11 +91,7 @@ export function PageCard({ page, buildId, isDragging, onClick }: PageCardProps) 
       queryClient.invalidateQueries({ queryKey: ["website-build-pages", buildId] });
     },
     onError: (error) => {
-      toast({
-        title: "Error updating page",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast.error("Error updating page", { description: error.message });
     },
   });
 
@@ -110,14 +105,10 @@ export function PageCard({ page, buildId, isDragging, onClick }: PageCardProps) 
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["website-build-pages", buildId] });
-      toast({ title: "Page deleted" });
+      toast.success("Page deleted");
     },
     onError: (error) => {
-      toast({
-        title: "Error deleting page",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast.error("Error deleting page", { description: error.message });
     },
   });
 

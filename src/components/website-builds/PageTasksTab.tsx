@@ -173,7 +173,7 @@ export default function PageTasksTab({ pageId, buildId, clientId }: PageTasksTab
       .eq("client_id", clientId)
       .order("created_at", { ascending: false })
       .limit(1)
-      .single();
+      .maybeSingle();
 
     if (latestTask) {
       // Link the task to this page

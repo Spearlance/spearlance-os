@@ -8,7 +8,7 @@ import { ChatMessage } from "@/components/chatbot/ChatMessage";
 import { ChatInput } from "@/components/chatbot/ChatInput";
 import { LaunchPadSubmission } from "@/lib/launchpadTypes";
 import { FileText, RotateCcw } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,7 +34,6 @@ interface Message {
 
 export function ChatOnboarding({ submission, onSwitchToForm }: ChatOnboardingProps) {
   const { selectedClient } = useClient();
-  const { toast } = useToast();
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
@@ -265,24 +264,11 @@ export function ChatOnboarding({ submission, onSwitchToForm }: ChatOnboardingPro
             content: data.response,
           });
       } else {
-        console.error('[Frontend] Empty response received');
-        console.error('[Frontend] data.response:', data.response);
-        console.error('[Frontend] Full data object:', JSON.stringify(data));
-        console.error('[Frontend] Response type:', typeof data.response);
-        toast({
-          title: 'No Response',
-          description: 'The assistant did not provide a response. Please try again.',
-          variant: 'destructive',
-        });
+        toast.error('No Response', { description: 'The assistant did not provide a response. Please try again.' });
       }
 
     } catch (error: any) {
-      console.error('Error sending message:', error);
-      toast({
-        title: 'Error',
-        description: error.message || 'Failed to send message',
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: error.message || 'Failed to send message' });
     } finally {
       setIsLoading(false);
     }
@@ -340,19 +326,11 @@ export function ChatOnboarding({ submission, onSwitchToForm }: ChatOnboardingPro
           content: greeting.content,
         });
 
-      toast({
-        title: 'Chat Refreshed',
-        description: 'Started a new conversation with updated context.',
-      });
+      toast.success('Chat Refreshed', { description: 'Started a new conversation with updated context.' });
 
       setShowRefreshDialog(false);
     } catch (error: any) {
-      console.error('Error refreshing chat:', error);
-      toast({
-        title: 'Error',
-        description: error.message || 'Failed to refresh chat',
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: error.message || 'Failed to refresh chat' });
     } finally {
       setIsLoading(false);
     }

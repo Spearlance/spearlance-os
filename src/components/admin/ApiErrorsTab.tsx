@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Loader2, AlertTriangle, Check, RefreshCw } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import type { Json } from "@/integrations/supabase/types";
 
@@ -28,7 +28,6 @@ interface ApiErrorsTabProps {
 }
 
 export function ApiErrorsTab({ clients }: ApiErrorsTabProps) {
-  const { toast } = useToast();
   const [errors, setErrors] = useState<ApiError[]>([]);
   const [loading, setLoading] = useState(true);
   const [resolving, setResolving] = useState<string | null>(null);
@@ -45,12 +44,7 @@ export function ApiErrorsTab({ clients }: ApiErrorsTabProps) {
       if (error) throw error;
       setErrors(data || []);
     } catch (err) {
-      console.error('Error loading API errors:', err);
-      toast({
-        title: "Error loading API errors",
-        description: err instanceof Error ? err.message : 'Unknown error',
-        variant: "destructive",
-      });
+      toast.error("Error loading API errors", { description: err instanceof Error ? err.message : 'Unknown error' });
     } finally {
       setLoading(false);
     }
@@ -72,14 +66,10 @@ export function ApiErrorsTab({ clients }: ApiErrorsTabProps) {
 
       if (error) throw error;
 
-      toast({ title: "Error marked as resolved" });
+      toast.success("Error marked as resolved");
       loadErrors();
     } catch (err) {
-      console.error('Error resolving:', err);
-      toast({
-        title: "Failed to resolve error",
-        variant: "destructive",
-      });
+      toast.error("Failed to resolve error");
     } finally {
       setResolving(null);
     }

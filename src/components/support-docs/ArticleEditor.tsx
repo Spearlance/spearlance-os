@@ -126,7 +126,6 @@ export function ArticleEditor({ article, open, onClose, onSave }: ArticleEditorP
 
       onSave();
     } catch (error: any) {
-      console.error("Error saving article:", error);
       toast.error(error.message || "Failed to save article");
     } finally {
       setSaving(false);

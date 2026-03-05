@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { CreateMeetingDialog } from "@/components/meetings/CreateMeetingDialog";
 import { TldvCallout } from "@/components/meetings/TldvCallout";
 import { Plus, Info } from "lucide-react";
@@ -31,7 +31,6 @@ export default function Meetings() {
   const [hasTldv, setHasTldv] = useState<boolean>(false);
   const [checkingTldv, setCheckingTldv] = useState<boolean>(true);
   const navigate = useNavigate();
-  const { toast } = useToast();
 
   useEffect(() => {
     const fetchUserRole = async () => {
@@ -46,13 +45,13 @@ export default function Meetings() {
         
         // Restrict access for web_designer
         if ((profile?.role as string) === 'web_designer') {
-          toast({ title: "Access Denied", description: "Web designers don't have access to Meetings", variant: "destructive" });
+          toast.error("Access Denied", { description: "Web designers don't have access to Meetings" });
           navigate('/');
         }
       }
     };
     fetchUserRole();
-  }, [navigate, toast]);
+  }, [navigate]);
 
   useEffect(() => {
     const checkTldvStatus = async () => {
@@ -104,7 +103,7 @@ export default function Meetings() {
     const { data, error } = await query.order("date_time", { ascending: false });
 
     if (error) {
-      toast({ title: "Error loading meetings", variant: "destructive" });
+      toast.error("Error loading meetings");
       return;
     }
 

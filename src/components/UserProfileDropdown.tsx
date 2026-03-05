@@ -12,12 +12,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { User, Users, CreditCard, Plug, LogOut } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 export function UserProfileDropdown() {
   const navigate = useNavigate();
   const { selectedClient } = useClient();
-  const { toast } = useToast();
   const [userProfile, setUserProfile] = useState<any>(null);
   const [isPrimaryContact, setIsPrimaryContact] = useState(false);
 
@@ -29,7 +28,7 @@ export function UserProfileDropdown() {
           .from("profiles")
           .select("id, name, email, role, avatar_url")
           .eq("id", user.id)
-          .single();
+          .maybeSingle();
         
         setUserProfile(profile);
 
@@ -40,8 +39,8 @@ export function UserProfileDropdown() {
             .select("id")
             .eq("client_id", selectedClient.id)
             .eq("user_id", user.id)
-            .single();
-          
+            .maybeSingle();
+
           setIsPrimaryContact(!!primaryContact);
         }
       }
@@ -55,11 +54,7 @@ export function UserProfileDropdown() {
       await supabase.auth.signOut();
       navigate("/auth");
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to sign out",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: "Failed to sign out" });
     }
   };
 

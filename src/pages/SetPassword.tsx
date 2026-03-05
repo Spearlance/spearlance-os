@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { CheckCircle, AlertCircle, Mail } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
@@ -16,7 +16,6 @@ const SetPassword = () => {
   const [tokenExpired, setTokenExpired] = useState(false);
   const [requestEmail, setRequestEmail] = useState("");
   const [requestingNewLink, setRequestingNewLink] = useState(false);
-  const { toast } = useToast();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -41,20 +40,12 @@ const SetPassword = () => {
     e.preventDefault();
     
     if (password !== confirmPassword) {
-      toast({
-        title: "Passwords don't match",
-        description: "Please make sure both passwords are identical.",
-        variant: "destructive",
-      });
+      toast.error("Passwords don't match", { description: "Please make sure both passwords are identical." });
       return;
     }
 
     if (password.length < 6) {
-      toast({
-        title: "Password too short",
-        description: "Password must be at least 6 characters long.",
-        variant: "destructive",
-      });
+      toast.error("Password too short", { description: "Password must be at least 6 characters long." });
       return;
     }
 
@@ -68,33 +59,20 @@ const SetPassword = () => {
       if (error) throw error;
 
       setSuccess(true);
-      toast({
-        title: "Password set successfully!",
-        description: "Welcome! Redirecting you to your dashboard...",
-      });
+      toast.success("Password set successfully!", { description: "Welcome! Redirecting you to your dashboard..." });
 
       setTimeout(() => {
         navigate("/");
       }, 2000);
     } catch (error: any) {
-      console.error("Error setting password:", error);
-      
       // Check if error is due to expired/invalid session
       if (error.message?.toLowerCase().includes('session') || 
           error.message?.toLowerCase().includes('token') ||
           error.message?.toLowerCase().includes('expired')) {
         setTokenExpired(true);
-        toast({
-          title: "Link expired",
-          description: "Your setup link has expired. Please request a new one below.",
-          variant: "destructive",
-        });
+        toast.error("Link expired", { description: "Your setup link has expired. Please request a new one below." });
       } else {
-        toast({
-          title: "Error setting password",
-          description: error.message || "An unexpected error occurred. Please try again.",
-          variant: "destructive",
-        });
+        toast.error("Error setting password", { description: error.message || "An unexpected error occurred. Please try again." });
       }
     } finally {
       setLoading(false);
@@ -105,11 +83,7 @@ const SetPassword = () => {
     e.preventDefault();
     
     if (!requestEmail.trim()) {
-      toast({
-        title: "Email required",
-        description: "Please enter your email address",
-        variant: "destructive",
-      });
+      toast.error("Email required", { description: "Please enter your email address" });
       return;
     }
 
@@ -123,25 +97,13 @@ const SetPassword = () => {
       if (error) throw error;
 
       if (data.success) {
-        toast({
-          title: "Check your email",
-          description: data.message || "A new invitation link has been sent to your email",
-        });
+        toast.success("Check your email", { description: data.message || "A new invitation link has been sent to your email" });
         setRequestEmail("");
       } else {
-        toast({
-          title: "Notice",
-          description: data.message,
-          variant: "destructive",
-        });
+        toast.error("Notice", { description: data.message });
       }
     } catch (error: any) {
-      console.error("Error requesting new link:", error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to send new link. Please contact support.",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: error.message || "Failed to send new link. Please contact support." });
     } finally {
       setRequestingNewLink(false);
     }

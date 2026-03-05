@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { LogCommunicationDialog } from "@/components/communications/LogCommunicationDialog";
 import { Plus, Mail, Phone, MessageSquare, ExternalLink, RefreshCw } from "lucide-react";
 
@@ -33,7 +33,6 @@ export default function CommunicationLogs() {
   const [userRole, setUserRole] = useState<string | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
   const navigate = useNavigate();
-  const { toast } = useToast();
 
   useEffect(() => {
     loadUserRole();
@@ -43,16 +42,12 @@ export default function CommunicationLogs() {
     if (selectedClient && userRole) {
       if (userRole !== 'admin' && userRole !== 'fmm') {
         navigate('/');
-        toast({
-          title: "Access Denied",
-          description: "This page is only accessible to FMMs and Admins",
-          variant: "destructive",
-        });
+        toast.error("Access Denied", { description: "This page is only accessible to FMMs and Admins" });
         return;
       }
       loadLogs();
     }
-  }, [selectedClient, typeFilter, searchQuery, userRole, navigate, toast]);
+  }, [selectedClient, typeFilter, searchQuery, userRole, navigate]);
 
   const loadUserRole = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -62,7 +57,7 @@ export default function CommunicationLogs() {
       .from('profiles')
       .select('role')
       .eq('id', user.id)
-      .single();
+      .maybeSingle();
 
     setUserRole(data?.role || null);
   };
@@ -86,7 +81,7 @@ export default function CommunicationLogs() {
     const { data, error } = await query.order("last_message_at", { ascending: false });
 
     if (error) {
-      toast({ title: "Error loading communication logs", variant: "destructive" });
+      toast.error("Error loading communication logs");
       return;
     }
 
@@ -107,26 +102,14 @@ export default function CommunicationLogs() {
       const { synced, created, updated, errors } = data;
       
       if (errors && errors.length > 0) {
-        toast({
-          title: "Sync completed with errors",
-          description: `Synced ${synced} conversations (${created} new, ${updated} updated). ${errors.length} errors occurred.`,
-          variant: "destructive",
-        });
+        toast.error("Sync completed with errors", { description: `Synced ${synced} conversations (${created} new, ${updated} updated). ${errors.length} errors occurred.` });
       } else {
-        toast({
-          title: "Sync complete",
-          description: `Synced ${synced} conversations (${created} new, ${updated} updated)`,
-        });
+        toast.success("Sync complete", { description: `Synced ${synced} conversations (${created} new, ${updated} updated)` });
       }
 
       loadLogs();
     } catch (error) {
-      console.error('Error syncing from Front:', error);
-      toast({
-        title: "Sync failed",
-        description: "Failed to sync conversations from Front",
-        variant: "destructive",
-      });
+      toast.error("Sync failed", { description: "Failed to sync conversations from Front" });
     } finally {
       setIsSyncing(false);
     }

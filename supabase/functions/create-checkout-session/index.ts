@@ -119,8 +119,7 @@ serve(async (req) => {
       metadata: { client_id: clientId }
     };
 
-    // Check if this is the Unlimited plan - TODO: Replace with your actual Unlimited product ID
-    const unlimitedProductId = 'prod_UNLIMITED_PLAN_ID';
+    const unlimitedProductId = Deno.env.get('STRIPE_UNLIMITED_PRODUCT_ID') || '';
 
     // Get price details to check product
     const priceDetails = await stripe.prices.retrieve(priceId, {
@@ -143,7 +142,7 @@ serve(async (req) => {
       console.log(`Trial extended in Stripe: ${daysRemaining} days remaining`);
     }
 
-    const baseUrl = Deno.env.get('VITE_SUPABASE_URL') || 'https://os.spearlance.com';
+    const baseUrl = Deno.env.get('APP_URL') || 'https://os.spearlance.com';
 
     // Create checkout session
     const session = await stripe.checkout.sessions.create({

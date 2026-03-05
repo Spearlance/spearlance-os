@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { useClient } from "@/contexts/ClientContext";
 
 interface CreateTicketDialogProps {
@@ -17,7 +17,6 @@ interface CreateTicketDialogProps {
 
 export function CreateTicketDialog({ open, onOpenChange }: CreateTicketDialogProps) {
   const navigate = useNavigate();
-  const { toast } = useToast();
   const { selectedClient } = useClient();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -31,11 +30,7 @@ export function CreateTicketDialog({ open, onOpenChange }: CreateTicketDialogPro
     e.preventDefault();
     
     if (!selectedClient) {
-      toast({
-        title: "Error",
-        description: "Please select a client first",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: "Please select a client first" });
       return;
     }
 
@@ -89,22 +84,14 @@ export function CreateTicketDialog({ open, onOpenChange }: CreateTicketDialogPro
         // Don't fail the ticket creation if email fails
       }
 
-      toast({
-        title: "Success",
-        description: "Support ticket created successfully. We'll respond within 48 hours.",
-      });
+      toast.success("Success", { description: "Support ticket created successfully. We'll respond within 48 hours." });
 
       onOpenChange(false);
       setFormData({ title: "", category: "other", priority: "normal", message: "" });
       navigate(`/support/${ticket.id}`);
     } catch (error: any) {
-      console.error("Error creating ticket:", error);
       const errorMessage = error?.message || error?.error_description || "Failed to create ticket";
-      toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive",
-      });
+      toast.error("Error", { description: errorMessage });
     } finally {
       setLoading(false);
     }

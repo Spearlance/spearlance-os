@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { useClient } from "@/contexts/ClientContext";
 import { Upload, FileText, X, Folder, FolderPlus, Home, ChevronRight, FolderOpen } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -46,7 +46,6 @@ interface Asset {
 
 export function StageAssets({ submissionId, onContinue, onBack, onSaveExit }: StageAssetsProps) {
   const { selectedClient } = useClient();
-  const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [uploading, setUploading] = useState(false);
@@ -78,7 +77,7 @@ export function StageAssets({ submissionId, onContinue, onBack, onSaveExit }: St
         .from("asset_folders")
         .select("id, name, color")
         .eq("id", folderId)
-        .single();
+        .maybeSingle();
       
       setCurrentFolder(data || null);
     } else {
@@ -98,7 +97,7 @@ export function StageAssets({ submissionId, onContinue, onBack, onSaveExit }: St
       .from("launchpad_submissions")
       .select("brand_colors")
       .eq("id", submissionId)
-      .single();
+      .maybeSingle();
 
     if (error) {
       console.error("Error loading brand colors:", error);
@@ -199,13 +198,13 @@ export function StageAssets({ submissionId, onContinue, onBack, onSaveExit }: St
         : ["image/png", "image/jpeg", "image/jpg", "application/pdf"];
 
       if (!allowedTypes.includes(file.type)) {
-        toast({ title: "Invalid file type", variant: "destructive" });
+        toast.error("Invalid file type");
         return null;
       }
 
       // Validate file size
       if (file.size > UPLOAD_LIMITS.GENERAL) {
-        toast({ title: `File too large (max ${UPLOAD_LIMITS.formatMB(UPLOAD_LIMITS.GENERAL)})`, variant: "destructive" });
+        toast.error(`File too large (max ${UPLOAD_LIMITS.formatMB(UPLOAD_LIMITS.GENERAL)})`);
         return null;
       }
 
@@ -276,8 +275,7 @@ export function StageAssets({ submissionId, onContinue, onBack, onSaveExit }: St
 
       return { id: asset.id, name: file.name, category };
     } catch (error) {
-      console.error("Upload error:", error);
-      toast({ title: "Error uploading file", variant: "destructive" });
+      toast.error("Error uploading file");
       return null;
     }
   };
@@ -297,7 +295,7 @@ export function StageAssets({ submissionId, onContinue, onBack, onSaveExit }: St
     setUploading(false);
 
     if (uploaded.length > 0) {
-      toast({ title: `${uploaded.length} file(s) uploaded successfully` });
+      toast.success(`${uploaded.length} file(s) uploaded successfully`);
       loadAssets(selectedFolderId);
     }
   };
@@ -310,7 +308,7 @@ export function StageAssets({ submissionId, onContinue, onBack, onSaveExit }: St
     // Validate: Logo required
     const hasLogo = uploadedFiles.some((f) => f.category === "logo");
     if (!hasLogo) {
-      toast({ title: "Logo upload required", variant: "destructive" });
+      toast.error("Logo upload required");
       return;
     }
 
@@ -321,7 +319,7 @@ export function StageAssets({ submissionId, onContinue, onBack, onSaveExit }: St
         .from("launchpad_submissions")
         .select("responses_json, completed_at")
         .eq("id", submissionId)
-        .single();
+        .maybeSingle();
 
       // Update with asset IDs and brand colors
       const { error } = await supabase
@@ -342,8 +340,7 @@ export function StageAssets({ submissionId, onContinue, onBack, onSaveExit }: St
 
       onContinue();
     } catch (error) {
-      console.error("Continue error:", error);
-      toast({ title: "Error advancing stage", variant: "destructive" });
+      toast.error("Error advancing stage");
     } finally {
       setIsSaving(false);
     }
@@ -638,7 +635,7 @@ export function StageAssets({ submissionId, onContinue, onBack, onSaveExit }: St
         parentFolderId={selectedFolderId}
         onSuccess={() => {
           loadFolders(selectedFolderId);
-          toast({ title: "Folder created successfully" });
+          toast.success("Folder created successfully");
         }}
       />
     </div>

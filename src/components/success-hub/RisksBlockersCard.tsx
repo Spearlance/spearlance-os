@@ -4,13 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, Plus, Trash2, CheckCircle2, XCircle, Clock, FileQuestion } from "lucide-react";
-import { RiskBlocker, NeedFromClient } from "@/hooks/useSuccessHub";
+import { RiskBlocker, NeedFromClient, SuccessHubTask } from "@/hooks/useSuccessHub";
 import { cn } from "@/lib/utils";
 
 interface RisksBlockersCardProps {
   risksBlockers: RiskBlocker[];
   needsFromClient: NeedFromClient[];
-  overdueTasks: any[];
+  overdueTasks: SuccessHubTask[];
   onUpdateRisks: (risks: RiskBlocker[]) => void;
   onUpdateNeeds: (needs: NeedFromClient[]) => void;
 }

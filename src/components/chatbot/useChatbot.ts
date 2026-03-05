@@ -2,7 +2,12 @@ import { useState, useRef, useEffect } from 'react';
 import { ChatMessage, Conversation } from './types';
 import { useClient } from '@/contexts/ClientContext';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
+
+export interface UserProfile {
+  name: string | null;
+  avatar_url: string | null;
+}
 
 export const useChatbot = () => {
   const { selectedClient } = useClient();
@@ -14,7 +19,27 @@ export const useChatbot = () => {
   const [error, setError] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [isOfferMode, setIsOfferMode] = useState(false);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+
+  // Fetch user profile once when chat opens
+  useEffect(() => {
+    if (!isOpen) return;
+    let cancelled = false;
+    const fetchProfile = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user && !cancelled) {
+        const { data } = await supabase
+          .from('profiles')
+          .select('name, avatar_url')
+          .eq('id', user.id)
+          .maybeSingle();
+        if (data && !cancelled) setUserProfile(data);
+      }
+    };
+    fetchProfile();
+    return () => { cancelled = true; };
+  }, [isOpen]);
 
   // Load conversations when chat opens or client changes
   useEffect(() => {
@@ -79,12 +104,7 @@ export const useChatbot = () => {
         setActiveConversationId(conversationsWithCreator[0].id);
       }
     } catch (err: any) {
-      console.error('Error loading conversations:', err);
-      toast({
-        title: "Error",
-        description: "Failed to load conversations.",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "Failed to load conversations." });
     } finally {
       setIsLoadingConversations(false);
     }
@@ -109,12 +129,7 @@ export const useChatbot = () => {
 
       setMessages(loadedMessages);
     } catch (err: any) {
-      console.error('Error loading messages:', err);
-      toast({
-        title: "Error",
-        description: "Failed to load conversation.",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "Failed to load conversation." });
     } finally {
       setIsLoading(false);
     }
@@ -145,12 +160,7 @@ export const useChatbot = () => {
 
       return data.id;
     } catch (err: any) {
-      console.error('Error creating conversation:', err);
-      toast({
-        title: "Error",
-        description: "Failed to create conversation.",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "Failed to create conversation." });
       return null;
     }
   };
@@ -215,17 +225,9 @@ export const useChatbot = () => {
         setMessages([]);
       }
 
-      toast({
-        title: "Conversation Archived",
-        description: "This conversation will be auto-deleted in 30 days.",
-      });
+      toast.info("Conversation Archived", { description: "This conversation will be auto-deleted in 30 days." });
     } catch (err: any) {
-      console.error('Error archiving conversation:', err);
-      toast({
-        title: "Error",
-        description: "Failed to archive conversation.",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "Failed to archive conversation." });
     }
   };
 
@@ -263,11 +265,7 @@ export const useChatbot = () => {
       abortControllerRef.current?.abort();
       setError("Request timed out. The AI is taking longer than expected.");
       setIsLoading(false);
-      toast({
-        title: "Timeout",
-        description: "AI response took too long. Please try again.",
-        variant: "destructive"
-      });
+      toast.error("Timeout", { description: "AI response took too long. Please try again." });
     }, 30000); // 30 seconds
 
     try {
@@ -300,21 +298,13 @@ export const useChatbot = () => {
 
       if (response.status === 429) {
         setError("Rate limit exceeded. Please try again in a few minutes.");
-        toast({
-          title: "Rate Limit Exceeded",
-          description: "You've reached the maximum number of requests. Please wait a bit.",
-          variant: "destructive"
-        });
+        toast.error("Rate Limit Exceeded", { description: "You've reached the maximum number of requests. Please wait a bit." });
         return;
       }
 
       if (response.status === 403) {
         setError("Access denied to this client.");
-        toast({
-          title: "Access Denied",
-          description: "You don't have permission to access this client's data.",
-          variant: "destructive"
-        });
+        toast.error("Access Denied", { description: "You don't have permission to access this client's data." });
         return;
       }
 
@@ -371,7 +361,7 @@ export const useChatbot = () => {
               });
             }
           } catch (e) {
-            console.debug('Parse error (expected for incomplete chunks):', e);
+            // Expected for incomplete streaming chunks — no action needed
           }
         }
       }
@@ -428,11 +418,7 @@ export const useChatbot = () => {
       });
       
       setError(err.message);
-      toast({
-        title: "Error",
-        description: "Failed to communicate with assistant. Click retry to try again.",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "Failed to communicate with assistant. Click retry to try again." });
     } finally {
       setIsLoading(false);
       abortControllerRef.current = null;
@@ -485,6 +471,7 @@ export const useChatbot = () => {
     error,
     isOpen,
     isOfferMode,
+    userProfile,
     setIsOpen,
     setIsOfferMode,
     setActiveConversationId,

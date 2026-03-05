@@ -30,6 +30,7 @@ Desktop.ini
 bun.lockb
 
 # Editor directories and files
+.lovable/
 .vscode/*
 !.vscode/extensions.json
 .idea
@@ -39,3 +40,14 @@ bun.lockb
 *.njsproj
 *.sln
 *.sw?
+supabase/.temp/
+
+# Sensitive migration files (password hashes, PII)
+supabase/migrations/20260303200000_restore-password-hashes.sql
+
+# One-time migration scripts (already applied)
+scripts/auth-users-insert.sql
+
+# Claude Code artifacts
+.claude/worktrees/
+.claude/progress/

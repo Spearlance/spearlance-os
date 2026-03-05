@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import type { Database } from "@/integrations/supabase/types";
 
 type Stage = Database["public"]["Tables"]["marketing_flow_stages"]["Row"];
@@ -20,7 +20,6 @@ interface AddChannelDialogProps {
 }
 
 export function AddChannelDialog({ open, onOpenChange, stages, selectedStageId, onSuccess, selectedClient }: AddChannelDialogProps) {
-  const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [currentUserRole, setCurrentUserRole] = useState<string>("");
   const [teamMembers, setTeamMembers] = useState<Array<{ id: string; name: string; role: string }>>([]);
@@ -81,12 +80,7 @@ export function AddChannelDialog({ open, onOpenChange, stages, selectedStageId, 
 
         setTeamMembers(filteredMembers);
       } catch (error) {
-        console.error("Error fetching team members:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load team members",
-          variant: "destructive",
-        });
+        toast.error("Error", { description: "Failed to load team members" });
       } finally {
         setLoadingMembers(false);
       }
@@ -101,11 +95,7 @@ export function AddChannelDialog({ open, onOpenChange, stages, selectedStageId, 
     e.preventDefault();
     
     if (!formData.stageId || !formData.name.trim()) {
-      toast({
-        title: "Error",
-        description: "Please fill in all required fields",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: "Please fill in all required fields" });
       return;
     }
 
@@ -127,10 +117,7 @@ export function AddChannelDialog({ open, onOpenChange, stages, selectedStageId, 
 
       if (error) throw error;
 
-      toast({
-        title: "Success",
-        description: "Channel added successfully",
-      });
+      toast.success("Channel added successfully");
 
       setFormData({
         stageId: "",
@@ -141,12 +128,7 @@ export function AddChannelDialog({ open, onOpenChange, stages, selectedStageId, 
       onSuccess();
       onOpenChange(false);
     } catch (error) {
-      console.error("Error adding channel:", error);
-      toast({
-        title: "Error",
-        description: "Failed to add channel",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: "Failed to add channel" });
     } finally {
       setLoading(false);
     }

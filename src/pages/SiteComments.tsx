@@ -78,7 +78,7 @@ const SiteComments = () => {
             .eq("conversation_id", conv.id)
             .order("created_at", { ascending: false })
             .limit(1)
-            .single();
+            .maybeSingle();
 
           return {
             ...conv,
@@ -90,7 +90,6 @@ const SiteComments = () => {
 
       setConversations(conversationsWithCounts);
     } catch (error: any) {
-      console.error("Error loading conversations:", error);
       toast.error("Failed to load site comments");
     } finally {
       setLoading(false);

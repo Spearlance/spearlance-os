@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { useClient } from "@/contexts/ClientContext";
 
 interface CreateMeetingDialogProps {
@@ -16,7 +16,6 @@ interface CreateMeetingDialogProps {
 
 export function CreateMeetingDialog({ open, onOpenChange }: CreateMeetingDialogProps) {
   const navigate = useNavigate();
-  const { toast } = useToast();
   const { selectedClient } = useClient();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -39,11 +38,7 @@ export function CreateMeetingDialog({ open, onOpenChange }: CreateMeetingDialogP
     e.preventDefault();
     
     if (!selectedClient) {
-      toast({
-        title: "Error",
-        description: "Please select a client first",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: "Please select a client first" });
       return;
     }
 
@@ -80,10 +75,7 @@ export function CreateMeetingDialog({ open, onOpenChange }: CreateMeetingDialogP
 
       if (error) throw error;
 
-      toast({
-        title: "Success",
-        description: "Meeting created successfully",
-      });
+      toast.success("Success", { description: "Meeting created successfully" });
 
       onOpenChange(false);
       setFormData({ 
@@ -101,12 +93,7 @@ export function CreateMeetingDialog({ open, onOpenChange }: CreateMeetingDialogP
       });
       navigate("/meetings");
     } catch (error) {
-      console.error("Error creating meeting:", error);
-      toast({
-        title: "Error",
-        description: "Failed to create meeting",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: "Failed to create meeting" });
     } finally {
       setLoading(false);
     }

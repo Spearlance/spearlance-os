@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { KeyRound, Mail, Calendar, User } from "lucide-react";
 import { format } from "date-fns";
 
@@ -39,16 +39,9 @@ export function UserInfoDialog({ user, clients }: UserInfoDialogProps) {
 
       if (error) throw error;
 
-      toast({
-        title: "Password reset email sent",
-        description: `A password reset link has been sent to ${user.email}`,
-      });
+      toast.success("Password reset email sent", { description: `A password reset link has been sent to ${user.email}` });
     } catch (error: any) {
-      toast({
-        title: "Error sending password reset",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast.error("Error sending password reset", { description: error.message });
     } finally {
       setIsSending(false);
     }

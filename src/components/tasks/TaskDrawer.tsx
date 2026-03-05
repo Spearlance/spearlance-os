@@ -1,29 +1,15 @@
 import { useState, useEffect } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
-import { FileText, Image, Link as LinkIcon, FileVideo, FileAudio, ExternalLink, X, Plus, Trash2, Clock, Globe, ChevronLeft } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { DeleteTaskDialog } from "./DeleteTaskDialog";
 import { useNavigate } from "react-router-dom";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { AssigneeSelector } from "./AssigneeSelector";
-import { WatcherSelector } from "./WatcherSelector";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Palette } from "lucide-react";
-import { SubtaskList } from "./SubtaskList";
-import { MentionTextarea } from "./MentionTextarea";
-import ReactQuill from "react-quill";
-import "react-quill/dist/quill.snow.css";
+import { DetailsTab } from "./task-drawer/DetailsTab";
+import { CommentsTab } from "./task-drawer/CommentsTab";
+import { RelatedTab } from "./task-drawer/RelatedTab";
 
 interface TaskDrawerProps {
   task: any;
@@ -81,7 +67,6 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
   const [availablePages, setAvailablePages] = useState<any[]>([]);
   const [subtasks, setSubtasks] = useState<any[]>([]);
   const [taskColumns, setTaskColumns] = useState<Array<{ id: string; name: string; key: string; color: string; mapped_status: 'to_do' | 'in_progress' | 'done' }>>([]);
-  const { toast } = useToast();
   const navigate = useNavigate();
 
   // Normalize editedTask.status based on column_id to prevent enum errors
@@ -343,7 +328,7 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
         .eq("id", existing.id);
       
       if (error) {
-        toast({ title: "Error linking website", variant: "destructive" });
+        toast.error("Error linking website");
         return;
       }
     } else {
@@ -355,14 +340,14 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
           build_id: buildId,
           page_id: pageId || null
         });
-      
+
       if (error) {
-        toast({ title: "Error linking website", variant: "destructive" });
+        toast.error("Error linking website");
         return;
       }
     }
     
-    toast({ title: pageId ? "Page linked successfully" : "Build linked successfully" });
+    toast.success(pageId ? "Page linked successfully" : "Build linked successfully");
     loadLinkedWebsitePage();
     setShowLinkWebsiteDialog(false);
     setSelectedBuildForPage(null);
@@ -376,11 +361,11 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
       .eq("task_id", task.id);
     
     if (error) {
-      toast({ title: "Error unlinking website", variant: "destructive" });
+      toast.error("Error unlinking website");
       return;
     }
     
-    toast({ title: "Website unlinked successfully" });
+    toast.success("Website unlinked successfully");
     setLinkedWebsitePage(null);
   };
 
@@ -407,7 +392,7 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
       .from("marketing_flows")
       .select("id")
       .eq("client_id", task.client_id)
-      .single();
+      .maybeSingle();
     
     if (!flow) {
       setAvailableChannels([]);
@@ -434,7 +419,7 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
   const handleLinkAsset = async (assetId: string) => {
     const currentIds = task.related_asset_ids || [];
     if (currentIds.includes(assetId)) {
-      toast({ title: "Asset already linked" });
+      toast.info("Asset already linked");
       return;
     }
 
@@ -444,11 +429,11 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
       .eq("id", task.id);
 
     if (error) {
-      toast({ title: "Error linking asset", variant: "destructive" });
+      toast.error("Error linking asset");
       return;
     }
 
-    toast({ title: "Asset linked successfully" });
+    toast.success("Asset linked successfully");
     task.related_asset_ids = [...currentIds, assetId];
     loadRelatedItems();
     setShowLinkAssetDialog(false);
@@ -462,11 +447,11 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
       .eq("id", task.id);
 
     if (error) {
-      toast({ title: "Error unlinking asset", variant: "destructive" });
+      toast.error("Error unlinking asset");
       return;
     }
 
-    toast({ title: "Asset unlinked successfully" });
+    toast.success("Asset unlinked successfully");
     task.related_asset_ids = currentIds.filter(id => id !== assetId);
     loadRelatedItems();
   };
@@ -474,7 +459,7 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
   const handleLinkMeeting = async (meetingId: string) => {
     const currentIds = task.related_meeting_ids || [];
     if (currentIds.includes(meetingId)) {
-      toast({ title: "Meeting already linked" });
+      toast.info("Meeting already linked");
       return;
     }
 
@@ -484,11 +469,11 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
       .eq("id", task.id);
 
     if (error) {
-      toast({ title: "Error linking meeting", variant: "destructive" });
+      toast.error("Error linking meeting");
       return;
     }
 
-    toast({ title: "Meeting linked successfully" });
+    toast.success("Meeting linked successfully");
     task.related_meeting_ids = [...currentIds, meetingId];
     loadRelatedItems();
     setShowLinkMeetingDialog(false);
@@ -502,11 +487,11 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
       .eq("id", task.id);
 
     if (error) {
-      toast({ title: "Error unlinking meeting", variant: "destructive" });
+      toast.error("Error unlinking meeting");
       return;
     }
 
-    toast({ title: "Meeting unlinked successfully" });
+    toast.success("Meeting unlinked successfully");
     task.related_meeting_ids = currentIds.filter(id => id !== meetingId);
     loadRelatedItems();
   };
@@ -520,7 +505,7 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
       .maybeSingle();
     
     if (existingLink) {
-      toast({ title: "Channel already linked" });
+      toast.info("Channel already linked");
       return;
     }
     
@@ -536,11 +521,11 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
       });
     
     if (error) {
-      toast({ title: "Error linking channel", variant: "destructive" });
+      toast.error("Error linking channel");
       return;
     }
     
-    toast({ title: "Channel linked successfully" });
+    toast.success("Channel linked successfully");
     loadRelatedItems();
     setShowLinkChannelDialog(false);
   };
@@ -553,11 +538,11 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
       .eq("channel_id", channelId);
     
     if (error) {
-      toast({ title: "Error unlinking channel", variant: "destructive" });
+      toast.error("Error unlinking channel");
       return;
     }
     
-    toast({ title: "Channel unlinked successfully" });
+    toast.success("Channel unlinked successfully");
     setRelatedChannels(relatedChannels.filter(c => c.id !== channelId));
   };
 
@@ -592,7 +577,7 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
       .eq("id", task.id);
 
     if (taskError) {
-      toast({ title: "Error updating task", variant: "destructive" });
+      toast.error("Error updating task");
       return;
     }
 
@@ -603,7 +588,7 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
       .eq("task_id", task.id);
 
     if (deleteError) {
-      toast({ title: "Error updating assignees", variant: "destructive" });
+      toast.error("Error updating assignees");
       return;
     }
 
@@ -619,7 +604,7 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
         .insert(assigneeInserts);
 
       if (insertError) {
-        toast({ title: "Error updating assignees", variant: "destructive" });
+        toast.error("Error updating assignees");
         return;
       }
     }
@@ -631,7 +616,7 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
       .eq("task_id", task.id);
 
     if (deleteWatchersError) {
-      toast({ title: "Error updating watchers", variant: "destructive" });
+      toast.error("Error updating watchers");
       return;
     }
 
@@ -650,12 +635,12 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
         .insert(watcherInserts);
 
       if (insertWatchersError) {
-        toast({ title: "Error updating watchers", variant: "destructive" });
+        toast.error("Error updating watchers");
         return;
       }
     }
 
-    toast({ title: "Task updated successfully" });
+    toast.success("Task updated successfully");
     onUpdate();
     onOpenChange(false);
   };
@@ -710,7 +695,7 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
           .from("profiles")
           .select("name")
           .eq("id", user.id)
-          .single();
+          .maybeSingle();
 
         // Create notifications for mentioned users
         for (const userId of mentionedUserIds) {
@@ -732,19 +717,9 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
 
       setNewComment("");
       loadComments();
-      toast({
-        title: "Comment added",
-        description: mentionedUserIds.length > 0 
-          ? `${mentionedUserIds.length} user(s) will be notified`
-          : undefined,
-      });
+      toast.success("Comment added", mentionedUserIds.length > 0 ? { description: `${mentionedUserIds.length} user(s) will be notified` } : undefined);
     } catch (error) {
-      console.error("Error adding comment:", error);
-      toast({
-        title: "Error",
-        description: "Failed to add comment",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: "Failed to add comment" });
     }
   };
 
@@ -774,20 +749,12 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
 
       if (taskError) throw taskError;
 
-      toast({
-        title: "Success",
-        description: "Task deleted successfully",
-      });
+      toast.success("Task deleted successfully");
       
       onOpenChange(false);
       onUpdate();
     } catch (error) {
-      console.error("Error deleting task:", error);
-      toast({
-        title: "Error",
-        description: "Failed to delete task",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: "Failed to delete task" });
       throw error;
     }
   };
@@ -807,658 +774,74 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
           </TabsList>
 
           <TabsContent value="details" className="mt-0 flex-1 flex flex-col overflow-hidden">
-            <ScrollArea className="flex-1 pr-4">
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Title</Label>
-                  <Input value={editedTask.title} onChange={(e) => setEditedTask({ ...editedTask, title: e.target.value })} />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Description</Label>
-                  <div className="border rounded-md overflow-hidden">
-                    <ReactQuill
-                      theme="snow"
-                      value={editedTask.description}
-                      onChange={(value) => setEditedTask({ ...editedTask, description: value })}
-                      modules={quillModules}
-                      formats={quillFormats}
-                      className="bg-background [&_.ql-editor]:min-h-[100px]"
-                      placeholder="Add a description..."
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="space-y-2">
-                    <Label>Status</Label>
-                    <Select 
-                      value={editedTask.column_id || editedTask.status} 
-                      onValueChange={(columnId) => {
-                        const selectedColumn = taskColumns.find(col => col.id === columnId);
-                        if (selectedColumn) {
-                          setEditedTask({ 
-                            ...editedTask, 
-                            status: selectedColumn.mapped_status,
-                            column_id: columnId
-                          });
-                        }
-                      }}
-                    >
-                      <SelectTrigger>
-                        <SelectValue>
-                          {taskColumns.length > 0 ? (
-                            (() => {
-                              const currentColumn = taskColumns.find(col => col.id === editedTask.column_id);
-                              return currentColumn ? (
-                                <div className="flex items-center gap-2">
-                                  <div 
-                                    className="w-3 h-3 rounded-full" 
-                                    style={{ backgroundColor: currentColumn.color }}
-                                  />
-                                  {currentColumn.name}
-                                </div>
-                              ) : editedTask.status;
-                            })()
-                          ) : editedTask.status}
-                        </SelectValue>
-                      </SelectTrigger>
-                      <SelectContent>
-                        {taskColumns.length > 0 ? (
-                          taskColumns.map((column) => (
-                            <SelectItem key={column.id} value={column.id}>
-                              <div className="flex items-center gap-2">
-                                <div 
-                                  className="w-3 h-3 rounded-full" 
-                                  style={{ backgroundColor: column.color }}
-                                />
-                                {column.name}
-                              </div>
-                            </SelectItem>
-                          ))
-                        ) : (
-                          <>
-                            <SelectItem value="to_do">To Do</SelectItem>
-                            <SelectItem value="in_progress">In Progress</SelectItem>
-                            <SelectItem value="done">Done</SelectItem>
-                          </>
-                        )}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Priority</Label>
-                    <Select value={editedTask.priority} onValueChange={(value) => setEditedTask({ ...editedTask, priority: value })}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="low">Low</SelectItem>
-                        <SelectItem value="normal">Normal</SelectItem>
-                        <SelectItem value="high">High</SelectItem>
-                        <SelectItem value="urgent">Urgent</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Due Date</Label>
-                    <Input 
-                      type="date" 
-                      value={editedTask.due_date} 
-                      onChange={(e) => setEditedTask({ ...editedTask, due_date: e.target.value })}
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="space-y-2 col-span-2">
-                    <Label>Assignees</Label>
-                    <AssigneeSelector
-                      users={users}
-                      selectedUserIds={selectedAssignees}
-                      onSelectionChange={setSelectedAssignees}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Color</Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button variant="outline" className="w-full h-10 px-2">
-                          <div 
-                            className="h-6 w-full rounded border-2 border-background" 
-                            style={{ backgroundColor: editedTask.color }}
-                          />
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-3" align="start">
-                        <div className="flex gap-2">
-                          {["#EF4444", "#F59E0B", "#10B981", "#3B82F6", "#8B5CF6", "#EC4899", "#6B7280"].map((colorOption) => (
-                            <button
-                              key={colorOption}
-                              type="button"
-                              className={`h-8 w-8 rounded-md border-2 transition-all hover:scale-110 ${
-                                editedTask.color === colorOption ? "border-primary ring-2 ring-primary/20" : "border-transparent"
-                              }`}
-                              style={{ backgroundColor: colorOption }}
-                              onClick={() => setEditedTask({ ...editedTask, color: colorOption })}
-                              aria-label={`Select color ${colorOption}`}
-                            />
-                          ))}
-                        </div>
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Notify on completion</Label>
-                  <WatcherSelector
-                    users={users}
-                    selectedUserIds={selectedWatchers}
-                    onSelectionChange={setSelectedWatchers}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    These users will be notified when this task is completed
-                  </p>
-                </div>
-
-
-                {/* Task Duration Display */}
-                {(task.started_at || task.completed_at) && (
-                  <div className="border rounded-lg p-3 bg-muted/50">
-                    <div className="flex items-center gap-2 text-sm">
-                      <Clock className="h-4 w-4 text-muted-foreground" />
-                      {task.status === 'done' && task.started_at && task.completed_at ? (
-                        <span className="text-muted-foreground">
-                          Completed in{' '}
-                          <span className="font-medium text-foreground">
-                            {(() => {
-                              const start = new Date(task.started_at);
-                              const end = new Date(task.completed_at);
-                              const diffMs = end.getTime() - start.getTime();
-                              const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-                              const diffDays = Math.floor(diffHours / 24);
-                              const remainingHours = diffHours % 24;
-                              if (diffDays > 0) return `${diffDays}d ${remainingHours}h`;
-                              if (diffHours > 0) return `${diffHours}h`;
-                              return 'Less than 1h';
-                            })()}
-                          </span>
-                        </span>
-                      ) : task.status === 'in_progress' && task.started_at ? (
-                        <span className="text-muted-foreground">
-                          In progress for{' '}
-                          <span className="font-medium text-foreground">
-                            {(() => {
-                              const start = new Date(task.started_at);
-                              const now = new Date();
-                              const diffMs = now.getTime() - start.getTime();
-                              const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-                              const diffDays = Math.floor(diffHours / 24);
-                              const remainingHours = diffHours % 24;
-                              if (diffDays > 0) return `${diffDays}d ${remainingHours}h`;
-                              if (diffHours > 0) return `${diffHours}h`;
-                              return 'Less than 1h';
-                            })()}
-                          </span>
-                        </span>
-                      ) : null}
-                    </div>
-                  </div>
-                )}
-
-                {/* Subtasks Section */}
-                <div className="border-t pt-4 mt-4">
-                  <SubtaskList 
-                    parentTaskId={task.id}
-                    subtasks={subtasks}
-                    onUpdate={() => {
-                      loadSubtasks();
-                      onUpdate();
-                    }}
-                  />
-                </div>
-              </div>
-            </ScrollArea>
+            <DetailsTab
+              editedTask={editedTask}
+              setEditedTask={setEditedTask}
+              taskColumns={taskColumns}
+              users={users}
+              selectedAssignees={selectedAssignees}
+              setSelectedAssignees={setSelectedAssignees}
+              selectedWatchers={selectedWatchers}
+              setSelectedWatchers={setSelectedWatchers}
+              subtasks={subtasks}
+              onSubtaskUpdate={() => {
+                loadSubtasks();
+                onUpdate();
+              }}
+              isAdminOrFMM={isAdminOrFMM}
+              task={task}
+            />
           </TabsContent>
 
           <TabsContent value="comments" className="mt-0 flex-1 flex flex-col overflow-hidden">
-            <ScrollArea className="flex-1 pr-4">
-              <div className="space-y-4">
-                {comments.map((comment) => (
-                  <div key={comment.id} className="flex gap-3">
-                    <Avatar className="h-8 w-8">
-                      <AvatarFallback>
-                        {comment.profiles?.name?.charAt(0) || "?"}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="font-medium text-sm">{comment.profiles?.name}</span>
-                        <span className="text-xs text-muted-foreground">
-                          {new Date(comment.created_at).toLocaleDateString()}
-                        </span>
-                      </div>
-                      <p className="text-sm">{renderCommentWithMentions(comment.body)}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </ScrollArea>
-
-            <div className="space-y-2 mt-4 pt-4 border-t">
-              <MentionTextarea
-                placeholder="Add a comment... (type @ to mention someone)"
-                value={newComment}
-                onChange={setNewComment}
-                users={users}
-                rows={3}
-              />
-              <Button onClick={handleAddComment}>Add Comment</Button>
-            </div>
+            <CommentsTab
+              comments={comments}
+              newComment={newComment}
+              setNewComment={setNewComment}
+              handleAddComment={handleAddComment}
+              users={users}
+              renderCommentText={renderCommentWithMentions}
+            />
           </TabsContent>
 
           <TabsContent value="related" className="mt-0 flex-1 flex flex-col overflow-hidden">
-            <ScrollArea className="flex-1 pr-4">
-              <div className="space-y-6">
-                {/* Linked Website Build/Page */}
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-medium">Website Build/Page</h3>
-                    {!linkedWebsitePage && (
-                      <Dialog open={showLinkWebsiteDialog} onOpenChange={(open) => {
-                        setShowLinkWebsiteDialog(open);
-                        if (!open) {
-                          setSelectedBuildForPage(null);
-                          setAvailablePages([]);
-                        }
-                      }}>
-                        <DialogTrigger asChild>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => {
-                              loadAvailableBuilds();
-                              setSelectedBuildForPage(null);
-                              setAvailablePages([]);
-                            }}
-                          >
-                            <Plus className="h-4 w-4 mr-1" />
-                            Link Build/Page
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                          <DialogHeader>
-                            <DialogTitle>
-                              {selectedBuildForPage ? "Select Page (Optional)" : "Select Website Build"}
-                            </DialogTitle>
-                          </DialogHeader>
-                          <ScrollArea className="h-[400px] pr-4">
-                            {!selectedBuildForPage ? (
-                              <div className="space-y-2">
-                                {availableBuilds.length === 0 ? (
-                                  <p className="text-sm text-muted-foreground text-center py-8">No website builds found</p>
-                                ) : (
-                                  availableBuilds.map((build) => (
-                                    <Card
-                                      key={build.id}
-                                      className="cursor-pointer hover:bg-accent transition-colors"
-                                      onClick={() => {
-                                        setSelectedBuildForPage(build.id);
-                                        loadAvailablePages(build.id);
-                                      }}
-                                    >
-                                      <CardContent className="p-4">
-                                        <div className="flex items-center justify-between">
-                                          <div className="font-medium">{build.name}</div>
-                                          <Badge variant="outline">{build.status}</Badge>
-                                        </div>
-                                      </CardContent>
-                                    </Card>
-                                  ))
-                                )}
-                              </div>
-                            ) : (
-                              <div className="space-y-2">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="mb-2"
-                                  onClick={() => {
-                                    setSelectedBuildForPage(null);
-                                    setAvailablePages([]);
-                                  }}
-                                >
-                                  <ChevronLeft className="h-4 w-4 mr-1" />
-                                  Back to Builds
-                                </Button>
-                                <Card
-                                  className="cursor-pointer hover:bg-accent transition-colors border-dashed"
-                                  onClick={() => handleLinkWebsitePage(selectedBuildForPage)}
-                                >
-                                  <CardContent className="p-4 text-center text-muted-foreground">
-                                    Link to Build only (no specific page)
-                                  </CardContent>
-                                </Card>
-                                {availablePages.map((page) => (
-                                  <Card
-                                    key={page.id}
-                                    className="cursor-pointer hover:bg-accent transition-colors"
-                                    onClick={() => handleLinkWebsitePage(selectedBuildForPage, page.id)}
-                                  >
-                                    <CardContent className="p-4">
-                                      <div className="flex items-center justify-between">
-                                        <div>
-                                          <div className="font-medium">{page.page_name}</div>
-                                          <div className="text-sm text-muted-foreground">
-                                            {page.page_type || 'Custom'}
-                                          </div>
-                                        </div>
-                                        <Badge variant="outline">{page.status}</Badge>
-                                      </div>
-                                    </CardContent>
-                                  </Card>
-                                ))}
-                              </div>
-                            )}
-                          </ScrollArea>
-                        </DialogContent>
-                      </Dialog>
-                    )}
-                  </div>
-                  
-                  {linkedWebsitePage ? (
-                    <div
-                      className="relative group flex items-center justify-between p-3 bg-muted rounded-lg cursor-pointer hover:bg-muted/80"
-                      onClick={() => navigate(`/website/builds/${linkedWebsitePage.build_id}`)}
-                    >
-                      <Button
-                        variant="destructive"
-                        size="icon"
-                        className="absolute top-2 right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity z-10"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleUnlinkWebsitePage();
-                        }}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                      <div className="flex items-center gap-2">
-                        <Globe className="h-4 w-4 text-muted-foreground" />
-                        <div>
-                          <div className="font-medium text-sm">{linkedWebsitePage.name}</div>
-                          <div className="text-xs text-muted-foreground">{linkedWebsitePage.build_name}</div>
-                        </div>
-                      </div>
-                      <ExternalLink className="h-4 w-4 text-muted-foreground mr-8" />
-                    </div>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">No website build/page linked</p>
-                  )}
-                </div>
-
-                {/* Related Channels */}
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-medium">Related Channels</h3>
-                    <Dialog open={showLinkChannelDialog} onOpenChange={setShowLinkChannelDialog}>
-                      <DialogTrigger asChild>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={loadAvailableChannels}
-                        >
-                          <Plus className="h-4 w-4 mr-1" />
-                          Link Channel
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>Link Channel to Task</DialogTitle>
-                        </DialogHeader>
-                        <ScrollArea className="h-[400px] pr-4">
-                          <div className="space-y-2">
-                            {availableChannels.map((channel) => (
-                              <Card
-                                key={channel.id}
-                                className="cursor-pointer hover:bg-accent transition-colors"
-                                onClick={() => handleLinkChannel(channel.id)}
-                              >
-                                <CardContent className="p-4">
-                                  <div className="flex items-center justify-between">
-                                    <div className="flex-1">
-                                      <div className="font-medium">{channel.name}</div>
-                                      <div className="text-sm text-muted-foreground mt-1">
-                                        Stage: {channel.marketing_flow_stages.name}
-                                      </div>
-                                    </div>
-                                    <Badge variant="outline">{channel.status}</Badge>
-                                  </div>
-                                </CardContent>
-                              </Card>
-                            ))}
-                          </div>
-                        </ScrollArea>
-                      </DialogContent>
-                    </Dialog>
-                  </div>
-                  {relatedChannels.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">No channels linked to this task</p>
-                  ) : (
-                    <div className="space-y-2">
-                      {relatedChannels.map((channel) => (
-                        <div
-                          key={channel.id}
-                          className="relative group flex items-center justify-between p-3 bg-muted rounded-lg cursor-pointer hover:bg-muted/80"
-                          onClick={() => navigate("/marketing/flow")}
-                        >
-                          <Button
-                            variant="destructive"
-                            size="icon"
-                            className="absolute top-2 right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity z-10"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleUnlinkChannel(channel.id);
-                            }}
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                          <div className="flex-1 pr-8">
-                            <div className="font-medium text-sm">{channel.name}</div>
-                            <div className="text-xs text-muted-foreground mt-1">
-                              Stage: {channel.marketing_flow_stages.name}
-                            </div>
-                          </div>
-                          <Badge variant="outline">{channel.status}</Badge>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Related Assets */}
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-medium">Related Assets</h3>
-                    <Dialog open={showLinkAssetDialog} onOpenChange={setShowLinkAssetDialog}>
-                      <DialogTrigger asChild>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={loadAvailableAssets}
-                        >
-                          <Plus className="h-4 w-4 mr-1" />
-                          Link Asset
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>Link Asset to Task</DialogTitle>
-                        </DialogHeader>
-                        <ScrollArea className="h-[400px] pr-4">
-                          <div className="grid grid-cols-2 gap-3">
-                            {availableAssets.map((asset) => (
-                              <Card
-                                key={asset.id}
-                                className="cursor-pointer hover:bg-accent transition-colors"
-                                onClick={() => handleLinkAsset(asset.id)}
-                              >
-                                <CardContent className="p-3">
-                                  <div className="space-y-2">
-                                    {(asset.preview_url || (asset.type === 'image' && asset.file_url)) ? (
-                                      <div className="w-full h-20 bg-muted rounded overflow-hidden">
-                                        <img
-                                          src={asset.preview_url || asset.file_url}
-                                          alt={asset.title}
-                                          className="w-full h-full object-cover"
-                                        />
-                                      </div>
-                                    ) : (
-                                      <div className="w-full h-20 bg-muted rounded flex items-center justify-center">
-                                        {getTypeIcon(asset.type)}
-                                      </div>
-                                    )}
-                                    <div className="font-medium text-xs truncate">{asset.title}</div>
-                                  </div>
-                                </CardContent>
-                              </Card>
-                            ))}
-                          </div>
-                        </ScrollArea>
-                      </DialogContent>
-                    </Dialog>
-                  </div>
-                  {relatedAssets.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">No assets linked to this task</p>
-                  ) : (
-                    <div className="grid grid-cols-2 gap-3">
-                      {relatedAssets.map((asset) => (
-                        <Card
-                          key={asset.id}
-                          className="relative group cursor-pointer hover:bg-accent transition-colors"
-                          onClick={() => navigate("/assets")}
-                        >
-                          <Button
-                            variant="destructive"
-                            size="icon"
-                            className="absolute top-2 right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity z-10"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleUnlinkAsset(asset.id);
-                            }}
-                          >
-                            <X className="h-3 w-3" />
-                          </Button>
-                          <CardContent className="p-3">
-                            <div className="space-y-2">
-                              {(asset.preview_url || (asset.type === 'image' && asset.file_url)) ? (
-                                <div className="w-full h-24 bg-muted rounded overflow-hidden">
-                                  <img
-                                    src={asset.preview_url || asset.file_url}
-                                    alt={asset.title}
-                                    className="w-full h-full object-cover"
-                                  />
-                                </div>
-                              ) : (
-                                <div className="w-full h-24 bg-muted rounded flex items-center justify-center">
-                                  {getTypeIcon(asset.type)}
-                                </div>
-                              )}
-                              <div>
-                                <div className="font-medium text-sm truncate">{asset.title}</div>
-                                <Badge variant="outline" className="text-xs mt-1">
-                                  {asset.type}
-                                </Badge>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Related Meetings */}
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-medium">Related Meetings</h3>
-                    <Dialog open={showLinkMeetingDialog} onOpenChange={setShowLinkMeetingDialog}>
-                      <DialogTrigger asChild>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={loadAvailableMeetings}
-                        >
-                          <Plus className="h-4 w-4 mr-1" />
-                          Link Meeting
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>Link Meeting to Task</DialogTitle>
-                        </DialogHeader>
-                        <ScrollArea className="h-[400px] pr-4">
-                          <div className="space-y-2">
-                            {availableMeetings.map((meeting) => (
-                              <div
-                                key={meeting.id}
-                                className="flex items-center justify-between p-3 bg-muted rounded-lg cursor-pointer hover:bg-muted/80"
-                                onClick={() => handleLinkMeeting(meeting.id)}
-                              >
-                                <div className="flex-1">
-                                  <div className="font-medium text-sm">{extractMeetingTitle(meeting.summary)}</div>
-                                  <div className="text-xs text-muted-foreground mt-1">
-                                    {new Date(meeting.date_time).toLocaleString()}
-                                  </div>
-                                </div>
-                                <Badge variant="outline">{meeting.status}</Badge>
-                              </div>
-                            ))}
-                          </div>
-                        </ScrollArea>
-                      </DialogContent>
-                    </Dialog>
-                  </div>
-                  {relatedMeetings.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">No meetings linked to this task</p>
-                  ) : (
-                    <div className="space-y-2">
-                      {relatedMeetings.map((meeting) => (
-                        <div
-                          key={meeting.id}
-                          className="group flex items-center justify-between p-3 bg-muted rounded-lg cursor-pointer hover:bg-muted/80"
-                          onClick={() => navigate(`/meetings/${meeting.id}`)}
-                        >
-                          <div className="flex-1">
-                            <div className="font-medium text-sm">{extractMeetingTitle(meeting.summary)}</div>
-                            <div className="text-xs text-muted-foreground mt-1">
-                              {new Date(meeting.date_time).toLocaleString()}
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Badge variant="outline">{meeting.status}</Badge>
-                            <Button
-                              variant="destructive"
-                              size="icon"
-                              className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleUnlinkMeeting(meeting.id);
-                              }}
-                            >
-                              <X className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </ScrollArea>
+            <RelatedTab
+              relatedAssets={relatedAssets}
+              relatedMeetings={relatedMeetings}
+              relatedChannels={relatedChannels}
+              linkedWebsitePage={linkedWebsitePage}
+              showLinkAssetDialog={showLinkAssetDialog}
+              setShowLinkAssetDialog={setShowLinkAssetDialog}
+              showLinkMeetingDialog={showLinkMeetingDialog}
+              setShowLinkMeetingDialog={setShowLinkMeetingDialog}
+              showLinkChannelDialog={showLinkChannelDialog}
+              setShowLinkChannelDialog={setShowLinkChannelDialog}
+              showLinkWebsiteDialog={showLinkWebsiteDialog}
+              setShowLinkWebsiteDialog={setShowLinkWebsiteDialog}
+              availableAssets={availableAssets}
+              availableMeetings={availableMeetings}
+              availableChannels={availableChannels}
+              availableBuilds={availableBuilds}
+              availablePages={availablePages}
+              selectedBuildForPage={selectedBuildForPage}
+              setSelectedBuildForPage={setSelectedBuildForPage}
+              setAvailablePages={setAvailablePages}
+              handleLinkAsset={handleLinkAsset}
+              handleUnlinkAsset={handleUnlinkAsset}
+              handleLinkMeeting={handleLinkMeeting}
+              handleUnlinkMeeting={handleUnlinkMeeting}
+              handleLinkChannel={handleLinkChannel}
+              handleUnlinkChannel={handleUnlinkChannel}
+              handleLinkWebsitePage={handleLinkWebsitePage}
+              handleUnlinkWebsitePage={handleUnlinkWebsitePage}
+              loadAvailableAssets={loadAvailableAssets}
+              loadAvailableMeetings={loadAvailableMeetings}
+              loadAvailableChannels={loadAvailableChannels}
+              loadAvailableBuilds={loadAvailableBuilds}
+              loadAvailablePages={loadAvailablePages}
+              extractMeetingTitle={extractMeetingTitle}
+              navigate={navigate}
+            />
           </TabsContent>
         </Tabs>
 

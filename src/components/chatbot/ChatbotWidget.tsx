@@ -25,6 +25,7 @@ export const ChatbotWidget = () => {
     error, 
     isOpen,
     isOfferMode,
+    userProfile,
     setIsOpen,
     setIsOfferMode,
     setActiveConversationId,
@@ -227,7 +228,7 @@ export const ChatbotWidget = () => {
             )}
 
               {messages.map((message, index) => (
-                <ChatMessage key={index} message={message} onRetry={retryMessage} />
+                <ChatMessage key={index} message={message} onRetry={retryMessage} userProfile={userProfile} />
               ))}
 
             {isLoading && messages.length > 0 && messages[messages.length - 1]?.role === 'user' && (

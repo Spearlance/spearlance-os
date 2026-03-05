@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Copy, RefreshCw, Eye, EyeOff, Loader2, Link2, Calendar } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
 interface AssetShareSettingsProps {
@@ -40,7 +40,6 @@ export function AssetShareSettings({
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const { toast } = useToast();
 
   const shareUrl = token 
     ? `${window.location.origin}/assets/share/${token}`
@@ -68,19 +67,13 @@ export function AssetShareSettings({
       setEnabled(newEnabled);
       onUpdate();
       
-      toast({
-        title: newEnabled ? "Asset sharing enabled" : "Asset sharing disabled",
-        description: newEnabled 
+      toast.success(newEnabled ? "Asset sharing enabled" : "Asset sharing disabled", {
+        description: newEnabled
           ? "Set a password to allow access to the asset portal"
           : "The share link is now inactive"
       });
     } catch (error) {
-      console.error('Toggle error:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update sharing settings",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "Failed to update sharing settings" });
     } finally {
       setIsLoading(false);
     }
@@ -88,11 +81,7 @@ export function AssetShareSettings({
 
   const handleSetPassword = async () => {
     if (!password || password.length < 6) {
-      toast({
-        title: "Invalid password",
-        description: "Password must be at least 6 characters",
-        variant: "destructive"
-      });
+      toast.error("Invalid password", { description: "Password must be at least 6 characters" });
       return;
     }
 
@@ -107,17 +96,9 @@ export function AssetShareSettings({
       setPassword('');
       onUpdate();
 
-      toast({
-        title: "Password set",
-        description: "Users can now access the asset portal with this password"
-      });
+      toast.success("Password set", { description: "Users can now access the asset portal with this password" });
     } catch (error) {
-      console.error('Set password error:', error);
-      toast({
-        title: "Error",
-        description: "Failed to set password",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "Failed to set password" });
     } finally {
       setIsLoading(false);
     }
@@ -138,17 +119,9 @@ export function AssetShareSettings({
       setToken(newToken);
       onUpdate();
       
-      toast({
-        title: "New link generated",
-        description: "The old share link is now invalid"
-      });
+      toast.success("New link generated", { description: "The old share link is now invalid" });
     } catch (error) {
-      console.error('Regenerate error:', error);
-      toast({
-        title: "Error",
-        description: "Failed to generate new link",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "Failed to generate new link" });
     } finally {
       setIsLoading(false);
     }
@@ -168,19 +141,13 @@ export function AssetShareSettings({
 
       onUpdate();
       
-      toast({
-        title: "Expiration updated",
-        description: expiresAt 
+      toast.success("Expiration updated", {
+        description: expiresAt
           ? `Link will expire on ${new Date(expiresAt).toLocaleDateString()}`
           : "Link will not expire"
       });
     } catch (error) {
-      console.error('Update expiration error:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update expiration",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "Failed to update expiration" });
     } finally {
       setIsLoading(false);
     }
@@ -189,10 +156,7 @@ export function AssetShareSettings({
   const copyToClipboard = () => {
     if (shareUrl) {
       navigator.clipboard.writeText(shareUrl);
-      toast({
-        title: "Copied!",
-        description: "Share link copied to clipboard"
-      });
+      toast.success("Copied!", { description: "Share link copied to clipboard" });
     }
   };
 

@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ChevronLeft, ChevronRight, Save, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { format, startOfWeek, addWeeks, subWeeks, isSameWeek, endOfWeek } from "date-fns";
 
 interface KPIField {
@@ -45,7 +45,6 @@ interface CampaignKPIsTabProps {
 }
 
 export function CampaignKPIsTab({ campaignId, channelId, channelName, isAdminOrFMM }: CampaignKPIsTabProps) {
-  const { toast } = useToast();
   const [selectedWeek, setSelectedWeek] = useState(() => 
     startOfWeek(new Date(), { weekStartsOn: 1 })
   );
@@ -145,18 +144,10 @@ export function CampaignKPIsTab({ campaignId, channelId, channelName, isAdminOrF
 
       if (error) throw error;
 
-      toast({
-        title: "Success",
-        description: "KPIs saved successfully",
-      });
+      toast.success("Success", { description: "KPIs saved successfully" });
       loadHistory();
     } catch (error) {
-      console.error("Error saving KPIs:", error);
-      toast({
-        title: "Error",
-        description: "Failed to save KPIs",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: "Failed to save KPIs" });
     } finally {
       setSaving(false);
     }

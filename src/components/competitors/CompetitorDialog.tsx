@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
 
@@ -31,7 +31,6 @@ interface CompetitorDialogProps {
 }
 
 export function CompetitorDialog({ open, onOpenChange, competitor, clientId, onSuccess }: CompetitorDialogProps) {
-  const { toast } = useToast();
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     name: "",
@@ -75,11 +74,7 @@ export function CompetitorDialog({ open, onOpenChange, competitor, clientId, onS
 
   const handleSave = async () => {
     if (!form.name.trim()) {
-      toast({
-        title: "Validation Error",
-        description: "Competitor name is required",
-        variant: "destructive",
-      });
+      toast.error("Validation Error", { description: "Competitor name is required" });
       return;
     }
 
@@ -106,10 +101,7 @@ export function CompetitorDialog({ open, onOpenChange, competitor, clientId, onS
 
         if (error) throw error;
 
-        toast({
-          title: "Success",
-          description: "Competitor updated successfully",
-        });
+        toast.success("Success", { description: "Competitor updated successfully" });
       } else {
         const { error } = await supabase
           .from("competitors")
@@ -117,20 +109,12 @@ export function CompetitorDialog({ open, onOpenChange, competitor, clientId, onS
 
         if (error) throw error;
 
-        toast({
-          title: "Success",
-          description: "Competitor added successfully",
-        });
+        toast.success("Success", { description: "Competitor added successfully" });
       }
 
       onSuccess();
     } catch (error: any) {
-      console.error("Error saving competitor:", error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to save competitor",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: error.message || "Failed to save competitor" });
     } finally {
       setSaving(false);
     }

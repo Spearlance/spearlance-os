@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Loader2, Plus, Mail, Eye, Save, ArrowLeft } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -26,7 +26,6 @@ interface EmailTemplate {
 
 export default function EmailTemplates() {
   const navigate = useNavigate();
-  const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<EmailTemplate | null>(null);
@@ -54,14 +53,10 @@ export default function EmailTemplates() {
       .from("profiles")
       .select("role")
       .eq("id", user.id)
-      .single();
+      .maybeSingle();
 
     if (profile?.role !== "admin") {
-      toast({
-        title: "Access Denied",
-        description: "You must be an admin to access this page",
-        variant: "destructive",
-      });
+      toast.error("Access Denied", { description: "You must be an admin to access this page" });
       navigate("/admin");
       return;
     }
@@ -80,11 +75,7 @@ export default function EmailTemplates() {
       if (error) throw error;
       setTemplates(data || []);
     } catch (error: any) {
-      toast({
-        title: "Error loading templates",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast.error("Error loading templates", { description: error.message });
     } finally {
       setLoading(false);
     }
@@ -115,19 +106,12 @@ export default function EmailTemplates() {
 
       if (error) throw error;
 
-      toast({
-        title: "Template saved",
-        description: "Email template updated successfully",
-      });
+      toast.success("Template saved", { description: "Email template updated successfully" });
 
       loadTemplates();
       setEditMode(false);
     } catch (error: any) {
-      toast({
-        title: "Error saving template",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast.error("Error saving template", { description: error.message });
     } finally {
       setSaving(false);
     }
@@ -317,7 +301,7 @@ export default function EmailTemplates() {
                                 size="sm"
                                 onClick={() => {
                                   navigator.clipboard.writeText(`{{${variable}}}`);
-                                  toast({ title: "Copied to clipboard" });
+                                  toast.success("Copied to clipboard");
                                 }}
                               >
                                 Copy

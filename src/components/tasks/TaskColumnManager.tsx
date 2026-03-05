@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Plus, GripVertical, Trash2, Edit2, X, Check, AlertCircle, Save } from "lucide-react";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -21,7 +21,6 @@ type PendingColumn = Omit<TaskColumn, 'id' | 'created_at' | 'updated_at'> & {
 
 export function TaskColumnManager() {
   const { selectedClient } = useClient();
-  const { toast } = useToast();
   const [columns, setColumns] = useState<TaskColumn[]>([]);
   const [originalColumns, setOriginalColumns] = useState<TaskColumn[]>([]);
   const [loading, setLoading] = useState(true);
@@ -78,12 +77,7 @@ export function TaskColumnManager() {
       });
       setHasUnsavedChanges(false);
     } catch (error) {
-      console.error("Error loading columns:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load task columns",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: "Failed to load task columns" });
     } finally {
       setLoading(false);
     }
@@ -98,11 +92,7 @@ export function TaskColumnManager() {
                         pendingChanges.added.some(c => c.key === key);
     
     if (isDuplicate) {
-      toast({
-        title: "Error",
-        description: "A column with this name already exists",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: "A column with this name already exists" });
       return;
     }
 
@@ -211,22 +201,14 @@ export function TaskColumnManager() {
           : col
       ));
 
-      toast({
-        title: "Column updated",
-        description: "Changes saved successfully",
-      });
+      toast.success("Column updated", { description: "Changes saved successfully" });
 
       setEditingId(null);
       
       // Trigger update event for Tasks.tsx
       window.dispatchEvent(new CustomEvent('taskColumnsUpdated'));
     } catch (error: any) {
-      console.error("Error updating column:", error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to update column",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: error.message || "Failed to update column" });
     } finally {
       setIsSavingEdit(false);
     }
@@ -234,11 +216,7 @@ export function TaskColumnManager() {
 
   const handleDelete = async (column: TaskColumn) => {
     if (column.is_default) {
-      toast({
-        title: "Cannot Delete",
-        description: "Default columns cannot be deleted",
-        variant: "destructive",
-      });
+      toast.error("Cannot Delete", { description: "Default columns cannot be deleted" });
       return;
     }
 
@@ -280,10 +258,7 @@ export function TaskColumnManager() {
       const [doneColumn] = items.splice(doneIndex, 1);
       items.push(doneColumn);
       
-      toast({
-        title: "Note",
-        description: "'Done' column must remain at the end",
-      });
+      toast.info("Note", { description: "'Done' column must remain at the end" });
     }
 
     // Update display_order for all items
@@ -316,7 +291,7 @@ export function TaskColumnManager() {
               .eq("is_default", true)
               .order("display_order")
               .limit(1)
-              .single();
+              .maybeSingle();
 
             if (toDoColumn) {
               await supabase
@@ -389,7 +364,6 @@ export function TaskColumnManager() {
               .eq("id", column.id);
 
             if (error) {
-              console.error("Error in phase 1 reorder:", error);
               throw error;
             }
           }
@@ -404,17 +378,13 @@ export function TaskColumnManager() {
               .eq("id", column.id);
 
             if (error) {
-              console.error("Error in phase 2 reorder:", error);
               throw error;
             }
           }
         }
       }
 
-      toast({
-        title: "Success",
-        description: "Settings saved successfully",
-      });
+      toast.success("Settings saved successfully");
 
       // Reload fresh data
       await loadColumns();
@@ -422,12 +392,7 @@ export function TaskColumnManager() {
       // Trigger update event for Tasks.tsx
       window.dispatchEvent(new CustomEvent('taskColumnsUpdated'));
     } catch (error: any) {
-      console.error("Error saving settings:", error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to save settings",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: error.message || "Failed to save settings" });
     } finally {
       setIsSaving(false);
     }

@@ -55,7 +55,7 @@ export const SubtaskList = ({ parentTaskId, subtasks, onUpdate }: SubtaskListPro
       status: "to_do",
       priority: "normal",
       subtask_order: subtasks.length,
-      client_id: (await supabase.from("tasks").select("client_id").eq("id", parentTaskId).single()).data?.client_id,
+      client_id: (await supabase.from("tasks").select("client_id").eq("id", parentTaskId).maybeSingle()).data?.client_id,
     });
 
     if (error) {

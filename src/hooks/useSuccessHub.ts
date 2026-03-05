@@ -110,6 +110,37 @@ function parseJsonArray<T>(data: Json | null | undefined, defaultValue: T[]): T[
   return defaultValue;
 }
 
+export interface SuccessHubTask {
+  id: string;
+  title: string;
+  description: string | null;
+  status: string | null;
+  priority: string | null;
+  due_date: string | null;
+  updated_at: string | null;
+  client_id: string;
+  assignee: { id: string; name: string; avatar_url: string | null } | null;
+}
+
+export interface SuccessHubCommunication {
+  id: string;
+  type: string;
+  subject_line: string;
+  source: string;
+  created_at: string | null;
+  client_id: string;
+}
+
+export interface SuccessHubMeeting {
+  id: string;
+  summary: string;
+  date_time: string;
+  meeting_date?: string;
+  client_id: string;
+  status: string | null;
+  join_url: string | null;
+}
+
 export interface AIReport {
   id: string;
   report_type: string;
@@ -125,11 +156,11 @@ export function useSuccessHub() {
   const { selectedClient } = useClient();
   const [successLog, setSuccessLog] = useState<SuccessLog | null>(null);
   const [clientData, setClientData] = useState<ClientWithOwners | null>(null);
-  const [lastCommunication, setLastCommunication] = useState<any>(null);
-  const [nextMeeting, setNextMeeting] = useState<any>(null);
-  const [thisWeekTasks, setThisWeekTasks] = useState<any[]>([]);
-  const [completedTasks, setCompletedTasks] = useState<any[]>([]);
-  const [recentCommunications, setRecentCommunications] = useState<any[]>([]);
+  const [lastCommunication, setLastCommunication] = useState<SuccessHubCommunication | null>(null);
+  const [nextMeeting, setNextMeeting] = useState<SuccessHubMeeting | null>(null);
+  const [thisWeekTasks, setThisWeekTasks] = useState<SuccessHubTask[]>([]);
+  const [completedTasks, setCompletedTasks] = useState<SuccessHubTask[]>([]);
+  const [recentCommunications, setRecentCommunications] = useState<SuccessHubCommunication[]>([]);
   const [clientChannels, setClientChannels] = useState<ClientChannel[]>([]);
   const [quickLinks, setQuickLinks] = useState<QuickLink[]>([]);
   const [recentReports, setRecentReports] = useState<AIReport[]>([]);
@@ -195,18 +226,18 @@ export function useSuccessHub() {
       .from('clients')
       .select('id, name, segment, meeting_cadence, csm_owner_id, delivery_owner_ids, business_outcomes, kpis')
       .eq('id', selectedClient!.id)
-      .single();
+      .maybeSingle();
 
     if (client) {
-      let csmOwner = null;
-      let deliveryOwners: any[] = [];
+      let csmOwner: { id: string; name: string; avatar_url: string | null } | null = null;
+      let deliveryOwners: { id: string; name: string; avatar_url: string | null }[] = [];
 
       if (client.csm_owner_id) {
         const { data: csm } = await supabase
           .from('profiles')
           .select('id, name, avatar_url')
           .eq('id', client.csm_owner_id)
-          .single();
+          .maybeSingle();
         csmOwner = csm;
       }
 
@@ -376,7 +407,7 @@ export function useSuccessHub() {
   const createOrUpdateLog = async (updates: Partial<SuccessLog>) => {
     const { data: user } = await supabase.auth.getUser();
     
-    const dbUpdates: Record<string, any> = { ...updates };
+    const dbUpdates: Record<string, unknown> = { ...updates };
     if (updates.manual_wins) dbUpdates.manual_wins = updates.manual_wins as unknown as Json;
     if (updates.risks_blockers) dbUpdates.risks_blockers = updates.risks_blockers as unknown as Json;
     if (updates.needs_from_client) dbUpdates.needs_from_client = updates.needs_from_client as unknown as Json;
@@ -422,7 +453,7 @@ export function useSuccessHub() {
   };
 
   const updateClientData = async (updates: Partial<ClientWithOwners>) => {
-    const dbUpdates: Record<string, any> = { ...updates };
+    const dbUpdates: Record<string, unknown> = { ...updates };
     if (updates.business_outcomes) dbUpdates.business_outcomes = updates.business_outcomes as unknown as Json;
     if (updates.kpis) dbUpdates.kpis = updates.kpis as unknown as Json;
 

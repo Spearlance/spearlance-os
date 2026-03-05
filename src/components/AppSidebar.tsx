@@ -70,7 +70,7 @@ import {
 import { ReportBugDialog } from "@/components/support/ReportBugDialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { useLaunchPadStatus } from "@/hooks/useLaunchPadStatus";
 import { useAccountType } from "@/hooks/useAccountType";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -127,7 +127,6 @@ export function AppSidebar() {
   const collapsed = state === "collapsed";
   const { selectedClient, setSelectedClient, clients } = useClient();
   const navigate = useNavigate();
-  const { toast } = useToast();
   const { isEnabled, isLoading: flagsLoading } = useFeatureFlags();
   const [userRole, setUserRole] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
@@ -164,11 +163,7 @@ export function AppSidebar() {
       await supabase.auth.signOut();
       navigate("/auth");
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to sign out",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: "Failed to sign out" });
     }
   };
 

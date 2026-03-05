@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { ExternalLink, Trash2, FileText, Image as ImageIcon, Link as LinkIcon, FileVideo, FileAudio, Download, Image, Sparkles } from "lucide-react";
 
 interface AssetDrawerProps {
@@ -24,7 +24,6 @@ export function AssetDrawer({ asset, open, onOpenChange, onUpdate }: AssetDrawer
   const [fileUrl, setFileUrl] = useState(asset.file_url || "");
   const [tags, setTags] = useState(asset.tags?.join(", ") || "");
   const [aiDescription, setAiDescription] = useState(asset.ai_description || "");
-  const { toast } = useToast();
 
   // Sync local state when asset changes
   useEffect(() => {
@@ -78,7 +77,6 @@ export function AssetDrawer({ asset, open, onOpenChange, onUpdate }: AssetDrawer
         // Clean up the object URL
         window.URL.revokeObjectURL(url);
       } catch (error) {
-        console.error('Download failed:', error);
         toast({ title: "Download failed", variant: "destructive" });
       }
     } else {
@@ -146,8 +144,7 @@ export function AssetDrawer({ asset, open, onOpenChange, onUpdate }: AssetDrawer
       onUpdate();
       onOpenChange(false);
     } catch (error) {
-      console.error("Error deleting asset:", error);
-      toast({ 
+      toast({
         title: "Error deleting asset", 
         description: error instanceof Error ? error.message : "Unknown error",
         variant: "destructive" 

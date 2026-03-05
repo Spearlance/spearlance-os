@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useClient } from "@/contexts/ClientContext";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { LaunchPadStage, LaunchPadSubmission } from "@/lib/launchpadTypes";
 import { ProgressHeader } from "./ProgressHeader";
 import { LaunchPadModeSelector } from "./LaunchPadModeSelector";
@@ -13,7 +13,6 @@ import { Info } from "lucide-react";
 
 export function LaunchPadWizard() {
   const { selectedClient, loading: clientLoading } = useClient();
-  const { toast } = useToast();
   const navigate = useNavigate();
   const [submission, setSubmission] = useState<LaunchPadSubmission | null>(null);
   const [loading, setLoading] = useState(true);
@@ -72,8 +71,7 @@ export function LaunchPadWizard() {
         setShowModeSelector(true);
       }
     } catch (error) {
-      console.error("[LaunchPad] Error loading submission:", error);
-      toast({ title: "Error loading Launchpad", variant: "destructive" });
+      toast.error("Error loading Launchpad");
     } finally {
       setLoading(false);
     }
@@ -97,16 +95,12 @@ export function LaunchPadWizard() {
       // Reload to get fresh data
       loadOrCreateSubmission();
     } catch (error) {
-      console.error("Error changing stage:", error);
-      toast({
-        title: "Error changing stage",
-        variant: "destructive",
-      });
+      toast.error("Error changing stage");
     }
   };
 
   const handleSaveExit = () => {
-    toast({ title: "Progress saved" });
+    toast.success("Progress saved");
     navigate("/");
   };
 
@@ -119,7 +113,7 @@ export function LaunchPadWizard() {
         .from("launchpad_submissions")
         .select("completed_at")
         .eq("id", submission.id)
-        .single();
+        .maybeSingle();
 
       await supabase
         .from("launchpad_submissions")
@@ -131,8 +125,7 @@ export function LaunchPadWizard() {
 
       handleStageChange("complete");
     } catch (error) {
-      console.error("Finish error:", error);
-      toast({ title: "Error completing Launchpad", variant: "destructive" });
+      toast.error("Error completing Launchpad");
     }
   };
 
@@ -179,8 +172,7 @@ export function LaunchPadWizard() {
 
       setShowModeSelector(false);
     } catch (error) {
-      console.error("Error setting mode:", error);
-      toast({ title: "Error", variant: "destructive" });
+      toast.error("Error");
     }
   };
 
@@ -195,13 +187,9 @@ export function LaunchPadWizard() {
 
       setSubmission({ ...submission, onboarding_mode: newMode } as any);
 
-      toast({
-        title: `Switched to ${newMode === 'chat' ? 'Chat' : 'Form'} mode`,
-        description: "Your progress has been saved.",
-      });
+      toast.success(`Switched to ${newMode === 'chat' ? 'Chat' : 'Form'} mode`, { description: "Your progress has been saved." });
     } catch (error) {
-      console.error("Error switching mode:", error);
-      toast({ title: "Error switching mode", variant: "destructive" });
+      toast.error("Error switching mode");
     }
   };
 

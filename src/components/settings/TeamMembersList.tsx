@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Trash2, KeyRound } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
@@ -26,8 +26,6 @@ interface TeamMembersListProps {
 export function TeamMembersList({ clientId, canManageTeam, refreshTrigger, userProfile }: TeamMembersListProps) {
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
-
   const getRoleDisplay = (role: string) => {
     if (role === 'admin') return 'ADMIN';
     if (role === 'fmm') return 'FMM';
@@ -60,12 +58,7 @@ export function TeamMembersList({ clientId, canManageTeam, refreshTrigger, userP
 
       setTeamMembers(membersWithPrimaryStatus);
     } catch (error: any) {
-      console.error("Error fetching team members:", error);
-      toast({
-        title: "Error loading team members",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast.error("Error loading team members", { description: error.message });
     } finally {
       setLoading(false);
     }
@@ -82,11 +75,7 @@ export function TeamMembersList({ clientId, canManageTeam, refreshTrigger, userP
       
       // Prevent removing yourself
       if (user?.id === memberId) {
-        toast({
-          title: "Cannot remove yourself",
-          description: "You cannot remove your own account from the team",
-          variant: "destructive",
-        });
+        toast.error("Cannot remove yourself", { description: "You cannot remove your own account from the team" });
         return;
       }
 
@@ -95,7 +84,7 @@ export function TeamMembersList({ clientId, canManageTeam, refreshTrigger, userP
         .from("profiles")
         .select("associated_client_ids")
         .eq("id", memberId)
-        .single();
+        .maybeSingle();
 
       if (profile) {
         const updatedClientIds = (profile.associated_client_ids || []).filter(
@@ -109,20 +98,12 @@ export function TeamMembersList({ clientId, canManageTeam, refreshTrigger, userP
 
         if (error) throw error;
 
-        toast({
-          title: "Team member removed",
-          description: `${memberName} has been removed from the team`,
-        });
+        toast.success("Team member removed", { description: `${memberName} has been removed from the team` });
 
         fetchTeamMembers();
       }
     } catch (error: any) {
-      console.error("Error removing team member:", error);
-      toast({
-        title: "Failed to remove team member",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast.error("Failed to remove team member", { description: error.message });
     }
   };
 
@@ -134,17 +115,9 @@ export function TeamMembersList({ clientId, canManageTeam, refreshTrigger, userP
 
       if (error) throw error;
 
-      toast({
-        title: "Password reset sent",
-        description: `Password reset link has been sent to ${memberName}`,
-      });
+      toast.success("Password reset sent", { description: `Password reset link has been sent to ${memberName}` });
     } catch (error: any) {
-      console.error("Error sending password reset:", error);
-      toast({
-        title: "Failed to send password reset",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast.error("Failed to send password reset", { description: error.message });
     }
   };
 

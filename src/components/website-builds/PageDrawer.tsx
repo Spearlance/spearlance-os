@@ -76,7 +76,7 @@ export default function PageDrawer({ page, open, onOpenChange, buildId, clientId
         .from('clients')
         .select('name, industry, brand_name, hq_city, service_areas')
         .eq('id', clientId)
-        .single();
+        .maybeSingle();
       return data;
     },
     enabled: !!clientId

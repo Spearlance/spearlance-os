@@ -6,7 +6,6 @@ import { Plus } from "lucide-react";
 import { PostManagementDrawer } from "./PostManagementDrawer";
 import { supabase } from "@/integrations/supabase/client";
 import { useClient } from "@/contexts/ClientContext";
-import { toast } from "sonner";
 import { parseUTCDate } from "@/lib/utils";
 
 interface Post {
@@ -26,14 +25,16 @@ interface MonthlyCalendarGridProps {
   selectedMonth: number;
   selectedYear: number;
   activeStrategy?: any;
+  onAddPost?: () => void;
 }
 
-export const MonthlyCalendarGrid = ({ 
-  posts, 
-  onRefresh, 
-  selectedMonth, 
+export const MonthlyCalendarGrid = ({
+  posts,
+  onRefresh,
+  selectedMonth,
   selectedYear,
-  activeStrategy
+  activeStrategy,
+  onAddPost,
 }: MonthlyCalendarGridProps) => {
   const { selectedClient } = useClient();
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
@@ -97,8 +98,8 @@ export const MonthlyCalendarGrid = ({
     return activeStrategy?.selected_days?.includes(isoDayOfWeek) ?? true;
   };
 
-  const handleAddPost = (day: number) => {
-    toast('Add post functionality coming soon');
+  const handleAddPost = (_day: number) => {
+    onAddPost?.();
   };
 
   const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
