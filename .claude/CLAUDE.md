@@ -111,6 +111,7 @@ Rules auto-load from `.claude/rules/`:
 | **facebook-capi** | Meta Conversions API event schema, dedup, and server-side tracking rules |
 | **meta-api-versioning** | Meta Graph API version lifecycle, upgrade cadence, deprecation handling |
 | **pinterest** | Pinterest API conventions, OAuth refresh, rate limit patterns |
+| **seo-doctrine** | Spearlance SEO operating stance, on-page rules, content thresholds, page context protection, escalation |
 
 ## Model Selection
 

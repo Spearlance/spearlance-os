@@ -82,6 +82,48 @@ Save to `.claude/progress/link-building/competitor-analysis-[date].md`:
 
 ---
 
+## Competitive Response Logic (Doctrine S11)
+
+### Rule 11.1 — Competitor Audit Process
+
+**Trigger:** Before creating or optimizing any service or city page.
+
+1. Identify top 5 ranking competitors for the target keyword
+2. Record for each:
+
+| Metric | Competitor 1 | Competitor 2 | Competitor 3 | Competitor 4 | Competitor 5 |
+|--------|-------------|-------------|-------------|-------------|-------------|
+| Word count | | | | | |
+| Number of H2/H3 headings | | | | | |
+| Internal link count | | | | | |
+| Schema types present | | | | | |
+| FAQ count | | | | | |
+| Unique content elements (tools, calculators, videos, etc.) | | | | | |
+
+3. Identify gaps — sections, topics, or questions competitors miss
+4. Plan content that is better, deeper, and more complete
+
+### Rule 11.2 — Competitive Response Decision Logic
+
+```
+If competitor word count > our page word count by 500+ words
+  → Flag for content expansion
+
+If competitor has FAQ schema and we don't
+  → Add FAQ schema immediately
+
+If competitor covers subtopics we don't
+  → Add those subtopics or create supporting articles
+
+If competitor has more internal links
+  → Run interlinking audit on our page
+
+If we already outperform on all metrics
+  → Monitor quarterly, no immediate action needed
+```
+
+---
+
 ## Phase 2: Opportunity Mapping
 
 **Goal:** Categorize every replication opportunity and explain how to get it without outreach.
