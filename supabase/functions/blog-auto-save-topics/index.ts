@@ -11,6 +11,17 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Validate auto-blog API key
+  const autoBlogKey = Deno.env.get('AUTO_BLOG_API_KEY');
+  const providedKey = req.headers.get('x-auto-blog-key');
+
+  if (!autoBlogKey || !providedKey || providedKey !== autoBlogKey) {
+    return new Response(
+      JSON.stringify({ error: 'Unauthorized — invalid or missing x-auto-blog-key' }),
+      { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
   try {
     const { client_id, auto_run_id, topics, month, year } = await req.json();
 

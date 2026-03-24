@@ -9,7 +9,7 @@ This prompt powers the scheduled remote Claude Code agent that runs the auto-blo
 The following placeholders are injected at invocation time:
 
 - `{{SUPABASE_URL}}` — Supabase project URL (e.g. `https://abcxyz.supabase.co`)
-- `{{SUPABASE_SERVICE_ROLE_KEY}}` — Supabase service role key (full access)
+- `{{AUTO_BLOG_API_KEY}}` — Dedicated API key for auto-blog edge functions (never the service role key)
 - `{{CLIENT_ID}}` — UUID of the client to run the pipeline for
 
 ---
@@ -48,7 +48,7 @@ Extract and hold in memory:
 
 ```bash
 curl -s -X POST "{{SUPABASE_URL}}/functions/v1/blog-auto-run-start" \
-  -H "Authorization: Bearer {{SUPABASE_SERVICE_ROLE_KEY}}" \
+  -H "x-auto-blog-key: {{AUTO_BLOG_API_KEY}}" \
   -H "Content-Type: application/json" \
   -d '{
     "client_id": "{{CLIENT_ID}}",
@@ -73,7 +73,7 @@ Store `auto_run_id` for all subsequent calls.
 
 ```bash
 curl -s -X POST "{{SUPABASE_URL}}/functions/v1/blog-auto-research" \
-  -H "Authorization: Bearer {{SUPABASE_SERVICE_ROLE_KEY}}" \
+  -H "x-auto-blog-key: {{AUTO_BLOG_API_KEY}}" \
   -H "Content-Type: application/json" \
   -d '{
     "client_id": "{{CLIENT_ID}}"
@@ -120,7 +120,7 @@ Extract a list of existing blog post titles and topics. You will use this to avo
 
 ```bash
 curl -s -X POST "{{SUPABASE_URL}}/functions/v1/blog-auto-competitors" \
-  -H "Authorization: Bearer {{SUPABASE_SERVICE_ROLE_KEY}}" \
+  -H "x-auto-blog-key: {{AUTO_BLOG_API_KEY}}" \
   -H "Content-Type: application/json" \
   -d '{
     "client_id": "{{CLIENT_ID}}"
@@ -220,7 +220,7 @@ date +%Y    # year
 
 ```bash
 curl -s -X POST "{{SUPABASE_URL}}/functions/v1/blog-auto-save-topics" \
-  -H "Authorization: Bearer {{SUPABASE_SERVICE_ROLE_KEY}}" \
+  -H "x-auto-blog-key: {{AUTO_BLOG_API_KEY}}" \
   -H "Content-Type: application/json" \
   -d '{
     "client_id": "{{CLIENT_ID}}",
@@ -337,7 +337,7 @@ Category: "[topic.category]"
 
 ```bash
 curl -s -X POST "{{SUPABASE_URL}}/functions/v1/blog-auto-write" \
-  -H "Authorization: Bearer {{SUPABASE_SERVICE_ROLE_KEY}}" \
+  -H "x-auto-blog-key: {{AUTO_BLOG_API_KEY}}" \
   -H "Content-Type: application/json" \
   -d '{
     "client_id": "{{CLIENT_ID}}",
@@ -408,7 +408,7 @@ Call `blog-auto-write` with revision parameters:
 
 ```bash
 curl -s -X POST "{{SUPABASE_URL}}/functions/v1/blog-auto-write" \
-  -H "Authorization: Bearer {{SUPABASE_SERVICE_ROLE_KEY}}" \
+  -H "x-auto-blog-key: {{AUTO_BLOG_API_KEY}}" \
   -H "Content-Type: application/json" \
   -d '{
     "client_id": "{{CLIENT_ID}}",
@@ -442,7 +442,7 @@ Build a `research_summary` string (plain text, 2–4 sentences) describing:
 
 ```bash
 curl -s -X POST "{{SUPABASE_URL}}/functions/v1/blog-auto-queue" \
-  -H "Authorization: Bearer {{SUPABASE_SERVICE_ROLE_KEY}}" \
+  -H "x-auto-blog-key: {{AUTO_BLOG_API_KEY}}" \
   -H "Content-Type: application/json" \
   -d '{
     "client_id": "{{CLIENT_ID}}",
@@ -493,11 +493,11 @@ The function automatically handles status routing:
 All edge function calls require these exact headers:
 
 ```
-Authorization: Bearer {{SUPABASE_SERVICE_ROLE_KEY}}
+x-auto-blog-key: {{AUTO_BLOG_API_KEY}}
 Content-Type: application/json
 ```
 
-The `Authorization` header uses the **service role key** — not the anon key. The service role key has full database access and bypasses row-level security.
+The `x-auto-blog-key` header uses the dedicated auto-blog API key — not the Supabase service role key. The edge functions use the service role key internally (from their own environment), but the remote agent never needs it.
 
 ---
 
@@ -515,7 +515,7 @@ cat > /tmp/blog_write_payload.json << 'PAYLOAD'
 PAYLOAD
 
 curl -s -X POST "{{SUPABASE_URL}}/functions/v1/blog-auto-write" \
-  -H "Authorization: Bearer {{SUPABASE_SERVICE_ROLE_KEY}}" \
+  -H "x-auto-blog-key: {{AUTO_BLOG_API_KEY}}" \
   -H "Content-Type: application/json" \
   -d @/tmp/blog_write_payload.json
 ```
