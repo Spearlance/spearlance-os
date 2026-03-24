@@ -14,6 +14,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, ChevronDown, Sparkles, PlusCircle, FileText, Info } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useUserRole } from "@/hooks/useUserRole";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   DropdownMenu,
@@ -36,29 +37,18 @@ const SocialMedia = () => {
 
   const currentMonth = new Date().getMonth() + 1;
   const currentYear = new Date().getFullYear();
-  
+
   const [selectedMonth, setSelectedMonth] = useState(currentMonth);
   const [selectedYear, setSelectedYear] = useState(currentYear);
 
-  // Check user role and restrict access for web_designer
+  const { isWebDesigner } = useUserRole();
+
   useEffect(() => {
-    const checkAccess = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("role")
-          .eq("id", user.id)
-          .maybeSingle();
-        
-        if ((profile?.role as string) === 'web_designer') {
-          toast.error("Access Denied - Web designers don't have access to Social Media");
-          navigate('/');
-        }
-      }
-    };
-    checkAccess();
-  }, [navigate]);
+    if (isWebDesigner) {
+      toast.error("Access Denied - Web designers don't have access to Social Media");
+      navigate('/');
+    }
+  }, [isWebDesigner, navigate]);
 
   const { data: monthlyPosts, refetch } = useQuery({
     queryKey: ['monthly-posts', selectedClient?.id, selectedMonth, selectedYear],

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useClient } from "@/contexts/ClientContext";
 import { supabase } from "@/integrations/supabase/client";
+import { useUserRole } from "@/hooks/useUserRole";
 import { Button } from "@/components/ui/button";
 import { Plus, Star, Sparkles, Mail, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -91,7 +92,7 @@ const Reports = () => {
   const [generateDialogOpen, setGenerateDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("all");
   const [sendingWeeklyEmails, setSendingWeeklyEmails] = useState(false);
-  const [userRole, setUserRole] = useState<string>("");
+  const { role: userRole, isAdminOrFMM, isWebDesigner } = useUserRole();
   const [filters, setFilters] = useState<FilterState>({
     search: "",
     tags: [],
@@ -107,19 +108,17 @@ const Reports = () => {
       return;
     }
     if (selectedClient) {
-      loadUserRole();
       loadReports();
       loadAIReports();
     }
   }, [selectedClient, clientLoading, navigate]);
 
-  // Check user role and restrict access for web_designer
   useEffect(() => {
-    if ((userRole as string) === 'web_designer') {
+    if (isWebDesigner) {
       toast.error("Access Denied", { description: "Web designers don't have access to Reports" });
       navigate('/');
     }
-  }, [userRole, navigate]);
+  }, [isWebDesigner, navigate]);
 
   useEffect(() => {
     loadReports();
@@ -138,20 +137,6 @@ const Reports = () => {
       }
     }
   }, [aiReports, searchParams, setSearchParams]);
-
-  const loadUserRole = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", user.id)
-        .maybeSingle();
-      if (profile) {
-        setUserRole(profile.role);
-      }
-    }
-  };
 
   const loadAIReports = async () => {
     if (!selectedClient) return;
@@ -255,7 +240,6 @@ const Reports = () => {
     }
   };
 
-  const isAdminOrFMM = userRole === "admin" || userRole === "fmm";
   const truncateSummary = (text: string | null) => text ? (text.length > 180 ? text.substring(0, 180) + "..." : text) : "No summary";
   const formatDateRange = (start: string | null, end: string | null) => {
     if (!start || !end) return "—";
