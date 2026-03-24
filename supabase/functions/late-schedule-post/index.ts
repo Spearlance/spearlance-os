@@ -36,7 +36,7 @@ serve(async (req) => {
     // Get post details
     const { data: post, error: postError } = await supabase
       .from('social_media_posts')
-      .select('*, social_media_monthly_posts(client_id)')
+      .select('*')
       .eq('id', post_id)
       .single();
 
@@ -44,7 +44,7 @@ serve(async (req) => {
       throw new Error('Post not found');
     }
 
-    const clientId = post.social_media_monthly_posts?.client_id;
+    const clientId = post.client_id;
     if (!clientId) {
       throw new Error('Client ID not found for post');
     }
