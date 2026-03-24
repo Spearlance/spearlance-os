@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { useClient } from "@/contexts/ClientContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -81,9 +82,6 @@ const Reports = () => {
   const { selectedClient, loading: clientLoading } = useClient();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [reports, setReports] = useState<Report[]>([]);
-  const [aiReports, setAIReports] = useState<AIReport[]>([]);
-  const [loading, setLoading] = useState(true);
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
   const [selectedAIReport, setSelectedAIReport] = useState<AIReport | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -102,61 +100,10 @@ const Reports = () => {
     pinnedOnly: false,
   });
 
-  useEffect(() => {
-    if (!selectedClient && !clientLoading) {
-      navigate("/");
-      return;
-    }
-    if (selectedClient) {
-      loadReports();
-      loadAIReports();
-    }
-  }, [selectedClient, clientLoading, navigate]);
-
-  useEffect(() => {
-    if (isWebDesigner) {
-      toast.error("Access Denied", { description: "Web designers don't have access to Reports" });
-      navigate('/');
-    }
-  }, [isWebDesigner, navigate]);
-
-  useEffect(() => {
-    loadReports();
-  }, [filters]);
-
-  // Handle query parameter to auto-open report from email links
-  useEffect(() => {
-    const reportId = searchParams.get('report');
-    if (reportId && aiReports.length > 0) {
-      const report = aiReports.find(r => r.id === reportId);
-      if (report) {
-        setSelectedAIReport(report);
-        setAIViewerOpen(true);
-        // Clear the query param for cleaner URL
-        setSearchParams({}, { replace: true });
-      }
-    }
-  }, [aiReports, searchParams, setSearchParams]);
-
-  const loadAIReports = async () => {
-    if (!selectedClient) return;
-    
-    const { data, error } = await supabase
-      .from("ai_generated_reports")
-      .select("*")
-      .eq("client_id", selectedClient.id)
-      .order("created_at", { ascending: false });
-
-    if (!error && data) {
-      setAIReports(data);
-    }
-  };
-
-  const loadReports = async () => {
-    if (!selectedClient) return;
-    
-    setLoading(true);
-    try {
+  const { data: reports = [], isLoading: reportsLoading, refetch: refetchReports } = useQuery({
+    queryKey: ['reports', selectedClient?.id, filters],
+    queryFn: async () => {
+      if (!selectedClient) return [];
       let query = supabase
         .from("reports")
         .select(`*, owner:profiles!owner_user_id(name)`)
@@ -197,21 +144,53 @@ const Reports = () => {
           return true;
         });
       }
+      return filteredData;
+    },
+    enabled: !!selectedClient,
+  });
 
-      setReports(filteredData);
-    } catch (error: any) {
-      toast.error("Error loading reports", { description: error.message });
-    } finally {
-      setLoading(false);
+  const { data: aiReports = [], refetch: refetchAIReports } = useQuery({
+    queryKey: ['ai-reports', selectedClient?.id],
+    queryFn: async () => {
+      if (!selectedClient) return [];
+      const { data, error } = await supabase
+        .from("ai_generated_reports")
+        .select("*")
+        .eq("client_id", selectedClient.id)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data || []) as AIReport[];
+    },
+    enabled: !!selectedClient,
+  });
+
+  useEffect(() => {
+    if (isWebDesigner) {
+      toast.error("Access Denied", { description: "Web designers don't have access to Reports" });
+      navigate('/');
     }
-  };
+  }, [isWebDesigner, navigate]);
+
+  // Handle query parameter to auto-open report from email links
+  useEffect(() => {
+    const reportId = searchParams.get('report');
+    if (reportId && aiReports.length > 0) {
+      const report = aiReports.find(r => r.id === reportId);
+      if (report) {
+        setSelectedAIReport(report);
+        setAIViewerOpen(true);
+        // Clear the query param for cleaner URL
+        setSearchParams({}, { replace: true });
+      }
+    }
+  }, [aiReports, searchParams, setSearchParams]);
 
   const togglePin = async (reportId: string, currentPinned: boolean) => {
     try {
       const { error } = await supabase.from("reports").update({ pinned: !currentPinned }).eq("id", reportId);
       if (error) throw error;
       toast.success(currentPinned ? "Report unpinned" : "Report pinned");
-      loadReports();
+      refetchReports();
     } catch (error: any) {
       toast.error("Error updating pin", { description: error.message });
     }
@@ -232,7 +211,7 @@ const Reports = () => {
       });
       if (error) throw error;
       toast.success("Weekly emails sent!", { description: `${data.emails_sent} email(s) sent for ${data.clients_processed} client(s)` });
-      loadAIReports();
+      refetchAIReports();
     } catch (error: any) {
       toast.error("Error sending emails", { description: error.message });
     } finally {
@@ -246,7 +225,7 @@ const Reports = () => {
     try { return `${format(new Date(start), "MMM d")} to ${format(new Date(end), "MMM d, yyyy")}`; } catch { return "—"; }
   };
 
-  if (clientLoading || loading) {
+  if (clientLoading || reportsLoading) {
     return <div className="flex items-center justify-center h-screen"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div></div>;
   }
 
@@ -402,10 +381,10 @@ const Reports = () => {
         )}
       </div>
 
-      <CreateReportDialog open={createDialogOpen} onOpenChange={setCreateDialogOpen} clientId={selectedClient.id} onSuccess={(newReport) => { loadReports(); setSelectedReport(newReport); setDrawerOpen(true); }} />
-      <GenerateReportDialog open={generateDialogOpen} onOpenChange={setGenerateDialogOpen} clientId={selectedClient.id} onSuccess={(newReport) => { loadAIReports(); setSelectedAIReport(newReport); setAIViewerOpen(true); }} />
-      <ReportDrawer report={selectedReport} open={drawerOpen} onOpenChange={setDrawerOpen} onUpdate={loadReports} isAdminOrFMM={isAdminOrFMM} />
-      <AIReportViewer report={selectedAIReport} open={aiViewerOpen} onOpenChange={setAIViewerOpen} onDelete={loadAIReports} />
+      <CreateReportDialog open={createDialogOpen} onOpenChange={setCreateDialogOpen} clientId={selectedClient.id} onSuccess={(newReport) => { refetchReports(); setSelectedReport(newReport); setDrawerOpen(true); }} />
+      <GenerateReportDialog open={generateDialogOpen} onOpenChange={setGenerateDialogOpen} clientId={selectedClient.id} onSuccess={(newReport) => { refetchAIReports(); setSelectedAIReport(newReport); setAIViewerOpen(true); }} />
+      <ReportDrawer report={selectedReport} open={drawerOpen} onOpenChange={setDrawerOpen} onUpdate={refetchReports} isAdminOrFMM={isAdminOrFMM} />
+      <AIReportViewer report={selectedAIReport} open={aiViewerOpen} onOpenChange={setAIViewerOpen} onDelete={refetchAIReports} />
     </div>
   );
 };
