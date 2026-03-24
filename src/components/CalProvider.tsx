@@ -1,7 +1,9 @@
-import { ReactNode, useEffect, useState, createContext, useContext } from "react";
-import { CalProvider as CalAtomsProvider } from "@calcom/atoms";
-import "@calcom/atoms/globals.min.css";
+import { ReactNode, useEffect, useState, createContext, useContext, lazy, Suspense } from "react";
 import { supabase } from "@/integrations/supabase/client";
+
+const CalAtomsProvider = lazy(() =>
+  import("@calcom/atoms").then((mod) => ({ default: mod.CalProvider }))
+);
 
 interface CalProviderProps {
   children: ReactNode;
@@ -25,7 +27,7 @@ export function CalProvider({ children }: CalProviderProps) {
     const fetchUserToken = async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
-        
+
         if (!user) {
           setIsLoading(false);
           return;
@@ -43,6 +45,9 @@ export function CalProvider({ children }: CalProviderProps) {
 
         // Only provide access token for FMM and Admin users who have managed accounts
         if (profile && (profile.role === "fmm" || profile.role === "admin")) {
+          // Load Cal.com CSS only when needed
+          import("@calcom/atoms/globals.min.css");
+
           if (!profile.cal_access_token) {
             setIsLoading(false);
             return;
@@ -122,18 +127,20 @@ export function CalProvider({ children }: CalProviderProps) {
   // The Atoms will show their own "Connect Google Calendar" flow
   return (
     <CalContext.Provider value={{ isCalReady: !!accessToken, isLoading: false }}>
-      <CalAtomsProvider
-        accessToken={accessToken || ""}
-        clientId={clientId}
-        organizationId={organizationId}
-        options={{
-          apiUrl,
-          refreshUrl
-        }}
-        autoUpdateTimezone={true}
-      >
-        {children}
-      </CalAtomsProvider>
+      <Suspense fallback={<>{children}</>}>
+        <CalAtomsProvider
+          accessToken={accessToken || ""}
+          clientId={clientId}
+          organizationId={organizationId}
+          options={{
+            apiUrl,
+            refreshUrl
+          }}
+          autoUpdateTimezone={true}
+        >
+          {children}
+        </CalAtomsProvider>
+      </Suspense>
     </CalContext.Provider>
   );
 }
