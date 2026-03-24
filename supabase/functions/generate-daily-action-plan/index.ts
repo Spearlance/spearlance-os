@@ -13,8 +13,11 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  let parsedClientId: string | undefined;
+
   try {
     const { client_id, force } = await req.json();
+    parsedClientId = client_id;
 
     if (!client_id) {
       return new Response(
@@ -382,19 +385,17 @@ Important:
     console.error('Error generating action plan:', error);
     
     // If AI generation fails, provide a basic fallback plan
-    if (error instanceof Error && error.message.includes('AI generation failed')) {
+    if (error instanceof Error && (error.message.includes('AI generation failed') || error.message.includes('AI request error') || error.message.includes('AI API error'))) {
       console.log('🔄 Generating fallback action plan...');
-      
+
       try {
         const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
         const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
         const supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
         
-        const { client_id } = await req.json();
-        
-        // Fetch minimal data for fallback
+        // Fetch minimal data for fallback (reuse client_id parsed before the error)
         const [tasksData] = await Promise.all([
-          supabaseClient.from('tasks').select('title, status, priority, due_date, created_at').eq('client_id', client_id)
+          supabaseClient.from('tasks').select('title, status, priority, due_date, created_at').eq('client_id', parsedClientId)
         ]);
         
         const tasks = tasksData.data || [];
@@ -442,7 +443,7 @@ Important:
         const { data: fallbackPlan } = await supabaseClient
           .from('daily_action_plans')
           .upsert({
-            client_id,
+            client_id: parsedClientId,
             plan_date: today,
             priority_actions: fallbackActions,
             context_summary: "Action plan generated with fallback logic due to temporary AI service issues.",

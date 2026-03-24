@@ -5,8 +5,8 @@ const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
 
 // Model constants
 export const AI_MODELS = {
-  /** Claude Sonnet 4.5 — all text generation tasks */
-  TEXT: 'anthropic/claude-sonnet-4-5',
+  /** Claude Sonnet 4.6 — all text generation tasks */
+  TEXT: 'anthropic/claude-sonnet-4.6',
   /** Gemini 2.5 Flash Image Preview — image generation only */
   IMAGE: 'google/gemini-2.5-flash-image-preview',
 } as const;
