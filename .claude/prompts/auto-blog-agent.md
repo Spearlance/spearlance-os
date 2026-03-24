@@ -10,7 +10,6 @@ The following placeholders are injected at invocation time:
 
 - `{{SUPABASE_URL}}` — Supabase project URL (e.g. `https://abcxyz.supabase.co`)
 - `{{AUTO_BLOG_API_KEY}}` — Dedicated API key for auto-blog edge functions (never the service role key)
-- `{{CLIENT_ID}}` — UUID of the client to run the pipeline for
 
 ---
 
@@ -42,6 +41,38 @@ Extract and hold in memory:
 
 ---
 
+## Step 0.5: Discover Clients
+
+Call `blog-auto-list-clients` to get all clients with auto-blog enabled.
+
+```bash
+curl -s -X POST "{{SUPABASE_URL}}/functions/v1/blog-auto-list-clients" \
+  -H "x-auto-blog-key: {{AUTO_BLOG_API_KEY}}" \
+  -H "Content-Type: application/json" \
+  -d '{}'
+```
+
+**Expected response:**
+```json
+{ "success": true, "clients": [{ "id": "<uuid>", "name": "...", "site_id": "...", "auto_blog_mode": "..." }] }
+```
+
+**FATAL:** If the request itself fails (network error, 500), stop and report the error.
+
+**Early exit:** If `clients` is an empty array, log "No clients with auto-blog enabled" and exit the run. Nothing more to do.
+
+Store the `clients` array. You will iterate over it in Steps 1–6.
+
+---
+
+## Client Loop: For Each Client
+
+Run Steps 1–6 for **each client** in the `clients` array from Step 0.5. Process clients sequentially. At the start of each iteration, set `client` to the current client object (with fields `client.id`, `client.name`, `client.site_id`, `client.auto_blog_mode`).
+
+Log `"Starting client: <client.name> (<client.id>)"` before Step 1 of each iteration.
+
+---
+
 ## Step 1: Initialize Run
 
 **Purpose:** Create a `blog_auto_runs` record and get the `auto_run_id` for this session.
@@ -51,7 +82,7 @@ curl -s -X POST "{{SUPABASE_URL}}/functions/v1/blog-auto-run-start" \
   -H "x-auto-blog-key: {{AUTO_BLOG_API_KEY}}" \
   -H "Content-Type: application/json" \
   -d '{
-    "client_id": "{{CLIENT_ID}}",
+    "client_id": "<client.id>",
     "trigger_type": "scheduled"
   }'
 ```
@@ -61,9 +92,9 @@ curl -s -X POST "{{SUPABASE_URL}}/functions/v1/blog-auto-run-start" \
 { "success": true, "auto_run_id": "<uuid>" }
 ```
 
-**FATAL:** If `success` is not `true` or `auto_run_id` is missing, stop the run and report the error. The pipeline cannot proceed without a run record.
+**FATAL (per client):** If `success` is not `true` or `auto_run_id` is missing, skip this client, log the error, and continue to the next client. The pipeline cannot proceed for this client without a run record.
 
-Store `auto_run_id` for all subsequent calls.
+Store `auto_run_id` for all subsequent calls within this client's iteration.
 
 ---
 
@@ -76,7 +107,7 @@ curl -s -X POST "{{SUPABASE_URL}}/functions/v1/blog-auto-research" \
   -H "x-auto-blog-key: {{AUTO_BLOG_API_KEY}}" \
   -H "Content-Type: application/json" \
   -d '{
-    "client_id": "{{CLIENT_ID}}"
+    "client_id": "<client.id>"
   }'
 ```
 
@@ -106,10 +137,10 @@ Store the full `bundle` object. The `bundle.website_pages` array is the internal
 
 ### 2b. List Existing Duda Blog Posts
 
-Use the Duda MCP to understand what blog content already exists. Only do this if `bundle.client.site_id` is present.
+Use the Duda MCP to understand what blog content already exists. Use `client.site_id` from the Step 0.5 list-clients response (or `bundle.client.site_id` — they are the same value).
 
 ```
-mcp__claude_ai_Duda__list_blog_posts({ site_name: bundle.client.site_id })
+mcp__claude_ai_Duda__list_blog_posts({ site_name: client.site_id })
 ```
 
 Extract a list of existing blog post titles and topics. You will use this to avoid generating duplicate content.
@@ -123,7 +154,7 @@ curl -s -X POST "{{SUPABASE_URL}}/functions/v1/blog-auto-competitors" \
   -H "x-auto-blog-key: {{AUTO_BLOG_API_KEY}}" \
   -H "Content-Type: application/json" \
   -d '{
-    "client_id": "{{CLIENT_ID}}"
+    "client_id": "<client.id>"
   }'
 ```
 
@@ -223,7 +254,7 @@ curl -s -X POST "{{SUPABASE_URL}}/functions/v1/blog-auto-save-topics" \
   -H "x-auto-blog-key: {{AUTO_BLOG_API_KEY}}" \
   -H "Content-Type: application/json" \
   -d '{
-    "client_id": "{{CLIENT_ID}}",
+    "client_id": "<client.id>",
     "auto_run_id": "<auto_run_id>",
     "month": <month_number>,
     "year": <year_number>,
@@ -340,7 +371,7 @@ curl -s -X POST "{{SUPABASE_URL}}/functions/v1/blog-auto-write" \
   -H "x-auto-blog-key: {{AUTO_BLOG_API_KEY}}" \
   -H "Content-Type: application/json" \
   -d '{
-    "client_id": "{{CLIENT_ID}}",
+    "client_id": "<client.id>",
     "auto_run_id": "<auto_run_id>",
     "topic_id": "<topic_ids[i] or null>",
     "title": "<topic.title>",
@@ -411,7 +442,7 @@ curl -s -X POST "{{SUPABASE_URL}}/functions/v1/blog-auto-write" \
   -H "x-auto-blog-key: {{AUTO_BLOG_API_KEY}}" \
   -H "Content-Type: application/json" \
   -d '{
-    "client_id": "{{CLIENT_ID}}",
+    "client_id": "<client.id>",
     "auto_run_id": "<auto_run_id>",
     "topic_id": "<topic_id>",
     "title": "<topic.title>",
@@ -445,7 +476,7 @@ curl -s -X POST "{{SUPABASE_URL}}/functions/v1/blog-auto-queue" \
   -H "x-auto-blog-key: {{AUTO_BLOG_API_KEY}}" \
   -H "Content-Type: application/json" \
   -d '{
-    "client_id": "{{CLIENT_ID}}",
+    "client_id": "<client.id>",
     "auto_run_id": "<auto_run_id>",
     "post_ids": [<passing blog_post_ids>],
     "flagged_post_ids": [<flagged blog_post_ids>],
@@ -469,22 +500,37 @@ The function automatically handles status routing:
 - All other modes → passing posts get status `pending_approval`
 - Flagged posts always go to `pending_approval` regardless of mode
 
+Log `"Completed client: <client.name>"` after Step 6 completes for this client.
+
+---
+
+## End of Client Loop
+
+After all clients have been processed, log a final summary:
+
+```
+Auto-blog run complete.
+Clients processed: <count>
+```
+
 ---
 
 ## Error Handling Reference
 
 | Step | Error Type | Action |
 |------|-----------|--------|
-| Step 1: run-start | Any error | **FATAL** — stop, report error |
+| Step 0.5: list-clients | Network/500 error | **FATAL** — stop, report error |
+| Step 0.5: list-clients | Empty clients array | Exit gracefully — log "No clients enabled" |
+| Step 1: run-start | Any error | Skip this client, continue to next |
 | Step 2a: research | HTTP error | Log, continue with empty bundle |
 | Step 2b: Duda MCP | Any error | Log, skip Duda coverage check |
 | Step 2c: competitors | HTTP error | Log, continue without gap data |
 | Step 3f: save-topics | HTTP error | Log, continue writing with `topic_id: null` |
 | Step 4b: auto-write | HTTP error | Log, skip topic, continue to next |
 | Step 5: revision | All 3 attempts fail | Mark as flagged, continue |
-| Step 6: queue | HTTP error | Log, report final error — run still complete |
+| Step 6: queue | HTTP error | Log, report final error — client run still complete |
 
-**General rule:** Never abort the pipeline for a non-fatal error. Always attempt all topics. Always call `blog-auto-queue` at the end even if some topics failed.
+**General rule:** Never abort the entire pipeline for a per-client error. Always attempt all clients. Always call `blog-auto-queue` at the end of each client's run even if some topics failed.
 
 ---
 
@@ -509,7 +555,7 @@ When embedding large strings (like `system_prompt`) in curl `-d` JSON, use a bas
 # Write payload to temp file, then curl it
 cat > /tmp/blog_write_payload.json << 'PAYLOAD'
 {
-  "client_id": "{{CLIENT_ID}}",
+  "client_id": "<client.id>",
   "system_prompt": "...your full system prompt here..."
 }
 PAYLOAD
@@ -526,11 +572,13 @@ curl -s -X POST "{{SUPABASE_URL}}/functions/v1/blog-auto-write" \
 
 Before finishing the run, verify:
 
-- [ ] `auto_run_id` was obtained in Step 1
-- [ ] Brand context bundle was fetched (or gracefully skipped)
-- [ ] Topics were generated and saved (or attempted)
-- [ ] All topics (up to 5) were written
-- [ ] Quality gate was applied to every written article
-- [ ] Articles that failed the gate were revised up to 3 times
-- [ ] `blog-auto-queue` was called with final `post_ids` and `flagged_post_ids`
-- [ ] `research_summary` accurately reflects what happened this run
+- [ ] `blog-auto-list-clients` was called and clients were discovered
+- [ ] Each client with auto-blog enabled was processed (or skipped with a logged error)
+- [ ] For each client: `auto_run_id` was obtained in Step 1
+- [ ] For each client: brand context bundle was fetched (or gracefully skipped)
+- [ ] For each client: topics were generated and saved (or attempted)
+- [ ] For each client: all topics (up to 5) were written
+- [ ] For each client: quality gate was applied to every written article
+- [ ] For each client: articles that failed the gate were revised up to 3 times
+- [ ] For each client: `blog-auto-queue` was called with final `post_ids` and `flagged_post_ids`
+- [ ] For each client: `research_summary` accurately reflects what happened this run
