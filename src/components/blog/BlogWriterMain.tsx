@@ -24,11 +24,12 @@ import { BlogCalendarTable } from "./BlogCalendarTable";
 import { BlogCalendarGrid } from "./BlogCalendarGrid";
 import { BlogWeeklyCalendarView } from "./BlogWeeklyCalendarView";
 import { BlogCreationDialog } from "./BlogCreationDialog";
+import { BlogApprovalQueue } from "./BlogApprovalQueue";
 import { CalendarViewSelector } from "@/components/social/CalendarViewSelector";
 
 export function BlogWriterMain() {
   const { selectedClient, loading: clientLoading } = useClient();
-  const [activeTab, setActiveTab] = useState<'planner' | 'drafts' | 'strategy'>('planner');
+  const [activeTab, setActiveTab] = useState<'planner' | 'drafts' | 'approval' | 'strategy'>('planner');
   const [showMonthlyWizard, setShowMonthlyWizard] = useState(false);
   const [showSinglePostDialog, setShowSinglePostDialog] = useState(false);
   const [generationType, setGenerationType] = useState<'all' | 'missing'>('all');
@@ -125,6 +126,20 @@ export function BlogWriterMain() {
     enabled: !!selectedClient,
   });
 
+  const { data: pendingApprovalCount } = useQuery({
+    queryKey: ['blog-pending-approval-count', selectedClient?.id],
+    queryFn: async () => {
+      if (!selectedClient) return 0;
+      const { count } = await supabase
+        .from('blog_posts')
+        .select('*', { count: 'exact', head: true })
+        .eq('client_id', selectedClient.id)
+        .eq('status', 'pending_approval');
+      return count || 0;
+    },
+    enabled: !!selectedClient,
+  });
+
   if (clientLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -161,6 +176,14 @@ export function BlogWriterMain() {
             {draftsCount !== undefined && draftsCount > 0 && (
               <Badge variant="secondary" className="ml-2">
                 {draftsCount}
+              </Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="approval">
+            Approval Queue
+            {pendingApprovalCount !== undefined && pendingApprovalCount > 0 && (
+              <Badge variant="secondary" className="ml-2">
+                {pendingApprovalCount}
               </Badge>
             )}
           </TabsTrigger>
@@ -286,6 +309,10 @@ export function BlogWriterMain() {
           <BlogPostsList status="draft" />
         </TabsContent>
         
+        <TabsContent value="approval" className="space-y-6">
+          <BlogApprovalQueue />
+        </TabsContent>
+
         <TabsContent value="strategy" className="space-y-6">
           <Alert>
             <Info className="h-4 w-4" />
