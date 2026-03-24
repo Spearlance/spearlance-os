@@ -19,6 +19,8 @@ import {
 import { BlogStrategyForm } from "./BlogStrategyForm";
 import { BlogMonthlyGenerator } from "./BlogMonthlyGenerator";
 import { BlogAIPreferencesForm } from "./BlogAIPreferencesForm";
+import { BlogAutoModeSettings } from "./BlogAutoModeSettings";
+import { BlogAutoRunHistory } from "./BlogAutoRunHistory";
 import { BlogPostsList } from "./BlogPostsList";
 import { BlogCalendarTable } from "./BlogCalendarTable";
 import { BlogCalendarGrid } from "./BlogCalendarGrid";
@@ -330,6 +332,9 @@ export function BlogWriterMain() {
           </Card>
 
           <BlogAIPreferencesForm clientId={selectedClient.id} />
+
+          <BlogAutoModeSettings />
+          <BlogAutoRunHistory />
         </TabsContent>
       </Tabs>
 
