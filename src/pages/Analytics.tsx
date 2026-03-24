@@ -10,6 +10,9 @@ import { ClaritySourcesChart } from "@/components/analytics/ClaritySourcesChart"
 import { ClarityTopPagesTable } from "@/components/analytics/ClarityTopPagesTable";
 import { ClarityTimelineChart } from "@/components/analytics/ClarityTimelineChart";
 import { ClarityBehavioralCard } from "@/components/analytics/ClarityBehavioralCard";
+import { CWVGauges } from "@/components/analytics/CWVGauges";
+import { LighthouseScoreCard } from "@/components/analytics/LighthouseScoreCard";
+import { GA4StatusCard } from "@/components/analytics/GA4StatusCard";
 import { AnalyticsFilters } from "@/components/analytics/AnalyticsFilters";
 import {
   useClarityStatus,
@@ -19,6 +22,7 @@ import {
   useClarityPages,
   useClarityBehavioral,
 } from "@/hooks/useClarityAnalytics";
+import { useCWVMetrics, useLighthouseAudits } from "@/hooks/usePerformanceData";
 import { PricingModal } from "@/components/billing/PricingModal";
 import { subDays, startOfDay, endOfDay } from "date-fns";
 
@@ -65,6 +69,10 @@ export default function Analytics() {
     selectedClient?.id || '',
     dateRange
   );
+
+  // Performance data (CWV + Lighthouse)
+  const { data: cwvData, isLoading: cwvLoading } = useCWVMetrics(selectedClient?.id);
+  const { data: lighthouseData, isLoading: lighthouseLoading } = useLighthouseAudits(selectedClient?.id);
 
   // Check if website is unlocked
   if (!selectedClient?.website_unlocked) {
@@ -188,6 +196,8 @@ export default function Analytics() {
       <Tabs defaultValue="overview" className="space-y-6">
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="performance">Performance</TabsTrigger>
+          <TabsTrigger value="ga4">GA4</TabsTrigger>
           <TabsTrigger value="traffic">Traffic Sources</TabsTrigger>
           <TabsTrigger value="pages">Top Pages</TabsTrigger>
           <TabsTrigger value="behavior">Behavioral Insights</TabsTrigger>
@@ -199,6 +209,15 @@ export default function Analytics() {
             <ClaritySourcesChart data={sourcesData} isLoading={sourcesLoading} />
             <ClarityBehavioralCard data={behavioralData} isLoading={behavioralLoading} />
           </div>
+        </TabsContent>
+
+        <TabsContent value="performance" className="space-y-6">
+          <CWVGauges data={cwvData} isLoading={cwvLoading} />
+          <LighthouseScoreCard audits={lighthouseData || []} isLoading={lighthouseLoading} />
+        </TabsContent>
+
+        <TabsContent value="ga4" className="space-y-6">
+          <GA4StatusCard clientId={selectedClient?.id} />
         </TabsContent>
 
         <TabsContent value="traffic" className="space-y-6">

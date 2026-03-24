@@ -3,11 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Copy, Eye, EyeOff, RefreshCw, CheckCircle2, Circle, AlertTriangle } from "lucide-react";
+import { Copy, Eye, EyeOff, RefreshCw, CheckCircle2, Circle, AlertTriangle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDistanceToNow } from "date-fns";
@@ -31,6 +30,11 @@ export function AnalyticsSetupTab({ client }: AnalyticsSetupTabProps) {
   const [currentClientId, setCurrentClientId] = useState<string>(client.id);
   const [websiteUrl, setWebsiteUrl] = useState<string>(client.website_url || '');
   const [isUpdatingUrl, setIsUpdatingUrl] = useState(false);
+  const [measurementId, setMeasurementId] = useState('');
+  const [apiSecret, setApiSecret] = useState('');
+  const [ga4Loading, setGa4Loading] = useState(false);
+  const [ga4Connected, setGa4Connected] = useState(false);
+  const [auditRunning, setAuditRunning] = useState(false);
 
   useEffect(() => {
     // Only reload if client actually changed
@@ -45,6 +49,7 @@ export function AnalyticsSetupTab({ client }: AnalyticsSetupTabProps) {
       // Load new client's data
       loadWorkspaceKey();
       checkConnectionStatus();
+      loadGA4Config();
     }
   }, [client.id, currentClientId]);
 
@@ -163,334 +168,66 @@ export function AnalyticsSetupTab({ client }: AnalyticsSetupTabProps) {
     return `${key.substring(0, 8)}${'•'.repeat(key.length - 8)}`;
   };
 
-  const getInstallationCode = (platform: string) => {
+  const getInstallationCode = () => {
     if (!workspaceKey) return '';
-
-    const collectorUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/analytics-collector`;
-
-    const baseCode = `<script>
-/**
- * SpearlanceOS Analytics Tracker (SOS) - Inline Version
- * Version 1.0.0
- */
-(function() {
-  'use strict';
-  
-  if (window.sos) {
-    return;
-  }
-  
-  const config = {
-    version: '1.0.0',
-    collectorUrl: '${collectorUrl}',
-    workspaceKey: '${workspaceKey}',
-    enablePopupConsent: false,
-    policyUrl: '/privacy',
-    autoTrackPageViews: true,
-    autoTrackScroll: true,
-    autoTrackEngagement: true
+    const trackerUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sos-tracker?k=${workspaceKey}`;
+    return `<!-- SpearlanceOS Analytics v2 -->\n<script async src="${trackerUrl}"></script>`;
   };
-  
-  let sessionId = null;
-  let userId = null;
-  let consentGranted = false;
-  let eventQueue = [];
-  let scrollTracked = {};
-  let engagedStart = null;
-  let engagedTotal = 0;
-  let sessionFirstPath = null;
-  
-  function generateId() {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-      const r = Math.random() * 16 | 0;
-      const v = c === 'x' ? r : (r & 0x3 | 0x8);
-      return v.toString(16);
-    });
-  }
-  
-  function getStorage(key) {
-    try {
-      return localStorage.getItem(key);
-    } catch (e) {
-      return null;
-    }
-  }
-  
-  function setStorage(key, value) {
-    try {
-      localStorage.setItem(key, value);
-    } catch (e) {}
-  }
-  
-  function isOptedOut() {
-    return getStorage('sos_optout') === 'true';
-  }
-  
-  function getUTMParams() {
-    const params = new URLSearchParams(window.location.search);
-    return {
-      utm_source: params.get('utm_source'),
-      utm_medium: params.get('utm_medium'),
-      utm_campaign: params.get('utm_campaign'),
-      utm_term: params.get('utm_term'),
-      utm_content: params.get('utm_content')
-    };
-  }
-  
-  function classifyReferrer(ref) {
-    if (!ref || ref === '' || ref.indexOf(window.location.hostname) !== -1) {
-      return { source: 'direct', medium: 'none' };
-    }
-    
-    try {
-      const url = new URL(ref);
-      const host = url.hostname.toLowerCase();
-      
-      if (host.includes('google')) return { source: 'google', medium: 'organic' };
-      if (host.includes('bing')) return { source: 'bing', medium: 'organic' };
-      if (host.includes('duckduckgo')) return { source: 'duckduckgo', medium: 'organic' };
-      if (host.includes('brave')) return { source: 'brave', medium: 'organic' };
-      if (host.includes('yahoo')) return { source: 'yahoo', medium: 'organic' };
-      
-      if (host.includes('chatgpt') || host.includes('openai')) {
-        return { source: 'chatgpt', medium: 'referral' };
-      }
-      if (host.includes('claude') || host.includes('anthropic')) {
-        return { source: 'claude', medium: 'referral' };
-      }
-      
-      if (host.includes('facebook') || host.includes('fb.com')) return { source: 'facebook', medium: 'social' };
-      if (host.includes('twitter') || host.includes('t.co')) return { source: 'twitter', medium: 'social' };
-      if (host.includes('linkedin')) return { source: 'linkedin', medium: 'social' };
-      if (host.includes('instagram')) return { source: 'instagram', medium: 'social' };
-      if (host.includes('youtube')) return { source: 'youtube', medium: 'social' };
-      if (host.includes('tiktok')) return { source: 'tiktok', medium: 'social' };
-      if (host.includes('pinterest')) return { source: 'pinterest', medium: 'social' };
-      
-      return { source: host.replace('www.', ''), medium: 'referral' };
-    } catch (e) {
-      return { source: 'direct', medium: 'none' };
-    }
-  }
-    
-    function send(eventData) {
-      if (!config.collectorUrl || !config.workspaceKey) {
-      console.error('[SOS] Missing config - collectorUrl or workspaceKey');
-      return;
-    }
-    
-    if (!consentGranted || isOptedOut()) {
-      return;
-    }
-    
-    const payload = {
-      workspaceKey: config.workspaceKey,
-      ts: Date.now(),
-      sid: sessionId,
-      uid: userId,
-      ...eventData
-      };
-    
-      const data = JSON.stringify(payload);
-      
-      try {
-        fetch(config.collectorUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: data,
-        keepalive: true,
-          credentials: 'omit',
-          mode: 'cors'
-        }).catch(function(err) {
-        console.error('[SOS] Fetch error:', err);
-      });
-    } catch (e) {
-      console.error('[SOS] Send error:', e);
-    }
-    }
-    
-    function trackPageView() {
-      try {
-      const isEntry = sessionFirstPath === null;
-      
-      if (isEntry) {
-        sessionFirstPath = window.location.pathname;
-        try {
-          sessionStorage.setItem('sos_first_path', sessionFirstPath);
-        } catch (e) {}
-      }
-      
-      const utm = getUTMParams();
-      const ref = classifyReferrer(document.referrer);
-      
-      send({
-        type: 'page_view',
-        url: window.location.href,
-        path: window.location.pathname,
-        title: document.title,
-        referrer: document.referrer,
-        source: ref.source,
-        medium: ref.medium,
-        ...utm,
-        entry: isEntry,
-        userAgent: navigator.userAgent.substring(0, 200)
-      });
-      
-      scrollTracked = {};
-    } catch (e) {
-      console.error('[SOS] trackPageView error:', e);
-    }
-  }
-  
-  function trackScrollDepth() {
-    try {
-      const scrollPercentage = Math.round(
-        (window.scrollY + window.innerHeight) / document.body.scrollHeight * 100
-      );
-      
-      [25, 50, 75, 100].forEach(function(threshold) {
-        if (scrollPercentage >= threshold && !scrollTracked[threshold]) {
-          scrollTracked[threshold] = true;
-          send({
-            type: 'scroll_depth',
-            path: window.location.pathname,
-            value: threshold
-          });
-        }
-      });
-    } catch (e) {}
-  }
-  
-  function trackEngagedTime() {
-    try {
-      if (engagedStart !== null) {
-        engagedTotal += Date.now() - engagedStart;
-      }
-      engagedStart = Date.now();
-      
-      if (engagedTotal >= 15000) {
-        const seconds = Math.round(engagedTotal / 1000);
-        send({
-          type: 'engaged_time',
-          path: window.location.pathname,
-          value: seconds
-        });
-        engagedTotal = 0;
-      }
-    } catch (e) {}
-  }
-  
-  window.sos = {
-    version: config.version,
-    
-    init: function(opts) {
-    },
-    
-    consent: function(state) {
-      try {
-        if (state === 'granted') {
-          consentGranted = true;
-          setStorage('sos_consent', 'granted');
-          window.sos._startTracking();
-        } else if (state === 'denied') {
-          consentGranted = false;
-          setStorage('sos_consent', 'denied');
-        }
-      } catch (e) {}
-    },
-    
-    identify: function(id) {
-      try {
-        userId = id;
-        setStorage('sos_uid', id);
-      } catch (e) {}
-    },
-    
-    page: function() {
-      trackPageView();
-    },
-    
-    track: function(evt) {
-      try {
-        send(evt);
-      } catch (e) {}
-    },
-    
-    _startTracking: function() {
-      if (config.autoTrackPageViews) {
-        trackPageView();
-      }
-      
-      if (config.autoTrackScroll) {
-        let scrollTimeout;
-        window.addEventListener('scroll', function() {
-          clearTimeout(scrollTimeout);
-          scrollTimeout = setTimeout(trackScrollDepth, 200);
-        }, { passive: true });
-      }
-      
-      if (config.autoTrackEngagement) {
-        engagedStart = Date.now();
-        
-        let engageTimeout;
-        function throttledEngage() {
-          clearTimeout(engageTimeout);
-          engageTimeout = setTimeout(trackEngagedTime, 500);
-        }
-        
-        window.addEventListener('mousemove', throttledEngage, { passive: true });
-        window.addEventListener('keydown', throttledEngage, { passive: true });
-        window.addEventListener('touchstart', throttledEngage, { passive: true });
-        window.addEventListener('click', throttledEngage, { passive: true });
-        
-        window.addEventListener('blur', function() {
-          if (engagedStart !== null) {
-            engagedTotal += Date.now() - engagedStart;
-            engagedStart = null;
-          }
-        });
-        window.addEventListener('focus', function() {
-          engagedStart = Date.now();
-        });
-      }
-      
-      const pushState = history.pushState;
-      history.pushState = function() {
-        pushState.apply(history, arguments);
-        setTimeout(trackPageView, 100);
-      };
-      
-      window.addEventListener('popstate', function() {
-        setTimeout(trackPageView, 100);
-      });
+
+  const loadGA4Config = async () => {
+    if (!client?.id) return;
+    const { data } = await supabase
+      .from('ga4_configs')
+      .select('measurement_id, api_secret, is_active')
+      .eq('client_id', client.id)
+      .maybeSingle();
+    if (data) {
+      setMeasurementId(data.measurement_id || '');
+      setApiSecret(data.api_secret || '');
+      setGa4Connected(data.is_active || false);
     }
   };
-  
-  // Auto-initialize
-  sessionId = getStorage('sos_sid') || generateId();
-  setStorage('sos_sid', sessionId);
-  userId = getStorage('sos_uid');
-  
-  const storedConsent = getStorage('sos_consent');
-  if (storedConsent === 'granted') {
-    consentGranted = true;
-  }
-  
-  try {
-    sessionFirstPath = sessionStorage.getItem('sos_first_path');
-  } catch (e) {}
-  
-  window.sos.consent('granted');
-})();
-</script>`;
 
-    if (platform === 'duda') {
-      return `<!-- Add this to Site-Wide HTML (Site Settings → Custom Code → Head) -->\n${baseCode}`;
-    } else if (platform === 'wordpress') {
-      return `<!-- Add this to Theme Header (Appearance → Theme Editor → header.php, before </head>) -->\n<?php\nif (!is_admin()) {\n  echo '${baseCode.replace(/'/g, "\\'")}';
-}\n?>`;
+  const saveGA4Config = async () => {
+    if (!client?.id || !measurementId.trim() || !apiSecret.trim()) {
+      toast.error("Error", { description: "Please enter both Measurement ID and API Secret" });
+      return;
     }
-    return `<!-- Add this before the closing </head> tag -->\n${baseCode}`;
+    setGa4Loading(true);
+    try {
+      const { error } = await supabase
+        .from('ga4_configs')
+        .upsert({
+          client_id: client.id,
+          measurement_id: measurementId.trim(),
+          api_secret: apiSecret.trim(),
+          is_active: true,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'client_id' });
+      if (error) throw error;
+      setGa4Connected(true);
+      toast.success("GA4 Config Saved", { description: "Page views will now be forwarded to GA4 server-side" });
+    } catch (error) {
+      toast.error("Error", { description: "Failed to save GA4 configuration" });
+    } finally {
+      setGa4Loading(false);
+    }
+  };
+
+  const runLighthouseAudit = async () => {
+    if (!client?.id) return;
+    setAuditRunning(true);
+    try {
+      const { error } = await supabase.functions.invoke('lighthouse-audit', {
+        body: { client_id: client.id },
+      });
+      if (error) throw error;
+      toast.success("Lighthouse Audit Complete", { description: "Results are available on the Analytics page" });
+    } catch (error) {
+      toast.error("Error", { description: "Failed to run Lighthouse audit" });
+    } finally {
+      setAuditRunning(false);
+    }
   };
 
   return (
@@ -604,29 +341,21 @@ export function AnalyticsSetupTab({ client }: AnalyticsSetupTabProps) {
               <Card className="border-dashed">
                 <CardHeader>
                   <CardTitle className="text-base">Installation Instructions</CardTitle>
+                  <CardDescription>
+                    Add this script tag to your site's &lt;head&gt;. Works on any platform.
+                  </CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <Tabs defaultValue="duda">
-                    <TabsList className="grid w-full grid-cols-3">
-                      <TabsTrigger value="duda">Duda</TabsTrigger>
-                      <TabsTrigger value="wordpress">WordPress</TabsTrigger>
-                      <TabsTrigger value="html">Generic HTML</TabsTrigger>
-                    </TabsList>
-                    {['duda', 'wordpress', 'html'].map((platform) => (
-                      <TabsContent key={platform} value={platform} className="space-y-3">
-                        <pre className="bg-muted p-4 rounded-lg text-xs overflow-x-auto">
-                          <code>{getInstallationCode(platform)}</code>
-                        </pre>
-                        <Button
-                          variant="outline"
-                          onClick={() => copyToClipboard(getInstallationCode(platform))}
-                        >
-                          <Copy className="h-4 w-4 mr-2" />
-                          Copy Installation Code
-                        </Button>
-                      </TabsContent>
-                    ))}
-                  </Tabs>
+                <CardContent className="space-y-3">
+                  <pre className="bg-muted p-4 rounded-lg text-xs overflow-x-auto">
+                    <code>{getInstallationCode()}</code>
+                  </pre>
+                  <Button
+                    variant="outline"
+                    onClick={() => copyToClipboard(getInstallationCode())}
+                  >
+                    <Copy className="h-4 w-4 mr-2" />
+                    Copy Installation Code
+                  </Button>
                 </CardContent>
               </Card>
 
@@ -665,6 +394,61 @@ export function AnalyticsSetupTab({ client }: AnalyticsSetupTabProps) {
               )}
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Google Analytics (GA4) Integration</CardTitle>
+          <CardDescription>
+            Connect GA4 to receive page view data server-side via Measurement Protocol.
+            No gtag.js needed on client sites.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {ga4Connected && (
+            <Badge variant="default" className="mb-2">Connected</Badge>
+          )}
+          <div>
+            <Label>Measurement ID</Label>
+            <Input
+              placeholder="G-XXXXXXXXXX"
+              value={measurementId}
+              onChange={(e) => setMeasurementId(e.target.value)}
+              className="mt-1"
+            />
+          </div>
+          <div>
+            <Label>API Secret</Label>
+            <Input
+              type="password"
+              placeholder="API secret from GA4 Admin"
+              value={apiSecret}
+              onChange={(e) => setApiSecret(e.target.value)}
+              className="mt-1"
+            />
+          </div>
+          <Button onClick={saveGA4Config} disabled={ga4Loading}>
+            {ga4Loading ? "Saving..." : "Save GA4 Config"}
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Lighthouse Performance Audits</CardTitle>
+          <CardDescription>
+            Weekly automated audits run every Sunday. You can also run one now.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button onClick={runLighthouseAudit} disabled={auditRunning}>
+            {auditRunning ? (
+              <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Running...</>
+            ) : (
+              'Run Audit Now'
+            )}
+          </Button>
         </CardContent>
       </Card>
 
