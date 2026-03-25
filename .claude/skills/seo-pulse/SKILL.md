@@ -171,6 +171,54 @@ Keywords where actual CTR is below the lower bound for their position = title/de
 
 Top 10 keywords table + position change column. Near-page-1 opportunity list. Alerts for drops > 5 positions.
 
+### GSC Monitoring Triggers (Doctrine S12.1)
+
+Flag pages meeting any of these criteria during the weekly review:
+
+| Condition | Action |
+|-----------|--------|
+| Impressions > 500/month AND CTR < 2% | Title/description rewrite needed |
+| Impressions > 1,000/month AND CTR < 3% | HIGH-PRIORITY title rewrite |
+| Position 8-20 AND impressions rising | Content expansion opportunity |
+| Queries triggering a page that don't match page intent | Evaluate for new page creation — see `seo-doctrine` rule (Page Context Protection) |
+
+Process: Pull pages with high impressions (top 20 by impressions). For each, calculate CTR. Flag any page matching the triggers above.
+
+### Title/Description Rewrite Protocol (Doctrine S12.2)
+
+**Trigger:** Page flagged per GSC Monitoring Triggers above.
+
+1. Record current title and description
+2. Write new title following meta title rules (see `seo-doctrine` rule)
+3. Write new description following meta description rules (see `seo-doctrine` rule)
+4. Deploy change
+5. Monitor for 14 days
+
+**Rollback Rule:**
+
+```
+If CTR drops > 20% within 14 days of change
+  → Revert to previous title/description
+  → Flag for manual review by Garrett
+  → Document what was tried and the result
+```
+
+### Keyword Expansion from Query Data (Doctrine S12.3)
+
+**Trigger:** Weekly Search Console review.
+
+```
+If a query is generating impressions but no dedicated page exists
+  AND the query has commercial or informational intent
+  AND estimated monthly volume > 50
+  → Recommend new page creation
+  → Add to content calendar
+
+If a query is generating impressions on a page with mismatched intent
+  → Recommend creating a new, properly targeted page
+  → Do NOT modify the existing page's intent
+```
+
 ---
 
 ## Phase 4: Index Health

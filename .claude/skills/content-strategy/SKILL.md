@@ -184,6 +184,24 @@ Monthly cadence for service businesses.
 | Growth (6–18 mo) | 4–8 pieces | 30% service, 50% blog, 20% location |
 | Maintenance (18+ mo) | 2–4 pieces | 70% blog, 30% updates to existing pages |
 
+### Publishing Cadence (Doctrine S6.2)
+
+- **Target:** Minimum 3 posts per week. Daily if capacity allows.
+- **Floor:** Never below 2 per week.
+
+**Approved Content Types (Ranked by Priority):**
+1. High-intent informational content (targets search queries with commercial or transactional intent)
+2. Legal or regulatory guides relevant to client's industry
+3. Strategic breakdowns (how-to guides with genuine expertise)
+4. Industry updates (algorithm changes, market shifts)
+5. Authoritative listicles (only if backed by real data or expertise)
+
+**NEVER Publish:**
+- Magazine-style filler with no ranking intent
+- Seasonal fluff that doesn't target a keyword
+- Content that rehashes what's already on the site without adding depth
+- AI-generated content that hasn't been reviewed for accuracy and brand voice
+
 ### Seasonal Planning
 
 Map service-specific seasons before building the calendar. Common patterns:
@@ -244,6 +262,20 @@ Evaluate every piece before publishing:
 - [ ] CTA present — reader knows what to do next
 - [ ] Schema type assigned and implemented (use `schema-markup`)
 - [ ] Meta description written — unique, 150–160 chars, includes CTA
+
+### Minimum Quality Thresholds (Doctrine S6.1)
+
+| Metric | Minimum | Target | Rewrite Trigger |
+|--------|---------|--------|-----------------|
+| Word count (service page) | 1,500 | 2,000-2,500 | Below 1,200 |
+| Word count (blog post) | 1,000 | 1,500-2,000 | Below 800 |
+| Word count (city page) | 1,200 | 1,500-2,000 | Below 1,000 |
+| Internal links per page | 5 | 10+ | Below 3 |
+| H2 headings per page | 4 | 6-8 | Below 3 |
+| FAQ items (local pages) | 3 | 5-7 | Below 3 |
+| Unique content per city page | 30% | 50%+ | Below 20% |
+
+These thresholds are enforced by the `seo-doctrine` rule. Reference it for the full content standards.
 
 ### Failure Conditions
 

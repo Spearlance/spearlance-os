@@ -281,6 +281,61 @@ Ongoing: 2-4 blog posts per month to maintain freshness signals and capture long
 
 ---
 
+## Local Domination Expansion Sequence (Doctrine S15)
+
+## Phase 3.5: Geographic Expansion
+
+**Time: 30 min planning, ongoing execution**
+
+The 5-phase expansion model for systematic local market domination. Execute phases sequentially — each phase builds on the prior.
+
+### Expansion Phases
+
+```
+Phase 1: Core
+  → Service in [Home City] pages for all primary services
+  → Pillar pages for each service
+  → 3-5 supporting blog posts per pillar
+
+Phase 2: Adjacent
+  → Service in [Adjacent Town] pages (5-10 mile radius)
+  → Interlink all city pages within each service pillar
+  → Build citations for each location served
+
+Phase 3: Subservice Expansion
+  → [Subservice] in [City] pages for high-value subservices
+  → Interlink subservice pages to parent service pillar
+
+Phase 4: Extended Reach
+  → Service in [City] pages for 10-25 mile radius towns
+  → Prioritize by search volume and competition level
+
+Phase 5: Saturation
+  → Fill remaining viable towns
+  → Focus on long-tail, low-competition opportunities
+  → Monitor and optimize existing pages before creating new ones
+```
+
+### When to Stop Expanding (Rule 15.2)
+
+Stop expanding in a geographic direction when ALL of these are true:
+
+```
+If new city pages are generating < 10 impressions/month after 60 days
+  AND the town has < 5,000 population
+  AND no commercial search volume exists
+  → Stop expanding in that direction
+  → Redirect resources to optimizing existing pages
+```
+
+### Expansion Priority Validation
+
+**Constraint:** Never create a city page with zero search demand. Validate with keyword data before building.
+
+Use `search-rank` and `google-search-console-api` to verify volume exists for `[service] in [city]` before creating each page.
+
+---
+
 ## Phase 4: Local Authority
 
 **Time: 30-45 min**

@@ -102,18 +102,50 @@ Thin, templated location pages are a known ranking killer. Google's Helpful Cont
 
 Location pages should have at minimum **60% unique content** per page. Generic content copied across location pages will not rank and may trigger thin-content penalties.
 
-### Uniqueness Checklist Per Location Page
+### Mandatory Elements Per City Page (Doctrine S5.1)
 
-| Element | Present? | Notes |
-|---------|----------|-------|
-| Unique H1 with city/region | ○ | Not just "[City] + Service" |
-| Local landmarks or neighborhoods | ○ | "Near the Riverwalk" etc. |
-| Area-specific testimonials | ○ | Customer names + locations |
-| Driving directions from landmarks | ○ | Not just an embedded map |
-| Local statistics or context | ○ | Population served, local facts |
-| Location-specific images | ○ | Not stock photos |
-| Unique meta title and description | ○ | Not template-filled |
-| LocalBusiness schema | ○ | See Section 3 |
+For each `[Service] in [City]` combination, verify:
+
+- [ ] Primary keyword with city in H1
+- [ ] City name in meta title (embedded in keyword phrase, not appended)
+- [ ] City name in meta description (minimum 2 mentions)
+- [ ] Mention of 2-3 nearby landmarks or local references
+- [ ] Mention of local market characteristics (1-2 sentences)
+- [ ] Mention of 3-5 surrounding towns with links to their pages (if they exist)
+- [ ] Minimum 3 locally relevant FAQs with FAQ schema
+- [ ] City name in alt text of at least 1 image
+- [ ] Structured internal links to related city pages and to the service pillar page
+- [ ] Tone implies local familiarity — not generic "we serve [city]"
+
+### Quality Gate
+
+The page must read as if written by someone who operates in that city. If it reads like a find-and-replace of another city page, it fails. Minimum 30% unique content per city page beyond boilerplate service descriptions.
+
+### City Page Expansion Priority (Doctrine S5.2)
+
+```
+1. Start with the client's home city.
+2. Expand to immediately adjacent towns (5-10 mile radius).
+3. Expand to next ring of towns (10-25 mile radius).
+4. Expand to low-competition towns with search volume.
+5. Gradually move toward competitive cities last.
+```
+
+**Constraint:** Never create a city page with zero search demand. Validate with keyword data before building.
+
+### Subservice Expansion (Doctrine S5.3)
+
+When a primary service has distinct subservices, create dedicated pages:
+
+```
+Create:
+/roofing/concord-nh          (pillar)
+/roof-repair/concord-nh      (subservice)
+/roof-replacement/concord-nh (subservice)
+/metal-roofing/concord-nh    (subservice)
+```
+
+Interlink all subservice pages to the pillar and to each other.
 
 ### What to Flag
 
