@@ -172,7 +172,27 @@ serve(async (req) => {
       try {
         const clientId: string = config.client_id;
         const websiteUrl: string = config.clients?.website_url || '';
-        const trackedKeywords: string[] = config.tracked_keywords || [];
+
+        // Get service-location combos
+        const { data: serviceLocations } = await supabase
+          .from('client_service_locations')
+          .select('service_name, city, state')
+          .eq('client_id', clientId)
+          .eq('active', true);
+
+        // Generate keyword matrix (3 variations per service-location combo)
+        const generatedKeywords: string[] = [];
+        for (const sl of serviceLocations || []) {
+          const city = sl.city.toLowerCase();
+          const state = sl.state.toLowerCase();
+          generatedKeywords.push(`${sl.service_name.toLowerCase()} ${city} ${state}`);
+          generatedKeywords.push(`${sl.service_name.toLowerCase()} company ${city} ${state}`);
+          generatedKeywords.push(`${sl.service_name.toLowerCase()} services ${city} ${state}`);
+        }
+
+        // Fallback to tracked_keywords if no service locations configured (backwards compat)
+        const legacyKeywords: string[] = config.tracked_keywords || [];
+        const trackedKeywords = [...new Set([...generatedKeywords, ...legacyKeywords])];
 
         if (!trackedKeywords.length) {
           console.log(`No tracked keywords for client ${clientId}, skipping`);
@@ -180,7 +200,7 @@ serve(async (req) => {
           continue;
         }
 
-        console.log(`Processing ${trackedKeywords.length} keywords for client ${clientId}`);
+        console.log(`Processing ${trackedKeywords.length} keywords for client ${clientId} (${generatedKeywords.length} generated, ${legacyKeywords.length} legacy)`);
 
         // Build SERP tasks — DataforSEO accepts up to 100 tasks per POST
         const serpTasks: DataforSEOTask[] = trackedKeywords.map((keyword) => ({
