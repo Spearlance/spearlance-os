@@ -281,3 +281,21 @@ verify_jwt = true
 
 [functions.set-asset-share-password]
 verify_jwt = true
+
+[functions.optimization-crawl]
+verify_jwt = false
+
+[functions.optimization-analyze]
+verify_jwt = false
+
+[functions.optimization-recommend]
+verify_jwt = false
+
+[functions.optimization-monitor]
+verify_jwt = false
+
+[functions.optimization-alerts]
+verify_jwt = false
+
+[functions.dataforseo-sync]
+verify_jwt = false
