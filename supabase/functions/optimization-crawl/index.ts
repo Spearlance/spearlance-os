@@ -73,6 +73,50 @@ function detectSchemaTypes(html: string): {
   };
 }
 
+// ─────────────────────────────────────────────
+// Service-location discovery
+// ─────────────────────────────────────────────
+
+interface DiscoveredServiceLocation {
+  service_slug: string;
+  service_name: string; // derived from slug: "web-design" → "Web Design"
+  city: string;         // "Concord"
+  state: string;        // "NH"
+}
+
+/**
+ * Parse a URL path into a service + location combo.
+ * Pattern: /{service-slug}/{city-state}
+ * e.g. /web-design/concord-nh → { service_slug: "web-design", service_name: "Web Design", city: "Concord", state: "NH" }
+ * Returns null if the path doesn't match the pattern.
+ */
+function parseServiceLocationFromUrl(path: string): DiscoveredServiceLocation | null {
+  const cleaned = path.replace(/^\/|\/$/g, ''); // trim leading/trailing slashes
+  if (!cleaned) return null;
+
+  const parts = cleaned.split('/');
+  if (parts.length !== 2) return null;
+
+  const serviceSlug = parts[0];
+  const cityState = parts[1];
+
+  // City-state pattern: {city}-{state_abbrev} where state is exactly 2 chars
+  const stateMatch = cityState.match(/^(.+)-([a-z]{2})$/i);
+  if (!stateMatch) return null;
+
+  const citySlug = stateMatch[1];
+  const state = stateMatch[2].toUpperCase();
+
+  // Convert slugs to title-cased names
+  const toTitleCase = (slug: string) =>
+    slug.split('-').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+
+  const service_name = toTitleCase(serviceSlug);
+  const city = toTitleCase(citySlug);
+
+  return { service_slug: serviceSlug, service_name, city, state };
+}
+
 /**
  * Detect page type from URL path.
  * Priority: homepage → blog → city (state pattern) → service → other
@@ -306,6 +350,46 @@ serve(async (req) => {
         }
 
         crawled++;
+      }
+
+      // Auto-discover service-location combos from crawled pages
+      const { data: auditedPages } = await supabase
+        .from('page_audits')
+        .select('url')
+        .eq('client_id', client.id);
+
+      const discoveredCombos: Array<DiscoveredServiceLocation & { page_url: string }> = [];
+
+      for (const auditedPage of auditedPages ?? []) {
+        let pathname: string;
+        try {
+          pathname = new URL(auditedPage.url as string).pathname;
+        } catch {
+          continue;
+        }
+        const parsed = parseServiceLocationFromUrl(pathname);
+        if (parsed) {
+          discoveredCombos.push({ ...parsed, page_url: auditedPage.url as string });
+        }
+      }
+
+      if (discoveredCombos.length > 0) {
+        for (const combo of discoveredCombos) {
+          await supabase
+            .from('client_service_locations')
+            .upsert({
+              client_id: client.id,
+              service_slug: combo.service_slug,
+              service_name: combo.service_name,
+              city: combo.city,
+              state: combo.state,
+              has_page: true,
+              page_url: combo.page_url,
+              discovered_by: 'auto',
+              active: true,
+            }, { onConflict: 'client_id,service_slug,city,state' });
+        }
+        console.log(`optimization-crawl: auto-discovered ${discoveredCombos.length} service-location combo(s) for client ${client.id}`);
       }
 
       totalCrawled += crawled;
