@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.75.0';
+import { checkBot } from '../_shared/botDetector.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -148,128 +149,199 @@ async function handleV2(payload: V2Payload, req: Request, supabase: any) {
   const pageView = payload.v.find(e => e.t === 'pv');
   const cwvEvent = payload.v.find(e => e.t === 'cwv');
   const engEvent = payload.v.find(e => e.t === 'eng');
+  const leadEvents = payload.v.filter(e => e.t === 'lead');
 
-  if (!pageView) {
+  // Allow lead-only payloads through — only early-return if nothing useful
+  if (!pageView && leadEvents.length === 0) {
     return new Response(null, { status: 204, headers: corsHeaders });
   }
 
-  // Domain validation
-  if (pageView.url && client?.website_url) {
-    try {
-      const eventDomain = new URL(pageView.url).hostname.replace(/^www\./, '');
-      const clientDomain = new URL(
-        client.website_url.startsWith('http')
-          ? client.website_url
-          : `https://${client.website_url}`
-      ).hostname.replace(/^www\./, '');
+  let botResult: ReturnType<typeof checkBot> | null = null;
 
-      if (eventDomain !== clientDomain) {
-        console.log('Blocked non-client domain:', eventDomain, 'Expected:', clientDomain);
+  if (pageView) {
+    // Domain validation
+    if (pageView.url && client?.website_url) {
+      try {
+        const eventDomain = new URL(pageView.url).hostname.replace(/^www\./, '');
+        const clientDomain = new URL(
+          client.website_url.startsWith('http')
+            ? client.website_url
+            : `https://${client.website_url}`
+        ).hostname.replace(/^www\./, '');
+
+        if (eventDomain !== clientDomain) {
+          console.log('Blocked non-client domain:', eventDomain, 'Expected:', clientDomain);
+          return new Response(null, { status: 204, headers: corsHeaders });
+        }
+      } catch (e) {
+        console.error('URL parsing error:', e);
         return new Response(null, { status: 204, headers: corsHeaders });
       }
-    } catch (e) {
-      console.error('URL parsing error:', e);
+    }
+
+    // Block editor paths
+    const urlToCheck = pageView.url || pageView.path || '';
+    if (isEditorPath(urlToCheck)) {
       return new Response(null, { status: 204, headers: corsHeaders });
     }
-  }
 
-  // Block editor paths
-  const urlToCheck = pageView.url || pageView.path || '';
-  if (isEditorPath(urlToCheck)) {
-    return new Response(null, { status: 204, headers: corsHeaders });
-  }
+    // Parse request metadata
+    const clientIP = req.headers.get('x-forwarded-for')?.split(',')[0] ||
+                     req.headers.get('x-real-ip') ||
+                     'unknown';
+    const ua = req.headers.get('user-agent') || pageView.ua || 'Unknown';
+    const { family, device } = parseUserAgent(ua);
+    const ipSalt = Deno.env.get('IP_HASH_SALT') || 'default-salt-change-in-production';
+    const ipHash = await hashIP(clientIP, ipSalt);
 
-  // Parse request metadata
-  const clientIP = req.headers.get('x-forwarded-for')?.split(',')[0] ||
-                   req.headers.get('x-real-ip') ||
-                   'unknown';
-  const ua = req.headers.get('user-agent') || pageView.ua || 'Unknown';
-  const { family, device } = parseUserAgent(ua);
-  const ipSalt = Deno.env.get('IP_HASH_SALT') || 'default-salt-change-in-production';
-  const ipHash = await hashIP(clientIP, ipSalt);
+    // Bot detection
+    botResult = checkBot({
+      ua,
+      scrollDepth: engEvent?.scroll || 0,
+      engagedSeconds: engEvent?.time || 0,
+    });
 
-  // Insert page view into web_events
-  const event = {
-    client_id: clientId,
-    received_at: new Date().toISOString(),
-    ts_ms: pageView.ts,
-    sid: pageView.sid,
-    uid: null,
-    type: 'page_view',
-    url: pageView.url || null,
-    path: pageView.path || null,
-    title: pageView.title || null,
-    referrer: pageView.ref || null,
-    source: pageView.src || null,
-    medium: pageView.med || null,
-    utm_source: pageView.utm_source || null,
-    utm_medium: pageView.utm_medium || null,
-    utm_campaign: pageView.utm_campaign || null,
-    utm_term: pageView.utm_term || null,
-    utm_content: pageView.utm_content || null,
-    entry: pageView.entry || false,
-    ua_family: family,
-    ua_device: device,
-    ip_hash: ipHash,
-    scroll_depth: engEvent?.scroll || null,
-    engaged_seconds: engEvent?.time || null,
-    meta: {},
-  };
-
-  const { error: insertError } = await supabase.from('web_events').insert(event);
-  if (insertError) {
-    console.error('web_events insert error:', insertError);
-  }
-
-  // Store CWV data if present
-  if (cwvEvent && (cwvEvent.lcp || cwvEvent.cls !== undefined || cwvEvent.inp)) {
-    const cwvRow = {
+    // Insert page view into web_events
+    const event = {
       client_id: clientId,
-      url: pageView.url || pageView.path || '',
-      lcp_ms: cwvEvent.lcp || null,
-      cls: cwvEvent.cls !== undefined ? cwvEvent.cls : null,
-      inp_ms: cwvEvent.inp || null,
-      fcp_ms: cwvEvent.fcp || null,
-      ttfb_ms: cwvEvent.ttfb || null,
-      device: device.toLowerCase(),
+      received_at: new Date().toISOString(),
+      ts_ms: pageView.ts,
+      sid: pageView.sid,
+      uid: null,
+      type: 'page_view',
+      url: pageView.url || null,
+      path: pageView.path || null,
+      title: pageView.title || null,
+      referrer: pageView.ref || null,
+      source: pageView.src || null,
+      medium: pageView.med || null,
+      utm_source: pageView.utm_source || null,
+      utm_medium: pageView.utm_medium || null,
+      utm_campaign: pageView.utm_campaign || null,
+      utm_term: pageView.utm_term || null,
+      utm_content: pageView.utm_content || null,
+      entry: pageView.entry || false,
+      ua_family: family,
+      ua_device: device,
+      ip_hash: ipHash,
+      scroll_depth: engEvent?.scroll || null,
+      engaged_seconds: engEvent?.time || null,
+      gclid: pageView.gclid || null,
+      fbclid: pageView.fbclid || null,
+      msclkid: pageView.msclkid || null,
+      is_bot: botResult.isBot,
+      meta: {},
     };
 
-    const { error: cwvError } = await supabase.from('cwv_metrics').insert(cwvRow);
-    if (cwvError) {
-      console.error('cwv_metrics insert error:', cwvError);
+    const { error: insertError } = await supabase.from('web_events').insert(event);
+    if (insertError) {
+      console.error('web_events insert error:', insertError);
+    }
+
+    // Store CWV data if present
+    if (cwvEvent && (cwvEvent.lcp || cwvEvent.cls !== undefined || cwvEvent.inp)) {
+      const cwvRow = {
+        client_id: clientId,
+        url: pageView.url || pageView.path || '',
+        lcp_ms: cwvEvent.lcp || null,
+        cls: cwvEvent.cls !== undefined ? cwvEvent.cls : null,
+        inp_ms: cwvEvent.inp || null,
+        fcp_ms: cwvEvent.fcp || null,
+        ttfb_ms: cwvEvent.ttfb || null,
+        device: device.toLowerCase(),
+      };
+
+      const { error: cwvError } = await supabase.from('cwv_metrics').insert(cwvRow);
+      if (cwvError) {
+        console.error('cwv_metrics insert error:', cwvError);
+      }
     }
   }
 
-  // GA4 Measurement Protocol fan-out
-  const { data: ga4Config } = await supabase
-    .from('ga4_configs')
-    .select('measurement_id, api_secret')
-    .eq('client_id', clientId)
-    .eq('is_active', true)
-    .maybeSingle();
+  // Process lead events (form submissions, phone clicks)
+  if (leadEvents.length > 0) {
+    const ua = req.headers.get('user-agent') || '';
+    const leadBotResult = botResult ?? checkBot({ ua, scrollDepth: 0, engagedSeconds: 0 });
 
-  if (ga4Config) {
-    const ga4Url = `https://www.google-analytics.com/mp/collect?measurement_id=${ga4Config.measurement_id}&api_secret=${ga4Config.api_secret}`;
+    for (const lead of leadEvents) {
+      const conversionRow = {
+        client_id: clientId,
+        session_id: lead.sid || (pageView?.sid) || 'unknown',
+        event_type: lead.src === 'phone' ? 'phone_click' : 'form_submit',
+        gclid: lead.gclid || (pageView?.gclid) || null,
+        fbclid: lead.fbclid || (pageView?.fbclid) || null,
+        msclkid: lead.msclkid || (pageView?.msclkid) || null,
+        li_fat_id: lead.li_fat_id || null,
+        page_url: lead.url || (pageView?.url) || null,
+        phone_number: lead.ph || null,
+        form_name: lead.fm || null,
+        is_bot: leadBotResult.isBot,
+        engagement_score: (engEvent?.scroll || 0) + (engEvent?.time || 0),
+      };
 
-    const ga4Payload = {
-      client_id: pageView.sid,
-      events: [{
-        name: 'page_view',
-        params: {
-          page_location: pageView.url,
-          page_title: pageView.title,
-          page_referrer: pageView.ref,
-          engagement_time_msec: (engEvent?.time || 0) * 1000,
+      const { error: convError } = await supabase.from('conversion_events').insert(conversionRow);
+      if (convError) {
+        console.error('conversion_events insert error:', convError);
+      }
+    }
+  }
+
+  // GA4 Measurement Protocol fan-out — skip for bots
+  const ua = req.headers.get('user-agent') || '';
+  const botResultForGA4 = botResult ?? checkBot({ ua, scrollDepth: 0, engagedSeconds: 0 });
+
+  if (!botResultForGA4.isBot && pageView) {
+    const { data: ga4Config } = await supabase
+      .from('ga4_configs')
+      .select('measurement_id, api_secret')
+      .eq('client_id', clientId)
+      .eq('is_active', true)
+      .maybeSingle();
+
+    if (ga4Config) {
+      const ga4Url = `https://www.google-analytics.com/mp/collect?measurement_id=${ga4Config.measurement_id}&api_secret=${ga4Config.api_secret}`;
+
+      const ga4Payload = {
+        client_id: pageView.sid,
+        events: [{
+          name: 'page_view',
+          params: {
+            page_location: pageView.url,
+            page_title: pageView.title,
+            page_referrer: pageView.ref,
+            engagement_time_msec: (engEvent?.time || 0) * 1000,
+          }
+        }]
+      };
+
+      // Fire and forget — don't block the response
+      fetch(ga4Url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(ga4Payload),
+      }).catch(err => console.error('GA4 fan-out error:', err));
+
+      // Also forward lead events as GA4 conversions
+      if (botResultForGA4.canForwardConversions && leadEvents.length > 0) {
+        for (const lead of leadEvents) {
+          const ga4ConvPayload = {
+            client_id: lead.sid || pageView.sid,
+            events: [{
+              name: lead.src === 'phone' ? 'phone_call_click' : 'generate_lead',
+              params: {
+                page_location: lead.url || pageView.url,
+                engagement_time_msec: (engEvent?.time || 0) * 1000,
+              }
+            }]
+          };
+          fetch(ga4Url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(ga4ConvPayload),
+          }).catch(err => console.error('GA4 conversion fan-out error:', err));
         }
-      }]
-    };
-
-    // Fire and forget — don't block the response
-    fetch(ga4Url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(ga4Payload),
-    }).catch(err => console.error('GA4 fan-out error:', err));
+      }
+    }
   }
 
   // Update last event timestamp
