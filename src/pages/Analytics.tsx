@@ -24,6 +24,7 @@ import {
 } from "@/hooks/useClarityAnalytics";
 import { useCWVMetrics, useLighthouseAudits } from "@/hooks/usePerformanceData";
 import { PricingModal } from "@/components/billing/PricingModal";
+import { OptimizationDashboard } from "@/components/optimization/OptimizationDashboard";
 import { subDays, startOfDay, endOfDay } from "date-fns";
 
 export default function Analytics() {
@@ -201,6 +202,7 @@ export default function Analytics() {
           <TabsTrigger value="traffic">Traffic Sources</TabsTrigger>
           <TabsTrigger value="pages">Top Pages</TabsTrigger>
           <TabsTrigger value="behavior">Behavioral Insights</TabsTrigger>
+          <TabsTrigger value="optimization">Optimization</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
@@ -230,6 +232,10 @@ export default function Analytics() {
 
         <TabsContent value="behavior" className="space-y-6">
           <ClarityBehavioralCard data={behavioralData} isLoading={behavioralLoading} />
+        </TabsContent>
+
+        <TabsContent value="optimization" className="space-y-6">
+          <OptimizationDashboard />
         </TabsContent>
       </Tabs>
     </div>
