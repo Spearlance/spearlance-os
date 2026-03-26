@@ -5595,20 +5595,88 @@ export type Database = {
           },
         ]
       }
+      conversion_events: {
+        Row: {
+          id: string
+          client_id: string
+          session_id: string
+          event_type: string
+          gclid: string | null
+          fbclid: string | null
+          msclkid: string | null
+          li_fat_id: string | null
+          page_url: string | null
+          created_at: string
+          form_name: string | null
+          phone_number: string | null
+          forwarded_to: Json
+          is_bot: boolean
+          engagement_score: number | null
+        }
+        Insert: {
+          id?: string
+          client_id: string
+          session_id: string
+          event_type: string
+          gclid?: string | null
+          fbclid?: string | null
+          msclkid?: string | null
+          li_fat_id?: string | null
+          page_url?: string | null
+          created_at?: string
+          form_name?: string | null
+          phone_number?: string | null
+          forwarded_to?: Json
+          is_bot?: boolean
+          engagement_score?: number | null
+        }
+        Update: {
+          id?: string
+          client_id?: string
+          session_id?: string
+          event_type?: string
+          gclid?: string | null
+          fbclid?: string | null
+          msclkid?: string | null
+          li_fat_id?: string | null
+          page_url?: string | null
+          created_at?: string
+          form_name?: string | null
+          phone_number?: string | null
+          forwarded_to?: Json
+          is_bot?: boolean
+          engagement_score?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversion_events_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       web_events: {
         Row: {
           client_id: string
           content_type: string | null
           created_at: string | null
           entry: boolean | null
+          fbclid: string | null
           form: string | null
+          gclid: string | null
           id: number
           ip_hash: string | null
+          is_bot: boolean
           medium: string | null
           meta: Json | null
+          msclkid: string | null
           path: string | null
           received_at: string
           referrer: string | null
+          scroll_depth: number | null
+          engaged_seconds: number | null
           sid: string
           slug: string | null
           source: string | null
@@ -5631,14 +5699,20 @@ export type Database = {
           content_type?: string | null
           created_at?: string | null
           entry?: boolean | null
+          fbclid?: string | null
           form?: string | null
+          gclid?: string | null
           id?: number
           ip_hash?: string | null
+          is_bot?: boolean
           medium?: string | null
           meta?: Json | null
+          msclkid?: string | null
           path?: string | null
           received_at?: string
           referrer?: string | null
+          scroll_depth?: number | null
+          engaged_seconds?: number | null
           sid: string
           slug?: string | null
           source?: string | null
@@ -5661,14 +5735,20 @@ export type Database = {
           content_type?: string | null
           created_at?: string | null
           entry?: boolean | null
+          fbclid?: string | null
           form?: string | null
+          gclid?: string | null
           id?: number
           ip_hash?: string | null
+          is_bot?: boolean
           medium?: string | null
           meta?: Json | null
+          msclkid?: string | null
           path?: string | null
           received_at?: string
           referrer?: string | null
+          scroll_depth?: number | null
+          engaged_seconds?: number | null
           sid?: string
           slug?: string | null
           source?: string | null
