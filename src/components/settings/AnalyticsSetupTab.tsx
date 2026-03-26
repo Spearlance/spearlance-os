@@ -36,17 +36,22 @@ export function AnalyticsSetupTab({ client }: AnalyticsSetupTabProps) {
   const [ga4Connected, setGa4Connected] = useState(false);
   const [auditRunning, setAuditRunning] = useState(false);
 
+  // Load data on mount
   useEffect(() => {
-    // Only reload if client actually changed
+    loadWorkspaceKey();
+    checkConnectionStatus();
+    loadGA4Config();
+  }, []);
+
+  // Reload when client changes
+  useEffect(() => {
     if (client.id !== currentClientId) {
       setCurrentClientId(client.id);
-      // Clear old data immediately
       setWorkspaceKey(null);
       setLastEventAt(null);
       setIsActive(false);
       setWebsiteUrl(client.website_url || '');
-      
-      // Load new client's data
+
       loadWorkspaceKey();
       checkConnectionStatus();
       loadGA4Config();
