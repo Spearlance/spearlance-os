@@ -314,6 +314,66 @@ serve(async (req) => {
     const industry = client?.industry ?? null;
     const websiteUrl = client?.website_url ?? null;
 
+    // ── 4.5. Expansion target recommendations (no AI needed) ──────────────────
+
+    const { data: expansionTargets, error: expansionError } = await supabase
+      .from("client_service_locations")
+      .select("service_slug, service_name, city, state, priority")
+      .eq("client_id", client_id)
+      .eq("is_expansion_target", true)
+      .eq("has_page", false)
+      .eq("active", true);
+
+    if (expansionError) {
+      console.warn("Expansion target fetch warning:", expansionError);
+    }
+
+    const targets = expansionTargets ?? [];
+    console.log(`Expansion targets: ${targets.length}`);
+
+    let expansionInsertCount = 0;
+
+    for (const target of targets) {
+      const pageUrl = `/${target.service_slug}/${target.city.toLowerCase().replace(/\s+/g, "-")}-${target.state.toLowerCase()}`;
+
+      const { data: existing } = await supabase
+        .from("optimization_recommendations")
+        .select("id")
+        .eq("client_id", client_id)
+        .eq("page_url", pageUrl)
+        .eq("subcategory", "new_page")
+        .in("status", ["pending", "approved"])
+        .maybeSingle();
+
+      if (!existing) {
+        const { error: expansionInsertError } = await supabase
+          .from("optimization_recommendations")
+          .insert({
+            client_id,
+            cycle_id: cycleId,
+            page_url: pageUrl,
+            category: "seo",
+            subcategory: "new_page",
+            priority: target.priority === "primary" ? "high" : "medium",
+            doctrine_rule: "Section 5.1",
+            current_value: "No page exists",
+            proposed_value: `Create ${target.service_name} page for ${target.city}, ${target.state} at ${pageUrl}`,
+            ai_reasoning: `Expansion target: ${target.service_name} in ${target.city}, ${target.state}. Per Doctrine Section 5.1, create a dedicated page for each service + city combination. Required elements: primary keyword with city in H1, city in meta title (embedded in phrase), 2-3 nearby landmarks, local market characteristics, 3+ locally relevant FAQs with schema, minimum 1,200 words.`,
+            baseline_metrics: {},
+            status: "pending",
+            expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+          });
+
+        if (expansionInsertError) {
+          console.error(`Expansion insert error for ${pageUrl}:`, expansionInsertError);
+        } else {
+          expansionInsertCount++;
+        }
+      }
+    }
+
+    console.log(`Inserted ${expansionInsertCount} expansion target recommendations`);
+
     // ── 5. Build prompt ────────────────────────────────────────────────────────
 
     const userPrompt = buildRecommendationPrompt(
@@ -477,9 +537,11 @@ serve(async (req) => {
 
     // ── 9. Update cycle with recommendations_generated count ──────────────────
 
+    const totalRecsGenerated = recInserts.length + expansionInsertCount;
+
     const { error: updateError } = await supabase
       .from("optimization_cycles")
-      .update({ recommendations_generated: recInserts.length })
+      .update({ recommendations_generated: totalRecsGenerated })
       .eq("id", cycleId);
 
     if (updateError) {
@@ -487,7 +549,7 @@ serve(async (req) => {
       // Non-fatal — recommendations are already inserted
     }
 
-    console.log(`Inserted ${recInserts.length} recommendations for cycle ${cycleId}`);
+    console.log(`Inserted ${recInserts.length} AI recommendations + ${expansionInsertCount} expansion target recommendations for cycle ${cycleId}`);
 
     // ── 10. Return summary ─────────────────────────────────────────────────────
 
@@ -501,12 +563,21 @@ serve(async (req) => {
       return acc;
     }, {});
 
+    if (expansionInsertCount > 0) {
+      byPriority["high"] = (byPriority["high"] ?? 0) + targets.filter(t => t.priority === "primary").length;
+      byPriority["medium"] = (byPriority["medium"] ?? 0) + targets.filter(t => t.priority !== "primary").length;
+      bySubcategory["new_page"] = (bySubcategory["new_page"] ?? 0) + expansionInsertCount;
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
         cycle_id: cycleId,
         client_id,
-        recommendations_generated: recInserts.length,
+        recommendations_generated: totalRecsGenerated,
+        ai_recommendations: recInserts.length,
+        expansion_target_recommendations: expansionInsertCount,
+        expansion_targets_evaluated: targets.length,
         gap_signals_processed: gaps.length,
         historical_outcomes_used: historicalOutcomes.length,
         by_priority: byPriority,
