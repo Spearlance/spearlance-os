@@ -299,3 +299,12 @@ verify_jwt = false
 
 [functions.dataforseo-sync]
 verify_jwt = false
+
+[functions.social-auto-run-start]
+verify_jwt = false
+
+[functions.social-auto-run-complete]
+verify_jwt = false
+
+[functions.social-auto-publish]
+verify_jwt = false
