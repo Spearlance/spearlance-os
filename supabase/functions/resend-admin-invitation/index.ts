@@ -51,7 +51,11 @@ serve(async (req) => {
 
     if (!targetProfile) throw new Error('Profile not found');
 
-    // Generate password reset link
+    if (targetUser.user.email_confirmed_at) {
+      throw new Error('This account is already active. Send a password reset email instead.');
+    }
+
+    // Generate password setup link
     const appUrl = Deno.env.get('APP_URL') || 'https://os.spearlance.com';
     const { data: signupData, error: signupError } = await supabaseAdmin.auth.admin.generateLink({
       type: 'recovery',
