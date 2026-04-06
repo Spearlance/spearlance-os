@@ -23,6 +23,7 @@ interface UserInfoDialogProps {
     associated_client_ids?: string[];
     cal_connected?: boolean;
     created_at: string;
+    email_confirmed_at?: string | null;
   };
   clients: Array<{ id: string; name: string }>;
 }
@@ -33,8 +34,8 @@ export function UserInfoDialog({ user, clients }: UserInfoDialogProps) {
   const handlePasswordReset = async () => {
     setIsSending(true);
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
-        redirectTo: `${window.location.origin}/reset-password`,
+      const { error } = await supabase.functions.invoke('forgot-password', {
+        body: { email: user.email },
       });
 
       if (error) throw error;
@@ -50,6 +51,7 @@ export function UserInfoDialog({ user, clients }: UserInfoDialogProps) {
   const assignedClients = clients.filter(c => 
     user.associated_client_ids?.includes(c.id)
   );
+  const accountIsActive = Boolean(user.email_confirmed_at);
 
   const getRoleBadgeVariant = (role: string) => {
     switch (role) {
@@ -103,6 +105,13 @@ export function UserInfoDialog({ user, clients }: UserInfoDialogProps) {
               </Badge>
             </div>
 
+            <div>
+              <p className="text-sm font-medium mb-2">Account Status</p>
+              <Badge variant={accountIsActive ? "default" : "secondary"}>
+                {accountIsActive ? "Active" : "Setup Incomplete"}
+              </Badge>
+            </div>
+
             {/* Assigned Clients */}
             <div>
               <p className="text-sm font-medium mb-2">Assigned Clients</p>
@@ -148,7 +157,7 @@ export function UserInfoDialog({ user, clients }: UserInfoDialogProps) {
               variant="outline"
             >
               <KeyRound className="h-4 w-4 mr-2" />
-              {isSending ? "Sending..." : "Send Password Reset"}
+              {isSending ? "Sending..." : accountIsActive ? "Send Password Reset" : "Send Setup Email"}
             </Button>
           </div>
         </div>

@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.75.0";
 import { Resend } from "https://esm.sh/resend@2.0.0";
+import { findAuthUserByEmail } from "../_shared/authUsers.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -24,8 +25,7 @@ serve(async (req) => {
     console.log(`New invitation link requested for: ${email}`);
 
     // Verify user exists
-    const { data: { users }, error: userError } = await supabaseAdmin.auth.admin.listUsers();
-    const user = users?.find(u => u.email === email);
+    const user = await findAuthUserByEmail(supabaseAdmin, email);
     
     if (!user) {
       // Return success message even if user not found (security best practice)

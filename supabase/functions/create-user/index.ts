@@ -1,8 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
-import { Resend } from "https://esm.sh/resend@2.0.0";
-
-const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
+import { findAuthUserByEmail } from "../_shared/authUsers.ts";
+import { sendTemplatedEmail } from "../_shared/sendTemplatedEmail.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -79,8 +78,8 @@ serve(async (req) => {
     }
 
     // Check if user already exists
-    const { data: existingUser } = await supabaseAdmin.auth.admin.listUsers();
-    const userExists = existingUser?.users.some(u => u.email === email);
+    const existingUser = await findAuthUserByEmail(supabaseAdmin, email);
+    const userExists = Boolean(existingUser);
     
     if (userExists) {
       throw new Error('User with this email already exists');
@@ -171,25 +170,18 @@ serve(async (req) => {
 
     // Send simplified invitation email - user can login directly with temp password
     try {
-      const { error: emailError } = await supabaseAdmin.functions.invoke('send-templated-email', {
-        body: {
-          to: email,
-          template_key: 'user_invitation',
-          variables: {
-            name: name,
-            email: email,
-            password: tempPassword,
-            client_name: clientNames || 'Spearlance',
-            app_url: appUrl
-          }
-        }
+      await sendTemplatedEmail(supabaseAdmin, {
+        to: email,
+        templateKey: 'user_invitation',
+        variables: {
+          name,
+          email,
+          password: tempPassword,
+          client_name: clientNames || 'Spearlance',
+          app_url: appUrl,
+        },
       });
-
-      if (emailError) {
-        console.error('Error sending invitation email:', emailError);
-      } else {
-        console.log('Invitation email sent to:', email);
-      }
+      console.log('Invitation email sent to:', email);
     } catch (emailError) {
       console.error('Error sending email:', emailError);
       // Continue anyway - user was created successfully
