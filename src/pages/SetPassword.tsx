@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { CheckCircle, AlertCircle, Mail } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { getRecoveryError, hasRecoveryTokensInHash, hasUsableRecoverySession } from "@/lib/authRecovery";
 
 const SetPassword = () => {
   const [password, setPassword] = useState("");
@@ -16,24 +17,58 @@ const SetPassword = () => {
   const [tokenExpired, setTokenExpired] = useState(false);
   const [requestEmail, setRequestEmail] = useState("");
   const [requestingNewLink, setRequestingNewLink] = useState(false);
+  const [checkingSession, setCheckingSession] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check if user is already logged in and not in password recovery
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session && !window.location.hash) {
-        navigate("/");
+    let resolved = false;
+    const recoveryError = getRecoveryError();
+    if (recoveryError) {
+      resolved = true;
+      setTokenExpired(true);
+      setCheckingSession(false);
+    }
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (hasUsableRecoverySession(session)) {
+        resolved = true;
+        setTokenExpired(false);
+        setCheckingSession(false);
       }
     });
 
-    // Check for expired/invalid token in URL hash
-    const hashParams = new URLSearchParams(window.location.hash.substring(1));
-    const error = hashParams.get('error');
-    const errorDescription = hashParams.get('error_description');
-    
-    if (error || errorDescription?.toLowerCase().includes('expired') || errorDescription?.toLowerCase().includes('invalid')) {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (hasUsableRecoverySession(session)) {
+        if (!hasRecoveryTokensInHash()) {
+          resolved = true;
+          navigate("/");
+          return;
+        }
+
+        resolved = true;
+        setTokenExpired(false);
+        setCheckingSession(false);
+        return;
+      }
+
+      if (!hasRecoveryTokensInHash()) {
+        resolved = true;
+        setTokenExpired(true);
+        setCheckingSession(false);
+      }
+    });
+
+    const timer = window.setTimeout(() => {
+      if (resolved) return;
+      resolved = true;
+      setCheckingSession(false);
       setTokenExpired(true);
-    }
+    }, 1500);
+
+    return () => {
+      subscription.unsubscribe();
+      window.clearTimeout(timer);
+    };
   }, [navigate]);
 
   const handleSetPassword = async (e: React.FormEvent) => {
@@ -123,6 +158,18 @@ const SetPassword = () => {
             <p className="text-muted-foreground mb-4">
               Welcome! Redirecting you to your dashboard...
             </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (checkingSession) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-muted p-4">
+        <div className="w-full max-w-md">
+          <div className="bg-card rounded-lg shadow-lg p-8 text-center">
+            <p className="text-muted-foreground">Validating your setup link...</p>
           </div>
         </div>
       </div>
