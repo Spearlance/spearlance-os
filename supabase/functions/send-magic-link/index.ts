@@ -1,5 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { findAuthUserByEmail } from "../_shared/authUsers.ts";
+import { sendTemplatedEmail } from "../_shared/sendTemplatedEmail.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -54,12 +56,7 @@ serve(async (req) => {
     }
 
     // Check if user exists
-    const { data: usersData, error: lookupError } = await supabaseAdmin.auth.admin.listUsers();
-    if (lookupError) {
-      throw lookupError;
-    }
-
-    const user = usersData.users.find(u => u.email?.toLowerCase() === email.toLowerCase());
+    const user = await findAuthUserByEmail(supabaseAdmin, email);
     
     if (!user) {
       // Don't reveal if user exists or not for security
@@ -72,6 +69,19 @@ serve(async (req) => {
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 200,
+        }
+      );
+    }
+
+    if (!user.email_confirmed_at) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          message: "This account still needs to be set up. Request a new invitation link instead.",
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400,
         }
       );
     }
@@ -109,22 +119,15 @@ serve(async (req) => {
       });
 
     // Send email using templated email function
-    const { error: emailError } = await supabaseAdmin.functions.invoke('send-templated-email', {
-      body: {
-        to: email,
-        template_key: 'magic_link',
-        variables: {
-          name: userName,
-          email: email,
-          action_link: magicLinkData.properties.action_link
-        }
-      }
+    await sendTemplatedEmail(supabaseAdmin, {
+      to: email,
+      templateKey: 'magic_link',
+      variables: {
+        name: userName,
+        email,
+        action_link: magicLinkData.properties.action_link,
+      },
     });
-
-    if (emailError) {
-      console.error('Error sending magic link email:', emailError);
-      throw new Error('Failed to send magic link email');
-    }
 
     console.log('Magic link sent successfully to:', email);
 

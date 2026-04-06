@@ -3,11 +3,13 @@ import { Card } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Lightbulb } from "lucide-react";
 import { TopicSelector } from "./TopicSelector";
+import { TemplateSelector } from "./TemplateSelector";
 import { CaptionEditor } from "./CaptionEditor";
 import { ImageSelector } from "./ImageSelector";
 import { PostSaver } from "./PostSaver";
+import type { SocialTemplate } from "@/lib/social-templates/types";
 
-type CreatorStep = 'topic' | 'caption' | 'image' | 'save';
+type CreatorStep = 'topic' | 'template' | 'caption' | 'image' | 'save';
 
 interface PostCreatorProps {
   onComplete?: () => void;
@@ -18,6 +20,8 @@ export const PostCreator = ({ onComplete }: PostCreatorProps = {}) => {
   const [postData, setPostData] = useState({
     topic_category: '',
     selected_idea: null as any,
+    selected_template: null as SocialTemplate | null,
+    template_texts: {} as Record<string, string>,
     caption_text: '',
     caption_tone: '',
     hashtags: [] as string[],
@@ -32,6 +36,11 @@ export const PostCreator = ({ onComplete }: PostCreatorProps = {}) => {
 
   const handleTopicComplete = (topic: string, idea: any) => {
     updatePostData({ topic_category: topic, selected_idea: idea });
+    setStep('template');
+  };
+
+  const handleTemplateComplete = (template: SocialTemplate) => {
+    updatePostData({ selected_template: template });
     setStep('caption');
   };
 
@@ -46,7 +55,8 @@ export const PostCreator = ({ onComplete }: PostCreatorProps = {}) => {
   };
 
   const handleBack = () => {
-    if (step === 'caption') setStep('topic');
+    if (step === 'template') setStep('topic');
+    else if (step === 'caption') setStep('template');
     else if (step === 'image') setStep('caption');
     else if (step === 'save') setStep('image');
   };
@@ -63,11 +73,11 @@ export const PostCreator = ({ onComplete }: PostCreatorProps = {}) => {
 
       {/* Progress Indicator */}
       <div className="flex items-center gap-2 max-w-2xl mx-auto">
-        {['topic', 'caption', 'image', 'save'].map((s, i) => (
+        {(['topic', 'template', 'caption', 'image', 'save'] as CreatorStep[]).map((s, i) => (
           <div
             key={s}
             className={`h-2 flex-1 rounded-full transition-colors ${
-              ['topic', 'caption', 'image', 'save'].indexOf(step) >= i
+              (['topic', 'template', 'caption', 'image', 'save'] as CreatorStep[]).indexOf(step) >= i
                 ? 'bg-primary'
                 : 'bg-muted'
             }`}
@@ -80,6 +90,7 @@ export const PostCreator = ({ onComplete }: PostCreatorProps = {}) => {
         <Lightbulb className="h-4 w-4 text-blue-600" />
         <AlertDescription className="text-blue-900">
           {step === 'topic' && "Pick a topic that shows what makes your business special"}
+          {step === 'template' && "Choose a layout that matches the vibe of your post"}
           {step === 'caption' && "Keep it short and sound like you're talking to a friend"}
           {step === 'image' && "Choose an image that catches attention as people scroll"}
           {step === 'save' && "Schedule your post or save it as a draft to publish later"}
@@ -90,6 +101,13 @@ export const PostCreator = ({ onComplete }: PostCreatorProps = {}) => {
       <div className="max-w-4xl mx-auto">
         {step === 'topic' && (
           <TopicSelector onComplete={handleTopicComplete} />
+        )}
+
+        {step === 'template' && (
+          <TemplateSelector
+            category={postData.topic_category}
+            onSelect={handleTemplateComplete}
+          />
         )}
 
         {step === 'caption' && (
@@ -103,6 +121,8 @@ export const PostCreator = ({ onComplete }: PostCreatorProps = {}) => {
         {step === 'image' && (
           <ImageSelector
             caption={postData.caption_text}
+            template={postData.selected_template}
+            templateTexts={postData.template_texts}
             onComplete={handleImageComplete}
             onBack={handleBack}
           />

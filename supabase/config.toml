@@ -258,6 +258,9 @@ verify_jwt = false
 [functions.admin-update-user-profile]
 verify_jwt = true
 
+[functions.admin-list-user-auth-status]
+verify_jwt = true
+
 [functions.public-assets-auth]
 verify_jwt = false
 
@@ -298,4 +301,13 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.dataforseo-sync]
+verify_jwt = false
+
+[functions.social-auto-run-start]
+verify_jwt = false
+
+[functions.social-auto-run-complete]
+verify_jwt = false
+
+[functions.social-auto-publish]
 verify_jwt = false

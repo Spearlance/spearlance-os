@@ -13,14 +13,18 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { AssetRecommendationDialog } from "./AssetRecommendationDialog";
+import { TemplatePreview } from "./TemplatePreview";
+import type { SocialTemplate } from "@/lib/social-templates/types";
 
 interface ImageSelectorProps {
   caption: string;
+  template?: SocialTemplate | null;
+  templateTexts?: Record<string, string>;
   onComplete: (imageUrl: string, source: string, prompt: string) => void;
   onBack: () => void;
 }
 
-export const ImageSelector = ({ caption, onComplete, onBack }: ImageSelectorProps) => {
+export const ImageSelector = ({ caption, template, templateTexts, onComplete, onBack }: ImageSelectorProps) => {
   const { selectedClient } = useClient();
   const [showAIDialog, setShowAIDialog] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -238,6 +242,19 @@ export const ImageSelector = ({ caption, onComplete, onBack }: ImageSelectorProp
               <p className="text-sm text-muted-foreground">
                 Pick the image you like best
               </p>
+              {template && (
+                <div className="mt-4 max-w-sm mx-auto">
+                  <p className="text-sm font-medium mb-2">Template Preview</p>
+                  <TemplatePreview
+                    templateId={template.id}
+                    backgroundImageUrl={generatedImages[0]?.image_url || ''}
+                    texts={templateTexts || {}}
+                    logo=""
+                    brandColors={{ primary: '#3B82F6', secondary: '#10B981', accent: '#F59E0B' }}
+                    format="1080x1080"
+                  />
+                </div>
+              )}
               <div className="grid gap-4 md:grid-cols-2">
                 {generatedImages.map((img, index) => (
                   <Card key={index} className="overflow-hidden">

@@ -48,6 +48,7 @@ interface EditUserDialogProps {
     preferred_communication_style?: string;
     focus_areas?: string[];
     last_login_at?: string | null;
+    email_confirmed_at?: string | null;
   };
   clients: Array<{ id: string; name: string }>;
   onUserUpdated: () => void;
@@ -152,8 +153,8 @@ export function EditUserDialog({ user, clients, onUserUpdated }: EditUserDialogP
   const handlePasswordReset = async () => {
     setIsSendingReset(true);
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
-        redirectTo: `${window.location.origin}/reset-password`,
+      const { error } = await supabase.functions.invoke('forgot-password', {
+        body: { email: user.email },
       });
 
       if (error) throw error;
@@ -182,6 +183,8 @@ export function EditUserDialog({ user, clients, onUserUpdated }: EditUserDialogP
       setIsSendingInvite(false);
     }
   };
+
+  const accountIsActive = Boolean(user.email_confirmed_at);
 
   const getRoleBadgeVariant = (role: string) => {
     switch (role) {
@@ -424,55 +427,33 @@ export function EditUserDialog({ user, clients, onUserUpdated }: EditUserDialogP
             <div className="space-y-4">
               <div className="p-4 border rounded-lg space-y-3">
                 <div className="flex items-center gap-2">
-                  <Mail className="h-4 w-4 text-muted-foreground" />
-                  <span className="font-medium">Invitation</span>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Resend the invitation email with login instructions.
-                </p>
-                <Button
-                  variant="outline"
-                  onClick={handleResendInvitation}
-                  disabled={isSendingInvite}
-                  className="w-full"
-                >
-                  {isSendingInvite ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Sending...
-                    </>
+                  {accountIsActive ? (
+                    <KeyRound className="h-4 w-4 text-muted-foreground" />
                   ) : (
-                    <>
-                      <Mail className="h-4 w-4 mr-2" />
-                      Resend Invitation
-                    </>
+                    <Mail className="h-4 w-4 text-muted-foreground" />
                   )}
-                </Button>
-              </div>
-
-              <div className="p-4 border rounded-lg space-y-3">
-                <div className="flex items-center gap-2">
-                  <KeyRound className="h-4 w-4 text-muted-foreground" />
-                  <span className="font-medium">Password Reset</span>
+                  <span className="font-medium">{accountIsActive ? "Password Reset" : "Account Setup"}</span>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Send a password reset link to the user's email.
+                  {accountIsActive
+                    ? "Send a password reset link so this user can regain access."
+                    : "Resend the setup link so this user can complete account activation."}
                 </p>
                 <Button
                   variant="outline"
-                  onClick={handlePasswordReset}
-                  disabled={isSendingReset}
+                  onClick={accountIsActive ? handlePasswordReset : handleResendInvitation}
+                  disabled={accountIsActive ? isSendingReset : isSendingInvite}
                   className="w-full"
                 >
-                  {isSendingReset ? (
+                  {(accountIsActive ? isSendingReset : isSendingInvite) ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                       Sending...
                     </>
                   ) : (
                     <>
-                      <KeyRound className="h-4 w-4 mr-2" />
-                      Send Password Reset
+                      {accountIsActive ? <KeyRound className="h-4 w-4 mr-2" /> : <Mail className="h-4 w-4 mr-2" />}
+                      {accountIsActive ? "Send Password Reset" : "Resend Setup Link"}
                     </>
                   )}
                 </Button>

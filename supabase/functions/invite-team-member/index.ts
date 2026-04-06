@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { Resend } from "https://esm.sh/resend@2.0.0";
+import { findAuthUserByEmail } from "../_shared/authUsers.ts";
 
 const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
 
@@ -140,11 +141,7 @@ serve(async (req) => {
     // Check if user already exists
     let existingUser = null;
     try {
-      const { data: usersData, error: lookupError } = await supabaseAdmin.auth.admin.listUsers();
-      if (lookupError) {
-        throw lookupError;
-      }
-      existingUser = usersData.users.find(u => u.email === email) || null;
+      existingUser = await findAuthUserByEmail(supabaseAdmin, email);
     } catch (err: any) {
       console.error('Error looking up existing user:', err);
       throw new Error('Failed to verify user existence');

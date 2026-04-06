@@ -40,6 +40,16 @@ export const PostSaver = ({ postData, onBack, onComplete }: PostSaverProps) => {
         image_url: postData.image_url,
         image_source: postData.image_source,
         nano_banana_prompt: postData.nano_banana_prompt,
+        template_id: postData.selected_template?.id || null,
+        template_props: postData.selected_template ? JSON.stringify({
+          templateId: postData.selected_template.id,
+          backgroundImageUrl: postData.image_url,
+          texts: postData.template_texts,
+          format: '1080x1080',
+        }) : null,
+        image_source_type: postData.image_source === 'uploaded' ? 'upload'
+          : postData.image_source === 'brand_asset' ? 'asset_match'
+          : postData.image_source ? 'ai_generated' : null,
         status,
         scheduled_date: status === 'scheduled' ? scheduledDate?.toISOString() : null,
         posted_at: status === 'posted' ? new Date().toISOString() : null,
