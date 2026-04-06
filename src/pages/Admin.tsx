@@ -83,10 +83,12 @@ export default function Admin() {
         "admin-list-user-auth-status"
       );
 
-      if (authStatusError) throw authStatusError;
+      if (authStatusError) {
+        console.warn("Unable to load admin auth status, falling back to profiles only:", authStatusError);
+      }
 
       const authStatusMap = new Map(
-        (authStatusData?.users || []).map((entry: any) => [entry.id, entry])
+        ((authStatusData?.users as any[]) || []).map((entry) => [entry.id, entry])
       );
 
       const mergedUsers: AdminUser[] = (usersData || []).map((profile: any) => {
