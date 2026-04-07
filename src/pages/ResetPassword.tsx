@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -6,16 +6,92 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Loader2, CheckCircle2 } from "lucide-react";
+import { Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { PasswordStrengthIndicator } from "@/components/auth/PasswordStrengthIndicator";
 import logo from "@/assets/spearlance-logo.png";
+import { getRecoveryError, hasRecoveryTokensInHash, hasUsableRecoverySession } from "@/lib/authRecovery";
 
 const ResetPassword = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [checkingSession, setCheckingSession] = useState(true);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [success, setSuccess] = useState(false);
+  const [requestEmail, setRequestEmail] = useState("");
+  const [requestingReset, setRequestingReset] = useState(false);
+  const [linkError, setLinkError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let resolved = false;
+    const recoveryError = getRecoveryError();
+    if (recoveryError?.description) {
+      setLinkError(recoveryError.description);
+    }
+
+    const finalizeMissingSession = (message: string) => {
+      if (resolved) return;
+      resolved = true;
+      setLinkError(message);
+      setCheckingSession(false);
+    };
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (hasUsableRecoverySession(session)) {
+        resolved = true;
+        setLinkError(null);
+        setCheckingSession(false);
+      }
+    });
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (hasUsableRecoverySession(session)) {
+        resolved = true;
+        setLinkError(null);
+        setCheckingSession(false);
+        return;
+      }
+
+      if (!hasRecoveryTokensInHash()) {
+        finalizeMissingSession("This password reset link is invalid or has expired. Request a new one below.");
+      }
+    });
+
+    const timer = window.setTimeout(() => {
+      if (resolved) return;
+      resolved = true;
+      setCheckingSession(false);
+      setLinkError((current) => current ?? "This password reset link is invalid or has expired. Request a new one below.");
+    }, 1500);
+
+    return () => {
+      subscription.unsubscribe();
+      window.clearTimeout(timer);
+    };
+  }, []);
+
+  const handleRequestReset = async () => {
+    if (!requestEmail.trim()) {
+      toast.error("Email required", { description: "Please enter your email address" });
+      return;
+    }
+
+    setRequestingReset(true);
+    try {
+      const { error } = await supabase.functions.invoke("forgot-password", {
+        body: { email: requestEmail.trim() },
+      });
+
+      if (error) throw error;
+
+      toast.success("Check your email", { description: "If an account exists, a new reset link has been sent." });
+      setRequestEmail("");
+    } catch (error: any) {
+      toast.error("Error", { description: error.message || "Failed to send reset email" });
+    } finally {
+      setRequestingReset(false);
+    }
+  };
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,6 +143,55 @@ const ResetPassword = () => {
               Redirecting you to the dashboard...
             </CardDescription>
           </CardHeader>
+        </Card>
+      </div>
+    );
+  }
+
+  if (checkingSession) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-dark p-4">
+        <Card className="w-full max-w-md shadow-elegant">
+          <CardContent className="py-10 flex flex-col items-center gap-4">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="text-sm text-muted-foreground">Validating your reset link...</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (linkError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-dark p-4">
+        <Card className="w-full max-w-md shadow-elegant">
+          <CardHeader className="space-y-1">
+            <div className="flex items-center justify-center mb-4">
+              <AlertCircle className="h-16 w-16 text-amber-500" />
+            </div>
+            <CardTitle className="text-2xl text-center">Reset Link Unavailable</CardTitle>
+            <CardDescription className="text-center">{linkError}</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="reset-request-email">Email</Label>
+              <Input
+                id="reset-request-email"
+                type="email"
+                placeholder="email@example.com"
+                value={requestEmail}
+                onChange={(e) => setRequestEmail(e.target.value)}
+              />
+            </div>
+            <Button
+              onClick={handleRequestReset}
+              disabled={requestingReset}
+              className="w-full"
+            >
+              {requestingReset && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Send New Reset Link
+            </Button>
+          </CardContent>
         </Card>
       </div>
     );

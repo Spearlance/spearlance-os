@@ -255,6 +255,9 @@ verify_jwt = false
 [functions.admin-update-user-profile]
 verify_jwt = true
 
+[functions.admin-list-user-auth-status]
+verify_jwt = true
+
 [functions.public-assets-auth]
 verify_jwt = false
 

@@ -1,5 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.75.0";
+import { findAuthUserByEmail } from "../_shared/authUsers.ts";
+import { sendTemplatedEmail } from "../_shared/sendTemplatedEmail.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -23,8 +25,7 @@ serve(async (req) => {
     console.log(`Password reset requested for: ${email}`);
 
     // Verify user exists
-    const { data: { users }, error: userError } = await supabaseAdmin.auth.admin.listUsers();
-    const user = users?.find(u => u.email === email);
+    const user = await findAuthUserByEmail(supabaseAdmin, email);
     
     if (!user) {
       // Return success even if user not found (security best practice)
@@ -50,11 +51,12 @@ serve(async (req) => {
 
     // Generate recovery link
     const appUrl = Deno.env.get('APP_URL') || 'https://os.spearlance.com';
+    const redirectPath = isUnactivated ? "set-password" : "reset-password";
     const { data: resetData, error: resetError } = await supabaseAdmin.auth.admin.generateLink({
       type: 'recovery',
       email: email,
       options: {
-        redirectTo: `${appUrl}/reset-password`
+        redirectTo: `${appUrl}/${redirectPath}`
       }
     });
 
@@ -65,22 +67,15 @@ serve(async (req) => {
     // Send email using templated email system
     const templateKey = isUnactivated ? 'account_setup' : 'password_reset';
     
-    const emailResponse = await supabaseAdmin.functions.invoke('send-templated-email', {
-      body: {
-        to: email,
-        template_key: templateKey,
-        variables: {
-          name: profile?.name || 'there',
-          email: email,
-          action_link: resetData.properties.action_link,
-        }
-      }
+    const emailResponse = await sendTemplatedEmail(supabaseAdmin, {
+      to: email,
+      templateKey,
+      variables: {
+        name: profile?.name || 'there',
+        email,
+        action_link: resetData.properties.action_link,
+      },
     });
-
-    if (emailResponse.error) {
-      console.error('Error sending templated email:', emailResponse.error);
-      throw new Error('Failed to send password reset email');
-    }
 
     console.log(`Password reset email sent successfully to: ${email}`, emailResponse.data);
 

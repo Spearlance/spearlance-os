@@ -21,11 +21,23 @@ import { DeleteUserDialog } from "@/components/admin/DeleteUserDialog";
 import { DeleteClientDialog } from "@/components/admin/DeleteClientDialog";
 import { FeatureFlagManager } from "@/components/admin/FeatureFlagManager";
 
+interface AdminUser {
+  id: string;
+  name: string;
+  email: string;
+  role: "admin" | "fmm" | "client" | "web_designer";
+  associated_client_ids?: string[];
+  cal_connected?: boolean;
+  created_at: string;
+  email_confirmed_at?: string | null;
+  last_sign_in_at?: string | null;
+}
+
 export default function Admin() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [userRole, setUserRole] = useState<string>("");
-  const [users, setUsers] = useState<any[]>([]);
+  const [users, setUsers] = useState<AdminUser[]>([]);
   const [clients, setClients] = useState<any[]>([]);
   const [stats, setStats] = useState<any>({});
   const [newClientName, setNewClientName] = useState("");
@@ -66,7 +78,29 @@ export default function Admin() {
         .from("profiles")
         .select("*")
         .order("name");
-      setUsers(usersData || []);
+
+      const { data: authStatusData, error: authStatusError } = await supabase.functions.invoke(
+        "admin-list-user-auth-status"
+      );
+
+      if (authStatusError) {
+        console.warn("Unable to load admin auth status, falling back to profiles only:", authStatusError);
+      }
+
+      const authStatusMap = new Map(
+        ((authStatusData?.users as any[]) || []).map((entry) => [entry.id, entry])
+      );
+
+      const mergedUsers: AdminUser[] = (usersData || []).map((profile: any) => {
+        const authStatus = authStatusMap.get(profile.id);
+        return {
+          ...profile,
+          email_confirmed_at: authStatus?.email_confirmed_at ?? null,
+          last_sign_in_at: authStatus?.last_sign_in_at ?? null,
+        };
+      });
+
+      setUsers(mergedUsers);
 
       // Load clients
       const { data: clientsData } = await supabase
@@ -93,13 +127,13 @@ export default function Admin() {
       setSubmissionCounts(counts);
 
       // Calculate stats
-      const roleCount = usersData?.reduce((acc: any, user) => {
+      const roleCount = mergedUsers.reduce((acc: any, user) => {
         acc[user.role] = (acc[user.role] || 0) + 1;
         return acc;
       }, {});
 
       setStats({
-        totalUsers: usersData?.length || 0,
+        totalUsers: mergedUsers.length || 0,
         totalClients: clientsData?.length || 0,
         roleCount: roleCount || {},
       });
@@ -169,8 +203,8 @@ export default function Admin() {
 
   const handlePasswordReset = async (email: string, userName: string) => {
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
+      const { error } = await supabase.functions.invoke('forgot-password', {
+        body: { email },
       });
 
       if (error) throw error;
@@ -193,6 +227,26 @@ export default function Admin() {
     } catch (error: any) {
       toast.error("Error resending invitation", { description: error.message });
     }
+  };
+
+  const getAccountState = (user: AdminUser) => {
+    if (!user.email_confirmed_at) {
+      return {
+        label: "Setup Incomplete",
+        variant: "secondary" as const,
+        actionLabel: "Resend Setup Link",
+        actionTitle: "Resend account setup email",
+        action: () => handleResendInvitation(user.id, user.email, user.name),
+      };
+    }
+
+    return {
+      label: user.last_sign_in_at ? "Active" : "Confirmed",
+      variant: "default" as const,
+      actionLabel: "Send Password Reset",
+      actionTitle: "Send password reset email",
+      action: () => handlePasswordReset(user.email, user.name),
+    };
   };
 
   const handleDeleteUser = async (userId: string, userName: string, userEmail: string) => {
@@ -320,6 +374,7 @@ export default function Admin() {
                     <TableHead>Name</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Role</TableHead>
+                    <TableHead>Account</TableHead>
                     <TableHead>Assigned Clients</TableHead>
                     <TableHead>Calendar</TableHead>
                     <TableHead>Actions</TableHead>
@@ -328,6 +383,10 @@ export default function Admin() {
                 <TableBody>
                   {users.map((user) => (
                     <TableRow key={user.id}>
+                      {(() => {
+                        const accountState = getAccountState(user);
+                        return (
+                          <>
                       <TableCell className="font-medium">{user.name}</TableCell>
                       <TableCell>{user.email}</TableCell>
                       <TableCell>
@@ -345,6 +404,11 @@ export default function Admin() {
                             <SelectItem value="client">Client</SelectItem>
                           </SelectContent>
                         </Select>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={accountState.variant}>
+                          {accountState.label}
+                        </Badge>
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-wrap gap-1">
@@ -373,21 +437,11 @@ export default function Admin() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleResendInvitation(user.id, user.email, user.name)}
-                            title="Resend invitation email"
+                            onClick={accountState.action}
+                            title={accountState.actionTitle}
                           >
-                            <Mail className="h-4 w-4" />
+                            {!user.email_confirmed_at ? <Mail className="h-4 w-4" /> : <KeyRound className="h-4 w-4" />}
                           </Button>
-                          {user.role !== 'admin' && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handlePasswordReset(user.email, user.name)}
-                              title="Send password reset email"
-                            >
-                              <KeyRound className="h-4 w-4" />
-                            </Button>
-                          )}
                           <EditUserDialog user={user} clients={clients} onUserUpdated={loadData} />
                           {user.role !== 'admin' && (
                             <DeleteUserDialog
@@ -398,6 +452,9 @@ export default function Admin() {
                           )}
                         </div>
                       </TableCell>
+                          </>
+                        );
+                      })()}
                     </TableRow>
                   ))}
                 </TableBody>
