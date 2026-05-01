@@ -9,7 +9,11 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
 
 export function parseConfigToml(content) {
-  // TODO: Task 2
+  const match = content.match(/^project_id\s*=\s*["']([^"']+)["']/m);
+  if (!match) {
+    throw new Error('project_id not found in config.toml');
+  }
+  return match[1];
 }
 
 export function getChangedFunctions(gitDiffOutput) {
