@@ -11,7 +11,10 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "deploy:functions": "node scripts/deploy-functions.mjs",
+    "deploy:functions:status": "node scripts/deploy-functions.mjs --status",
+    "deploy:functions:diff": "node scripts/deploy-functions.mjs --diff"
   },
   "dependencies": {
     "@calcom/atoms": "^1.10.0",
