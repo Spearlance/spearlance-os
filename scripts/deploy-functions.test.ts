@@ -73,3 +73,57 @@ describe('parseConfigToml', () => {
     expect(parseConfigToml(content)).toBe('abc123');
   });
 });
+
+describe('buildDeployList', () => {
+  it('returns missing functions (in repo, not deployed)', () => {
+    const result = buildDeployList({
+      repoFunctions: ['a', 'b', 'c'],
+      remoteFunctions: ['a'],
+      changedFunctions: [],
+      sharedChanged: false,
+    });
+    expect(result.toDeploy).toEqual(['b', 'c']);
+    expect(result.orphaned).toEqual([]);
+  });
+
+  it('includes changed functions even if already deployed', () => {
+    const result = buildDeployList({
+      repoFunctions: ['a', 'b'],
+      remoteFunctions: ['a', 'b'],
+      changedFunctions: ['a'],
+      sharedChanged: false,
+    });
+    expect(result.toDeploy).toEqual(['a']);
+  });
+
+  it('returns all repo functions when sharedChanged is true', () => {
+    const result = buildDeployList({
+      repoFunctions: ['a', 'b', 'c'],
+      remoteFunctions: ['a', 'b', 'c'],
+      changedFunctions: [],
+      sharedChanged: true,
+    });
+    expect(result.toDeploy).toEqual(['a', 'b', 'c']);
+    expect(result.sharedWarning).toBe(true);
+  });
+
+  it('flags orphaned functions (deployed but not in repo)', () => {
+    const result = buildDeployList({
+      repoFunctions: ['a'],
+      remoteFunctions: ['a', 'gone'],
+      changedFunctions: [],
+      sharedChanged: false,
+    });
+    expect(result.orphaned).toEqual(['gone']);
+  });
+
+  it('deduplicates missing + changed', () => {
+    const result = buildDeployList({
+      repoFunctions: ['a', 'b', 'c'],
+      remoteFunctions: ['a'],
+      changedFunctions: ['b'],
+      sharedChanged: false,
+    });
+    expect(result.toDeploy).toEqual(['b', 'c']);
+  });
+});
