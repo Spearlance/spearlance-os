@@ -10,6 +10,34 @@ describe('deploy-functions', () => {
   });
 });
 
+describe('getChangedFunctions', () => {
+  it('extracts unique function names from git diff output', () => {
+    const diff = [
+      'supabase/functions/admin-create-client/index.ts',
+      'supabase/functions/admin-create-client/utils.ts',
+      'supabase/functions/stripe-webhook/index.ts',
+    ].join('\n');
+    expect(getChangedFunctions(diff)).toEqual(['admin-create-client', 'stripe-webhook']);
+  });
+
+  it('ignores _shared directory entries', () => {
+    const diff = [
+      'supabase/functions/_shared/embeddings.ts',
+      'supabase/functions/foo/index.ts',
+    ].join('\n');
+    expect(getChangedFunctions(diff)).toEqual(['foo']);
+  });
+
+  it('returns empty array for no function changes', () => {
+    const diff = 'src/App.tsx\npackage.json';
+    expect(getChangedFunctions(diff)).toEqual([]);
+  });
+
+  it('returns empty array for empty input', () => {
+    expect(getChangedFunctions('')).toEqual([]);
+  });
+});
+
 describe('parseConfigToml', () => {
   it('extracts project_id from valid config.toml', () => {
     const content = 'project_id = "chikljxwgiskyjsnjelf"\n\n[functions.foo]\nverify_jwt = true';

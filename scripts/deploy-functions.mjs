@@ -17,7 +17,15 @@ export function parseConfigToml(content) {
 }
 
 export function getChangedFunctions(gitDiffOutput) {
-  // TODO: Task 3
+  if (!gitDiffOutput.trim()) return [];
+  const names = new Set();
+  for (const line of gitDiffOutput.split('\n')) {
+    const match = line.match(/^supabase\/functions\/([^/]+)\//);
+    if (match && match[1] !== '_shared') {
+      names.add(match[1]);
+    }
+  }
+  return [...names].sort();
 }
 
 export function detectSharedChanges(gitDiffOutput) {
