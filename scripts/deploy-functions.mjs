@@ -56,3 +56,186 @@ export function buildDeployList({ repoFunctions, remoteFunctions, changedFunctio
     sharedWarning: false,
   };
 }
+
+function parseArgs(argv) {
+  const args = argv.slice(2);
+  const flags = {
+    status: args.includes('--status'),
+    diff: args.includes('--diff'),
+    all: args.includes('--all'),
+    dryRun: args.includes('--dry-run'),
+    yes: args.includes('--yes'),
+    function: null,
+  };
+  const fnIdx = args.indexOf('--function');
+  if (fnIdx !== -1 && args[fnIdx + 1]) {
+    flags.function = args[fnIdx + 1];
+  }
+  return flags;
+}
+
+function getRepoFunctions() {
+  const functionsDir = join(ROOT, 'supabase', 'functions');
+  return readdirSync(functionsDir, { withFileTypes: true })
+    .filter(d => d.isDirectory() && d.name !== '_shared')
+    .map(d => d.name)
+    .sort();
+}
+
+function getRemoteFunctions(projectRef) {
+  try {
+    const output = execSync(
+      `npx supabase functions list --project-ref ${projectRef}`,
+      { encoding: 'utf-8', cwd: ROOT }
+    );
+    return output
+      .split('\n')
+      .filter(line => line.trim() && !line.includes('─') && !line.toLowerCase().includes('name'))
+      .map(line => line.split('│')[1]?.trim() || line.split('|')[1]?.trim() || line.trim())
+      .filter(name => name && !name.includes(' '))
+      .sort();
+  } catch (err) {
+    console.error('Failed to list remote functions. Is SUPABASE_ACCESS_TOKEN set?');
+    console.error(err.message);
+    process.exit(1);
+  }
+}
+
+function getGitDiff() {
+  try {
+    return execSync(
+      'git diff --name-only origin/main...HEAD -- supabase/functions/',
+      { encoding: 'utf-8', cwd: ROOT }
+    );
+  } catch {
+    return '';
+  }
+}
+
+function deployFunction(name, projectRef, dryRun) {
+  if (dryRun) {
+    console.log(`  [dry-run] would deploy: ${name}`);
+    return true;
+  }
+  try {
+    console.log(`  deploying: ${name}...`);
+    execSync(
+      `npx supabase functions deploy ${name} --project-ref ${projectRef}`,
+      { encoding: 'utf-8', cwd: ROOT, stdio: 'inherit' }
+    );
+    return true;
+  } catch (err) {
+    console.error(`  FAILED: ${name} — ${err.message}`);
+    return false;
+  }
+}
+
+function prompt(question) {
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  return new Promise(resolve => {
+    rl.question(question, answer => {
+      rl.close();
+      resolve(answer.trim().toLowerCase());
+    });
+  });
+}
+
+async function main() {
+  if (!process.env.SUPABASE_ACCESS_TOKEN) {
+    console.error('Error: SUPABASE_ACCESS_TOKEN env var is required.');
+    console.error('Get one at: https://supabase.com/dashboard/account/tokens');
+    process.exit(1);
+  }
+
+  const configPath = join(ROOT, 'supabase', 'config.toml');
+  let configContent;
+  try {
+    configContent = readFileSync(configPath, 'utf-8');
+  } catch {
+    console.error(`Error: Cannot read ${configPath}`);
+    process.exit(1);
+  }
+
+  const projectRef = parseConfigToml(configContent);
+  const flags = parseArgs(process.argv);
+
+  if (flags.function) {
+    const repoFns = getRepoFunctions();
+    if (!repoFns.includes(flags.function)) {
+      console.error(`Error: Function "${flags.function}" not found in supabase/functions/`);
+      process.exit(1);
+    }
+    const ok = deployFunction(flags.function, projectRef, flags.dryRun);
+    process.exit(ok ? 0 : 1);
+  }
+
+  console.log(`▸ Project: ${projectRef}`);
+  const repoFunctions = getRepoFunctions();
+  console.log(`▸ Repo functions: ${repoFunctions.length}`);
+
+  const remoteFunctions = getRemoteFunctions(projectRef);
+  console.log(`▸ Remote functions: ${remoteFunctions.length}`);
+
+  const gitDiff = getGitDiff();
+  const changedFunctions = getChangedFunctions(gitDiff);
+  const sharedChanged = detectSharedChanges(gitDiff);
+
+  const { toDeploy, orphaned, sharedWarning } = buildDeployList({
+    repoFunctions,
+    remoteFunctions,
+    changedFunctions,
+    sharedChanged,
+  });
+
+  const deployList = flags.diff
+    ? changedFunctions.filter(f => repoFunctions.includes(f))
+    : flags.all
+      ? repoFunctions
+      : toDeploy;
+
+  console.log('');
+  if (sharedWarning) {
+    console.log('⚠ _shared/ changed — all functions should be redeployed');
+  }
+  if (orphaned.length > 0) {
+    console.log(`⚠ Deployed but not in repo (review manually): ${orphaned.join(', ')}`);
+  }
+  console.log(`▸ Functions to deploy: ${deployList.length}`);
+  if (deployList.length > 0) {
+    deployList.forEach(f => console.log(`  - ${f}`));
+  }
+
+  if (flags.status || deployList.length === 0) {
+    if (deployList.length === 0) console.log('✓ Nothing to deploy');
+    process.exit(0);
+  }
+
+  if (!flags.yes) {
+    const answer = await prompt(`\n▸ Deploy ${deployList.length} function(s)? (y/N): `);
+    if (answer !== 'y') {
+      console.log('Aborted.');
+      process.exit(0);
+    }
+  }
+
+  console.log('');
+  let failures = 0;
+  for (const fn of deployList) {
+    const ok = deployFunction(fn, projectRef, flags.dryRun);
+    if (!ok) failures++;
+  }
+
+  console.log('');
+  if (failures > 0) {
+    console.error(`✗ ${failures} function(s) failed to deploy`);
+    process.exit(1);
+  }
+  console.log(`✓ ${deployList.length} function(s) deployed successfully`);
+}
+
+if (process.argv[1] && process.argv[1].includes('deploy-functions')) {
+  main().catch(err => {
+    console.error(err);
+    process.exit(1);
+  });
+}
