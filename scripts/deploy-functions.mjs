@@ -35,5 +35,24 @@ export function detectSharedChanges(gitDiffOutput) {
 }
 
 export function buildDeployList({ repoFunctions, remoteFunctions, changedFunctions, sharedChanged }) {
-  // TODO: Task 5
+  const remoteSet = new Set(remoteFunctions);
+  const repoSet = new Set(repoFunctions);
+
+  if (sharedChanged) {
+    return {
+      toDeploy: [...repoFunctions].sort(),
+      orphaned: remoteFunctions.filter(f => !repoSet.has(f)).sort(),
+      sharedWarning: true,
+    };
+  }
+
+  const missing = repoFunctions.filter(f => !remoteSet.has(f));
+  const changed = changedFunctions.filter(f => repoSet.has(f));
+  const toDeploySet = new Set([...missing, ...changed]);
+
+  return {
+    toDeploy: [...toDeploySet].sort(),
+    orphaned: remoteFunctions.filter(f => !repoSet.has(f)).sort(),
+    sharedWarning: false,
+  };
 }
