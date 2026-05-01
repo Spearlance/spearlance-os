@@ -21,6 +21,16 @@ import { DeleteUserDialog } from "@/components/admin/DeleteUserDialog";
 import { DeleteClientDialog } from "@/components/admin/DeleteClientDialog";
 import { FeatureFlagManager } from "@/components/admin/FeatureFlagManager";
 
+async function getEdgeFunctionError(error: any): Promise<string> {
+  if (error?.context instanceof Response) {
+    try {
+      const body = await error.context.json();
+      if (body?.error) return body.error;
+    } catch {}
+  }
+  return error?.message || "An unexpected error occurred";
+}
+
 interface AdminUser {
   id: string;
   name: string;
@@ -155,7 +165,8 @@ export default function Admin() {
       toast.success(data?.message || "Role updated successfully");
       loadData();
     } catch (error: any) {
-      toast.error("Error updating role", { description: error.message || "Failed to update user role" });
+      const msg = await getEdgeFunctionError(error);
+      toast.error("Error updating role", { description: msg });
     }
   };
 
@@ -174,7 +185,8 @@ export default function Admin() {
       });
       loadData();
     } catch (error: any) {
-      toast.error("Error updating client assignment", { description: error.message || "Failed to assign clients" });
+      const msg = await getEdgeFunctionError(error);
+      toast.error("Error updating client assignment", { description: msg });
     }
   };
 
@@ -197,7 +209,8 @@ export default function Admin() {
       setNewClientName("");
       loadData();
     } catch (error: any) {
-      toast.error("Error creating client", { description: error.message || "Failed to create client" });
+      const msg = await getEdgeFunctionError(error);
+      toast.error("Error creating client", { description: msg });
     }
   };
 
@@ -211,7 +224,8 @@ export default function Admin() {
 
       toast.success("Password reset email sent", { description: `A password reset link has been sent to ${userName} at ${email}` });
     } catch (error: any) {
-      toast.error("Error sending password reset", { description: error.message });
+      const msg = await getEdgeFunctionError(error);
+      toast.error("Error sending password reset", { description: msg });
     }
   };
 
@@ -225,7 +239,8 @@ export default function Admin() {
 
       toast.success("Invitation resent", { description: `A new invitation link has been sent to ${userName} at ${userEmail}` });
     } catch (error: any) {
-      toast.error("Error resending invitation", { description: error.message });
+      const msg = await getEdgeFunctionError(error);
+      toast.error("Error resending invitation", { description: msg });
     }
   };
 
@@ -260,7 +275,8 @@ export default function Admin() {
       toast.success("User deleted", { description: `${userName} (${userEmail}) has been permanently deleted` });
       loadData();
     } catch (error: any) {
-      toast.error("Error deleting user", { description: error.message || "Failed to delete user" });
+      const msg = await getEdgeFunctionError(error);
+      toast.error("Error deleting user", { description: msg });
     }
   };
 
@@ -275,7 +291,8 @@ export default function Admin() {
       toast.success("Client deleted", { description: `${clientName} has been permanently deleted` });
       loadData();
     } catch (error: any) {
-      toast.error("Error deleting client", { description: error.message || "Failed to delete client" });
+      const msg = await getEdgeFunctionError(error);
+      toast.error("Error deleting client", { description: msg });
     }
   };
 
