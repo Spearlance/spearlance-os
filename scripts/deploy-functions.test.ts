@@ -10,6 +10,25 @@ describe('deploy-functions', () => {
   });
 });
 
+describe('detectSharedChanges', () => {
+  it('returns true when _shared files are in diff', () => {
+    const diff = [
+      'supabase/functions/_shared/embeddings.ts',
+      'supabase/functions/foo/index.ts',
+    ].join('\n');
+    expect(detectSharedChanges(diff)).toBe(true);
+  });
+
+  it('returns false when no _shared files in diff', () => {
+    const diff = 'supabase/functions/foo/index.ts\nsupabase/functions/bar/index.ts';
+    expect(detectSharedChanges(diff)).toBe(false);
+  });
+
+  it('returns false for empty input', () => {
+    expect(detectSharedChanges('')).toBe(false);
+  });
+});
+
 describe('getChangedFunctions', () => {
   it('extracts unique function names from git diff output', () => {
     const diff = [

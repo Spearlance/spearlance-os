@@ -29,7 +29,9 @@ export function getChangedFunctions(gitDiffOutput) {
 }
 
 export function detectSharedChanges(gitDiffOutput) {
-  // TODO: Task 4
+  return gitDiffOutput.split('\n').some(line =>
+    line.startsWith('supabase/functions/_shared/')
+  );
 }
 
 export function buildDeployList({ repoFunctions, remoteFunctions, changedFunctions, sharedChanged }) {
