@@ -18,7 +18,9 @@
     "test:e2e:report": "playwright show-report",
     "deploy:functions": "node scripts/deploy-functions.mjs",
     "deploy:functions:status": "node scripts/deploy-functions.mjs --status",
-    "deploy:functions:diff": "node scripts/deploy-functions.mjs --diff"
+    "deploy:functions:diff": "node scripts/deploy-functions.mjs --diff",
+    "db:current": "node scripts/check-link-state.mjs",
+    "prod:confirm": "node scripts/confirm-prod.mjs"
   },
   "dependencies": {
     "@calcom/atoms": "^1.10.0",
