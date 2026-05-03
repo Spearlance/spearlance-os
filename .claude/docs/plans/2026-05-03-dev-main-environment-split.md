@@ -12,6 +12,154 @@
 
 ---
 
+## Production Safety Doctrine (MANDATORY)
+
+This work happens around live production. Before any task runs, these rules apply:
+
+1. **Work on a fresh branch** (`feat/dev-environment-split`) — never on `main`, never on a branch with unrelated work
+2. **Manual prod backup taken** before any task starts (Supabase Dashboard → Backups → Create backup)
+3. **NEVER use `--linked` for destructive Supabase commands** — always explicit `--project-ref <ref>`
+4. **Three forbidden command patterns** that must NEVER execute against prod ref `chikljxwgiskyjsnjelf`:
+   - `db reset` (wipes the database)
+   - `db push` (without prior verification + confirmation)
+   - `functions deploy --all` (mass overwrite)
+5. **Vercel changes happen LAST** (after dev is fully verified working)
+6. **Vercel changes only ADD Preview-scoped vars** — never modify Production-scoped vars
+7. **Stripe keys validated** — dev `.env.local` and dev Edge Function secrets must use `sk_test_*` / `pk_test_*` keys ONLY. Live keys (`sk_live_*`) refuse to load.
+8. **No code freeze violations** — no new migrations on any branch, no merges to main, while this work is in flight
+
+### The Three Danger Tasks
+- **Task 3** (push migrations): risk of pushing to wrong project
+- **Task 6** (run seed): risk of seeding fake data into prod
+- **Task 9** (Vercel env vars): risk of editing Production-scope by mistake
+
+These three tasks have extra checkpoint gates and explicit `--project-ref` everywhere.
+
+---
+
+### Task 0: Pre-Flight Safety Setup
+
+**Files:**
+- Create: `scripts/confirm-prod.mjs`
+- Create: `scripts/check-link-state.mjs`
+
+**Step 1: Create a dedicated branch for this work**
+
+```bash
+git checkout main
+git pull
+git checkout -b feat/dev-environment-split
+```
+
+Verify:
+
+```bash
+git branch --show-current
+```
+
+Expected: `feat/dev-environment-split`
+
+**Step 2: Take manual prod Supabase backup**
+
+Open: https://supabase.com/dashboard/project/chikljxwgiskyjsnjelf/database/backups
+
+Click **"Create backup"**. Wait for completion (~1-2 min). Note the timestamp — this is your restore point.
+
+This step is MANUAL — confirm with user that backup completed before continuing. Do NOT proceed to Task 1 without this confirmation.
+
+**Step 3: Write `scripts/confirm-prod.mjs`**
+
+This script is required by any prod-targeting npm script. It blocks unless the user types "PRODUCTION" exactly.
+
+```javascript
+import { createInterface } from 'node:readline';
+
+const rl = createInterface({ input: process.stdin, output: process.stdout });
+
+console.log('');
+console.log('⚠ ⚠ ⚠  PRODUCTION DATABASE OPERATION  ⚠ ⚠ ⚠');
+console.log('');
+console.log('You are about to run a command that will modify the LIVE production database.');
+console.log('Project: SpearlanceOS (chikljxwgiskyjsnjelf)');
+console.log('');
+
+rl.question("Type 'PRODUCTION' (exact case) to confirm, or anything else to abort: ", (answer) => {
+  rl.close();
+  if (answer === 'PRODUCTION') {
+    console.log('✓ Confirmed. Proceeding with production operation.');
+    process.exit(0);
+  }
+  console.log('✗ Aborted. No changes made.');
+  process.exit(1);
+});
+```
+
+**Step 4: Write `scripts/check-link-state.mjs`**
+
+Prints the currently linked Supabase project, color-coded by env. Used by `db:current` script.
+
+```javascript
+import { execSync } from 'node:child_process';
+
+const PROD_REF = 'chikljxwgiskyjsnjelf';
+
+try {
+  const output = execSync('npx supabase projects list', { encoding: 'utf-8' });
+  const lines = output.split('\n');
+  const linked = lines.find(l => l.includes('●'));
+
+  if (!linked) {
+    console.log('▸ No project linked. Run npm run db:link:dev or npm run db:link:prod');
+    process.exit(0);
+  }
+
+  const isProd = linked.includes(PROD_REF);
+  const tag = isProd ? '🔴 PRODUCTION' : '🟢 DEVELOPMENT';
+  console.log('');
+  console.log(`Current Supabase link: ${tag}`);
+  console.log(linked.trim());
+  console.log('');
+  if (isProd) {
+    console.log('⚠ You are linked to PRODUCTION. Destructive commands will affect live data.');
+    console.log('');
+  }
+} catch (err) {
+  console.error('Error checking link state:', err.message);
+  process.exit(1);
+}
+```
+
+**Step 5: Add scripts to package.json**
+
+```json
+"db:current": "node scripts/check-link-state.mjs",
+"prod:confirm": "node scripts/confirm-prod.mjs"
+```
+
+**Step 6: Commit**
+
+```bash
+git add scripts/confirm-prod.mjs scripts/check-link-state.mjs package.json
+git commit -m "feat: add prod safety scripts (confirm-prod, check-link-state)"
+```
+
+**Step 7: Verify**
+
+```bash
+npm run db:current
+```
+
+Expected: shows current link state with color-coded label.
+
+```bash
+npm run prod:confirm
+# Type something other than PRODUCTION → exit 1
+```
+
+Expected: aborts unless exact "PRODUCTION" typed.
+
+---
+
 ### Task 1: Create the Dev Supabase Project
 
 **Files:**
@@ -134,48 +282,75 @@ git commit -m "docs: add two-environment setup guide to .env.example"
 
 ---
 
-### Task 3: Link Dev Project and Push Migrations
+### Task 3: Push Migrations to Dev Project (Explicit-Ref Mode)
 
 **Files:**
-- None (CLI operation against dev project)
+- None (CLI operation, never uses `--linked`)
 
-**Step 1: Link to the dev project**
+**SAFETY:** This task uses ONLY explicit `--project-ref <DEV_REF>` flags. Never `--linked`. Never bare commands. The link state is irrelevant — even if the CLI is currently linked to prod, every command in this task targets dev by ref.
+
+**Step 1: Pre-flight — verify the dev ref is correct**
+
+```bash
+npx supabase projects list | grep "<DEV_PROJECT_REF>"
+```
+
+Expected: row with `SpearlanceOS-Dev`. If empty, Task 1 didn't complete — STOP.
+
+**Step 2: Confirm dev DB is empty**
+
+```bash
+npx supabase db query --project-ref <DEV_PROJECT_REF> \
+  "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'public';"
+```
+
+Expected: `0` or near-zero. If count is high, something already pushed to it — investigate before pushing.
+
+**Step 3: Push migrations to dev using explicit ref**
 
 ```bash
 npx supabase link --project-ref <DEV_PROJECT_REF>
+npm run db:current
 ```
 
-This changes the local CLI's linked project. The `config.toml` `project_id` stays as prod — linking is a local-only pointer.
-
-Enter the DB password from Task 1 Step 1 when prompted.
-
-**Step 2: Push all migrations to dev**
+Expected output from `db:current`: 🟢 DEVELOPMENT label, NOT 🔴 PRODUCTION. **If it shows production, STOP. Do not push.**
 
 ```bash
-npx supabase db push --linked
+npx supabase db push
 ```
 
-This applies all ~150 migration files from `supabase/migrations/` to the dev project. Expected runtime: 5-30 minutes depending on network. All migrations should succeed since they're the same ones that ran on prod.
-
-Expected output: each migration applied in order, ending with "Finished supabase db push."
-
-If any migration fails: it means the migration has an issue that prod's existing state masked. Note the migration name and error — this would need investigation.
-
-**Step 3: Verify schema was applied**
+Note: After explicit `link --project-ref <DEV_REF>`, plain `db push` is safe because we just verified the link state. But the explicit-ref pattern is preferred:
 
 ```bash
-npx supabase db diff --linked
+# Even safer alternative — pass DB URL directly
+npx supabase db push --db-url "postgresql://postgres.<DEV_PROJECT_REF>:<DB_PASSWORD>@aws-0-us-west-1.pooler.supabase.com:6543/postgres"
 ```
 
-Expected: "No changes found" — dev schema matches migration history.
+Expected runtime: 5-30 minutes. ~150 migrations apply in order.
 
-**Step 4: Re-link to prod to restore default**
+If any migration fails: stop, investigate. Do NOT modify migrations to "make them work" without understanding why prod accepted them.
+
+**Step 4: Verify schema applied**
 
 ```bash
-npx supabase link --project-ref chikljxwgiskyjsnjelf
+npx supabase db query --project-ref <DEV_PROJECT_REF> \
+  "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'public';"
 ```
 
-Enter prod DB password when prompted. This restores the link to production, which is the safer default when not actively working on dev.
+Expected: 60+ tables. Compare against prod count if uncertain (read-only query, safe).
+
+**Step 5: Confirm prod is untouched**
+
+```bash
+npx supabase db query --project-ref chikljxwgiskyjsnjelf \
+  "SELECT count(*) FROM public.clients;"
+```
+
+Expected: same count as before this task started. This is a read-only SELECT, zero risk.
+
+**Step 6: Stay linked to dev** (do NOT re-link to prod yet — Task 6 needs dev linkage)
+
+`npm run db:current` should show 🟢 DEVELOPMENT throughout Tasks 3-6.
 
 ---
 
@@ -430,36 +605,48 @@ git commit -m "feat: add dev seed data for ABC Company and test fixtures"
 
 ---
 
-### Task 6: Run Seed Against Dev Project
+### Task 6: Run Seed Against Dev Project (Explicit-Ref Mode)
 
 **Files:**
-- None (CLI operation)
+- None (CLI operation against dev only)
 
-**Step 1: Create the auth user in dev Supabase**
+**SAFETY:** Every command uses explicit `--project-ref <DEV_PROJECT_REF>`. The seed contains DELETE/INSERT statements — running it against prod would corrupt data.
+
+**Step 1: Verify link state before any seed work**
+
+```bash
+npm run db:current
+```
+
+Expected: 🟢 DEVELOPMENT. **If it shows PRODUCTION, STOP. Run `npm run db:link:dev` and verify before continuing.**
+
+**Step 2: Create the auth user in dev Supabase**
 
 Go to Supabase Dashboard → SpearlanceOS-Dev → Authentication → Users → Add User:
 - Email: `test-admin@spearlance-dev.com`
 - Password: `TestPassword123!`
 - Auto confirm: Yes
 
-Alternative via CLI (if `create-user` edge function is deployed):
-```bash
-# Deploy the create-user function to dev first
-npx supabase functions deploy create-user --project-ref <DEV_PROJECT_REF>
-```
-
-**Step 2: Run the seed**
+Verify via SQL query against dev:
 
 ```bash
-npm run db:link:dev
-npm run db:push -- --include-seed
+npx supabase db query --project-ref <DEV_PROJECT_REF> \
+  "SELECT email FROM auth.users WHERE email = 'test-admin@spearlance-dev.com';"
 ```
 
-This applies any pending migrations AND runs `supabase/seed.sql`.
+Expected: 1 row.
 
-**Step 3: Assign admin role to the test user**
+**Step 3: Run the seed against dev (explicit ref)**
 
-Connect to dev DB and run:
+```bash
+npx supabase db push --project-ref <DEV_PROJECT_REF> --include-seed
+```
+
+Note the explicit `--project-ref` — required, not optional.
+
+Expected: seed.sql runs, fixtures inserted, no errors.
+
+**Step 4: Assign admin role to the test user**
 
 ```bash
 npx supabase db query --project-ref <DEV_PROJECT_REF> "
@@ -472,10 +659,11 @@ npx supabase db query --project-ref <DEV_PROJECT_REF> "
 "
 ```
 
-**Step 4: Verify seed data**
+**Step 5: Verify seed data on dev**
 
 ```bash
-npx supabase db query --project-ref <DEV_PROJECT_REF> "SELECT name FROM public.clients ORDER BY name;"
+npx supabase db query --project-ref <DEV_PROJECT_REF> \
+  "SELECT name FROM public.clients ORDER BY name;"
 ```
 
 Expected:
@@ -485,11 +673,16 @@ Demo Construction Co
 Sunshine Dental
 ```
 
-**Step 5: Re-link to prod**
+**Step 6: Verify prod is STILL untouched**
 
 ```bash
-npm run db:link:prod
+npx supabase db query --project-ref chikljxwgiskyjsnjelf \
+  "SELECT name FROM public.clients WHERE name IN ('ABC Company', 'Demo Construction Co', 'Sunshine Dental') ORDER BY name;"
 ```
+
+Expected: Same result as before Task 6 began. If "Demo Construction Co" or "Sunshine Dental" appear in prod, **the seed leaked into prod — STOP and investigate immediately**. (ABC Company may already exist legitimately in prod.)
+
+**Step 7: Stay linked to dev** for the remaining tasks. Re-link to prod only after Task 11 completes successfully.
 
 ---
 
@@ -724,49 +917,11 @@ git commit -m "feat: add GitHub Actions keepalive cron for dev Supabase (every 3
 
 ---
 
-### Task 9: Configure Vercel Environment Variables
+### Task 9: ~~Configure Vercel Environment Variables~~ **MOVED — see Task 11.5**
 
-**Files:**
-- None (Vercel Dashboard operation)
+This task has been moved to AFTER verification (Task 11) to minimize the time window where Vercel config could affect the live site. The new ordering means dev is fully tested and working before any Vercel touch.
 
-**Step 1: Open Vercel Dashboard**
-
-Go to: Vercel Dashboard → SpearlanceOS project → Settings → Environment Variables
-
-**Step 2: Set Production-scoped variables** (already done if app is live — verify these exist)
-
-| Variable | Scope | Value |
-|----------|-------|-------|
-| `VITE_SUPABASE_URL` | Production | `https://chikljxwgiskyjsnjelf.supabase.co` |
-| `VITE_SUPABASE_PUBLISHABLE_KEY` | Production | (prod anon key) |
-| `VITE_SUPABASE_PROJECT_ID` | Production | `chikljxwgiskyjsnjelf` |
-| `VITE_APP_URL` | Production | `https://os.spearlance.com` |
-
-**Step 3: Set Preview-scoped variables** (new — this is the key step)
-
-| Variable | Scope | Value |
-|----------|-------|-------|
-| `VITE_SUPABASE_URL` | Preview | `https://<DEV_PROJECT_REF>.supabase.co` |
-| `VITE_SUPABASE_PUBLISHABLE_KEY` | Preview | (dev anon key from Task 1) |
-| `VITE_SUPABASE_PROJECT_ID` | Preview | `<DEV_PROJECT_REF>` |
-| `VITE_APP_URL` | Preview | (leave blank or set to `$VERCEL_URL`) |
-
-**Step 4: Verify by pushing a test branch**
-
-```bash
-git checkout -b test/verify-preview-env
-git push origin test/verify-preview-env
-```
-
-Wait for Vercel to build preview. Open the preview URL → check browser console for Supabase requests → they should hit `<DEV_PROJECT_REF>.supabase.co`, NOT `chikljxwgiskyjsnjelf.supabase.co`.
-
-**Step 5: Clean up test branch**
-
-```bash
-git checkout feat/sos-tracker-v3
-git branch -D test/verify-preview-env
-git push origin --delete test/verify-preview-env
-```
+See **Task 11.5: Configure Vercel Environment Variables** below.
 
 ---
 
@@ -862,15 +1017,70 @@ Create a throwaway migration:
 
 ```bash
 echo "-- test migration" > supabase/migrations/99999999999999_test.sql
-npm run db:link:dev && npm run db:push
+npx supabase db push --project-ref <DEV_PROJECT_REF>
 ```
 
 Verify it applied to dev. Then delete the test migration:
 
 ```bash
 rm supabase/migrations/99999999999999_test.sql
-npm run db:link:prod
 ```
+
+---
+
+### Task 11.5: Configure Vercel Environment Variables (AFTER verification)
+
+**Files:**
+- None (Vercel Dashboard operation)
+
+**SAFETY:** This is the last task that can affect prod. Only ADD Preview-scoped vars. Never edit Production-scoped vars. The Production column should remain visually identical when you're done.
+
+**Step 1: Take a screenshot of current Production env vars**
+
+Vercel Dashboard → SpearlanceOS → Settings → Environment Variables → screenshot the current Production-scoped values. This is your visual baseline — when this task is done, Production-scope must look identical.
+
+**Step 2: Verify Production-scoped vars exist (read-only check)**
+
+Confirm these are already set in Production scope (they must be — the app is live):
+
+| Variable | Scope | Expected Value |
+|----------|-------|---------------|
+| `VITE_SUPABASE_URL` | Production | `https://chikljxwgiskyjsnjelf.supabase.co` |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | Production | (prod anon key) |
+| `VITE_SUPABASE_PROJECT_ID` | Production | `chikljxwgiskyjsnjelf` |
+| `VITE_APP_URL` | Production | `https://os.spearlance.com` |
+
+**DO NOT EDIT THESE.** Read-only verification only.
+
+**Step 3: ADD Preview-scoped variables (the only writes in this task)**
+
+Use Vercel UI → Add New → Select "Preview" scope only (uncheck Production and Development if they're checked):
+
+| Variable | Scope | Value |
+|----------|-------|-------|
+| `VITE_SUPABASE_URL` | **Preview only** | `https://<DEV_PROJECT_REF>.supabase.co` |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | **Preview only** | (dev anon key from Task 1) |
+| `VITE_SUPABASE_PROJECT_ID` | **Preview only** | `<DEV_PROJECT_REF>` |
+
+`VITE_APP_URL` does NOT need a Preview-scoped value — Vercel auto-sets it via `$VERCEL_URL`.
+
+**Step 4: Compare to baseline screenshot**
+
+Re-screenshot the env var page. Compare Production column to Step 1 screenshot. **They must be identical.** If anything in Production changed, revert immediately.
+
+**Step 5: Trigger preview build**
+
+```bash
+git push origin feat/dev-environment-split
+```
+
+Wait for Vercel build. Open preview URL → DevTools Network tab → confirm requests go to `<DEV_PROJECT_REF>.supabase.co`, NOT `chikljxwgiskyjsnjelf.supabase.co`.
+
+**Step 6: Verify prod still uses prod**
+
+Open `https://os.spearlance.com` → DevTools → Network → confirm requests still go to `chikljxwgiskyjsnjelf.supabase.co`.
+
+If prod requests are hitting dev: rollback Preview vars, investigate.
 
 ---
 
@@ -964,27 +1174,684 @@ Expected: Green checkmark, logs show "Dev Supabase is alive (HTTP 200)" or simil
 
 ---
 
-## Task Dependency Graph
+---
+
+## Permanent Guardrails (Tasks 14-19) — Build the Firewall
+
+These tasks build PERMANENT infrastructure that prevents future accidents — not just for this work, but for every session going forward. They run AFTER the dev environment is verified working (Task 11) but can run in parallel with Tasks 12-13.
+
+The goal: make it **technically impossible** to run a destructive command against prod without explicit, deliberate confirmation. Hooks block at the tool layer; skills gate human workflows; scripts validate at runtime.
+
+---
+
+### Task 14: Build the Prod-Firewall Hook (Critical)
+
+**Files:**
+- Create: `.claude/hooks/prod-firewall.sh`
+- Modify: `.claude/settings.json`
+
+This is the most important guardrail. A PreToolUse Bash hook that intercepts dangerous commands and blocks them at the tool layer — before they execute.
+
+**Step 1: Write test for the hook**
+
+Create `tests/hooks/prod-firewall.test.ts`:
+
+```typescript
+import { describe, it, expect } from 'vitest';
+import { execSync } from 'node:child_process';
+import { join } from 'node:path';
+
+const hookPath = join(__dirname, '../../.claude/hooks/prod-firewall.sh');
+
+function runHook(command: string): { code: number; stderr: string } {
+  const input = JSON.stringify({ tool_input: { command } });
+  try {
+    execSync(`echo '${input}' | bash ${hookPath}`, { encoding: 'utf-8', stdio: 'pipe' });
+    return { code: 0, stderr: '' };
+  } catch (err: any) {
+    return { code: err.status, stderr: err.stderr?.toString() || '' };
+  }
+}
+
+describe('prod-firewall hook', () => {
+  it('blocks db reset against prod ref', () => {
+    const result = runHook('npx supabase db reset --project-ref chikljxwgiskyjsnjelf');
+    expect(result.code).toBe(2);
+    expect(result.stderr).toContain('PRODUCTION');
+  });
+
+  it('blocks db push against prod ref without --confirm-prod', () => {
+    const result = runHook('npx supabase db push --project-ref chikljxwgiskyjsnjelf');
+    expect(result.code).toBe(2);
+  });
+
+  it('allows db push against dev ref', () => {
+    const result = runHook('npx supabase db push --project-ref abc123dev');
+    expect(result.code).toBe(0);
+  });
+
+  it('blocks db reset --linked entirely (linked state too risky)', () => {
+    const result = runHook('npx supabase db reset --linked');
+    expect(result.code).toBe(2);
+  });
+
+  it('allows read-only db query against prod', () => {
+    const result = runHook('npx supabase db query --project-ref chikljxwgiskyjsnjelf "SELECT 1"');
+    expect(result.code).toBe(0);
+  });
+
+  it('blocks functions deploy --all against prod', () => {
+    const result = runHook('node scripts/deploy-functions.mjs --env prod --all');
+    expect(result.code).toBe(2);
+  });
+
+  it('allows functions deploy single function against prod', () => {
+    const result = runHook('node scripts/deploy-functions.mjs --env prod --function send-magic-link');
+    expect(result.code).toBe(0);
+  });
+});
+```
+
+**Step 2: Run test to verify it fails**
+
+```bash
+npx vitest run tests/hooks/prod-firewall.test.ts
+```
+
+Expected: FAIL — hook doesn't exist.
+
+**Step 3: Write the hook**
+
+Create `.claude/hooks/prod-firewall.sh`:
+
+```bash
+#!/usr/bin/env bash
+# PreToolUse hook: blocks destructive Supabase commands against production.
+# Matcher: Bash
+#
+# Production project ref: chikljxwgiskyjsnjelf
+#
+# Blocking rules:
+#   1. supabase db reset against prod ref → BLOCK
+#   2. supabase db push against prod ref WITHOUT npm run prod:confirm flag → BLOCK
+#   3. supabase db reset --linked → BLOCK (linked state too risky)
+#   4. supabase db push --linked → BLOCK
+#   5. functions deploy --all with --env prod → BLOCK
+#   6. Any command containing DROP TABLE / TRUNCATE against prod ref → BLOCK
+#
+# Escape valve: set ARMADILLO_PROD_CONFIRMED=1 before the command.
+# This is set by the prod:confirm npm script after typing "PRODUCTION".
+
+set -eu
+
+PROD_REF="chikljxwgiskyjsnjelf"
+INPUT=$(cat)
+COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // ""' 2>/dev/null || echo "")
+
+# Helper: block with explanation
+block() {
+  echo "🛑 PROD-FIREWALL BLOCKED" >&2
+  echo "" >&2
+  echo "Command: $COMMAND" >&2
+  echo "" >&2
+  echo "Reason: $1" >&2
+  echo "" >&2
+  echo "To proceed (if you really mean it):" >&2
+  echo "  1. Run: npm run prod:confirm" >&2
+  echo "  2. Type 'PRODUCTION' to set the confirmation flag" >&2
+  echo "  3. Re-run your command in the same shell session" >&2
+  echo "" >&2
+  exit 2
+}
+
+# Rule 1: db reset against prod ref → never allow
+if echo "$COMMAND" | grep -qE "supabase[[:space:]]+db[[:space:]]+reset" && echo "$COMMAND" | grep -q "$PROD_REF"; then
+  block "supabase db reset against PRODUCTION wipes the database. Refused."
+fi
+
+# Rule 2: db push against prod ref without confirmation
+if echo "$COMMAND" | grep -qE "supabase[[:space:]]+db[[:space:]]+push" && echo "$COMMAND" | grep -q "$PROD_REF"; then
+  if [ "${ARMADILLO_PROD_CONFIRMED:-0}" != "1" ]; then
+    block "db push against PRODUCTION requires explicit confirmation."
+  fi
+fi
+
+# Rule 3 & 4: --linked is forbidden for destructive commands
+if echo "$COMMAND" | grep -qE "supabase[[:space:]]+db[[:space:]]+(reset|push)" && echo "$COMMAND" | grep -q -- "--linked"; then
+  block "Use explicit --project-ref instead of --linked. Linked state can drift."
+fi
+
+# Rule 5: functions deploy --all with --env prod
+if echo "$COMMAND" | grep -qE "deploy-functions" && echo "$COMMAND" | grep -q -- "--env[[:space:]]*prod" && echo "$COMMAND" | grep -q -- "--all"; then
+  if [ "${ARMADILLO_PROD_CONFIRMED:-0}" != "1" ]; then
+    block "Mass function deploy to PRODUCTION requires explicit confirmation."
+  fi
+fi
+
+# Rule 6: Raw destructive SQL against prod
+if echo "$COMMAND" | grep -q "$PROD_REF" && echo "$COMMAND" | grep -qiE "(DROP[[:space:]]+TABLE|TRUNCATE|DELETE[[:space:]]+FROM)"; then
+  block "Destructive SQL against PRODUCTION ref refused."
+fi
+
+# All checks passed
+exit 0
+```
+
+Make it executable:
+
+```bash
+chmod +x .claude/hooks/prod-firewall.sh
+```
+
+**Step 4: Register the hook in settings.json**
+
+Edit `.claude/settings.json`. Add to the existing `PreToolUse` → `Bash` matcher (alongside `enforce-skill-gate.sh`):
+
+```json
+{
+  "matcher": "Bash",
+  "hooks": [
+    { "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/enforce-skill-gate.sh" },
+    { "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/prod-firewall.sh" }
+  ]
+}
+```
+
+**Step 5: Run test to verify it passes**
+
+```bash
+npx vitest run tests/hooks/prod-firewall.test.ts
+```
+
+Expected: PASS — all 7 tests green.
+
+**Step 6: Manual smoke test**
+
+```bash
+# This should be BLOCKED
+npx supabase db reset --project-ref chikljxwgiskyjsnjelf
+
+# This should be ALLOWED (read-only)
+npx supabase db query --project-ref chikljxwgiskyjsnjelf "SELECT 1"
+```
+
+**Step 7: Commit**
+
+```bash
+git add .claude/hooks/prod-firewall.sh .claude/settings.json tests/hooks/prod-firewall.test.ts
+git commit -m "feat: add prod-firewall hook to block destructive commands against production"
+```
+
+---
+
+### Task 15: Stripe Live-Key Detection Script
+
+**Files:**
+- Create: `scripts/check-stripe-keys.mjs`
+- Modify: `package.json` (add to `predev` script)
+
+Validates that dev `.env.local` doesn't contain `sk_live_*` Stripe keys. Runs automatically before `npm run dev`.
+
+**Step 1: Write test**
+
+Create `tests/scripts/check-stripe-keys.test.ts`:
+
+```typescript
+import { describe, it, expect } from 'vitest';
+import { execSync } from 'node:child_process';
+import { writeFileSync, unlinkSync, existsSync } from 'node:fs';
+import { join } from 'node:path';
+
+const tmpEnv = join(__dirname, '.tmp.env.local');
+
+describe('check-stripe-keys', () => {
+  it('passes when only test keys present', () => {
+    writeFileSync(tmpEnv, 'STRIPE_SECRET_KEY=sk_test_abc\nVITE_STRIPE_STARTER_MONTHLY_PRICE_ID=price_test_xyz');
+    const result = execSync(`node scripts/check-stripe-keys.mjs ${tmpEnv}`, { encoding: 'utf-8' });
+    expect(result).toContain('✓');
+    unlinkSync(tmpEnv);
+  });
+
+  it('blocks when sk_live_ key present', () => {
+    writeFileSync(tmpEnv, 'STRIPE_SECRET_KEY=sk_live_dangerous');
+    expect(() => {
+      execSync(`node scripts/check-stripe-keys.mjs ${tmpEnv}`, { stdio: 'pipe' });
+    }).toThrow();
+    unlinkSync(tmpEnv);
+  });
+
+  it('blocks when pk_live_ key present', () => {
+    writeFileSync(tmpEnv, 'STRIPE_PUBLISHABLE_KEY=pk_live_dangerous');
+    expect(() => {
+      execSync(`node scripts/check-stripe-keys.mjs ${tmpEnv}`, { stdio: 'pipe' });
+    }).toThrow();
+    unlinkSync(tmpEnv);
+  });
+});
+```
+
+**Step 2: Run test — verify FAIL**
+
+**Step 3: Write `scripts/check-stripe-keys.mjs`**
+
+```javascript
+import { readFileSync, existsSync } from 'node:fs';
+
+const path = process.argv[2] || '.env.local';
+
+if (!existsSync(path)) {
+  console.log(`▸ No ${path} found — skipping Stripe key check`);
+  process.exit(0);
+}
+
+const content = readFileSync(path, 'utf-8');
+const liveKeyPattern = /(sk|pk|rk)_live_[A-Za-z0-9]+/g;
+const matches = content.match(liveKeyPattern);
+
+if (matches && matches.length > 0) {
+  console.error('');
+  console.error('🛑 STRIPE LIVE KEY DETECTED IN DEV ENV');
+  console.error('');
+  console.error(`File: ${path}`);
+  console.error(`Found ${matches.length} live key(s) — these belong in production only.`);
+  console.error('');
+  console.error('Replace with TEST keys from: https://dashboard.stripe.com/test/apikeys');
+  console.error('Test keys start with sk_test_ / pk_test_');
+  console.error('');
+  process.exit(1);
+}
+
+console.log('✓ Stripe keys validated (test mode only)');
+process.exit(0);
+```
+
+**Step 4: Add to package.json**
+
+```json
+"predev": "node scripts/check-stripe-keys.mjs",
+"check:stripe-keys": "node scripts/check-stripe-keys.mjs"
+```
+
+`predev` runs automatically before `npm run dev`. Stripe live keys = no dev server start.
+
+**Step 5: Run test — verify PASS**
+
+**Step 6: Commit**
+
+```bash
+git add scripts/check-stripe-keys.mjs package.json tests/scripts/check-stripe-keys.test.ts
+git commit -m "feat: block dev server start if Stripe live keys detected in .env.local"
+```
+
+---
+
+### Task 16: Pre-Commit Hook for Prod Secrets
+
+**Files:**
+- Create: `scripts/pre-commit-secrets.sh`
+- Modify: `.git/hooks/pre-commit` (or via husky/lefthook if used)
+
+Catches accidental commits of live Stripe keys, prod service-role keys, or `.env`/`.env.local` files.
+
+**Step 1: Check existing pre-commit hooks**
+
+```bash
+cat .git/hooks/pre-commit 2>/dev/null || echo "No pre-commit hook"
+```
+
+If husky is used:
+
+```bash
+ls .husky/ 2>/dev/null || echo "No husky"
+```
+
+**Step 2: Write `scripts/pre-commit-secrets.sh`**
+
+```bash
+#!/usr/bin/env bash
+# Blocks commits that contain prod secrets, live Stripe keys, or .env files.
+
+set -eu
+
+# Get list of staged files
+STAGED=$(git diff --cached --name-only --diff-filter=ACM)
+
+# Block .env file commits (except .env.example)
+for file in $STAGED; do
+  case "$file" in
+    .env|.env.local|.env.production|.env.*.local)
+      echo "🛑 Refusing to commit: $file" >&2
+      echo "Environment files contain secrets and must not be committed." >&2
+      exit 1
+      ;;
+  esac
+done
+
+# Scan staged content for live secrets
+VIOLATIONS=$(git diff --cached -U0 | grep -E '^\+' | grep -oE '(sk|pk|rk)_live_[A-Za-z0-9]+' || true)
+
+if [ -n "$VIOLATIONS" ]; then
+  echo "🛑 Stripe LIVE keys detected in staged changes:" >&2
+  echo "$VIOLATIONS" >&2
+  echo "" >&2
+  echo "Replace with sk_test_/pk_test_ keys before committing." >&2
+  exit 1
+fi
+
+# Scan for prod service role key prefix
+SERVICE_VIOLATIONS=$(git diff --cached -U0 | grep -E '^\+' | grep "chikljxwgiskyjsnjelf" | grep -E "(service_role|SUPABASE_SERVICE_ROLE)" || true)
+
+if [ -n "$SERVICE_VIOLATIONS" ]; then
+  echo "🛑 Prod Supabase service-role key detected in staged changes:" >&2
+  echo "$SERVICE_VIOLATIONS" >&2
+  exit 1
+fi
+
+exit 0
+```
+
+**Step 3: Install the hook**
+
+If no husky:
+
+```bash
+cp scripts/pre-commit-secrets.sh .git/hooks/pre-commit
+chmod +x .git/hooks/pre-commit
+```
+
+If husky is in use:
+
+```bash
+echo "bash scripts/pre-commit-secrets.sh" >> .husky/pre-commit
+```
+
+**Step 4: Smoke test**
+
+```bash
+echo "STRIPE_KEY=sk_live_test123" > /tmp/test-secret.txt
+git add /tmp/test-secret.txt 2>/dev/null || true
+git commit -m "test: should fail" 2>&1 | head -5
+# Expected: blocked
+git restore --staged /tmp/test-secret.txt 2>/dev/null || true
+rm /tmp/test-secret.txt
+```
+
+**Step 5: Commit the hook script itself**
+
+```bash
+git add scripts/pre-commit-secrets.sh
+git commit -m "feat: pre-commit hook blocks live Stripe keys and .env file commits"
+```
+
+---
+
+### Task 17: Add Prod-Safety Rule File
+
+**Files:**
+- Create: `.claude/rules/prod-safety.md`
+- Modify: `.claude/CLAUDE.md` (reference new rule)
+
+Documents the firewall, what triggers it, how to use the escape valve. Auto-loaded into every session.
+
+**Step 1: Write `.claude/rules/prod-safety.md`**
+
+```markdown
+# Production Safety Rules
+
+When SpearlanceOS production project is in scope (`chikljxwgiskyjsnjelf`), these rules apply with no exceptions.
+
+## The Firewall
+
+`.claude/hooks/prod-firewall.sh` blocks dangerous Bash commands at the tool layer. It activates when:
+
+| Trigger | Action |
+|---------|--------|
+| `supabase db reset` + prod ref | BLOCK — never allowed |
+| `supabase db push` + prod ref + no confirmation | BLOCK |
+| `supabase db reset --linked` or `db push --linked` | BLOCK — explicit ref required |
+| `deploy-functions --env prod --all` + no confirmation | BLOCK |
+| `DROP TABLE` / `TRUNCATE` / `DELETE FROM` against prod ref | BLOCK |
+
+Read-only operations (`db query SELECT`, `projects list`, `functions list`) are always allowed.
+
+## The Escape Valve
+
+When you genuinely need to run a destructive command on prod:
+
+```bash
+npm run prod:confirm
+# Type 'PRODUCTION' (exact case)
+# Sets ARMADILLO_PROD_CONFIRMED=1 in current shell
+# Re-run your command — firewall lets it through
+```
+
+The flag is per-shell-session — opening a new terminal resets it. Intentional friction.
+
+## Always Use Explicit `--project-ref`
+
+The Supabase CLI's "linked" state can drift. Always pass `--project-ref` for any destructive command:
+
+```bash
+# ❌ Wrong — relies on link state
+npx supabase db push --linked
+
+# ✓ Correct — impossible to hit wrong project
+npx supabase db push --project-ref <DEV_REF>
+```
+
+## The Three Refs
+
+| Env | Project Ref | Color |
+|-----|-------------|-------|
+| Production | `chikljxwgiskyjsnjelf` | 🔴 |
+| Development | `<DEV_PROJECT_REF>` | 🟢 |
+
+Never inline the prod ref in a command without consciously deciding to.
+
+## Verifying Current Link
+
+Before any DB operation:
+
+```bash
+npm run db:current
+```
+
+Shows 🔴 PRODUCTION or 🟢 DEVELOPMENT label. Default to dev.
+
+## Vercel Rules
+
+- Production-scoped env vars: NEVER edited via Claude. User-only operation.
+- Preview-scoped env vars: editable, points at dev project
+- The Production column in Vercel's env vars table should be visually identical before and after any preview-scope work
+
+## Stripe Rules
+
+- Dev `.env.local` and dev Edge Function secrets: `sk_test_*` / `pk_test_*` keys ONLY
+- `npm run dev` runs `predev` script which validates this
+- Live keys (`sk_live_*`) refuse to load in dev — by design
+
+## When This Rule Is Inactive
+
+This rule applies whenever the project is SpearlanceOS. There is no inactive state.
+```
+
+**Step 2: Reference rule in CLAUDE.md**
+
+Add to the Rules table in `.claude/CLAUDE.md`:
+
+| **prod-safety** | Production firewall, escape valve, Vercel rules, Stripe key validation |
+
+**Step 3: Commit**
+
+```bash
+git add .claude/rules/prod-safety.md .claude/CLAUDE.md
+git commit -m "docs: add prod-safety rule documenting firewall and escape valve"
+```
+
+---
+
+### Task 18: Branch Protection on `main`
+
+**Files:**
+- None (GitHub Settings operation)
+
+Ensures nothing can be pushed directly to main without a PR. This is a one-time setup that prevents accidental direct-to-main commits.
+
+**Step 1: Open GitHub branch protection settings**
+
+Go to: GitHub → SpearlanceOS repo → Settings → Branches → Add branch protection rule
+
+**Step 2: Configure protection for `main`**
+
+| Setting | Value |
+|---------|-------|
+| Branch name pattern | `main` |
+| Require pull request before merging | ✓ |
+| Require approvals | 0 (solo dev — set later if team grows) |
+| Dismiss stale reviews | ✓ |
+| Require status checks before merging | ✓ (if CI exists) |
+| Require linear history | ✓ |
+| Do not allow bypassing | ✓ (admins included — even YOU can't push to main directly) |
+| Restrict pushes that delete | ✓ |
+
+**Step 3: Verify**
+
+```bash
+git checkout main
+echo "test" >> .test-file
+git add .test-file
+git commit -m "test: should fail to push"
+env -u GITHUB_TOKEN git push origin main 2>&1 | head -10
+# Expected: rejected by branch protection
+git reset --hard HEAD~1
+rm -f .test-file
+```
+
+If push fails with "protected branch": ✓ working as intended.
+If push succeeds: protection rule didn't activate — recheck Step 2.
+
+**Step 4: No commit needed** (this is a GitHub setting, not a file change)
+
+---
+
+### Task 19: Update CLAUDE.md and stack.json with Dev Env Refs
+
+**Files:**
+- Modify: `.claude/CLAUDE.md`
+- Modify: `.claude/stack.json`
+
+Final pass — record the dev project ref in stack.json so future sessions auto-discover it.
+
+**Step 1: Update `.claude/stack.json`**
+
+Add to existing JSON:
+
+```json
+{
+  "framework": "react-vite",
+  ...existing fields...,
+  "environments": {
+    "production": {
+      "supabaseRef": "chikljxwgiskyjsnjelf",
+      "vercelEnv": "Production",
+      "url": "https://os.spearlance.com"
+    },
+    "development": {
+      "supabaseRef": "<DEV_PROJECT_REF>",
+      "vercelEnv": "Preview",
+      "url": "http://localhost:8080"
+    }
+  }
+}
+```
+
+**Step 2: Update `.claude/CLAUDE.md` with full env workflow**
+
+The Environment section from Task 12 expands with firewall reference:
+
+```markdown
+## Environment: Dev/Main Split
+
+Two Supabase projects:
+- **Production** (`chikljxwgiskyjsnjelf`): `os.spearlance.com`, main branch only — 🛡 firewalled
+- **Development** (`<DEV_PROJECT_REF>`): local dev + Vercel previews + Playwright
+
+### Safety Net
+
+- **prod-firewall hook** (`.claude/hooks/prod-firewall.sh`): blocks destructive prod commands at tool layer
+- **prod-safety rule** (`.claude/rules/prod-safety.md`): documents firewall + escape valve
+- **predev script** (Stripe live-key check): blocks `npm run dev` if live keys in `.env.local`
+- **pre-commit hook**: blocks commits containing live Stripe keys or `.env` files
+- **branch protection on main**: no direct pushes, PR required
+
+### Daily Workflow
+
+```bash
+git checkout -b feat/something
+npm run db:current             # 🟢 should show DEV
+npm run dev                    # localhost reads .env.local → dev Supabase
+# write code, test, push
+git push origin feat/something # → Vercel preview → dev Supabase
+# PR review → merge to main
+# Vercel auto-rebuilds production → prod Supabase
+```
+
+### Migration Promotion
+
+```bash
+# Test on dev (safe)
+npx supabase db push --project-ref <DEV_REF>
+
+# Merge PR to main, then promote to prod (requires confirmation):
+npm run prod:confirm           # type "PRODUCTION"
+npx supabase db push --project-ref chikljxwgiskyjsnjelf
+```
+```
+
+**Step 3: Commit**
+
+```bash
+git add .claude/CLAUDE.md .claude/stack.json
+git commit -m "docs: record dev environment in stack.json and CLAUDE.md"
+```
+
+---
+
+## Updated Task Dependency Graph
 
 ```
-Task 1 (Create project) ──┬── Task 2 (Env files)
-                           ├── Task 3 (Link + push migrations)
-                           ├── Task 4 (Package.json scripts) ──── Task 6 (Run seed)
-                           ├── Task 5 (Write seed.sql) ────────── Task 6 (Run seed)
-                           ├── Task 7 (Deploy script --env flag)
-                           ├── Task 9 (Vercel env vars)
-                           └── Task 10 (Edge function secrets)
+Task 0 (Pre-flight safety) ─── REQUIRED FIRST
+  ↓
+Task 1 (Create dev project) ──┬── Task 2 (Env files)
+                               ├── Task 3 (Push migrations to dev)
+                               ├── Task 4 (DB helper scripts)
+                               ├── Task 5 (Write seed.sql)
+                               ├── Task 7 (Deploy script --env)
+                               ├── Task 8 (Keepalive workflow)
+                               └── Task 10 (Edge function secrets)
 
-Task 6 (Run seed) ─── Task 11 (Verify full flow)
-Task 7, 9, 10 ─────── Task 11 (Verify full flow)
+Task 3 + Task 4 + Task 5 ──── Task 6 (Run seed against dev)
 
-Task 8 (Keepalive workflow) ── Task 13 (GitHub secrets)
+Task 6 + Task 7 + Task 10 ─── Task 11 (Verify full flow)
 
-Task 11 (Verify) ── Task 12 (Update docs)
+Task 11 (Verify) ─────────────┬── Task 11.5 (Vercel — LAST)
+                               ├── Task 12 (Update docs)
+                               ├── Task 13 (GitHub secrets)
+                               ├── Task 14 (Prod-firewall hook) 🛡
+                               ├── Task 15 (Stripe key check) 🛡
+                               ├── Task 16 (Pre-commit hook) 🛡
+                               ├── Task 17 (Prod-safety rule) 🛡
+                               ├── Task 18 (Branch protection) 🛡
+                               └── Task 19 (Stack.json + CLAUDE.md)
 ```
 
 **Parallelizable groups:**
-- Group A: Tasks 2, 3, 8 (after Task 1)
-- Group B: Tasks 4, 5, 7 (after Task 1)
-- Group C: Tasks 9, 10, 13 (Dashboard operations — after Task 1)
-- Sequential: Task 6 requires Tasks 3-5, Task 11 requires Task 6 + Group C, Task 12 is last
+- **Group A** (after Task 1): Tasks 2, 4, 5, 7, 8, 10
+- **Group B** (after Task 6): Task 11 alone
+- **Group C** (after Task 11): Tasks 12, 13, 14, 15, 16, 17, 18, 19, 11.5
+
+**Critical path:** Task 0 → Task 1 → Task 3 → Task 6 → Task 11 → Task 14 (firewall) → Task 18 (branch protection)
+
+**The two checkpoint gates:**
+- After Task 11: dev environment fully working — pause for user verification before any prod-touching task (11.5)
+- After Task 14: firewall live — all subsequent prod work goes through the firewall
