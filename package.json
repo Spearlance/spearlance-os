@@ -20,7 +20,13 @@
     "deploy:functions:status": "node scripts/deploy-functions.mjs --status",
     "deploy:functions:diff": "node scripts/deploy-functions.mjs --diff",
     "db:current": "node scripts/check-link-state.mjs",
-    "prod:confirm": "node scripts/confirm-prod.mjs"
+    "prod:confirm": "node scripts/confirm-prod.mjs",
+    "db:link:dev": "npx supabase link --project-ref locxfzyhfugetawadghu",
+    "db:link:prod": "npx supabase link --project-ref chikljxwgiskyjsnjelf",
+    "db:push": "npx supabase db push --linked",
+    "db:push:dry": "npx supabase db push --linked --dry-run",
+    "db:seed": "npx supabase db push --linked --include-seed",
+    "db:reset:dev": "npm run db:link:dev && npm run db:push && npm run db:seed"
   },
   "dependencies": {
     "@calcom/atoms": "^1.10.0",
