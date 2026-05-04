@@ -7,7 +7,6 @@ const ROOT = join(__dirname, '..');
 
 const PROD_REF = 'chikljxwgiskyjsnjelf';
 const DEV_BRANCH_REF = 'zlljsdaxsggkasvympku';
-const LEGACY_DEV_PROJECT_REF = 'locxfzyhfugetawadghu';
 
 const linkedRefPath = join(ROOT, 'supabase', '.temp', 'project-ref');
 
@@ -28,12 +27,9 @@ if (ref === PROD_REF) {
   warning = '\x1b[31m⚠ You are linked to PRODUCTION. Destructive commands will affect live data.\x1b[0m';
 } else if (ref === DEV_BRANCH_REF) {
   tag = '\x1b[32m🟢 DEVELOPMENT (branch)\x1b[0m';
-} else if (ref === LEGACY_DEV_PROJECT_REF) {
-  tag = '\x1b[33m🟡 LEGACY DEV PROJECT\x1b[0m';
-  warning = '\x1b[33m⚠ This is the old separate dev project (paused). Run npm run db:link:dev to use the branch.\x1b[0m';
 } else {
   tag = '\x1b[33m⚠ UNKNOWN PROJECT\x1b[0m';
-  warning = `\x1b[33m⚠ Linked to unrecognized ref: ${ref}\x1b[0m`;
+  warning = `\x1b[33m⚠ Linked to unrecognized ref: ${ref}. Run npm run db:link:dev to point at the dev branch.\x1b[0m`;
 }
 
 console.log('');
