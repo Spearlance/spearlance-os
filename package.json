@@ -4,6 +4,9 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
+    "predev": "node scripts/check-stripe-keys.mjs",
+    "check:stripe-keys": "node scripts/check-stripe-keys.mjs",
+    "prepare": "node scripts/install-git-hooks.mjs",
     "dev": "vite",
     "build": "vite build",
     "build:dev": "vite build --mode development",
