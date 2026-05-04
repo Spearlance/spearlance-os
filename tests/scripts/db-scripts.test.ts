@@ -7,10 +7,10 @@ const pkg = JSON.parse(
 );
 
 describe('database helper scripts', () => {
-  it('has db:link:dev script targeting dev project ref', () => {
+  it('has db:link:dev script targeting dev branch ref', () => {
     expect(pkg.scripts['db:link:dev']).toBeDefined();
     expect(pkg.scripts['db:link:dev']).toContain('supabase link');
-    expect(pkg.scripts['db:link:dev']).toContain('locxfzyhfugetawadghu');
+    expect(pkg.scripts['db:link:dev']).toContain('zlljsdaxsggkasvympku');
   });
 
   it('has db:link:prod script targeting prod project ref', () => {
