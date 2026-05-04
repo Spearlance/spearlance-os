@@ -17,6 +17,8 @@
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:report": "playwright show-report",
     "deploy:functions": "node scripts/deploy-functions.mjs",
+    "deploy:functions:dev": "node scripts/deploy-functions.mjs --env dev",
+    "deploy:functions:prod": "node scripts/deploy-functions.mjs --env prod",
     "deploy:functions:status": "node scripts/deploy-functions.mjs --status",
     "deploy:functions:diff": "node scripts/deploy-functions.mjs --diff",
     "db:current": "node scripts/check-link-state.mjs",

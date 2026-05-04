@@ -1,4 +1,3 @@
-import { readFileSync } from 'node:fs';
 import { execSync } from 'node:child_process';
 import { readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
@@ -8,6 +7,22 @@ import 'dotenv/config';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
+
+export const PROJECT_REFS = {
+  dev: 'locxfzyhfugetawadghu',
+  prod: 'chikljxwgiskyjsnjelf',
+};
+
+export function getProjectRef(env) {
+  if (!env) {
+    throw new Error('getProjectRef requires an env argument (use "dev" or "prod")');
+  }
+  const ref = PROJECT_REFS[env];
+  if (!ref) {
+    throw new Error(`Unknown env "${env}". Use --env dev or --env prod`);
+  }
+  return ref;
+}
 
 export function parseConfigToml(content) {
   const match = content.match(/^project_id\s*=\s*["']([^"']+)["']/m);
@@ -58,7 +73,7 @@ export function buildDeployList({ repoFunctions, remoteFunctions, changedFunctio
   };
 }
 
-function parseArgs(argv) {
+export function parseArgs(argv) {
   const args = argv.slice(2);
   const flags = {
     status: args.includes('--status'),
@@ -67,10 +82,20 @@ function parseArgs(argv) {
     dryRun: args.includes('--dry-run'),
     yes: args.includes('--yes'),
     function: null,
+    env: 'dev',
   };
   const fnIdx = args.indexOf('--function');
   if (fnIdx !== -1 && args[fnIdx + 1]) {
     flags.function = args[fnIdx + 1];
+  }
+  const envIdx = args.indexOf('--env');
+  if (envIdx !== -1 && args[envIdx + 1]) {
+    flags.env = args[envIdx + 1];
+  } else {
+    const envEq = args.find(a => a.startsWith('--env='));
+    if (envEq) {
+      flags.env = envEq.slice('--env='.length);
+    }
   }
   return flags;
 }
@@ -148,17 +173,9 @@ async function main() {
     process.exit(1);
   }
 
-  const configPath = join(ROOT, 'supabase', 'config.toml');
-  let configContent;
-  try {
-    configContent = readFileSync(configPath, 'utf-8');
-  } catch {
-    console.error(`Error: Cannot read ${configPath}`);
-    process.exit(1);
-  }
-
-  const projectRef = parseConfigToml(configContent);
   const flags = parseArgs(process.argv);
+  const projectRef = getProjectRef(flags.env);
+  console.log(`▸ Environment: ${flags.env}`);
 
   if (flags.function) {
     const repoFns = getRepoFunctions();
