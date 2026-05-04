@@ -1,0 +1,32 @@
+name: Dev Supabase Keepalive
+
+on:
+  schedule:
+    - cron: '0 12 */3 * *'
+  workflow_dispatch:
+
+jobs:
+  keepalive:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping dev Supabase REST API to prevent free-tier pause
+        env:
+          DEV_SUPABASE_URL: ${{ secrets.DEV_SUPABASE_URL }}
+          DEV_SUPABASE_ANON_KEY: ${{ secrets.DEV_SUPABASE_ANON_KEY }}
+        run: |
+          if [ -z "$DEV_SUPABASE_URL" ] || [ -z "$DEV_SUPABASE_ANON_KEY" ]; then
+            echo "::error::DEV_SUPABASE_URL or DEV_SUPABASE_ANON_KEY secret is missing"
+            exit 1
+          fi
+
+          response=$(curl -s -o /dev/null -w "%{http_code}" \
+            "${DEV_SUPABASE_URL}/rest/v1/" \
+            -H "apikey: ${DEV_SUPABASE_ANON_KEY}" \
+            -H "Authorization: Bearer ${DEV_SUPABASE_ANON_KEY}")
+
+          if [ "$response" -ge 200 ] && [ "$response" -lt 500 ]; then
+            echo "Dev Supabase responded HTTP $response — alive"
+          else
+            echo "::error::Dev Supabase unreachable (HTTP $response)"
+            exit 1
+          fi
