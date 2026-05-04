@@ -18,6 +18,7 @@ if (!existsSync(hooksDir)) mkdirSync(hooksDir, { recursive: true });
 
 const hooks = [
   { src: join('scripts', 'pre-commit-secrets.sh'), dest: join(hooksDir, 'pre-commit') },
+  { src: join('scripts', 'pre-push-protect-main.sh'), dest: join(hooksDir, 'pre-push') },
 ];
 
 for (const { src, dest } of hooks) {
