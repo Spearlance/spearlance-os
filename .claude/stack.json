@@ -11,6 +11,18 @@
   "packageManager": "npm",
   "phase": "hardening",
   "decided": "2026-03-03",
+  "environments": {
+    "production": {
+      "supabaseRef": "chikljxwgiskyjsnjelf",
+      "vercelEnv": "Production",
+      "url": "https://os.spearlance.com"
+    },
+    "development": {
+      "supabaseRef": "zlljsdaxsggkasvympku",
+      "vercelEnv": "Preview",
+      "url": "http://localhost:8080"
+    }
+  },
   "versions": {
     "react": "18.3.1",
     "typescript": "5.8.3",

@@ -41,10 +41,12 @@ npm run test:e2e:report
 
 The shared dev/staging Supabase instance contains real client data. Tests MUST be scoped to the **ABC Company** test client. Never click into another client's records, never create destructive operations against real data, never modify accounts other than the test account.
 
-Credentials are in `.env`:
-- `PLAYWRIGHT_TEST_EMAIL` — login email (dev test account)
+Credentials are in `.env.local` (dev environment):
+- `PLAYWRIGHT_TEST_EMAIL` — login email (dev test account, seeded in dev DB)
 - `PLAYWRIGHT_TEST_PASSWORD` — login password
 - `PLAYWRIGHT_BASE_URL` — defaults to `http://localhost:8080`
+
+Tests always run against the **dev** Supabase project (`zlljsdaxsggkasvympku`). Never against production.
 
 If a flow requires acting on a different client, stop and ask before touching anything else.
 

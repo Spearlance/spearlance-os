@@ -111,6 +111,7 @@ Rules auto-load from `.claude/rules/`:
 | **facebook-capi** | Meta Conversions API event schema, dedup, and server-side tracking rules |
 | **meta-api-versioning** | Meta Graph API version lifecycle, upgrade cadence, deprecation handling |
 | **pinterest** | Pinterest API conventions, OAuth refresh, rate limit patterns |
+| **prod-safety** | Two-ref doctrine, prod firewall, escape valve, Vercel/Stripe rules |
 | **seo-doctrine** | Spearlance SEO operating stance, on-page rules, content thresholds, page context protection, escalation |
 
 ## Model Selection
@@ -134,6 +135,51 @@ Default mode: `bypassPermissions` — auto-approves everything except the deny-l
 | `plan` | Read-only, no writes | Zero — exploration only |
 
 Deny-list always active regardless of mode (catastrophic commands blocked).
+
+## Environment: Dev/Main Split
+
+Two Supabase environments:
+- **Production** (`chikljxwgiskyjsnjelf`): `os.spearlance.com`, main branch only — firewalled
+- **Development** (`zlljsdaxsggkasvympku`): local dev + Vercel previews + Playwright
+
+### Safety Net
+
+- **prod-firewall hook** (`.claude/hooks/prod-firewall.sh`): blocks destructive prod commands at tool layer
+- **prod-safety rule** (`.claude/rules/prod-safety.md`): documents firewall + escape valve
+- **predev script** (Stripe live-key check): blocks `npm run dev` if live keys in `.env.local`
+- **pre-commit hook**: blocks commits containing live Stripe keys or `.env` files
+
+### Daily Workflow
+
+```bash
+git checkout -b feat/something
+npm run db:current             # should show DEV
+npm run dev                    # localhost reads .env.local -> dev Supabase
+# write code, test, push
+git push origin feat/something # -> Vercel preview -> dev Supabase
+# PR review -> merge to main
+# Vercel auto-rebuilds production -> prod Supabase
+```
+
+### Migration Promotion
+
+```bash
+# Test on dev (safe)
+npx supabase db push --project-ref zlljsdaxsggkasvympku
+
+# Merge PR to main, then promote to prod (requires confirmation):
+npm run prod:confirm           # type "PRODUCTION"
+npx supabase db push --project-ref chikljxwgiskyjsnjelf
+```
+
+### Edge Functions
+
+- `npm run deploy:functions:dev` — deploy to dev (default)
+- `npm run deploy:functions:prod` — deploy to prod (explicit, firewalled)
+
+### Seed Data
+
+`npm run db:seed` — resets dev DB to known state with ABC Company fixtures.
 <!-- armadillo:end -->
 
 <!-- Add your project-specific instructions below this line -->
