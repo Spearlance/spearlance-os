@@ -12,7 +12,7 @@ describe('seed data file', () => {
   const seed = existsSync(seedPath) ? readFileSync(seedPath, 'utf-8') : '';
 
   it('references the test admin email used by Playwright', () => {
-    expect(seed).toContain('test-admin@spearlance-dev.com');
+    expect(seed).toContain('dev@spearlance.com');
   });
 
   it('creates ABC Company client', () => {

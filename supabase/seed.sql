@@ -7,7 +7,7 @@
 --     then re-INSERT so the dataset stays clean across runs.
 --
 -- Auth dependency:
---   The test admin user (test-admin@spearlance-dev.com) must be created via
+--   The test admin user (dev@spearlance.com) must be created via
 --   the Supabase Dashboard before running this seed. See Task 6 Step 2 in
 --   .claude/docs/plans/2026-05-03-dev-main-environment-split.md
 --
@@ -32,9 +32,9 @@ ON CONFLICT (id) DO NOTHING;
 -- ------------------------------------------------------------
 INSERT INTO public.clients (id, name, domain, status, billing_status, billing_plan_id, front_tag, auto_blog_mode, website_unlocked, subscription_status, company_name, industry)
 VALUES
-  ('00000000-0000-0000-0000-0000000000c1', 'ABC Company',          'abc-company-test.com',   'active', 'good', '00000000-0000-0000-0000-0000000000a1', 'abc-company',         'auto',   true,  'active',   'ABC Company',          'general'),
-  ('00000000-0000-0000-0000-0000000000c2', 'Demo Construction Co', 'demo-construction.com',  'active', 'good', '00000000-0000-0000-0000-0000000000a0', 'demo-construction',   'manual', true,  'trialing', 'Demo Construction Co', 'construction'),
-  ('00000000-0000-0000-0000-0000000000c3', 'Sunshine Dental',      'sunshine-dental-test.com','active','good', '00000000-0000-0000-0000-0000000000a0', 'sunshine-dental',     'manual', false, 'active',   'Sunshine Dental',      'healthcare')
+  ('00000000-0000-0000-0000-0000000000c1', 'ABC Company',          'abc-company-test.com',   'active', 'good', '00000000-0000-0000-0000-0000000000a1', 'abc-company',         'queue', true,  'active',   'ABC Company',          'general'),
+  ('00000000-0000-0000-0000-0000000000c2', 'Demo Construction Co', 'demo-construction.com',  'active', 'good', '00000000-0000-0000-0000-0000000000a0', 'demo-construction',   'off',   true,  'trialing', 'Demo Construction Co', 'construction'),
+  ('00000000-0000-0000-0000-0000000000c3', 'Sunshine Dental',      'sunshine-dental-test.com','active','good', '00000000-0000-0000-0000-0000000000a0', 'sunshine-dental',     'off',   false, 'active',   'Sunshine Dental',      'healthcare')
 ON CONFLICT (id) DO NOTHING;
 
 -- ------------------------------------------------------------
@@ -48,11 +48,11 @@ DECLARE
 BEGIN
   SELECT id INTO v_admin_id
   FROM auth.users
-  WHERE email = 'test-admin@spearlance-dev.com'
+  WHERE email = 'dev@spearlance.com'
   LIMIT 1;
 
   IF v_admin_id IS NULL THEN
-    RAISE NOTICE 'Skipping admin-dependent seed: auth user test-admin@spearlance-dev.com not found yet';
+    RAISE NOTICE 'Skipping admin-dependent seed: auth user dev@spearlance.com not found yet';
     RETURN;
   END IF;
 
@@ -103,7 +103,7 @@ DECLARE
 BEGIN
   SELECT id INTO v_admin_id
   FROM auth.users
-  WHERE email = 'test-admin@spearlance-dev.com'
+  WHERE email = 'dev@spearlance.com'
   LIMIT 1;
 
   IF v_admin_id IS NULL THEN
@@ -130,7 +130,7 @@ WHERE client_id IN (
 
 INSERT INTO public.web_events (client_id, received_at, ts_ms, sid, type, url, path, meta)
 VALUES
-  ('00000000-0000-0000-0000-0000000000c1', now() - interval '1 day',  (extract(epoch from now() - interval '1 day')  * 1000)::bigint, 'sid-fixture-1', 'cwv',      'https://abc-company-test.com/',        '/', '{"lcp":1200,"fid":50,"cls":0.05}'::jsonb),
-  ('00000000-0000-0000-0000-0000000000c1', now() - interval '2 days', (extract(epoch from now() - interval '2 days') * 1000)::bigint, 'sid-fixture-2', 'cwv',      'https://abc-company-test.com/',        '/', '{"lcp":1400,"fid":70,"cls":0.08}'::jsonb),
-  ('00000000-0000-0000-0000-0000000000c1', now() - interval '1 hour', (extract(epoch from now() - interval '1 hour') * 1000)::bigint, 'sid-fixture-3', 'pageview', 'https://abc-company-test.com/',        '/', '{"referrer":"google"}'::jsonb),
-  ('00000000-0000-0000-0000-0000000000c2', now() - interval '1 day',  (extract(epoch from now() - interval '1 day')  * 1000)::bigint, 'sid-fixture-4', 'cwv',      'https://demo-construction.com/',       '/', '{"lcp":2500,"fid":120,"cls":0.15}'::jsonb);
+  ('00000000-0000-0000-0000-0000000000c1', now() - interval '1 day',  (extract(epoch from now() - interval '1 day')  * 1000)::bigint, 'sid-fixture-1', 'page_view', 'https://abc-company-test.com/',        '/', '{"referrer":"google"}'::jsonb),
+  ('00000000-0000-0000-0000-0000000000c1', now() - interval '2 days', (extract(epoch from now() - interval '2 days') * 1000)::bigint, 'sid-fixture-2', 'page_view', 'https://abc-company-test.com/about',   '/about', '{"referrer":"direct"}'::jsonb),
+  ('00000000-0000-0000-0000-0000000000c1', now() - interval '1 hour', (extract(epoch from now() - interval '1 hour') * 1000)::bigint, 'sid-fixture-3', 'page_view', 'https://abc-company-test.com/',        '/', '{"referrer":"google"}'::jsonb),
+  ('00000000-0000-0000-0000-0000000000c2', now() - interval '1 day',  (extract(epoch from now() - interval '1 day')  * 1000)::bigint, 'sid-fixture-4', 'page_view', 'https://demo-construction.com/',       '/', '{"referrer":"facebook"}'::jsonb);
