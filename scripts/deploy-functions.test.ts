@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseConfigToml, getChangedFunctions, detectSharedChanges, buildDeployList } from './deploy-functions.mjs';
+import { parseConfigToml, getChangedFunctions, detectSharedChanges, buildDeployList, parseArgs, getProjectRef } from './deploy-functions.mjs';
 
 describe('deploy-functions', () => {
   it('module exports all expected functions', () => {
@@ -7,6 +7,50 @@ describe('deploy-functions', () => {
     expect(typeof getChangedFunctions).toBe('function');
     expect(typeof detectSharedChanges).toBe('function');
     expect(typeof buildDeployList).toBe('function');
+    expect(typeof parseArgs).toBe('function');
+    expect(typeof getProjectRef).toBe('function');
+  });
+});
+
+describe('parseArgs --env flag', () => {
+  it('extracts --env value when given', () => {
+    const flags = parseArgs(['node', 'deploy-functions.mjs', '--env', 'dev']);
+    expect(flags.env).toBe('dev');
+  });
+
+  it('extracts --env=value form', () => {
+    const flags = parseArgs(['node', 'deploy-functions.mjs', '--env=prod']);
+    expect(flags.env).toBe('prod');
+  });
+
+  it('defaults env to "dev" when --env is not provided', () => {
+    const flags = parseArgs(['node', 'deploy-functions.mjs', '--status']);
+    expect(flags.env).toBe('dev');
+  });
+
+  it('still parses other flags alongside --env', () => {
+    const flags = parseArgs(['node', 'deploy-functions.mjs', '--env', 'prod', '--all', '--yes']);
+    expect(flags.env).toBe('prod');
+    expect(flags.all).toBe(true);
+    expect(flags.yes).toBe(true);
+  });
+});
+
+describe('getProjectRef', () => {
+  it('returns dev ref for env="dev"', () => {
+    expect(getProjectRef('dev')).toBe('locxfzyhfugetawadghu');
+  });
+
+  it('returns prod ref for env="prod"', () => {
+    expect(getProjectRef('prod')).toBe('chikljxwgiskyjsnjelf');
+  });
+
+  it('throws on unknown env value', () => {
+    expect(() => getProjectRef('staging')).toThrow(/staging/);
+  });
+
+  it('throws on empty env value', () => {
+    expect(() => getProjectRef('')).toThrow();
   });
 });
 
