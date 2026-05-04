@@ -8,8 +8,10 @@ import 'dotenv/config';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
 
+// dev is a persistent branch on the prod project (forked schema, isolated DB).
+// prod is the SpearlanceOS root project — never deploy to it without --env prod.
 export const PROJECT_REFS = {
-  dev: 'locxfzyhfugetawadghu',
+  dev: 'zlljsdaxsggkasvympku',
   prod: 'chikljxwgiskyjsnjelf',
 };
 

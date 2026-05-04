@@ -37,8 +37,8 @@ describe('parseArgs --env flag', () => {
 });
 
 describe('getProjectRef', () => {
-  it('returns dev ref for env="dev"', () => {
-    expect(getProjectRef('dev')).toBe('locxfzyhfugetawadghu');
+  it('returns dev branch ref for env="dev"', () => {
+    expect(getProjectRef('dev')).toBe('zlljsdaxsggkasvympku');
   });
 
   it('returns prod ref for env="prod"', () => {

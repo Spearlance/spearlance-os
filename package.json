@@ -23,7 +23,7 @@
     "deploy:functions:diff": "node scripts/deploy-functions.mjs --diff",
     "db:current": "node scripts/check-link-state.mjs",
     "prod:confirm": "node scripts/confirm-prod.mjs",
-    "db:link:dev": "npx supabase link --project-ref locxfzyhfugetawadghu",
+    "db:link:dev": "npx supabase link --project-ref zlljsdaxsggkasvympku",
     "db:link:prod": "npx supabase link --project-ref chikljxwgiskyjsnjelf",
     "db:push": "npx supabase db push --linked",
     "db:push:dry": "npx supabase db push --linked --dry-run",
