@@ -1,1 +1,0 @@
-Set up armadillo in this project. No existing .claude/ directory. After installing, scan the codebase and recommend custom skills and documentation for this project.

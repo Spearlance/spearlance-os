@@ -1,1 +1,0 @@
-I have an existing .claude/ directory with custom skills (cleanup, commit, deps), custom agents (api-reviewer, planner, verifier), custom hooks (block-destructive, protect-main-branch), and a rules/ directory. I want to migrate to armadillo. Run the onboarding skill.
