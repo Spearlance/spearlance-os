@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useClient } from "@/contexts/ClientContext";
+import { markTaskComplete } from "@/lib/taskCompletion";
+import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -128,14 +130,13 @@ export function WeeklyPlanView({ onTaskClick, onCreateTask }: WeeklyPlanViewProp
     }
   };
 
-  const handleQuickComplete = async (taskId: string, currentStatus: string) => {
-    const newStatus = currentStatus === "done" ? "to_do" : "done";
-    
-    await supabase
-      .from("tasks")
-      .update({ status: newStatus })
-      .eq("id", taskId);
-
+  const handleQuickComplete = async (taskId: string, currentStatus: string, clientId: string) => {
+    const complete = currentStatus !== "done";
+    const error = await markTaskComplete(taskId, clientId, complete);
+    if (error) {
+      toast.error("Couldn't update task");
+      return;
+    }
     loadWeeklyTasks();
   };
 
@@ -233,7 +234,7 @@ export function WeeklyPlanView({ onTaskClick, onCreateTask }: WeeklyPlanViewProp
                           checked={task.status === "done"}
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleQuickComplete(task.id, task.status);
+                            handleQuickComplete(task.id, task.status, task.client_id);
                           }}
                           className="mt-0.5"
                         />

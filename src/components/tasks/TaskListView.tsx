@@ -10,6 +10,7 @@ interface Task {
   description?: string;
   priority: string;
   status: string;
+  column_id?: string;
   due_date?: string;
   color?: string;
   assignees?: Array<{ id: string; name: string; avatar_url?: string }>;
@@ -20,7 +21,7 @@ interface Task {
 
 interface TaskListViewProps {
   tasks: Task[];
-  taskColumns: Array<{ key: string; name: string; color: string }>;
+  taskColumns: Array<{ id: string; key: string; name: string; color: string; mapped_status?: string }>;
   onTaskClick: (task: Task) => void;
   onCreateTask: () => void;
   groupBy?: "status" | "priority";
@@ -45,9 +46,11 @@ export const TaskListView = ({
         grouped[column.name] = [];
       });
       
-      // Group tasks by their status
+      // Group tasks by column identity, falling back to mapped_status
       tasks.forEach(task => {
-        const column = taskColumns.find(col => col.key === task.status);
+        const column =
+          taskColumns.find(col => col.id === task.column_id) ??
+          taskColumns.find(col => col.mapped_status === task.status);
         if (column) {
           grouped[column.name].push(task);
         }
