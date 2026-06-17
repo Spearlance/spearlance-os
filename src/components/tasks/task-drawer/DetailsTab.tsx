@@ -10,21 +10,7 @@ import { WatcherSelector } from "../WatcherSelector";
 import { SubtaskList } from "../SubtaskList";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
-
-const quillModules = {
-  toolbar: [
-    ['bold', 'italic', 'underline'],
-    [{ 'list': 'ordered' }, { 'list': 'bullet' }],
-    ['link'],
-    ['clean']
-  ]
-};
-
-const quillFormats = [
-  'bold', 'italic', 'underline',
-  'list', 'bullet',
-  'link'
-];
+import { quillModules, quillFormats } from "./quillConfig";
 
 interface EditedTask {
   title: string;
