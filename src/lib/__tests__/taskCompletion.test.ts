@@ -1,4 +1,14 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
+
+// Prevent the Supabase singleton from creating a real client (and its
+// autoRefreshToken timer) when taskCompletion.ts is imported. Only pure
+// functions are tested here — no Supabase calls are made.
+vi.mock("@/integrations/supabase/client", () => ({
+  supabase: {
+    from: vi.fn(),
+  },
+}));
+
 import { resolveCompletionUpdate, type CompletionColumn } from "@/lib/taskCompletion";
 
 const columns: CompletionColumn[] = [
