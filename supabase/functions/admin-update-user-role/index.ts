@@ -8,7 +8,7 @@ const corsHeaders = {
 
 interface UpdateRoleRequest {
   userId: string;
-  newRole: 'admin' | 'fmm' | 'client';
+  newRole: 'admin' | 'fmm' | 'client' | 'web_designer';
 }
 
 async function checkAdminRateLimit(

@@ -1,0 +1,11 @@
+-- Add 'web_designer' to the app_role enum.
+--
+-- The frontend (Admin role dropdown, AddUserDialog, EditUserDialog) and the
+-- create-user / admin-update-user-role edge functions all reference a
+-- 'web_designer' role, but the enum was created with only ('admin','fmm','client').
+-- Any attempt to set a user's role to web_designer failed with
+-- "invalid input value for enum app_role: web_designer", leaving web designers
+-- stuck as clients. This migration teaches the database the role the app expects.
+--
+-- ADD VALUE runs outside the values' usage so it is safe in a single migration.
+ALTER TYPE public.app_role ADD VALUE IF NOT EXISTS 'web_designer';
