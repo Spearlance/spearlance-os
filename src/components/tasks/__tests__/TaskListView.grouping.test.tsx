@@ -15,8 +15,8 @@ describe("TaskListView grouping", () => {
   it("places a task in its column even when column.key != status enum", () => {
     render(
       <TaskListView
-        tasks={tasks as any}
-        taskColumns={columns as any}
+        tasks={tasks}
+        taskColumns={columns}
         onTaskClick={vi.fn()}
         onCreateTask={vi.fn()}
       />
