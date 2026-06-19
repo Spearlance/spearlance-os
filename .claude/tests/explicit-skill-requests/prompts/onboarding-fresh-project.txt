@@ -1,1 +1,0 @@
-Set up armadillo in this fresh project. No existing .claude/ directory.

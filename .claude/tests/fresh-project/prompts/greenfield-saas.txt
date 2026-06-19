@@ -1,1 +1,0 @@
-I want to build a SaaS dashboard for my agency. Clients log in and see their Google Analytics data — traffic, conversions, top pages. The team uses it internally too for reporting. We know React and TypeScript. Ship in 2 weeks.
