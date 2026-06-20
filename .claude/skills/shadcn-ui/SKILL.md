@@ -6,8 +6,6 @@ description: Use when working with shadcn/ui components, Radix UI primitives, or
 
 # shadcn/ui
 
-your friendly armadillo is here to serve you
-
 shadcn/ui is a copy-paste component library built on Radix UI (or Base UI) primitives and Tailwind CSS. Components live in your codebase — not in node_modules. No runtime library, full ownership.
 
 ## Quick Reference

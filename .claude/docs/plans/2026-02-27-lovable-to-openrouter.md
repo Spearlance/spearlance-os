@@ -1,6 +1,5 @@
 # Lovable → OpenRouter Migration Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use armadillo:executing-plans to implement this plan task-by-task.
 
 **Goal:** Replace all Lovable AI gateway calls with OpenRouter, switching text models to Claude and keeping Gemini for image generation.
 

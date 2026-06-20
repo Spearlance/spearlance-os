@@ -1,6 +1,5 @@
 # Vercel SPA Deployment Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use armadillo:executing-plans to implement this plan task-by-task.
 
 **Goal:** Deploy SpearlanceOS Vite SPA to Vercel at os.spearlance.com, pointing to existing remote Supabase.
 

@@ -10,12 +10,6 @@ description: Use when rendering Remotion compositions to video files, stills, or
 
 **Mandatory Announcement — FIRST OUTPUT before anything else:**
 
-```
-┏━ 🎬 render-video ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ [one-line description of what you're rendering]             ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
-```
-
 No exceptions. Box frame first, then work.
 
 Remotion v4.0 rendering — CLI and programmatic SSR APIs. Embedded Rust-powered FFmpeg. No external FFmpeg install needed.

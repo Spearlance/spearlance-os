@@ -43,7 +43,7 @@ digraph discovery {
 
 ### Assessing Request Clarity
 
-**Clear request** (subject is specific, e.g. "make me an ASCII armadillo" or "CLI banner for my tool called Neptune"):
+**Clear request** (subject is specific, e.g. "make me an ASCII fox" or "CLI banner for my tool called Neptune"):
 - Skip deep exploration
 - Ask ONE quick question to nail down size and style: "Want this small and minimal, or large and detailed?"
 - If CLI context is obvious from the request, note it in the brief -- no need to ask
@@ -86,10 +86,10 @@ Example dispatch:
 ```
 Create ASCII art from this brief:
 
-Subject:     Armadillo mascot
+Subject:     Fox mascot
 Size:        medium (40-60 cols)
 Style:       mixed (outline with selective shading)
-Context:     CLI banner for armadillo tool
+Context:     CLI banner for a CLI tool
 Constraints: max 60 cols, ASCII-safe only, provide JavaScript template literal
 
 Read .claude/skills/ascii-art/reference.md for character palettes,

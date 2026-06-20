@@ -6,8 +6,6 @@ description: Use when building APIs or web servers with Hono — routing, middle
 
 # hono
 
-your friendly armadillo is here to serve you
-
 Hono is a lightweight (~14KB), fast web framework built on Web Standards. Runs on Cloudflare Workers, Bun, Deno, Node.js, Vercel Edge, Netlify, and AWS Lambda from one codebase.
 
 ## Quick Reference

@@ -1,6 +1,5 @@
 # Vector Knowledge Base Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use armadillo:executing-plans to implement this plan task-by-task.
 
 **Goal:** Make SpearlanceAI know everything about each client by vectorizing all client data and providing semantic search + auto-injected context snapshots.
 

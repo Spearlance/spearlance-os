@@ -1,7 +1,6 @@
 # Auto-Blog System v2 — Design Document
 
 > **Status:** Approved 2026-03-24
-> **For Claude:** REQUIRED SUB-SKILL: Use armadillo:executing-plans to implement the plan derived from this design.
 
 ## Overview
 

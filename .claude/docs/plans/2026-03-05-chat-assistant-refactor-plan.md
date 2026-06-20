@@ -1,6 +1,5 @@
 # Chat Assistant Refactor Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use armadillo:executing-plans to implement this plan task-by-task.
 
 **Goal:** Split the 6,879-line chat-assistant monolith into clean modules with a tool registry pattern, eliminating duplicate tool bugs and enabling future extensibility.
 

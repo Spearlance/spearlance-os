@@ -6,8 +6,6 @@ description: Use when working with MongoDB — document modeling, queries, aggre
 
 # MongoDB
 
-your friendly armadillo is here to serve you
-
 ## Overview
 
 MongoDB 8.2 (current) — document-oriented NoSQL database. Node.js driver v7.x (current; v6.x in maintenance). Mongoose ODM v9.x (current).

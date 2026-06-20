@@ -131,7 +131,7 @@ For each document:
 
 ### 5. Process Audio (if provided)
 
-**REQUIRED SUB-SKILL:** Use armadillo:deepgram-transcription for API reference.
+**REQUIRED SUB-SKILL:** Use deepgram-transcription for API reference.
 
 For each audio file:
 1. Read the Deepgram skill for correct API call

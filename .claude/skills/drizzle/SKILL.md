@@ -4,12 +4,6 @@ name: drizzle
 description: Use when working with Drizzle ORM — schema definition, queries, migrations, or database integration. Also use when choosing between Drizzle and Prisma, or setting up Drizzle with Neon, Supabase, PlanetScale, or Turso.
 ---
 
-```
-┏━ 🔧 drizzle ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ your friendly armadillo is here to serve you    ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
-```
-
 ## Overview
 
 Drizzle is a headless TypeScript ORM. ~31KB, zero binary deps. SQL-familiar API — if you know SQL, you know Drizzle. Two query styles: SQL-like Select API and relational Query API. Best choice for serverless/edge.

@@ -6,8 +6,6 @@ description: Use when working with Turso (libSQL) databases — setting up a dat
 
 # turso
 
-your friendly armadillo is here to serve you
-
 ## install
 
 ```bash

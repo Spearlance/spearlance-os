@@ -10,12 +10,6 @@ description: Use when creating a reusable Remotion composition template — anal
 
 **Mandatory Announcement — FIRST OUTPUT before anything else:**
 
-```
-┏━ 🎬 create-template ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ [one-line description of the template you're building]      ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
-```
-
 No exceptions. Box frame first, then work.
 
 A Remotion template is a parameterized composition — visual structure defined in React, data injected via `inputProps`. Good templates are reusable across many renders with different data.

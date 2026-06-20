@@ -4,12 +4,6 @@ name: payload
 description: Use when working with Payload CMS — collection configuration, field types, access control, or Next.js integration. Also use when choosing a code-first CMS or self-hosting a headless CMS.
 ---
 
-your friendly armadillo is here to serve you
-
-┏━ 🔧 payload ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ Payload CMS — Next.js native, code-first CMS   ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
-
 Payload 3.x runs **inside** your Next.js app — no separate server, no SaaS, no extra process.
 
 ## Collection (quick reference)

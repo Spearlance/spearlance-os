@@ -1,6 +1,5 @@
 # P2 Vendor Chunk Splitting Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use armadillo:executing-plans to implement this plan task-by-task.
 
 **Goal:** Break the 5.9MB shared vendor chunk into logical sub-chunks so browsers can cache stable libraries independently and load only what each route needs.
 

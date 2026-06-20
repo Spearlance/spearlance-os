@@ -222,7 +222,7 @@ const response = await client.chat.completions.create({
 // Generate
 const response = await client.images.generate({
   model: "gpt-image-1",
-  prompt: "A photorealistic armadillo wearing a graduation cap.",
+  prompt: "A photorealistic red panda wearing a graduation cap.",
   n: 1,
   size: "1024x1024",
   quality: "high", // "low" | "medium" | "high"

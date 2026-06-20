@@ -6,12 +6,6 @@ description: Use when generating client-facing brand deliverables — brand voic
 
 # Brand Export
 
-```
-┏━ 📦 brand-export ━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ Generating client-facing brand deliverables  ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
-```
-
 ## Overview
 
 Generates exportable client-facing brand deliverables from the knowledge base and organized assets. Produces PDFs and zip packages matching the quality of professional brand asset packages. This is the final step in the brand pipeline — runs after `brand-knowledge-builder` (knowledge base + `brand.json`) and `brand-asset-organizer` (organized assets).

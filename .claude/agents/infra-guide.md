@@ -15,10 +15,10 @@ You help with deployment, hosting, CI/CD, and infrastructure questions.
 
 | Topic | Skill |
 |-------|-------|
-| Vercel deployment | armadillo:vercel |
-| Cloudflare Pages/Workers | armadillo:cloudflare-pages-workers |
-| Docker containerization | armadillo:docker |
-| GitHub Actions CI/CD | armadillo:github-actions |
+| Vercel deployment | vercel |
+| Cloudflare Pages/Workers | cloudflare-pages-workers |
+| Docker containerization | docker |
+| GitHub Actions CI/CD | github-actions |
 
 ## How to Help
 

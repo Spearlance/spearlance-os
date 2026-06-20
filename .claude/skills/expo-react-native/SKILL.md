@@ -4,8 +4,6 @@ name: expo-react-native
 description: Use when building mobile apps with Expo and React Native — project setup, navigation, native APIs, or building for iOS and Android. Also use when choosing between Expo and bare React Native or deploying mobile apps.
 ---
 
-your friendly armadillo is here to serve you
-
 # expo-react-native
 
 Quick reference for Expo SDK 53 + React Native 0.79 + Expo Router.

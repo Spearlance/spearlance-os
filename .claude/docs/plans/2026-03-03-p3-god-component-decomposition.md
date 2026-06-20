@@ -1,6 +1,5 @@
 # P3 God Component Decomposition Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use armadillo:executing-plans to implement this plan task-by-task.
 
 **Goal:** Break three god components (4,874 LOC total) into focused sub-components along their natural tab boundaries, without changing any behavior.
 

@@ -6,12 +6,6 @@ description: Use when auditing a project for existing brand assets, scanning for
 
 # Brand Discovery
 
-```
-┏━ 🔍 brand-discovery ━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ Scanning project for brand assets and gaps  ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
-```
-
 ## Overview
 
 Read-only audit skill. Scans the project for existing brand assets and generates a gap report showing what exists vs what's missing. Output determines which brand skill to run next.

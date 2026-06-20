@@ -1,6 +1,5 @@
 # SOS Tracker v3 Phase 1 Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use armadillo:executing-plans to implement this plan task-by-task.
 
 **Goal:** Upgrade SOS Tracker to capture click IDs, detect form submissions and phone clicks, filter bots, and store conversion events — making the tracker a universal pixel.
 
