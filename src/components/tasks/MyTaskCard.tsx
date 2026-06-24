@@ -5,6 +5,7 @@ import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/comp
 import { Calendar, CheckCircle2, Repeat, Link, Building2, ExternalLink, Globe } from "lucide-react";
 import { format, isToday, isTomorrow, isPast } from "date-fns";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useNavigate } from "react-router-dom";
 import { MyTask } from "@/hooks/useMyTasks";
 
@@ -13,6 +14,7 @@ interface MyTaskCardProps {
   onClick?: () => void;
   showClient?: boolean;
   onViewInBoard?: () => void;
+  onToggleComplete?: (task: MyTask, complete: boolean) => void;
 }
 
 const priorityColors = {
@@ -45,7 +47,7 @@ const getDueDateLabel = (dueDate: string) => {
   return { label: format(date, "MMM d"), className: "text-muted-foreground" };
 };
 
-export const MyTaskCard = ({ task, onClick, showClient = true, onViewInBoard }: MyTaskCardProps) => {
+export const MyTaskCard = ({ task, onClick, showClient = true, onViewInBoard, onToggleComplete }: MyTaskCardProps) => {
   const navigate = useNavigate();
   const borderColor = task.color || priorityColors[task.priority as keyof typeof priorityColors] || "#6B7280";
 
@@ -63,6 +65,13 @@ export const MyTaskCard = ({ task, onClick, showClient = true, onViewInBoard }: 
       >
         {/* Header */}
         <div className="flex items-start justify-between gap-2 mb-2">
+          <Checkbox
+            checked={task.status === "done"}
+            onClick={(e) => e.stopPropagation()}
+            onCheckedChange={(v) => onToggleComplete?.(task, v === true)}
+            aria-label="Mark task complete"
+            className="mt-0.5 shrink-0"
+          />
           <div className="flex-1 min-w-0">
             <Tooltip>
               <TooltipTrigger asChild>

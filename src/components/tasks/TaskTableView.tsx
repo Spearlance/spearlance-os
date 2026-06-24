@@ -18,6 +18,7 @@ interface Task {
   title: string;
   priority: string;
   status: string;
+  column_id?: string;
   due_date?: string;
   assignees?: Array<{ id: string; name: string; avatar_url?: string }>;
   tags?: Array<{ id: string; name: string; color: string }>;
@@ -26,7 +27,7 @@ interface Task {
 
 interface TaskTableViewProps {
   tasks: Task[];
-  taskColumns: Array<{ key: string; name: string; color: string }>;
+  taskColumns: Array<{ id: string; key: string; name: string; color: string; mapped_status?: string }>;
   onTaskClick: (task: Task) => void;
   onCreateTask: () => void;
 }
@@ -90,7 +91,9 @@ export const TaskTableView = ({
                   </TableCell>
                   <TableCell>
                     <Badge variant="secondary">
-                      {taskColumns.find(col => col.key === task.status)?.name || task.status}
+                      {(taskColumns.find(c => c.id === task.column_id)
+                        ?? taskColumns.find(c => c.mapped_status === task.status))?.name
+                        || task.status}
                     </Badge>
                   </TableCell>
                   <TableCell>

@@ -22,6 +22,8 @@ import {
   Flag
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { markTaskComplete } from "@/lib/taskCompletion";
+import { toast } from "sonner";
 
 export default function MyTasks() {
   const navigate = useNavigate();
@@ -40,6 +42,16 @@ export default function MyTasks() {
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
   const [selectedTask, setSelectedTask] = useState<any>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleToggleComplete = async (task: MyTask, complete: boolean) => {
+    const error = await markTaskComplete(task.id, task.client_id, complete);
+    if (error) {
+      toast.error("Couldn't update task");
+      return;
+    }
+    toast.success(complete ? "Task completed" : "Task reopened");
+    refetch();
+  };
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
@@ -287,6 +299,7 @@ export default function MyTasks() {
                         onClick={() => handleTaskClick(task)}
                         showClient={groupBy !== "client"}
                         onViewInBoard={() => handleViewInBoard(task)}
+                        onToggleComplete={handleToggleComplete}
                       />
                     ))}
                   </div>

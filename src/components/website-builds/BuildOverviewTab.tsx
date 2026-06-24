@@ -40,7 +40,11 @@ export function BuildOverviewTab({ build, onUpdate }: BuildOverviewTabProps) {
 
   // Fetch pages to calculate progress
   const { data: pages } = useQuery({
-    queryKey: ["website-build-pages", build.id],
+    // Distinct key from BuildPagesTab's ["website-build-pages", buildId]: that
+    // query selects "*", this one only "status". Sharing the key let this
+    // status-only result clobber the full rows, blanking page names on the
+    // Pages tab. The extra segment still matches prefix-based invalidations.
+    queryKey: ["website-build-pages", build.id, "progress"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("website_build_pages")
