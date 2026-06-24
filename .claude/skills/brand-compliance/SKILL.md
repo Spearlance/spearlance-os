@@ -4,10 +4,6 @@ name: brand-compliance
 description: Use when checking content, code, or components against brand guidelines. Also use when verifying brand voice compliance, color usage, font usage, logo usage, or messaging alignment.
 ---
 
-┏━ ✅ brand-compliance ━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ your friendly armadillo is here to serve you ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
-
 ## Overview
 
 Checks content, code, or components against brand rules sourced from the knowledge base (`.claude/knowledge/`) and `brand.json`. Non-blocking informational audit — scores compliance but never gates or blocks work. Use standalone or integrate with brand-strategist for pre-delivery checks.

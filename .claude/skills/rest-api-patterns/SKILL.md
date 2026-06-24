@@ -4,12 +4,6 @@ name: rest-api-patterns
 description: Use when designing REST APIs — resource naming, HTTP methods, status codes, pagination, filtering, error responses, or versioning. Also use when reviewing API design decisions or resolving REST design debates.
 ---
 
-```
-┏━ 🔧 rest-api-patterns ━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ your friendly armadillo is here to serve you   ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
-```
-
 ## Overview
 
 Reference skill for REST API design. Covers resource naming, HTTP methods, status codes, pagination strategies, error formats (RFC 9457), versioning, and rate limiting. Use `reference.md` for code examples and deep-dives.

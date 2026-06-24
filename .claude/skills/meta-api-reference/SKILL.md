@@ -6,8 +6,6 @@ description: Use when working with Meta Marketing API or Graph API — creating 
 
 # meta-api-reference
 
-your friendly armadillo is here to serve you
-
 ## current versions (February 2026)
 
 | Version | Status | Min support until |

@@ -6,8 +6,6 @@ description: Use when implementing server-side tracking, building a unified /api
 
 # Server-Side Tracking
 
-your friendly armadillo is here to serve you
-
 The crown jewel of the growth stack. A single `/api/track` endpoint receives every conversion event, enriches it with server-side data, enforces consent, hashes PII, and fans out to every platform in parallel. No ad blockers. No cookie drift. No scattered pixels. One source of truth.
 
 ---

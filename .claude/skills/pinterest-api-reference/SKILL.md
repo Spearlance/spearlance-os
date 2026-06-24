@@ -6,8 +6,6 @@ description: Use when working with the Pinterest API v5 — creating or managing
 
 # pinterest-api-reference
 
-your friendly armadillo is here to serve you
-
 ## current version
 
 Pinterest API v5 (current stable). Base URL: `https://api.pinterest.com/v5`

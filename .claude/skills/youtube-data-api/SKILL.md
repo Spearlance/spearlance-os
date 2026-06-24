@@ -55,7 +55,7 @@ youtube = build('youtube', 'v3', credentials=credentials)
 ### Search Videos
 ```python
 response = youtube.search().list(
-    q='armadillos', part='snippet', type='video', maxResults=10
+    q='red pandas', part='snippet', type='video', maxResults=10
 ).execute()
 ```
 

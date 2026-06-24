@@ -15,12 +15,12 @@ You help with domain management, DNS configuration, and DNS troubleshooting.
 
 | Topic | Skill |
 |-------|-------|
-| Cloudflare DNS management | armadillo:cloudflare-dns |
-| GoDaddy DNS management | armadillo:godaddy-dns |
-| Namecheap DNS management | armadillo:namecheap-dns |
-| Name.com DNS management | armadillo:namecom-dns |
-| Squarespace DNS management | armadillo:squarespace-dns |
-| Unified DNS ops | armadillo:dns-manager |
+| Cloudflare DNS management | cloudflare-dns |
+| GoDaddy DNS management | godaddy-dns |
+| Namecheap DNS management | namecheap-dns |
+| Name.com DNS management | namecom-dns |
+| Squarespace DNS management | squarespace-dns |
+| Unified DNS ops | dns-manager |
 
 ## How to Help
 

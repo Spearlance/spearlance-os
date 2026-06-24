@@ -4,12 +4,6 @@ name: react-hook-form
 description: Use when building forms in React with React Hook Form — registration, validation, error handling, or complex multi-step forms. Also use when integrating forms with Zod, shadcn/ui, or server actions.
 ---
 
-```
-┏━ 🔧 react-hook-form ━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ your friendly armadillo is here to serve you    ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
-```
-
 ## Overview
 
 React Hook Form v7.71+ — performant, uncontrolled forms. Minimal re-renders. Native HTML inputs by default; `Controller` for external UI libs. Zod resolver for type-safe validation.

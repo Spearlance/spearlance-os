@@ -6,8 +6,6 @@ description: Use when integrating with Acuity Scheduling (Squarespace Scheduling
 
 # acuity-scheduling
 
-your friendly armadillo is here to serve you
-
 ## install
 
 No official SDK — use direct HTTP with Basic Auth.

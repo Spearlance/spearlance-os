@@ -267,7 +267,7 @@ No structured decision tree. No clear criteria for choosing between them beyond 
 
 **Overall assessment: PASS**
 
-The skill adds value across all four questions. The most impactful contribution is Q2 (Docker CI fix) — training data had the concept but none of the implementation. The skill provides the specific Docker image registry, tag format, `docker run` command, and the critical warning about not running `--update-snapshots` on macOS. Without the skill, an Armadilloer would waste significant debugging time on CI rendering failures.
+The skill adds value across all four questions. The most impactful contribution is Q2 (Docker CI fix) — training data had the concept but none of the implementation. The skill provides the specific Docker image registry, tag format, `docker run` command, and the critical warning about not running `--update-snapshots` on macOS. Without the skill, a developer would waste significant debugging time on CI rendering failures.
 
 The pricing information (Q3) has a natural decay rate — the skill's February 2026 timestamp makes it reliable now but will need updating quarterly.
 

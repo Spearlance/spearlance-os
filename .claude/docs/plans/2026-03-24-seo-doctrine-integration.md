@@ -1,8 +1,7 @@
 # SEO Doctrine Integration Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use armadillo:executing-plans to implement this plan task-by-task.
 
-**Goal:** Encode Spearlance SEO Doctrine v2 into armadillo's rule system and update 5 SEO skills with doctrine-specific processes — zero duplication.
+**Goal:** Encode Spearlance SEO Doctrine v2 into the rule system and update 5 SEO skills with doctrine-specific processes — zero duplication.
 
 **Architecture:** One rule file holds all prescriptive governance (operating stance, meta title/description templates, URL patterns, content thresholds, interlinking rules, page context protection, escalation criteria, agent behavioral rules). Skills get surgical updates adding only NEW processes the doctrine introduces (expansion sequences, monitoring triggers, competitive response logic). Rule auto-loads on every SEO skill invocation — skills never repeat rule content.
 

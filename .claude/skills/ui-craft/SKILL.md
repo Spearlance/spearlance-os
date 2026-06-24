@@ -10,12 +10,6 @@ Creative direction, aesthetic exploration, and visual system generation. Use thi
 
 ## Announcement
 
-```
-┏━ 🎨 ui-craft ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ [one-line description of aesthetic task]        ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
-```
-
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 <EXTREMELY-IMPORTANT>

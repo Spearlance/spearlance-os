@@ -1,6 +1,5 @@
 # P0+P1 Codebase Hardening Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use armadillo:executing-plans to implement this plan task-by-task.
 
 **Goal:** Fix the 8MB monolithic bundle by adding route-level code splitting, add error boundaries to prevent full-app crashes, configure QueryClient for sane defaults, and verify auth guard coverage.
 

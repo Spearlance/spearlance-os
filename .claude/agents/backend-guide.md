@@ -15,10 +15,10 @@ You help with backend development questions — framework selection, API design,
 
 | Topic | Skill |
 |-------|-------|
-| Hono (edge-first framework) | armadillo:hono |
-| Express.js | armadillo:express |
-| tRPC (type-safe APIs) | armadillo:trpc |
-| REST API design patterns | armadillo:rest-api-patterns |
+| Hono (edge-first framework) | hono |
+| Express.js | express |
+| tRPC (type-safe APIs) | trpc |
+| REST API design patterns | rest-api-patterns |
 
 ## How to Help
 

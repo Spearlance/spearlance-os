@@ -15,12 +15,12 @@ You help with database questions — technology selection, schema design, query 
 
 | Topic | Skill |
 |-------|-------|
-| Neon (serverless Postgres) | armadillo:neon |
-| Supabase (Postgres + BaaS) | armadillo:supabase |
-| MongoDB (document DB) | armadillo:mongodb |
-| Redis / Upstash (caching, queues) | armadillo:redis-upstash |
-| Drizzle ORM | armadillo:drizzle |
-| Prisma ORM | armadillo:prisma |
+| Neon (serverless Postgres) | neon |
+| Supabase (Postgres + BaaS) | supabase |
+| MongoDB (document DB) | mongodb |
+| Redis / Upstash (caching, queues) | redis-upstash |
+| Drizzle ORM | drizzle |
+| Prisma ORM | prisma |
 
 ## How to Help
 

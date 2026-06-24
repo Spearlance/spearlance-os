@@ -10,12 +10,6 @@ description: Use when creating a supercut or compilation video — analyzing tra
 
 **Mandatory Announcement — FIRST OUTPUT before anything else:**
 
-```
-┏━ 🎬 create-supercut ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ [one-line description of the supercut you're building]      ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
-```
-
 No exceptions. Box frame first, then work.
 
 A supercut is a curated compilation of clips around a theme, keyword, or emotional arc. The workflow is: analyze → select → plan timeline → get approval → render. Never render without approval.

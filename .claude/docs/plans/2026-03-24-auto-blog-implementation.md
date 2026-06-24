@@ -1,6 +1,5 @@
 # Auto-Blog System v2 Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use armadillo:executing-plans to implement this plan task-by-task.
 
 **Goal:** Build an intelligent auto-blog pipeline where a scheduled Claude Code remote agent orchestrates edge functions to research, write, self-review, and queue SEO-optimized blog posts for approval.
 

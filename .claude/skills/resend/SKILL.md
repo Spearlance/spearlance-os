@@ -6,8 +6,6 @@ description: Use when sending emails with Resend — transactional emails, domai
 
 # resend
 
-your friendly armadillo is here to serve you
-
 ## install
 
 ```bash

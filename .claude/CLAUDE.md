@@ -1,44 +1,40 @@
-# SpearlanceOS — Project Guide
+# SpearlanceOS
 
-SpearlanceOS is the internal operating system for Spearlance Media (SEO/marketing agency).
+Agency operations platform for Spearlance Media.
 
 ## Stack
 
-- **Frontend:** React 18 + Vite, TypeScript, Tailwind + shadcn/ui (Radix)
-- **Data/state:** TanStack Query, React Hook Form + Zod
-- **Routing:** react-router-dom
-- **Backend:** Supabase (Postgres, Auth, Storage, Edge Functions)
+- **Frontend:** React 18 + Vite + TypeScript, React Router, TanStack Query
+- **Styling:** Tailwind CSS + shadcn/ui
+- **Backend/data:** Supabase (Postgres, Auth, Edge Functions, RLS)
+- **Forms:** react-hook-form + Zod
+- **Testing:** Vitest
 - **Deploy:** Vercel
-- **Testing:** Vitest (unit/component), Playwright (e2e, in `e2e/`)
+- **Package manager:** npm
 
-See `.claude/stack.json` for pinned versions.
+Full versions in `.claude/stack.json`.
 
-## How to work here
+## Git
 
-Build things. Use judgment. Nothing below is a gate — there are no enforcement hooks, no skill-routing mandate, and no required ceremony. The skills and agents in `.claude/skills/` and `.claude/agents/` are available on demand when they genuinely help (a domain reference, a code review, a debugging assist). Invoke them when useful, skip them when not.
+- Branch-first: never commit directly to `main`. Work on `feat/`, `fix/`, `chore/`, etc.
+- Squash-merge PRs.
+- Claude Code injects a limited-scope `GITHUB_TOKEN`. Prefix git push / `gh api` with `env -u GITHUB_TOKEN` to use the full-scope keyring token (required for pushes touching `.github/workflows/`).
 
-## Rules that matter (`.claude/rules/`)
+## Deploy
 
-These auto-load. They're guidance, not tripwires:
+- Vercel auto-deploy from `main` is unreliable — merges don't always ship. Run `vercel --prod` from `origin/main` to deploy manually. Live at os.spearlance.com.
+- Supabase Edge Functions in the repo are not auto-synced to the cloud project; deploy them explicitly when changed.
 
-- **security.md** — secrets handling, input validation, PII hashing, XSS. Real constraints — follow them.
-- **seo-doctrine.md** — Spearlance's SEO operating stance (meta titles, schema, interlinking, page-context protection, escalation). The agency's playbook for SEO work on Spearlance.com and client sites.
-- **testing.md** — diagnose-don't-brute-force testing philosophy.
-- **git-workflow.md** — repo-specific git gotchas (see below).
-- **facebook-capi.md / meta-api-versioning.md / pinterest.md** — API reference for the ad-platform integrations.
+## Supabase environments
 
-## Git gotcha (important)
+- **prod:** project `chikljxwgiskyjsnjelf`
+- **dev:** project `zlljsdaxsggkasvympku`
 
-Claude Code injects a limited-scope `GITHUB_TOKEN`. For pushes and `gh api` calls, prefix with `env -u GITHUB_TOKEN` to use the full-scope keyring token:
+## Available helpers
 
-```bash
-env -u GITHUB_TOKEN git push origin <branch>
-env -u GITHUB_TOKEN gh api repos/<slug>/pulls --method POST ...
-```
+`.claude/` provides optional, opt-in resources:
+- `agents/` — domain-expert subagents (database, frontend, debugging, code review, integrations) invoked via the Task tool.
+- `skills/` — reference docs for libraries/APIs, invoked via the Skill tool when relevant.
+- `rules/seo-doctrine.md` — Spearlance SEO operating rules; load when doing SEO work.
 
-Prefer `gh api` (REST) over `gh pr create`/`gh pr merge` (GraphQL) to avoid rate-limit exhaustion. Details in `git-workflow.md`.
-
-## Environment notes
-
-- Dev/main Supabase split and other ongoing-work context live in this project's memory (`MEMORY.md`).
-- Permissions default to `bypassPermissions` with a small catastrophic-command deny-list in `settings.json`.
+These are references, not mandates — use them when they fit the task.

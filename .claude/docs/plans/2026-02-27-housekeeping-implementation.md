@@ -1,6 +1,5 @@
 # SpearlanceOS Housekeeping Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use armadillo:executing-plans to implement this plan task-by-task.
 
 **Goal:** Fix all 28 audit findings across 3 branches — security, dependencies, code quality — with TDD and proper git workflow.
 
@@ -1203,7 +1202,7 @@ Ensure no actual credentials are present — only rule files referencing them ge
 
 ```bash
 git add .claude/
-git commit -m "chore: track .claude/ armadillo configuration in git
+git commit -m "chore: track .claude/ configuration in git
 
 Skills, rules, hooks, agents, and project docs now version-controlled."
 ```
