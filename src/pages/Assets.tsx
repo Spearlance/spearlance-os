@@ -11,6 +11,7 @@ import { CreateFolderDialog } from "@/components/assets/CreateFolderDialog";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { toast } from "sonner";
+import { uploadAssetFile, ASSET_MAX_BYTES } from "@/lib/assetUpload";
 
 interface Asset {
   id: string;
@@ -194,50 +195,13 @@ export default function Assets() {
 
   const uploadFile = async (file: File) => {
     if (!selectedClient) return;
-    
-    if (file.size > 50 * 1024 * 1024) {
+
+    if (file.size > ASSET_MAX_BYTES) {
       toast.error("File too large", { description: `${file.name} exceeds 50MB limit` });
-      return;
+      throw new Error("File too large");
     }
-    
-    const assetId = crypto.randomUUID();
-    const fileExt = file.name.split('.').pop();
-    const filePath = `${selectedClient.id}/${assetId}/original.${fileExt}`;
-    
-    const { error: uploadError } = await supabase.storage
-      .from('client-assets')
-      .upload(filePath, file);
-    
-    if (uploadError) throw uploadError;
-    
-    const { data: { publicUrl } } = supabase.storage
-      .from('client-assets')
-      .getPublicUrl(filePath);
-    
-    let type: 'image' | 'video' | 'doc' | 'link' | 'other' | 'copy' = 'other';
-    if (file.type.startsWith('image/')) type = 'image';
-    else if (file.type.startsWith('video/')) type = 'video';
-    else if (file.type.includes('pdf') || file.type.includes('document')) type = 'doc';
-    
-    const { data: userData } = await supabase.auth.getUser();
-    const { data: assetData } = await supabase.from("assets").insert([{
-      client_id: selectedClient.id,
-      folder_id: currentFolderId,
-      title: file.name.replace(/\.[^/.]+$/, ""),
-      type,
-      storage_type: 'upload',
-      file_url: publicUrl,
-      created_by: userData.user?.id,
-    }]).select().single();
-    
-    // Trigger AI analysis in background for images and videos
-    if (assetData && (type === 'image' || type === 'video')) {
-      supabase.functions.invoke('analyze-asset', {
-        body: { asset_id: assetData.id }
-      }).catch(err => {
-        toast.info("AI analysis skipped", { description: "Asset uploaded successfully but AI analysis couldn't run." });
-      });
-    }
+
+    await uploadAssetFile(file, selectedClient.id, currentFolderId);
   };
 
   const handleAssetClick = (asset: Asset) => {

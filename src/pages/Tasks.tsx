@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useClient } from "@/contexts/ClientContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -51,8 +51,37 @@ export default function Tasks() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { selectedClient, setSelectedClient, clients } = useClient();
   const [taskColumns, setTaskColumns] = useState<Array<{ id: string; name: string; key: string; color: string; mapped_status: 'to_do' | 'in_progress' | 'done' }>>([]);
-  const [tasks, setTasks] = useState<Record<string, Task[]>>({});
   const [allTasks, setAllTasks] = useState<Task[]>([]);
+  const [isLoadingTasks, setIsLoadingTasks] = useState(true);
+
+  // Grouped tasks are DERIVED from columns + the flat task list — a single source
+  // of truth. Deriving (vs. storing grouped state written from 3 places) eliminates
+  // the race that made cards flash in then vanish until a manual refresh.
+  const tasks = useMemo<Record<string, Task[]>>(() => {
+    const grouped: Record<string, Task[]> = {};
+    taskColumns.forEach((col) => {
+      grouped[col.key] = [];
+    });
+    allTasks.forEach((task) => {
+      if (task.column_id) {
+        const targetColumn = taskColumns.find((col) => col.id === task.column_id);
+        if (targetColumn) {
+          grouped[targetColumn.key].push(task);
+        } else {
+          console.warn(`Task "${task.title}" has column_id "${task.column_id}" which doesn't match any column`);
+        }
+      } else {
+        // Fallback: match by status for tasks without a column_id
+        const match = taskColumns.find((col) => col.mapped_status === task.status);
+        if (match) {
+          grouped[match.key].push(task);
+        } else {
+          console.warn(`Task "${task.title}" has status "${task.status}" which doesn't match any column's mapped_status`);
+        }
+      }
+    });
+    return grouped;
+  }, [taskColumns, allTasks]);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [userRole, setUserRole] = useState<string>("");
   const [assignmentFilter, setAssignmentFilter] = useState<'all' | 'mine'>('all');
@@ -105,6 +134,10 @@ export default function Tasks() {
 
   useEffect(() => {
     if (selectedClient) {
+      // Clear the previous client's tasks so we never group stale tasks under the
+      // new client's columns while the new fetch is in flight.
+      setAllTasks([]);
+      setIsLoadingTasks(true);
       const initialize = async () => {
         await loadTaskColumns();  // Wait for columns to load first
         loadTasks();               // Then load tasks
@@ -146,38 +179,6 @@ export default function Tasks() {
     return () => window.removeEventListener('taskColumnsUpdated', handleColumnsUpdate);
   }, [selectedClient]);
 
-  // Re-group tasks whenever taskColumns or allTasks changes
-  useEffect(() => {
-    if (taskColumns.length === 0 || allTasks.length === 0) return;
-    const grouped: Record<string, Task[]> = {};
-    taskColumns.forEach(col => {
-      grouped[col.key] = [];
-    });
-
-    allTasks.forEach((task: any) => {
-      if (task.column_id) {
-        // Group by column_id (primary method)
-        const targetColumn = taskColumns.find(col => col.id === task.column_id);
-        if (targetColumn) {
-          grouped[targetColumn.key].push(task);
-        } else {
-          console.warn(`Task "${task.title}" has column_id "${task.column_id}" which doesn't match any column`);
-        }
-      } else {
-        // Fallback: group by mapped_status for tasks without column_id
-        const matchingColumns = taskColumns.filter(col => col.mapped_status === task.status);
-        if (matchingColumns.length > 0) {
-          const targetColumn = matchingColumns[0];
-          grouped[targetColumn.key].push(task);
-        } else {
-          console.warn(`Task "${task.title}" has status "${task.status}" which doesn't match any column's mapped_status`);
-        }
-      }
-    });
-
-    setTasks(grouped);
-  }, [taskColumns, allTasks]);
-
   const loadUserRole = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
@@ -206,14 +207,6 @@ export default function Tasks() {
     }
 
     setTaskColumns(data || []);
-    
-    // Initialize tasks state with empty arrays for each column
-    const initialTasks: Record<string, Task[]> = {};
-    (data || []).forEach(col => {
-      initialTasks[col.key] = [];
-    });
-    setTasks(initialTasks);
-    
     return data || [];
   };
 
@@ -294,6 +287,8 @@ export default function Tasks() {
 
   const loadTasks = async () => {
     if (!selectedClient) return;
+    setIsLoadingTasks(true);
+    try {
 
     let query = supabase
       .from("tasks")
@@ -316,12 +311,7 @@ export default function Tasks() {
       if (assignedTaskIds && assignedTaskIds.length > 0) {
         query = query.in("id", assignedTaskIds.map(a => a.task_id));
       } else {
-        // No tasks assigned to this user - use current columns
-        const emptyTasks: Record<string, Task[]> = {};
-        taskColumns.forEach(col => {
-          emptyTasks[col.key] = [];
-        });
-        setTasks(emptyTasks);
+        // No tasks assigned to this user - derived grouping yields empty columns
         setAllTasks([]);
         return;
       }
@@ -410,38 +400,12 @@ export default function Tasks() {
       })
     );
 
-    // Store enriched tasks - the useEffect will handle grouping
+    // Store the flat enriched list — `tasks` (grouped) derives from it via useMemo.
     setAllTasks(enrichedTasks);
-    
-    // Initialize grouped tasks structure with current columns
-    const grouped: Record<string, Task[]> = {};
-    taskColumns.forEach(col => {
-      grouped[col.key] = [];
-    });
 
-    // Group tasks by column_id
-    enrichedTasks.forEach((task: any) => {
-      if (task.column_id) {
-        // Find the column by ID
-        const targetColumn = taskColumns.find(col => col.id === task.column_id);
-        if (targetColumn) {
-          grouped[targetColumn.key].push(task);
-        } else {
-          console.warn(`Task "${task.title}" has column_id "${task.column_id}" which doesn't match any column`);
-        }
-      } else {
-        // Fallback: match by status for tasks without column_id
-        const matchingColumns = taskColumns.filter(col => col.mapped_status === task.status);
-        if (matchingColumns.length > 0) {
-          const targetColumn = matchingColumns[0];
-          grouped[targetColumn.key].push(task);
-        } else {
-          console.warn(`Task "${task.title}" has status "${task.status}" which doesn't match any column's mapped_status`);
-        }
-      }
-    });
-
-    setTasks(grouped);
+    } finally {
+      setIsLoadingTasks(false);
+    }
   };
 
   const onDragEnd = async (result: DropResult) => {
@@ -457,21 +421,15 @@ export default function Tasks() {
       return;
     }
 
-    const sourceColumn = [...tasks[source.droppableId]];
-    const destColumn = source.droppableId === destination.droppableId 
-      ? sourceColumn 
-      : [...tasks[destination.droppableId]];
-
-    const [movedTask] = sourceColumn.splice(source.index, 1);
-    movedTask.status = destTaskColumn.mapped_status;
-    movedTask.column_id = destTaskColumn.id;
-    destColumn.splice(destination.index, 0, movedTask);
-
-    setTasks({
-      ...tasks,
-      [source.droppableId]: sourceColumn,
-      [destination.droppableId]: destColumn,
-    });
+    // Optimistically update the moved task in the flat list; grouped `tasks`
+    // re-derives from it, dropping the card into the destination column.
+    setAllTasks((prev) =>
+      prev.map((t) =>
+        t.id === draggableId
+          ? { ...t, status: destTaskColumn.mapped_status, column_id: destTaskColumn.id }
+          : t
+      )
+    );
 
     // Update task with both status and column_id
     const { error } = await supabase
@@ -495,11 +453,9 @@ export default function Tasks() {
   const handleTabChange = async (value: string) => {
     setActiveTab(value);
     if (value === "board" && selectedClient) {
-      // Reload columns first, then tasks
-      const columns = await loadTaskColumns();
-      setTimeout(() => {
-        loadTasks();
-      }, 100);
+      // Reload columns first, then tasks (grouping derives from both — no race)
+      await loadTaskColumns();
+      loadTasks();
     }
   };
 
@@ -609,8 +565,16 @@ export default function Tasks() {
             </div>
           </div>
 
+          {/* Initial load: show a spinner instead of an empty/flashing board */}
+          {isLoadingTasks && allTasks.length === 0 && currentView !== "weekly" && (
+            <div className="flex items-center justify-center py-24 text-muted-foreground">
+              <Loader2 className="h-6 w-6 animate-spin mr-2" />
+              Loading tasks…
+            </div>
+          )}
+
           {/* View-specific rendering */}
-          {currentView === "kanban" && (
+          {currentView === "kanban" && !(isLoadingTasks && allTasks.length === 0) && (
             <DragDropContext onDragEnd={onDragEnd}>
               {(() => {
                 // Separate done column from regular columns
@@ -780,7 +744,7 @@ export default function Tasks() {
             </DragDropContext>
           )}
 
-          {currentView === "list" && (
+          {currentView === "list" && !(isLoadingTasks && allTasks.length === 0) && (
             <TaskListView
               tasks={allTasks}
               taskColumns={taskColumns}
@@ -790,7 +754,7 @@ export default function Tasks() {
             />
           )}
 
-          {currentView === "table" && (
+          {currentView === "table" && !(isLoadingTasks && allTasks.length === 0) && (
             <TaskTableView
               tasks={allTasks}
               taskColumns={taskColumns}
