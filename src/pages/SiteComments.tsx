@@ -106,6 +106,36 @@ const SiteComments = () => {
     );
   });
 
+  // Triage order: unfinished (open) pinned to the top, longest-waiting first so
+  // the most-overdue comment is always at the very top. Resolved sink below,
+  // most-recently handled first.
+  const sortedConversations = [...filteredConversations].sort((a, b) => {
+    const aOpen = a.status === "open";
+    const bOpen = b.status === "open";
+    if (aOpen !== bOpen) return aOpen ? -1 : 1;
+    const aTime = new Date(a.created_at).getTime();
+    const bTime = new Date(b.created_at).getTime();
+    return aOpen ? aTime - bTime : bTime - aTime;
+  });
+
+  // How long a comment has been sitting, with escalating urgency.
+  const getAgeInfo = (createdAt: string) => {
+    const ms = Date.now() - new Date(createdAt).getTime();
+    const days = Math.floor(ms / 86_400_000);
+    const hours = Math.floor(ms / 3_600_000);
+    const label = days >= 1 ? `${days}d` : hours >= 1 ? `${hours}h` : "new";
+    const tone =
+      days >= 14 ? "urgent" : days >= 7 ? "warn" : "fresh";
+    return { label, tone } as const;
+  };
+
+  const agePillClass = (tone: "fresh" | "warn" | "urgent") =>
+    tone === "urgent"
+      ? "border-red-500 text-red-600 dark:text-red-400"
+      : tone === "warn"
+      ? "border-amber-500 text-amber-600 dark:text-amber-400"
+      : "text-muted-foreground";
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "open":
@@ -154,7 +184,7 @@ const SiteComments = () => {
         <div className="text-center py-12 text-muted-foreground">
           Loading conversations...
         </div>
-      ) : filteredConversations.length === 0 ? (
+      ) : sortedConversations.length === 0 ? (
         <Card className="p-12 text-center">
           <MessageSquare className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
           <h3 className="text-lg font-semibold mb-2">No Comments Yet</h3>
@@ -164,7 +194,7 @@ const SiteComments = () => {
         </Card>
       ) : (
         <div className="space-y-3">
-          {filteredConversations.map((conv) => (
+          {sortedConversations.map((conv) => (
             <Card
               key={conv.id}
               className="p-4 hover:bg-accent/50 cursor-pointer transition-colors"
@@ -184,6 +214,19 @@ const SiteComments = () => {
                       )}
                       {conv.status}
                     </Badge>
+                    {conv.status === "open" && (() => {
+                      const { label, tone } = getAgeInfo(conv.created_at);
+                      return (
+                        <Badge
+                          variant="outline"
+                          className={agePillClass(tone)}
+                          title={`Open for ${label}`}
+                        >
+                          <Clock className="h-3 w-3 mr-1" />
+                          {label} open
+                        </Badge>
+                      );
+                    })()}
                   </div>
                   
                   {conv.duda_page_uuid && (

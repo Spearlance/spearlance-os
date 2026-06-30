@@ -7,8 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, Send, CheckCircle2, Clock, Trash2, Lock, ExternalLink } from "lucide-react";
+import { ArrowLeft, Send, CheckCircle2, Clock, Trash2, Lock, ExternalLink, ListPlus, ClipboardCheck } from "lucide-react";
 import { toast } from "sonner";
+import { CreateTaskDialog } from "@/components/tasks/CreateTaskDialog";
 
 interface Comment {
   id: string;
@@ -31,6 +32,7 @@ interface Conversation {
   created_by_account: string;
   created_at: string;
   title?: string;
+  linked_task_id?: string | null;
 }
 
 const SiteCommentDetail = () => {
@@ -42,6 +44,7 @@ const SiteCommentDetail = () => {
   const [loading, setLoading] = useState(true);
   const [internalReply, setInternalReply] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [taskDialogOpen, setTaskDialogOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -66,7 +69,7 @@ const SiteCommentDetail = () => {
     try {
       const { data, error } = await supabase
         .from("duda_conversations")
-        .select("id, conversation_number, duda_page_uuid, status, created_by_account, created_at, title")
+        .select("id, conversation_number, duda_page_uuid, status, created_by_account, created_at, title, linked_task_id")
         .eq("id", id)
         .maybeSingle();
 
@@ -182,6 +185,23 @@ const SiteCommentDetail = () => {
     }
   };
 
+  // Link the newly created task back to this comment so we show a "View Task"
+  // badge and never double-create a task for the same comment.
+  const handleTaskCreated = async (taskId?: string) => {
+    if (!taskId || !conversation) return;
+    try {
+      const { error } = await supabase
+        .from("duda_conversations")
+        .update({ linked_task_id: taskId })
+        .eq("id", conversation.id);
+      if (error) throw error;
+      setConversation({ ...conversation, linked_task_id: taskId });
+      toast.success("Task created and linked to this comment");
+    } catch (error: any) {
+      toast.error("Task created, but couldn't link it to this comment");
+    }
+  };
+
   if (loading) {
     return (
       <div className="container mx-auto p-6">
@@ -200,6 +220,21 @@ const SiteCommentDetail = () => {
 
   const editorLink = comments[0]?.editor_link;
 
+  // Build the pre-fill for a task created from this comment: the original
+  // (non-internal) comment text plus page + editor deep link so the assignee
+  // can jump straight to the spot on the site.
+  const sourceComment =
+    comments.find((c) => !c.is_internal_reply && c.visibility !== "internal") || comments[0];
+  const taskTitle = conversation.title || `Comment #${conversation.conversation_number}`;
+  const taskDescription = [
+    sourceComment?.comment_text,
+    conversation.duda_page_uuid ? `Page: ${conversation.duda_page_uuid}` : null,
+    editorLink ? `Open in editor: ${editorLink}` : null,
+    `Source: site comment #${conversation.conversation_number}`,
+  ]
+    .filter(Boolean)
+    .join("\n\n");
+
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -215,6 +250,24 @@ const SiteCommentDetail = () => {
             >
               <ExternalLink className="h-4 w-4 mr-2" />
               Open in Editor
+            </Button>
+          )}
+          {conversation.linked_task_id ? (
+            <Button
+              variant="outline"
+              onClick={() =>
+                navigate(
+                  `/tasks?selected=${conversation.linked_task_id}${selectedClient?.id ? `&client=${selectedClient.id}` : ""}`
+                )
+              }
+            >
+              <ClipboardCheck className="h-4 w-4 mr-2" />
+              View Task
+            </Button>
+          ) : (
+            <Button variant="secondary" onClick={() => setTaskDialogOpen(true)}>
+              <ListPlus className="h-4 w-4 mr-2" />
+              Create Task
             </Button>
           )}
           <Button
@@ -245,6 +298,12 @@ const SiteCommentDetail = () => {
             <Badge variant={conversation.status === "open" ? "default" : "secondary"}>
               {conversation.status}
             </Badge>
+            {conversation.linked_task_id && (
+              <Badge variant="outline" className="flex items-center gap-1">
+                <ClipboardCheck className="h-3 w-3" />
+                Task created
+              </Badge>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4 text-sm">
@@ -324,6 +383,14 @@ const SiteCommentDetail = () => {
           </Button>
         </div>
       </Card>
+
+      <CreateTaskDialog
+        open={taskDialogOpen}
+        onOpenChange={setTaskDialogOpen}
+        initialTitle={taskTitle}
+        initialDescription={taskDescription}
+        onSuccess={handleTaskCreated}
+      />
     </div>
   );
 };

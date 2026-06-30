@@ -18,7 +18,12 @@ import { Repeat } from "lucide-react";
 interface CreateTaskDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSuccess?: () => void;
+  /** Receives the new task's id so callers can link it back to a source object. */
+  onSuccess?: (taskId?: string) => void;
+  /** Optional pre-fill values (e.g. when creating a task from a site comment). */
+  initialTitle?: string;
+  initialDescription?: string;
+  initialDueDate?: string;
 }
 
 interface User {
@@ -35,7 +40,7 @@ interface TaskColumn {
   mapped_status: 'to_do' | 'in_progress' | 'done';
 }
 
-export function CreateTaskDialog({ open, onOpenChange, onSuccess }: CreateTaskDialogProps) {
+export function CreateTaskDialog({ open, onOpenChange, onSuccess, initialTitle, initialDescription, initialDueDate }: CreateTaskDialogProps) {
   const { selectedClient } = useClient();
   const [loading, setLoading] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
@@ -66,6 +71,19 @@ export function CreateTaskDialog({ open, onOpenChange, onSuccess }: CreateTaskDi
       loadTaskColumns();
     }
   }, [open, selectedClient]);
+
+  // Seed the form from caller-provided values when the dialog opens. Falls back
+  // to existing state so the normal (blank) create flow is unaffected.
+  useEffect(() => {
+    if (open) {
+      setFormData(prev => ({
+        ...prev,
+        title: initialTitle ?? prev.title,
+        description: initialDescription ?? prev.description,
+        due_date: initialDueDate ?? prev.due_date,
+      }));
+    }
+  }, [open, initialTitle, initialDescription, initialDueDate]);
 
   const loadUsers = async () => {
     if (!selectedClient) return;
@@ -209,7 +227,7 @@ export function CreateTaskDialog({ open, onOpenChange, onSuccess }: CreateTaskDi
       setIsRecurring(false);
       setSelectedDaysOfWeek([]);
       setEndDate('');
-      onSuccess?.();
+      onSuccess?.(newTask?.id);
     } catch (error) {
       toast.error("Error", { description: "Failed to create task" });
     } finally {
