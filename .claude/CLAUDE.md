@@ -27,8 +27,10 @@ Full versions in `.claude/stack.json`.
 
 ## Supabase environments
 
-- **prod:** project `chikljxwgiskyjsnjelf`
-- **dev:** project `zlljsdaxsggkasvympku`
+- **prod:** project `chikljxwgiskyjsnjelf` — wired to Vercel **Production** (os.spearlance.com) and local when using prod env.
+- **dev:** project `zlljsdaxsggkasvympku` (persistent branch of prod; schema mirrors prod) — wired to Vercel **Preview** (all branches) and to local dev via `.env.local`.
+
+Canonical rule: **Preview = dev, Production = prod.** The Vercel Preview `VITE_SUPABASE_*` vars point at the dev project; never repoint them at prod. (Historical note: a stale/dead project `hrmhqybdsdngsvhjqwma` was wrongly wired to Preview until 2026-07-01 — do not resurrect it.) Apply schema migrations to dev first, then promote to prod.
 
 ## Available helpers
 
