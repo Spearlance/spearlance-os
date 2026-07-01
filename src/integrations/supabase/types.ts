@@ -2474,6 +2474,7 @@ export type Database = {
           duda_conversation_uuid: string
           duda_page_uuid: string | null
           id: string
+          linked_task_id: string | null
           resolved_at: string | null
           site_id: string
           status: string | null
@@ -2490,6 +2491,7 @@ export type Database = {
           duda_conversation_uuid: string
           duda_page_uuid?: string | null
           id?: string
+          linked_task_id?: string | null
           resolved_at?: string | null
           site_id: string
           status?: string | null
@@ -2506,6 +2508,7 @@ export type Database = {
           duda_conversation_uuid?: string
           duda_page_uuid?: string | null
           id?: string
+          linked_task_id?: string | null
           resolved_at?: string | null
           site_id?: string
           status?: string | null
@@ -2518,6 +2521,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "duda_conversations_linked_task_id_fkey"
+            columns: ["linked_task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
             referencedColumns: ["id"]
           },
         ]

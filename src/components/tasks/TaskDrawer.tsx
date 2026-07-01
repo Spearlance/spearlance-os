@@ -57,7 +57,6 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
   const [linkedWebsitePage, setLinkedWebsitePage] = useState<{ id: string; name: string; build_id: string; build_name: string } | null>(null);
   const [showLinkAssetDialog, setShowLinkAssetDialog] = useState(false);
   const [showLinkMeetingDialog, setShowLinkMeetingDialog] = useState(false);
-  const [availableAssets, setAvailableAssets] = useState<any[]>([]);
   const [availableMeetings, setAvailableMeetings] = useState<any[]>([]);
   const [showLinkChannelDialog, setShowLinkChannelDialog] = useState(false);
   const [availableChannels, setAvailableChannels] = useState<any[]>([]);
@@ -369,15 +368,6 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
     setLinkedWebsitePage(null);
   };
 
-  const loadAvailableAssets = async () => {
-      const { data } = await supabase
-        .from("assets")
-        .select("id, title, type, preview_url, file_url")
-        .eq("client_id", task.client_id)
-        .order("title");
-    setAvailableAssets(data || []);
-  };
-
   const loadAvailableMeetings = async () => {
     const { data } = await supabase
       .from("meetings")
@@ -416,27 +406,24 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
     setAvailableChannels(channels || []);
   };
 
-  const handleLinkAsset = async (assetId: string) => {
+  const handleLinkAssets = async (assetIds: string[]) => {
     const currentIds = task.related_asset_ids || [];
-    if (currentIds.includes(assetId)) {
-      toast.info("Asset already linked");
-      return;
-    }
+    const merged = [...new Set([...currentIds, ...assetIds])];
 
     const { error } = await supabase
       .from("tasks")
-      .update({ related_asset_ids: [...currentIds, assetId] })
+      .update({ related_asset_ids: merged })
       .eq("id", task.id);
 
     if (error) {
-      toast.error("Error linking asset");
+      toast.error("Error linking assets");
       return;
     }
 
-    toast.success("Asset linked successfully");
-    task.related_asset_ids = [...currentIds, assetId];
+    const added = merged.length - currentIds.length;
+    toast.success(`${added} asset${added === 1 ? "" : "s"} linked`);
+    task.related_asset_ids = merged;
     loadRelatedItems();
-    setShowLinkAssetDialog(false);
   };
 
   const handleUnlinkAsset = async (assetId: string) => {
@@ -818,7 +805,8 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
               setShowLinkChannelDialog={setShowLinkChannelDialog}
               showLinkWebsiteDialog={showLinkWebsiteDialog}
               setShowLinkWebsiteDialog={setShowLinkWebsiteDialog}
-              availableAssets={availableAssets}
+              clientId={task.client_id}
+              onLinkAssets={handleLinkAssets}
               availableMeetings={availableMeetings}
               availableChannels={availableChannels}
               availableBuilds={availableBuilds}
@@ -826,7 +814,6 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
               selectedBuildForPage={selectedBuildForPage}
               setSelectedBuildForPage={setSelectedBuildForPage}
               setAvailablePages={setAvailablePages}
-              handleLinkAsset={handleLinkAsset}
               handleUnlinkAsset={handleUnlinkAsset}
               handleLinkMeeting={handleLinkMeeting}
               handleUnlinkMeeting={handleUnlinkMeeting}
@@ -834,7 +821,6 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
               handleUnlinkChannel={handleUnlinkChannel}
               handleLinkWebsitePage={handleLinkWebsitePage}
               handleUnlinkWebsitePage={handleUnlinkWebsitePage}
-              loadAvailableAssets={loadAvailableAssets}
               loadAvailableMeetings={loadAvailableMeetings}
               loadAvailableChannels={loadAvailableChannels}
               loadAvailableBuilds={loadAvailableBuilds}

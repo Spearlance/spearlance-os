@@ -22,6 +22,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { NavigateFunction } from "react-router-dom";
+import { LinkAssetDialog } from "./LinkAssetDialog";
 
 interface LinkedWebsitePage {
   id: string;
@@ -45,8 +46,10 @@ interface RelatedTabProps {
   setShowLinkChannelDialog: (open: boolean) => void;
   showLinkWebsiteDialog: boolean;
   setShowLinkWebsiteDialog: (open: boolean) => void;
+  // Asset linking (multi-select + upload dialog)
+  clientId: string;
+  onLinkAssets: (assetIds: string[]) => Promise<void> | void;
   // Available items for linking
-  availableAssets: any[];
   availableMeetings: any[];
   availableChannels: any[];
   availableBuilds: any[];
@@ -56,7 +59,6 @@ interface RelatedTabProps {
   setSelectedBuildForPage: (id: string | null) => void;
   setAvailablePages: (pages: any[]) => void;
   // Handlers
-  handleLinkAsset: (assetId: string) => void;
   handleUnlinkAsset: (assetId: string) => void;
   handleLinkMeeting: (meetingId: string) => void;
   handleUnlinkMeeting: (meetingId: string) => void;
@@ -64,7 +66,6 @@ interface RelatedTabProps {
   handleUnlinkChannel: (channelId: string) => void;
   handleLinkWebsitePage: (buildId: string, pageId?: string) => void;
   handleUnlinkWebsitePage: () => void;
-  loadAvailableAssets: () => void;
   loadAvailableMeetings: () => void;
   loadAvailableChannels: () => void;
   loadAvailableBuilds: () => void;
@@ -101,7 +102,8 @@ export function RelatedTab({
   setShowLinkChannelDialog,
   showLinkWebsiteDialog,
   setShowLinkWebsiteDialog,
-  availableAssets,
+  clientId,
+  onLinkAssets,
   availableMeetings,
   availableChannels,
   availableBuilds,
@@ -109,7 +111,6 @@ export function RelatedTab({
   selectedBuildForPage,
   setSelectedBuildForPage,
   setAvailablePages,
-  handleLinkAsset,
   handleUnlinkAsset,
   handleLinkMeeting,
   handleUnlinkMeeting,
@@ -117,7 +118,6 @@ export function RelatedTab({
   handleUnlinkChannel,
   handleLinkWebsitePage,
   handleUnlinkWebsitePage,
-  loadAvailableAssets,
   loadAvailableMeetings,
   loadAvailableChannels,
   loadAvailableBuilds,
@@ -367,60 +367,22 @@ export function RelatedTab({
         <div>
           <div className="flex items-center justify-between mb-3">
             <h3 className="font-medium">Related Assets</h3>
-            <Dialog
-              open={showLinkAssetDialog}
-              onOpenChange={setShowLinkAssetDialog}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowLinkAssetDialog(true)}
             >
-              <DialogTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={loadAvailableAssets}
-                >
-                  <Plus className="h-4 w-4 mr-1" />
-                  Link Asset
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Link Asset to Task</DialogTitle>
-                </DialogHeader>
-                <ScrollArea className="h-[400px] pr-4">
-                  <div className="grid grid-cols-2 gap-3">
-                    {availableAssets.map((asset) => (
-                      <Card
-                        key={asset.id}
-                        className="cursor-pointer hover:bg-accent transition-colors"
-                        onClick={() => handleLinkAsset(asset.id)}
-                      >
-                        <CardContent className="p-3">
-                          <div className="space-y-2">
-                            {asset.preview_url ||
-                            (asset.type === "image" && asset.file_url) ? (
-                              <div className="w-full h-20 bg-muted rounded overflow-hidden">
-                                <img
-                                  src={asset.preview_url || asset.file_url}
-                                  alt={asset.title}
-                                  className="w-full h-full object-cover"
-                                />
-                              </div>
-                            ) : (
-                              <div className="w-full h-20 bg-muted rounded flex items-center justify-center">
-                                {getTypeIcon(asset.type)}
-                              </div>
-                            )}
-                            <div className="font-medium text-xs truncate">
-                              {asset.title}
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                </ScrollArea>
-              </DialogContent>
-            </Dialog>
+              <Plus className="h-4 w-4 mr-1" />
+              Link Assets
+            </Button>
           </div>
+          <LinkAssetDialog
+            open={showLinkAssetDialog}
+            onOpenChange={setShowLinkAssetDialog}
+            clientId={clientId}
+            linkedAssetIds={relatedAssets.map((a) => a.id)}
+            onConfirm={onLinkAssets}
+          />
           {relatedAssets.length === 0 ? (
             <p className="text-sm text-muted-foreground">
               No assets linked to this task
