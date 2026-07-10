@@ -1,6 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Eye, ThumbsUp } from "lucide-react";
+import { Eye, ThumbsUp, Lock } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface Article {
   id: string;
@@ -11,24 +12,51 @@ interface Article {
   view_count: number;
   helpful_count: number;
   not_helpful_count: number;
+  is_published?: boolean;
 }
 
 interface ArticleCardProps {
   article: Article;
   onClick: () => void;
+  /** "internal" adds an amber accent + Internal badge for staff-only SOPs. */
+  variant?: "client" | "internal";
 }
 
-export function ArticleCard({ article, onClick }: ArticleCardProps) {
+export function ArticleCard({ article, onClick, variant = "client" }: ArticleCardProps) {
   const helpfulRatio = article.helpful_count + article.not_helpful_count > 0
     ? Math.round((article.helpful_count / (article.helpful_count + article.not_helpful_count)) * 100)
     : 0;
 
+  const isInternal = variant === "internal";
+  const isDraft = article.is_published === false;
+
   return (
     <Card
-      className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-105 group h-full"
+      className={cn(
+        "cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-105 group h-full",
+        isInternal && "border-l-4 border-l-amber-500",
+      )}
       onClick={onClick}
     >
       <CardHeader>
+        {(isInternal || isDraft) && (
+          <div className="flex flex-wrap items-center gap-2 mb-2">
+            {isInternal && (
+              <Badge
+                variant="outline"
+                className="border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400 gap-1"
+              >
+                <Lock className="h-3 w-3" />
+                Internal
+              </Badge>
+            )}
+            {isDraft && (
+              <Badge variant="outline" className="border-dashed text-muted-foreground">
+                Draft
+              </Badge>
+            )}
+          </div>
+        )}
         <div className="flex items-start justify-between gap-2 mb-2">
           <CardTitle className="text-lg group-hover:text-primary transition-colors line-clamp-2">
             {article.title}

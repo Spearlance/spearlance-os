@@ -39,6 +39,8 @@ const SupportDocs = lazy(() => import("./pages/SupportDocs"));
 const SupportDocsCategory = lazy(() => import("./pages/SupportDocsCategory"));
 const SupportDocsArticle = lazy(() => import("./pages/SupportDocsArticle"));
 const AdminSupportDocs = lazy(() => import("./pages/AdminSupportDocs"));
+const SopLibrary = lazy(() => import("./pages/SopLibrary"));
+const SopCategory = lazy(() => import("./pages/SopCategory"));
 const Settings = lazy(() => import("./pages/Settings"));
 const Admin = lazy(() => import("./pages/Admin"));
 const Notifications = lazy(() => import("./pages/Notifications"));
@@ -125,6 +127,9 @@ const App = () => (
                       <Route path="/support/docs" element={<MainLayout><SupportDocs /></MainLayout>} />
                       <Route path="/support/docs/:category" element={<MainLayout><SupportDocsCategory /></MainLayout>} />
                       <Route path="/support/docs/:category/:slug" element={<MainLayout><SupportDocsArticle /></MainLayout>} />
+                      <Route path="/sop" element={<MainLayout><SopLibrary /></MainLayout>} />
+                      <Route path="/sop/:category" element={<MainLayout><SopCategory /></MainLayout>} />
+                      <Route path="/sop/:category/:slug" element={<MainLayout><SupportDocsArticle /></MainLayout>} />
                       <Route path="/admin/support-docs" element={<MainLayout><AdminSupportDocs /></MainLayout>} />
                       <Route path="/settings" element={<MainLayout><Settings /></MainLayout>} />
                       <Route path="/notifications" element={<MainLayout><Notifications /></MainLayout>} />

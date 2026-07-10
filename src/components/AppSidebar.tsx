@@ -53,6 +53,7 @@ import {
   Wrench,
   Sparkles,
   BookOpen,
+  Library,
   Palette,
   Share2,
   Globe,
@@ -541,6 +542,16 @@ export function AppSidebar() {
                             </SidebarMenuSubButton>
                           </SidebarMenuSubItem>
                         ))}
+                        {(userRole === "admin" || userRole === "fmm" || userRole === "web_designer") && (
+                          <SidebarMenuSubItem>
+                            <SidebarMenuSubButton asChild>
+                              <NavLink to="/sop" end className={getNavClass}>
+                                <Library className="h-4 w-4" />
+                                <span>SOP Library</span>
+                              </NavLink>
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
+                        )}
                         {userRole === "admin" && (
                           <SidebarMenuSubItem>
                             <SidebarMenuSubButton asChild>
