@@ -118,6 +118,7 @@ export default function SupportDocsCategory() {
         .select("*")
         .eq("category", category)
         .eq("is_published", true)
+        .in("audience", ["client", "all"])
         .order("published_at", { ascending: false });
 
       if (error) throw error;

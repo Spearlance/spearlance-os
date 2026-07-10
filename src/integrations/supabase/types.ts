@@ -4828,6 +4828,7 @@ export type Database = {
       }
       support_articles: {
         Row: {
+          audience: string
           category: string
           content: string
           created_at: string | null
@@ -4847,6 +4848,7 @@ export type Database = {
           view_count: number | null
         }
         Insert: {
+          audience?: string
           category: string
           content: string
           created_at?: string | null
@@ -4866,6 +4868,7 @@ export type Database = {
           view_count?: number | null
         }
         Update: {
+          audience?: string
           category?: string
           content?: string
           created_at?: string | null

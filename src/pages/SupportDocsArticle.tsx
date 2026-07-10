@@ -5,18 +5,21 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { 
-  ChevronRight, 
-  Clock, 
-  Eye, 
-  ThumbsUp, 
+import {
+  ChevronRight,
+  Clock,
+  Eye,
+  ThumbsUp,
   ThumbsDown,
   Share2,
   Printer,
-  ArrowLeft
+  ArrowLeft,
+  Lock,
+  FileWarning
 } from "lucide-react";
 import { toast } from "sonner";
-import ReactMarkdown from "react-markdown";
+import { ArticleMarkdown } from "@/components/support-docs/ArticleMarkdown";
+import { getCategoryName } from "@/components/support-docs/categories";
 import { useClient } from "@/contexts/ClientContext";
 
 interface Article {
@@ -32,6 +35,8 @@ interface Article {
   helpful_count: number;
   not_helpful_count: number;
   updated_at: string;
+  audience: string;
+  is_published: boolean;
 }
 
 interface RelatedArticle {
@@ -61,20 +66,21 @@ export default function SupportDocsArticle() {
     if (!slug) return;
 
     try {
-      // Fetch article
+      // Fetch article. No is_published filter here — RLS is the boundary:
+      // admins receive drafts, everyone else gets null for an unpublished row.
       const { data: articleData, error: articleError } = await supabase
         .from("support_articles")
         .select("*")
         .eq("slug", slug)
-        .eq("is_published", true)
         .maybeSingle();
 
       if (articleError) throw articleError;
       setArticle(articleData);
 
-      // Track view
+      // Track view — only for published articles, so admin draft previews
+      // don't inflate the read counts we use to see what the team actually reads.
       const { data: { user } } = await supabase.auth.getUser();
-      if (user && articleData) {
+      if (user && articleData && articleData.is_published) {
         await supabase.from("support_article_views").insert({
           article_id: articleData.id,
           user_id: user.id,
@@ -93,6 +99,7 @@ export default function SupportDocsArticle() {
           .from("support_articles")
           .select("id, title, slug, category, excerpt")
           .eq("category", articleData.category)
+          .eq("audience", articleData.audience)
           .eq("is_published", true)
           .neq("id", articleData.id)
           .limit(3);
@@ -146,18 +153,6 @@ export default function SupportDocsArticle() {
     }
   };
 
-  const getCategoryName = (cat: string) => {
-    const names: Record<string, string> = {
-      getting_started: "Getting Started",
-      features: "Features",
-      marketing: "Marketing",
-      troubleshooting: "Troubleshooting",
-      billing: "Billing & Account",
-      best_practices: "Best Practices"
-    };
-    return names[cat] || cat;
-  };
-
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-12">
@@ -189,36 +184,61 @@ export default function SupportDocsArticle() {
     );
   }
 
+  // A shared reader serves both surfaces; it adapts to the article's audience.
+  const isInternal = article.audience === "internal";
+  const basePath = isInternal ? "/sop" : "/support/docs";
+  const rootLabel = isInternal ? "SOP Library" : "Knowledge Base";
+  const isDraft = !article.is_published;
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="max-w-4xl mx-auto">
         {/* Back Button */}
         <Button
           variant="ghost"
-          onClick={() => navigate("/support/docs")}
+          onClick={() => navigate(basePath)}
           className="mb-6"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Knowledge Base
+          Back to {rootLabel}
         </Button>
 
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
-          <Link to="/support/docs" className="hover:text-foreground">
-            Knowledge Base
+          <Link to={basePath} className="hover:text-foreground">
+            {rootLabel}
           </Link>
           <ChevronRight className="h-4 w-4" />
-          <Link to={`/support/docs/${article.category}`} className="hover:text-foreground">
+          <Link to={`${basePath}/${article.category}`} className="hover:text-foreground">
             {getCategoryName(article.category)}
           </Link>
           <ChevronRight className="h-4 w-4" />
           <span className="text-foreground">{article.title}</span>
         </div>
 
+        {/* Draft banner (admins only — RLS won't return drafts to anyone else) */}
+        {isDraft && (
+          <div className="mb-6 flex items-center gap-2 rounded-lg border border-dashed border-amber-500/50 bg-amber-500/10 px-4 py-3 text-sm text-amber-800 dark:text-amber-300">
+            <FileWarning className="h-4 w-4 shrink-0" />
+            <span>
+              <strong>Draft</strong> — this article is unpublished and not visible to the team yet.
+            </span>
+          </div>
+        )}
+
         {/* Article Header */}
-        <div className="mb-8">
+        <div className={isInternal ? "mb-8 border-l-4 border-l-amber-500 pl-4" : "mb-8"}>
+          {isInternal && (
+            <Badge
+              variant="outline"
+              className="mb-3 border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400 gap-1"
+            >
+              <Lock className="h-3 w-3" />
+              Internal SOP — not client-facing
+            </Badge>
+          )}
           <h1 className="text-4xl font-bold mb-4">{article.title}</h1>
-          
+
           <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
             <div className="flex items-center gap-1">
               <Clock className="h-4 w-4" />
@@ -239,9 +259,7 @@ export default function SupportDocsArticle() {
         <Separator className="mb-8" />
 
         {/* Article Content */}
-        <div className="prose prose-lg max-w-none mb-12">
-          <ReactMarkdown>{article.content}</ReactMarkdown>
-        </div>
+        <ArticleMarkdown content={article.content} className="prose-lg mb-12" />
 
         <Separator className="mb-8" />
 
@@ -294,7 +312,7 @@ export default function SupportDocsArticle() {
                 <Card
                   key={related.id}
                   className="cursor-pointer hover:shadow-md transition-shadow"
-                  onClick={() => navigate(`/support/docs/${related.category}/${related.slug}`)}
+                  onClick={() => navigate(`${basePath}/${related.category}/${related.slug}`)}
                 >
                   <CardHeader>
                     <CardTitle className="text-lg">{related.title}</CardTitle>

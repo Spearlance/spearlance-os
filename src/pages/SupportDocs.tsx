@@ -98,6 +98,7 @@ export default function SupportDocs() {
         .from("support_articles")
         .select("*")
         .eq("is_published", true)
+        .in("audience", ["client", "all"])
         .not("featured_order", "is", null)
         .order("featured_order", { ascending: true })
         .limit(3);
@@ -110,6 +111,7 @@ export default function SupportDocs() {
         .from("support_articles")
         .select("*")
         .eq("is_published", true)
+        .in("audience", ["client", "all"])
         .order("published_at", { ascending: false })
         .limit(6);
 
@@ -120,7 +122,8 @@ export default function SupportDocs() {
       const { data: counts, error: countsError } = await supabase
         .from("support_articles")
         .select("category")
-        .eq("is_published", true);
+        .eq("is_published", true)
+        .in("audience", ["client", "all"]);
 
       if (countsError) throw countsError;
       
