@@ -12,18 +12,10 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import { 
-  BookOpen, 
-  Search, 
-  ArrowLeft,
-  Rocket,
-  Target,
-  TrendingUp,
-  HelpCircle,
-  DollarSign,
-  Lightbulb
-} from "lucide-react";
+import { BookOpen, Search, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
+import { resolveCategory } from "@/components/support-docs/categories";
+import { useCategories } from "@/hooks/useCategories";
 
 interface Article {
   id: string;
@@ -37,51 +29,6 @@ interface Article {
   not_helpful_count: number;
 }
 
-const categories = {
-  getting_started: {
-    id: "getting_started",
-    name: "Getting Started",
-    description: "New to the platform? Start here",
-    icon: Rocket,
-    color: "from-blue-500 to-blue-600"
-  },
-  features: {
-    id: "features",
-    name: "Features",
-    description: "Learn about platform capabilities",
-    icon: Target,
-    color: "from-purple-500 to-purple-600"
-  },
-  marketing: {
-    id: "marketing",
-    name: "Marketing",
-    description: "Campaign creation and management",
-    icon: TrendingUp,
-    color: "from-green-500 to-green-600"
-  },
-  troubleshooting: {
-    id: "troubleshooting",
-    name: "Troubleshooting",
-    description: "Common issues and solutions",
-    icon: HelpCircle,
-    color: "from-orange-500 to-orange-600"
-  },
-  billing: {
-    id: "billing",
-    name: "Billing & Account",
-    description: "Subscriptions and account settings",
-    icon: DollarSign,
-    color: "from-yellow-500 to-yellow-600"
-  },
-  best_practices: {
-    id: "best_practices",
-    name: "Best Practices",
-    description: "Tips and strategies for success",
-    icon: Lightbulb,
-    color: "from-pink-500 to-pink-600"
-  }
-};
-
 export default function SupportDocsCategory() {
   const { category } = useParams<{ category: string }>();
   const navigate = useNavigate();
@@ -89,8 +36,12 @@ export default function SupportDocsCategory() {
   const [filteredArticles, setFilteredArticles] = useState<Article[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
+  // Hydrate the category registry so the header reflects DB names/icons/edits.
+  useCategories();
 
-  const categoryData = category ? categories[category as keyof typeof categories] : null;
+  // resolveCategory always returns sensible presentation metadata (title-cased
+  // fallback for unknown slugs), so this page never dead-ends on "not found".
+  const categoryData = category ? resolveCategory(category) : null;
 
   useEffect(() => {
     if (category) {

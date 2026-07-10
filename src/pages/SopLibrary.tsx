@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { CategoryCard } from "@/components/support-docs/CategoryCard";
 import { ArticleCard } from "@/components/support-docs/ArticleCard";
 import { deriveCategories } from "@/components/support-docs/categories";
+import { useCategories } from "@/hooks/useCategories";
 import { searchArticles } from "@/components/support-docs/search";
 import { BookOpen, Lock, Clock, Terminal, FileText, Search } from "lucide-react";
 import { toast } from "sonner";
@@ -31,6 +32,8 @@ export default function SopLibrary() {
   const [sops, setSops] = useState<Sop[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  // Hydrate the category registry so cards reflect DB names/icons/order/edits.
+  useCategories();
 
   useEffect(() => {
     fetchSops();

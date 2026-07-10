@@ -7,18 +7,15 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CategoryCard } from "@/components/support-docs/CategoryCard";
 import { ArticleCard } from "@/components/support-docs/ArticleCard";
-import { 
-  BookOpen, 
-  Search, 
-  TrendingUp, 
-  Clock, 
-  Rocket,
-  Target,
+import { resolveCategory } from "@/components/support-docs/categories";
+import { useCategories } from "@/hooks/useCategories";
+import {
+  BookOpen,
+  Search,
+  TrendingUp,
+  Clock,
   BarChart3,
   FileText,
-  DollarSign,
-  Lightbulb,
-  HelpCircle
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -34,53 +31,12 @@ interface Article {
   not_helpful_count: number;
 }
 
-const categories = [
-  {
-    id: "getting_started",
-    name: "Getting Started",
-    description: "New to the platform? Start here",
-    icon: Rocket,
-    color: "from-blue-500 to-blue-600"
-  },
-  {
-    id: "features",
-    name: "Features",
-    description: "Learn about platform capabilities",
-    icon: Target,
-    color: "from-purple-500 to-purple-600"
-  },
-  {
-    id: "marketing",
-    name: "Marketing",
-    description: "Campaign creation and management",
-    icon: TrendingUp,
-    color: "from-green-500 to-green-600"
-  },
-  {
-    id: "troubleshooting",
-    name: "Troubleshooting",
-    description: "Common issues and solutions",
-    icon: HelpCircle,
-    color: "from-orange-500 to-orange-600"
-  },
-  {
-    id: "billing",
-    name: "Billing & Account",
-    description: "Subscriptions and account settings",
-    icon: DollarSign,
-    color: "from-yellow-500 to-yellow-600"
-  },
-  {
-    id: "best_practices",
-    name: "Best Practices",
-    description: "Tips and strategies for success",
-    icon: Lightbulb,
-    color: "from-pink-500 to-pink-600"
-  }
-];
-
 export default function SupportDocs() {
   const navigate = useNavigate();
+  const { byAudience } = useCategories();
+  // Client-facing categories come from the DB (audience "client"), mapped to
+  // presentation metadata. All client categories show, even empty ones.
+  const categories = byAudience("client").map((r) => resolveCategory(r.slug));
   const [searchQuery, setSearchQuery] = useState("");
   const [featuredArticles, setFeaturedArticles] = useState<Article[]>([]);
   const [recentArticles, setRecentArticles] = useState<Article[]>([]);

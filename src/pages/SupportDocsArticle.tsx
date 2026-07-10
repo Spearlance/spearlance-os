@@ -25,11 +25,15 @@ import {
   FileWarning,
   Languages,
   Loader2,
-  Sparkles
+  Sparkles,
+  Pencil
 } from "lucide-react";
 import { toast } from "sonner";
 import { ArticleMarkdown } from "@/components/support-docs/ArticleMarkdown";
+import { ArticleEditor } from "@/components/support-docs/ArticleEditor";
 import { getCategoryName } from "@/components/support-docs/categories";
+import { useCategories } from "@/hooks/useCategories";
+import { useUserRole } from "@/hooks/useUserRole";
 import {
   LANGUAGES,
   LANGUAGE_STORAGE_KEY,
@@ -69,6 +73,10 @@ export default function SupportDocsArticle() {
   const { category, slug } = useParams();
   const navigate = useNavigate();
   const { selectedClient } = useClient();
+  const { isAdmin } = useUserRole();
+  // Hydrate the category registry so the breadcrumb reflects DB names/edits.
+  useCategories();
+  const [showEditor, setShowEditor] = useState(false);
   const [article, setArticle] = useState<Article | null>(null);
   const [relatedArticles, setRelatedArticles] = useState<RelatedArticle[]>([]);
   const [loading, setLoading] = useState(true);
@@ -308,28 +316,41 @@ export default function SupportDocsArticle() {
               <span />
             )}
 
-            {/* Translation switcher (internal SOPs only for now) */}
-            {isInternal && (
-              <div className="flex items-center gap-2">
-                {translating ? (
-                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                ) : (
-                  <Languages className="h-4 w-4 text-muted-foreground" />
-                )}
-                <Select value={lang} onValueChange={handleLangChange}>
-                  <SelectTrigger className="h-8 w-[140px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {LANGUAGES.map((l) => (
-                      <SelectItem key={l.code || "en"} value={l.code}>
-                        {l.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
+            {/* Right cluster: translation switcher (internal only) + admin edit */}
+            <div className="flex items-center gap-2">
+              {isInternal && (
+                <div className="flex items-center gap-2">
+                  {translating ? (
+                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                  ) : (
+                    <Languages className="h-4 w-4 text-muted-foreground" />
+                  )}
+                  <Select value={lang} onValueChange={handleLangChange}>
+                    <SelectTrigger className="h-8 w-[140px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {LANGUAGES.map((l) => (
+                        <SelectItem key={l.code || "en"} value={l.code}>
+                          {l.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+              {isAdmin && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8"
+                  onClick={() => setShowEditor(true)}
+                >
+                  <Pencil className="h-4 w-4 mr-1.5" />
+                  Edit
+                </Button>
+              )}
+            </div>
           </div>
 
           <h1 className="text-4xl font-bold mb-4" dir={isRtl ? "rtl" : "ltr"}>{displayTitle}</h1>
@@ -444,6 +465,18 @@ export default function SupportDocsArticle() {
             </Button>
           </CardContent>
         </Card>
+
+        {isAdmin && showEditor && (
+          <ArticleEditor
+            article={article}
+            open={showEditor}
+            onClose={() => setShowEditor(false)}
+            onSave={() => {
+              setShowEditor(false);
+              fetchArticle();
+            }}
+          />
+        )}
       </div>
     </div>
   );

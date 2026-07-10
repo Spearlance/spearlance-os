@@ -13,7 +13,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ArticleEditor } from "@/components/support-docs/ArticleEditor";
+import { CategoryManager } from "@/components/support-docs/CategoryManager";
 import { getCategoryName } from "@/components/support-docs/categories";
+import { useCategories } from "@/hooks/useCategories";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Edit, Trash2, Eye, CheckCircle, XCircle, Lock } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -48,6 +51,8 @@ export default function AdminSupportDocs() {
   const [showEditor, setShowEditor] = useState(false);
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
   const [deleteArticleId, setDeleteArticleId] = useState<string | null>(null);
+  // Hydrate the category registry so the Articles table badges show DB names.
+  useCategories();
 
   useEffect(() => {
     fetchArticles();
@@ -129,13 +134,21 @@ export default function AdminSupportDocs() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-3xl font-bold">Support Articles</h1>
-          <p className="text-muted-foreground">
-            Manage knowledge base content
-          </p>
-        </div>
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold">Support Docs</h1>
+        <p className="text-muted-foreground">
+          Manage knowledge base articles, internal SOPs, and their categories
+        </p>
+      </div>
+
+      <Tabs defaultValue="articles">
+        <TabsList className="mb-6">
+          <TabsTrigger value="articles">Articles</TabsTrigger>
+          <TabsTrigger value="categories">Categories</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="articles" className="mt-0">
+      <div className="flex justify-end mb-4">
         <Button onClick={() => {
           setSelectedArticle(null);
           setShowEditor(true);
@@ -265,6 +278,12 @@ export default function AdminSupportDocs() {
           </Table>
         </CardContent>
       </Card>
+        </TabsContent>
+
+        <TabsContent value="categories" className="mt-0">
+          <CategoryManager />
+        </TabsContent>
+      </Tabs>
 
       {/* Article Editor Dialog */}
       {showEditor && (

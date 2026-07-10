@@ -22,11 +22,7 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { ArticleMarkdown } from "@/components/support-docs/ArticleMarkdown";
-import {
-  CLIENT_CATEGORY_ORDER,
-  SOP_CATEGORY_ORDER,
-  getCategoryName,
-} from "@/components/support-docs/categories";
+import { useCategories } from "@/hooks/useCategories";
 
 interface ArticleEditorProps {
   article: any;
@@ -49,6 +45,12 @@ export function ArticleEditor({ article, open, onClose, onSave }: ArticleEditorP
     featured_order: "",
   });
   const [saving, setSaving] = useState(false);
+  const { byAudience } = useCategories();
+
+  // Internal SOPs draw from the internal groupings; client and shared ("all")
+  // docs draw from the client categories.
+  const optionAudience = (audience: string) =>
+    audience === "internal" ? "internal" : "client";
 
   useEffect(() => {
     if (article) {
@@ -67,18 +69,16 @@ export function ArticleEditor({ article, open, onClose, onSave }: ArticleEditorP
     }
   }, [article]);
 
-  // Category taxonomy is audience-dependent: internal SOPs use the SOP
-  // groupings, client/shared help uses the client categories.
-  const categoryOptions =
-    formData.audience === "internal" ? SOP_CATEGORY_ORDER : CLIENT_CATEGORY_ORDER;
+  // Category taxonomy is audience-dependent and comes from the DB.
+  const categoryOptions = byAudience(optionAudience(formData.audience));
 
   const handleAudienceChange = (audience: string) => {
     setFormData((prev) => {
-      const options =
-        audience === "internal" ? SOP_CATEGORY_ORDER : CLIENT_CATEGORY_ORDER;
-      const category = (options as readonly string[]).includes(prev.category)
+      const options = byAudience(optionAudience(audience));
+      const slugs = options.map((o) => o.slug);
+      const category = slugs.includes(prev.category)
         ? prev.category
-        : options[0];
+        : options[0]?.slug ?? prev.category;
       return { ...prev, audience, category };
     });
   };
@@ -225,9 +225,9 @@ export function ArticleEditor({ article, open, onClose, onSave }: ArticleEditorP
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {categoryOptions.map((slug) => (
-                    <SelectItem key={slug} value={slug}>
-                      {getCategoryName(slug)}
+                  {categoryOptions.map((cat) => (
+                    <SelectItem key={cat.slug} value={cat.slug}>
+                      {cat.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
