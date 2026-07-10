@@ -16,7 +16,7 @@ import {
   ArrowLeft
 } from "lucide-react";
 import { toast } from "sonner";
-import ReactMarkdown from "react-markdown";
+import { ArticleMarkdown } from "@/components/support-docs/ArticleMarkdown";
 import { useClient } from "@/contexts/ClientContext";
 
 interface Article {
@@ -239,9 +239,7 @@ export default function SupportDocsArticle() {
         <Separator className="mb-8" />
 
         {/* Article Content */}
-        <div className="prose prose-lg max-w-none mb-12">
-          <ReactMarkdown>{article.content}</ReactMarkdown>
-        </div>
+        <ArticleMarkdown content={article.content} className="prose-lg mb-12" />
 
         <Separator className="mb-8" />
 

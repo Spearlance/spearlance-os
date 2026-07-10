@@ -21,7 +21,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import ReactMarkdown from "react-markdown";
+import { ArticleMarkdown } from "@/components/support-docs/ArticleMarkdown";
 
 interface ArticleEditorProps {
   article: any;
@@ -239,9 +239,10 @@ export function ArticleEditor({ article, open, onClose, onSave }: ArticleEditorP
               />
             </TabsContent>
             <TabsContent value="preview" className="border rounded-lg p-4 min-h-[400px]">
-              <div className="prose prose-sm max-w-none">
-                <ReactMarkdown>{formData.content || "*No content yet*"}</ReactMarkdown>
-              </div>
+              <ArticleMarkdown
+                content={formData.content || "*No content yet*"}
+                className="prose-sm"
+              />
             </TabsContent>
           </Tabs>
 
