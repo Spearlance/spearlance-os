@@ -3,10 +3,13 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { CategoryCard } from "@/components/support-docs/CategoryCard";
 import { ArticleCard } from "@/components/support-docs/ArticleCard";
 import { deriveCategories } from "@/components/support-docs/categories";
-import { BookOpen, Lock, Clock, Terminal, FileText } from "lucide-react";
+import { searchArticles } from "@/components/support-docs/search";
+import { BookOpen, Lock, Clock, Terminal, FileText, Search } from "lucide-react";
 import { toast } from "sonner";
 
 interface Sop {
@@ -14,6 +17,7 @@ interface Sop {
   title: string;
   slug: string;
   excerpt: string;
+  content: string;
   category: string;
   tags: string[];
   view_count: number;
@@ -26,6 +30,7 @@ export default function SopLibrary() {
   const navigate = useNavigate();
   const [sops, setSops] = useState<Sop[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     fetchSops();
@@ -39,7 +44,7 @@ export default function SopLibrary() {
       const { data, error } = await supabase
         .from("support_articles")
         .select(
-          "id, title, slug, excerpt, category, tags, view_count, helpful_count, not_helpful_count, is_published",
+          "id, title, slug, excerpt, content, category, tags, view_count, helpful_count, not_helpful_count, is_published",
         )
         .eq("audience", "internal")
         .order("updated_at", { ascending: false });
@@ -49,6 +54,7 @@ export default function SopLibrary() {
       const rows: Sop[] = (data || []).map((a) => ({
         ...a,
         excerpt: a.excerpt ?? "",
+        content: a.content ?? "",
         tags: a.tags ?? [],
         view_count: a.view_count ?? 0,
         helpful_count: a.helpful_count ?? 0,
@@ -72,6 +78,9 @@ export default function SopLibrary() {
     return acc;
   }, {});
   const recent = sops.slice(0, 6);
+
+  const isSearching = searchQuery.trim().length > 0;
+  const searchResults = isSearching ? searchArticles(sops, searchQuery) : [];
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
@@ -104,6 +113,17 @@ export default function SopLibrary() {
               copy-paste kickoff prompt — paste it into Claude and go.
             </p>
 
+            {/* Search across SOP titles, bodies, and tags */}
+            <div className="relative max-w-2xl mx-auto">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search SOPs by title, content, or tag..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 h-12 text-lg"
+              />
+            </div>
+
             <div className="flex justify-center gap-8 text-sm text-muted-foreground pt-2">
               <div className="flex items-center gap-2">
                 <FileText className="h-4 w-4" />
@@ -131,6 +151,37 @@ export default function SopLibrary() {
               Internal SOPs will appear here once they're published.
             </p>
           </div>
+        ) : isSearching ? (
+          <section>
+            <div className="flex items-center gap-2 mb-8">
+              <Search className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+              <h2 className="text-3xl font-bold">
+                {searchResults.length} result{searchResults.length === 1 ? "" : "s"}
+              </h2>
+              <span className="text-muted-foreground text-lg">for “{searchQuery.trim()}”</span>
+            </div>
+            {searchResults.length === 0 ? (
+              <div className="text-center py-12">
+                <Search className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
+                <h3 className="text-2xl font-semibold mb-2">No matching SOPs</h3>
+                <p className="text-muted-foreground mb-6">Try different or fewer keywords.</p>
+                <Button variant="outline" onClick={() => setSearchQuery("")}>
+                  Clear search
+                </Button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {searchResults.map((sop) => (
+                  <ArticleCard
+                    key={sop.id}
+                    article={sop}
+                    variant="internal"
+                    onClick={() => navigate(`/sop/${sop.category}/${sop.slug}`)}
+                  />
+                ))}
+              </div>
+            )}
+          </section>
         ) : (
           <>
             {/* Categories */}

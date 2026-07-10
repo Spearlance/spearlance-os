@@ -41,6 +41,7 @@ const SupportDocsArticle = lazy(() => import("./pages/SupportDocsArticle"));
 const AdminSupportDocs = lazy(() => import("./pages/AdminSupportDocs"));
 const SopLibrary = lazy(() => import("./pages/SopLibrary"));
 const SopCategory = lazy(() => import("./pages/SopCategory"));
+const SupportDocsSearch = lazy(() => import("./pages/SupportDocsSearch"));
 const Settings = lazy(() => import("./pages/Settings"));
 const Admin = lazy(() => import("./pages/Admin"));
 const Notifications = lazy(() => import("./pages/Notifications"));
@@ -125,6 +126,7 @@ const App = () => (
                       <Route path="/support" element={<MainLayout><Support /></MainLayout>} />
                       <Route path="/support/:id" element={<MainLayout><TicketDetail /></MainLayout>} />
                       <Route path="/support/docs" element={<MainLayout><SupportDocs /></MainLayout>} />
+                      <Route path="/support/docs/search" element={<MainLayout><SupportDocsSearch /></MainLayout>} />
                       <Route path="/support/docs/:category" element={<MainLayout><SupportDocsCategory /></MainLayout>} />
                       <Route path="/support/docs/:category/:slug" element={<MainLayout><SupportDocsArticle /></MainLayout>} />
                       <Route path="/sop" element={<MainLayout><SopLibrary /></MainLayout>} />
