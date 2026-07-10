@@ -4889,6 +4889,48 @@ export type Database = {
         }
         Relationships: []
       }
+      support_categories: {
+        Row: {
+          audience: string
+          color: string
+          created_at: string | null
+          description: string
+          icon: string
+          id: string
+          is_active: boolean
+          name: string
+          slug: string
+          sort_order: number
+          updated_at: string | null
+        }
+        Insert: {
+          audience?: string
+          color?: string
+          created_at?: string | null
+          description?: string
+          icon?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          slug: string
+          sort_order?: number
+          updated_at?: string | null
+        }
+        Update: {
+          audience?: string
+          color?: string
+          created_at?: string | null
+          description?: string
+          icon?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          slug?: string
+          sort_order?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       task_assignees: {
         Row: {
           created_at: string | null

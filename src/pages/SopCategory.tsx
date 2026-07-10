@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ArticleCard } from "@/components/support-docs/ArticleCard";
 import { resolveCategory } from "@/components/support-docs/categories";
+import { useCategories } from "@/hooks/useCategories";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -36,6 +37,8 @@ export default function SopCategory() {
   const [sops, setSops] = useState<Sop[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
+  // Hydrate the category registry so the header reflects DB names/icons/edits.
+  useCategories();
 
   // No hardcoded lookup — resolveCategory always returns sensible presentation
   // metadata (title-cased fallback for unknown slugs), so this page never
