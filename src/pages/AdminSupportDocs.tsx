@@ -13,7 +13,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ArticleEditor } from "@/components/support-docs/ArticleEditor";
-import { Plus, Edit, Trash2, Eye, CheckCircle, XCircle } from "lucide-react";
+import { getCategoryName } from "@/components/support-docs/categories";
+import { Plus, Edit, Trash2, Eye, CheckCircle, XCircle, Lock } from "lucide-react";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -31,6 +32,7 @@ interface Article {
   title: string;
   slug: string;
   category: string;
+  audience: string;
   is_published: boolean;
   view_count: number;
   helpful_count: number;
@@ -125,18 +127,6 @@ export default function AdminSupportDocs() {
     }
   };
 
-  const getCategoryName = (cat: string) => {
-    const names: Record<string, string> = {
-      getting_started: "Getting Started",
-      features: "Features",
-      marketing: "Marketing",
-      troubleshooting: "Troubleshooting",
-      billing: "Billing & Account",
-      best_practices: "Best Practices"
-    };
-    return names[cat] || cat;
-  };
-
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-8">
@@ -177,6 +167,7 @@ export default function AdminSupportDocs() {
               <TableRow>
                 <TableHead>Title</TableHead>
                 <TableHead>Category</TableHead>
+                <TableHead>Audience</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Views</TableHead>
                 <TableHead className="text-right">Helpful</TableHead>
@@ -201,6 +192,21 @@ export default function AdminSupportDocs() {
                       <Badge variant="secondary">
                         {getCategoryName(article.category)}
                       </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {article.audience === "internal" ? (
+                        <Badge
+                          variant="outline"
+                          className="border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400 gap-1"
+                        >
+                          <Lock className="h-3 w-3" />
+                          Internal
+                        </Badge>
+                      ) : article.audience === "all" ? (
+                        <Badge variant="outline">All</Badge>
+                      ) : (
+                        <Badge variant="outline">Client</Badge>
+                      )}
                     </TableCell>
                     <TableCell>
                       {article.is_published ? (

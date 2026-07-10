@@ -22,6 +22,11 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { ArticleMarkdown } from "@/components/support-docs/ArticleMarkdown";
+import {
+  CLIENT_CATEGORY_ORDER,
+  SOP_CATEGORY_ORDER,
+  getCategoryName,
+} from "@/components/support-docs/categories";
 
 interface ArticleEditorProps {
   article: any;
@@ -34,6 +39,7 @@ export function ArticleEditor({ article, open, onClose, onSave }: ArticleEditorP
   const [formData, setFormData] = useState({
     title: "",
     slug: "",
+    audience: "client",
     category: "getting_started",
     subcategory: "",
     content: "",
@@ -49,6 +55,7 @@ export function ArticleEditor({ article, open, onClose, onSave }: ArticleEditorP
       setFormData({
         title: article.title || "",
         slug: article.slug || "",
+        audience: article.audience || "client",
         category: article.category || "getting_started",
         subcategory: article.subcategory || "",
         content: article.content || "",
@@ -59,6 +66,22 @@ export function ArticleEditor({ article, open, onClose, onSave }: ArticleEditorP
       });
     }
   }, [article]);
+
+  // Category taxonomy is audience-dependent: internal SOPs use the SOP
+  // groupings, client/shared help uses the client categories.
+  const categoryOptions =
+    formData.audience === "internal" ? SOP_CATEGORY_ORDER : CLIENT_CATEGORY_ORDER;
+
+  const handleAudienceChange = (audience: string) => {
+    setFormData((prev) => {
+      const options =
+        audience === "internal" ? SOP_CATEGORY_ORDER : CLIENT_CATEGORY_ORDER;
+      const category = (options as readonly string[]).includes(prev.category)
+        ? prev.category
+        : options[0];
+      return { ...prev, audience, category };
+    });
+  };
 
   const generateSlug = (title: string) => {
     return title
@@ -94,6 +117,7 @@ export function ArticleEditor({ article, open, onClose, onSave }: ArticleEditorP
       const articleData = {
         title: formData.title,
         slug: formData.slug,
+        audience: formData.audience,
         category: formData.category,
         subcategory: formData.subcategory || null,
         content: formData.content,
@@ -170,6 +194,28 @@ export function ArticleEditor({ article, open, onClose, onSave }: ArticleEditorP
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
+              <Label htmlFor="audience">Audience *</Label>
+              <Select
+                value={formData.audience}
+                onValueChange={handleAudienceChange}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="client">Client — client-facing help</SelectItem>
+                  <SelectItem value="internal">Internal — staff-only SOP</SelectItem>
+                  <SelectItem value="all">All — shared with everyone</SelectItem>
+                </SelectContent>
+              </Select>
+              {formData.audience === "internal" && (
+                <p className="text-xs text-muted-foreground">
+                  Internal SOPs are never shown to clients (enforced by RLS).
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="category">Category *</Label>
               <Select
                 value={formData.category}
@@ -179,16 +225,17 @@ export function ArticleEditor({ article, open, onClose, onSave }: ArticleEditorP
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="getting_started">Getting Started</SelectItem>
-                  <SelectItem value="features">Features</SelectItem>
-                  <SelectItem value="marketing">Marketing</SelectItem>
-                  <SelectItem value="troubleshooting">Troubleshooting</SelectItem>
-                  <SelectItem value="billing">Billing & Account</SelectItem>
-                  <SelectItem value="best_practices">Best Practices</SelectItem>
+                  {categoryOptions.map((slug) => (
+                    <SelectItem key={slug} value={slug}>
+                      {getCategoryName(slug)}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
+          </div>
 
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="subcategory">Subcategory</Label>
               <Input
