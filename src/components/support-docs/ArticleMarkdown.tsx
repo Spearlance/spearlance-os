@@ -64,6 +64,8 @@ interface ArticleMarkdownProps {
   content: string;
   /** Extra classes on the prose wrapper (e.g. "prose-lg", "prose-sm"). */
   className?: string;
+  /** Text direction — set "rtl" for right-to-left languages like Urdu. */
+  dir?: "ltr" | "rtl";
 }
 
 /**
@@ -72,9 +74,9 @@ interface ArticleMarkdownProps {
  * Used by both the article reader and the admin editor preview so authors see
  * copy buttons exactly as readers will.
  */
-export function ArticleMarkdown({ content, className }: ArticleMarkdownProps) {
+export function ArticleMarkdown({ content, className, dir }: ArticleMarkdownProps) {
   return (
-    <div className={cn("prose max-w-none", className)}>
+    <div className={cn("prose max-w-none", className)} dir={dir}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
