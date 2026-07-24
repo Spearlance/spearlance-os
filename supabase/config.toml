@@ -281,3 +281,16 @@ verify_jwt = true
 
 [functions.set-asset-share-password]
 verify_jwt = true
+
+# Reporting layer endpoints — authenticated via x-spearlance-key header, not JWT
+[functions.ingest-lead]
+verify_jwt = false
+
+[functions.ingest-metric]
+verify_jwt = false
+
+[functions.hubspot-status]
+verify_jwt = false
+
+[functions.report]
+verify_jwt = false
