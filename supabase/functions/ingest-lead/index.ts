@@ -11,7 +11,10 @@
  * Payload (client + source required, everything else optional):
  * {
  *   "client":     "invictus-northwest-group",   // slug, clients.id uuid, or Duda site_id
- *   "source":     "lovable_lp",                 // duda_form | lovable_lp | call | zapier | hubspot | manual
+ *   "source":     "lovable_lp",                 // ingestion pipe: duda_form | lovable_lp | call | zapier | hubspot | manual
+ *   "channel":    "Google Ads",                 // marketing channel for reporting; free-form, normalized
+ *                                               // ('Google Ads' -> 'google_ads'). When omitted it is derived
+ *                                               // from gclid/UTMs, else source (duda_form->website, call->phone).
  *   "source_ref": "callrail-CAL123",            // external id; makes ingest idempotent per source
  *   "name":       "Jane Doe",
  *   "email":      "jane@example.com",           // lowercased on insert

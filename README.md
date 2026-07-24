@@ -64,10 +64,16 @@ Example lead ingest:
 ```bash
 curl -X POST "$SUPABASE_URL/functions/v1/ingest-lead" \
   -H "x-spearlance-key: $WEBHOOK_SECRET" -H "Content-Type: application/json" \
-  -d '{"client":"invictus-northwest-group","source":"lovable_lp","name":"Jane Doe",
-       "email":"jane@example.com","phone":"555-123-4567","message":"Need a quote",
+  -d '{"client":"invictus-northwest-group","source":"lovable_lp","channel":"Google Ads",
+       "name":"Jane Doe","email":"jane@example.com","phone":"555-123-4567","message":"Need a quote",
        "utm_source":"google","utm_medium":"cpc","gclid":"abc","landing_url":"https://..."}'
 ```
+
+`source` is the ingestion pipe (which integration delivered the lead);
+`channel` is the marketing channel reports group by — set it explicitly in the
+webhook payload (`"Google Ads"`, `"Facebook Ads"`, `"Email"`, ... free-form,
+normalized to snake_case). When omitted it is derived from gclid/UTMs, else
+from the source (`duda_form`→website, `call`→phone), else `unattributed`.
 
 Duda form submissions are mapped into `reporting.leads` automatically by a
 trigger on `website_form_submissions` (source `duda_form`, status `mql`).
