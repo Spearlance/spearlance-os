@@ -4,12 +4,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Copy, ExternalLink, Link2, Loader2, RefreshCw } from "lucide-react";
 import { ReportingDashboard, type ReportPayload } from "@/components/reporting/ReportingDashboard";
 import { ManageData } from "@/components/reporting/ManageData";
+import { SearchConsoleTab } from "@/components/reporting/gsc/SearchConsoleTab";
+import { GoogleAdsTab } from "@/components/reporting/ads/GoogleAdsTab";
 import { fetchReport, fetchShareLink, shareUrl, upsertShareLink, type ShareLink } from "@/lib/reportingApi";
 
 const RANGES: Record<string, () => { from: string; to: string }> = {
@@ -31,6 +33,7 @@ const RANGES: Record<string, () => { from: string; to: string }> = {
 export default function Reporting() {
   const { selectedClient } = useClient();
   const [range, setRange] = useState<string>("90d");
+  const [section, setSection] = useState<string>("overview");
   const [report, setReport] = useState<ReportPayload | null>(null);
   const [loading, setLoading] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -118,21 +121,50 @@ export default function Reporting() {
         </p>
       )}
 
-      {selectedClient && loading && !report && (
-        <div className="flex justify-center py-16">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-        </div>
-      )}
+      {selectedClient && (
+        <Tabs value={section} onValueChange={setSection}>
+          <TabsList>
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="seo">SEO</TabsTrigger>
+            <TabsTrigger value="google-ads">Google Ads</TabsTrigger>
+          </TabsList>
 
-      {selectedClient && report && <ReportingDashboard report={report} />}
+          <TabsContent value="overview" className="space-y-5 mt-4">
+            {loading && !report && (
+              <div className="flex justify-center py-16">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            )}
+            {report && <ReportingDashboard report={report} />}
+            {canEdit && (
+              <ManageData
+                clientId={selectedClient.id}
+                from={RANGES[range]().from}
+                to={RANGES[range]().to}
+                onChanged={load}
+              />
+            )}
+          </TabsContent>
 
-      {selectedClient && canEdit && (
-        <ManageData
-          clientId={selectedClient.id}
-          from={RANGES[range]().from}
-          to={RANGES[range]().to}
-          onChanged={load}
-        />
+          <TabsContent value="seo" className="mt-4">
+            <SearchConsoleTab
+              clientId={selectedClient.id}
+              websiteUrl={selectedClient.website_url}
+              from={RANGES[range]().from}
+              to={RANGES[range]().to}
+              canEdit={canEdit}
+            />
+          </TabsContent>
+
+          <TabsContent value="google-ads" className="mt-4">
+            <GoogleAdsTab
+              clientId={selectedClient.id}
+              from={RANGES[range]().from}
+              to={RANGES[range]().to}
+              canEdit={canEdit}
+            />
+          </TabsContent>
+        </Tabs>
       )}
 
       {selectedClient && isAdmin && (
