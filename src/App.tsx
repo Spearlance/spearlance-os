@@ -15,6 +15,8 @@ const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Auth = lazy(() => import("./pages/Auth"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const PublicAssets = lazy(() => import("./pages/PublicAssets"));
+const Reporting = lazy(() => import("./pages/Reporting"));
+const PublicReporting = lazy(() => import("./pages/PublicReporting"));
 const Meetings = lazy(() => import("./pages/Meetings"));
 const MeetingDetail = lazy(() => import("./pages/MeetingDetail"));
 const CommunicationLogs = lazy(() => import("./pages/CommunicationLogs"));
@@ -93,6 +95,7 @@ const App = () => (
                   <Suspense fallback={<RouteLoadingFallback />}>
                     <Routes>
                       <Route path="/assets/share/:token" element={<PublicAssets />} />
+                      <Route path="/reporting/share/:token" element={<PublicReporting />} />
                       <Route path="/auth" element={<Auth />} />
                       <Route path="/reset-password" element={<ResetPassword />} />
                       <Route path="/set-password" element={<SetPassword />} />
@@ -122,6 +125,7 @@ const App = () => (
                       <Route path="/launchpad" element={<MainLayout><LaunchPad /></MainLayout>} />
                       <Route path="/marketing/flow" element={<MainLayout><MarketingFlowchart /></MainLayout>} />
                       <Route path="/marketing/reports" element={<MainLayout><Reports /></MainLayout>} />
+                      <Route path="/reporting" element={<MainLayout><Reporting /></MainLayout>} />
                       <Route path="/social-media" element={<MainLayout><SocialMedia /></MainLayout>} />
                       <Route path="/support" element={<MainLayout><Support /></MainLayout>} />
                       <Route path="/support/:id" element={<MainLayout><TicketDetail /></MainLayout>} />
