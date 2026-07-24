@@ -294,3 +294,6 @@ verify_jwt = false
 
 [functions.report]
 verify_jwt = false
+
+[functions.reporting-config]
+verify_jwt = true

@@ -20,6 +20,7 @@ import { Admin2FABanner } from "@/components/admin/Admin2FABanner";
 import { DeleteUserDialog } from "@/components/admin/DeleteUserDialog";
 import { DeleteClientDialog } from "@/components/admin/DeleteClientDialog";
 import { FeatureFlagManager } from "@/components/admin/FeatureFlagManager";
+import { ReportingWebhookDialog } from "@/components/admin/ReportingWebhookDialog";
 
 async function getEdgeFunctionError(error: any): Promise<string> {
   if (error?.context instanceof Response) {
@@ -622,6 +623,7 @@ export default function Admin() {
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
+                            <ReportingWebhookDialog client={client} />
                             <EditClientDialog
                               client={client}
                               assignedUsers={assignedUsers}
