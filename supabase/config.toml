@@ -300,3 +300,8 @@ verify_jwt = true
 
 [functions.public-report]
 verify_jwt = false
+
+# Windsor.ai sync — cron calls with the service-role JWT; manual refresh from
+# the app carries a user JWT and is gated to admin/FMM inside the function.
+[functions.windsor-sync]
+verify_jwt = true

@@ -3,7 +3,8 @@ import type { ReportPayload } from "@/components/reporting/ReportingDashboard";
 
 // The generated Database types only cover the public schema; the reporting
 // schema is exposed to PostgREST but untyped, hence the cast.
-const reporting = () => (supabase as any).schema("reporting");
+export const reportingSchema = () => (supabase as any).schema("reporting");
+const reporting = reportingSchema;
 
 /** Mirrors the edge functions' buildReport, but runs under the signed-in
  *  user's RLS (internal staff: all clients; client users: their own). */
