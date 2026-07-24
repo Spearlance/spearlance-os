@@ -99,6 +99,7 @@ const marketingSubItems = [
   { title: "Tools", url: "/marketing/tools", icon: Wrench },
   { title: "Flow", url: "/marketing/flow", icon: GitBranch },
   { title: "Reports", url: "/marketing/reports", icon: FileText },
+  { title: "Reporting", url: "/reporting", icon: Activity },
 ];
 
 const clientCommunicationSubItems = [
