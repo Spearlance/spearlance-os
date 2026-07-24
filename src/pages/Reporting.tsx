@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Copy, ExternalLink, Link2, Loader2, RefreshCw } from "lucide-react";
 import { ReportingDashboard, type ReportPayload } from "@/components/reporting/ReportingDashboard";
+import { ManageData } from "@/components/reporting/ManageData";
 import { fetchReport, fetchShareLink, shareUrl, upsertShareLink, type ShareLink } from "@/lib/reportingApi";
 
 const RANGES: Record<string, () => { from: string; to: string }> = {
@@ -33,6 +34,7 @@ export default function Reporting() {
   const [report, setReport] = useState<ReportPayload | null>(null);
   const [loading, setLoading] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [canEdit, setCanEdit] = useState(false);
   const [share, setShare] = useState<ShareLink | null>(null);
   const [shareBusy, setShareBusy] = useState(false);
 
@@ -42,6 +44,7 @@ export default function Reporting() {
       const { data: profile } = await supabase
         .from("profiles").select("role").eq("id", user.id).maybeSingle();
       setIsAdmin(profile?.role === "admin");
+      setCanEdit(profile?.role === "admin" || profile?.role === "fmm");
     });
   }, []);
 
@@ -122,6 +125,15 @@ export default function Reporting() {
       )}
 
       {selectedClient && report && <ReportingDashboard report={report} />}
+
+      {selectedClient && canEdit && (
+        <ManageData
+          clientId={selectedClient.id}
+          from={RANGES[range]().from}
+          to={RANGES[range]().to}
+          onChanged={load}
+        />
+      )}
 
       {selectedClient && isAdmin && (
         <Card>

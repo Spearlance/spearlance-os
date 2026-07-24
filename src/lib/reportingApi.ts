@@ -125,3 +125,99 @@ export async function upsertShareLink(clientId: string, patch: Partial<Pick<Shar
 }
 
 export const shareUrl = (token: string) => `${window.location.origin}/reporting/share/${token}`;
+
+// ---- Manual data management (admin/FMM via RLS write policies) ----
+
+export interface LeadRow {
+  id: string;
+  created_at: string;
+  name: string | null;
+  email: string | null;
+  phone: string | null;
+  message: string | null;
+  source: string;
+  channel: string | null;
+  status: string;
+  status_reason: string | null;
+  mql_at: string | null;
+  sql_at: string | null;
+}
+
+export async function fetchLeads(clientId: string, from: string, to: string): Promise<LeadRow[]> {
+  const { data, error } = await reporting()
+    .from("leads")
+    .select("id, created_at, name, email, phone, message, source, channel, status, status_reason, mql_at, sql_at")
+    .eq("client_id", clientId)
+    .gte("created_at", `${from}T00:00:00Z`)
+    .lte("created_at", `${to}T23:59:59Z`)
+    .order("created_at", { ascending: false })
+    .limit(100);
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function updateLead(id: string, patch: Partial<LeadRow>): Promise<void> {
+  const { error } = await reporting().from("leads").update(patch).eq("id", id);
+  if (error) throw error;
+}
+
+export async function insertLead(clientId: string, lead: {
+  name?: string; email?: string; phone?: string; message?: string;
+  channel?: string | null; status: string; occurred_at: string;
+}): Promise<void> {
+  const ts = `${lead.occurred_at}T12:00:00Z`;
+  const { error } = await reporting().from("leads").insert({
+    client_id: clientId,
+    source: "manual",
+    name: lead.name || null,
+    email: lead.email || null,
+    phone: lead.phone || null,
+    message: lead.message || null,
+    channel: lead.channel || null,
+    status: lead.status,
+    mql_at: ["mql", "sql"].includes(lead.status) ? ts : null,
+    sql_at: lead.status === "sql" ? ts : null,
+    created_at: ts,
+  });
+  if (error) throw error;
+}
+
+export async function deleteLead(id: string): Promise<void> {
+  const { error } = await reporting().from("leads").delete().eq("id", id);
+  if (error) throw error;
+}
+
+export interface MetricRow {
+  id: string;
+  metric_date: string;
+  metric: string;
+  value: number | string;
+}
+
+export async function fetchMetrics(clientId: string, from: string, to: string): Promise<MetricRow[]> {
+  const { data, error } = await reporting()
+    .from("metrics_daily")
+    .select("id, metric_date, metric, value")
+    .eq("client_id", clientId)
+    .gte("metric_date", from)
+    .lte("metric_date", to)
+    .order("metric_date", { ascending: false })
+    .limit(100);
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function upsertMetric(clientId: string, metricDate: string, metric: string, value: number): Promise<void> {
+  const { error } = await reporting()
+    .from("metrics_daily")
+    .upsert(
+      { client_id: clientId, metric_date: metricDate, metric, value },
+      { onConflict: "client_id,metric_date,metric" },
+    );
+  if (error) throw error;
+}
+
+export async function deleteMetric(id: string): Promise<void> {
+  const { error } = await reporting().from("metrics_daily").delete().eq("id", id);
+  if (error) throw error;
+}
