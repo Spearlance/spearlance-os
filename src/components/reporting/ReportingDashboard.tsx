@@ -24,6 +24,7 @@ export interface ReportPayload {
     reached_mql: number;
     reached_sql: number;
   };
+  call_lead_count?: number;
   daily: { date: string; source: string; leads: number }[];
   sources: { source: string; leads: number }[];
   channels: { channel: string; leads: number }[];
@@ -96,6 +97,9 @@ export function ReportingDashboard({ report }: { report: ReportPayload }) {
       }),
       calls: Number(m.value),
     }));
+
+  const totalCallClicks = callMetrics.reduce((sum, m) => sum + m.calls, 0);
+  const callLeads = report.call_lead_count ?? 0;
 
   const latestCohort = [...report.mql_to_sql].reverse().find((r) => r.sql_count > 0);
   const conversionValue = latestCohort
@@ -196,8 +200,26 @@ export function ReportingDashboard({ report }: { report: ReportPayload }) {
       {callMetrics.length > 0 && (
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-base">Call clicks per day</CardTitle>
-            <p className="text-xs text-muted-foreground">Daily call-click counts from the website</p>
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <div>
+                <CardTitle className="text-base">Website call clicks</CardTitle>
+                <p className="text-xs text-muted-foreground">
+                  Click-to-call taps recorded by the website (Duda)
+                </p>
+              </div>
+              <div className="text-right text-xs text-muted-foreground">
+                <span className="font-semibold text-foreground text-sm">{totalCallClicks}</span> call clicks ·{" "}
+                <span className="font-semibold text-foreground text-sm">{callLeads}</span> call leads logged
+              </div>
+            </div>
+            {totalCallClicks > callLeads && (
+              <p className="text-xs text-amber-600 dark:text-amber-500 mt-1">
+                The website drove {totalCallClicks} call click{totalCallClicks === 1 ? "" : "s"} in this
+                period but only {callLeads} call lead{callLeads === 1 ? " is" : "s are"} logged in reporting —
+                compare against the actual call log and report the missing calls so website-driven phone
+                leads get counted.
+              </p>
+            )}
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={180}>

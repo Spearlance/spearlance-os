@@ -47,6 +47,10 @@ export async function buildReport(
   const sourceTotals = new Map<string, number>();
   const channelTotals = new Map<string, number>();
   const dailyTotals = new Map<string, number>();
+  // Leads that represent phone calls (CallRail pipe or phone-channel manual
+  // entries) — compared against website click-to-call metrics for
+  // reconciliation. Row-level OR avoids double counting.
+  let callLeadCount = 0;
 
   for (const row of funnelRows) {
     funnel.total += row.total_count;
@@ -59,6 +63,7 @@ export async function buildReport(
     sourceTotals.set(row.source, (sourceTotals.get(row.source) ?? 0) + row.total_count);
     const channel = row.channel ?? 'unattributed';
     channelTotals.set(channel, (channelTotals.get(channel) ?? 0) + row.total_count);
+    if (row.source === 'call' || channel === 'phone') callLeadCount += row.total_count;
     const dailyKey = `${row.lead_date}|${row.source}`;
     dailyTotals.set(dailyKey, (dailyTotals.get(dailyKey) ?? 0) + row.total_count);
   }
@@ -75,6 +80,7 @@ export async function buildReport(
     from,
     to,
     funnel,
+    call_lead_count: callLeadCount,
     daily,
     sources: [...sourceTotals.entries()]
       .map(([source, leads]) => ({ source, leads }))
