@@ -1,4 +1,11 @@
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  buildMetricGroups,
+  type MetricDefinition,
+  type MetricFamilyGroup,
+  type MetricSeries,
+} from "@/lib/metricSeries";
 import {
   Bar,
   BarChart,
@@ -36,6 +43,9 @@ export interface ReportPayload {
     median_days: number | string | null;
   }[];
   metrics: { date: string; metric: string; value: number | string; meta: unknown }[];
+  // Optional so payloads from a not-yet-redeployed edge function still render
+  // (labels then fall back to raw metric keys).
+  metric_definitions?: MetricDefinition[];
 }
 
 const MQL_COLOR = "hsl(217 71% 50%)";
@@ -68,6 +78,122 @@ function StatTile({ label, value, note }: { label: string; value: string; note?:
   );
 }
 
+const formatMetricValue = (v: number) =>
+  Number.isInteger(v) ? String(v) : v.toFixed(1);
+
+function MetricSeriesBlock({
+  series,
+  tooltipStyle,
+}: {
+  series: MetricSeries;
+  tooltipStyle: React.CSSProperties;
+}) {
+  const data = series.points.map((p) => ({
+    date: new Date(`${p.date}T00:00:00`).toLocaleDateString(undefined, {
+      month: "short",
+      day: "numeric",
+    }),
+    value: p.value,
+  }));
+  return (
+    <div className="space-y-1">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium">{series.label}</span>
+          {!series.defined && (
+            <Badge variant="outline" className="text-xs text-amber-600 dark:text-amber-500"
+              title="No entry in reporting.metric_definitions — add one to set a label and unit.">
+              undefined
+            </Badge>
+          )}
+        </div>
+        <span className="text-sm tabular-nums">
+          <b>{formatMetricValue(series.total)}</b>
+          {series.unit && <span className="text-xs text-muted-foreground"> {series.unit}</span>}
+          {series.aggregation !== "sum" && (
+            <span className="text-xs text-muted-foreground"> ({series.aggregation})</span>
+          )}
+        </span>
+      </div>
+      {series.description && (
+        <p className="text-xs text-muted-foreground">{series.description}</p>
+      )}
+      <ResponsiveContainer width="100%" height={140}>
+        <BarChart data={data}>
+          <CartesianGrid strokeDasharray="0" stroke="hsl(var(--border))" vertical={false} />
+          <XAxis dataKey="date" tickLine={false} axisLine={false} fontSize={11} />
+          <YAxis allowDecimals={false} tickLine={false} axisLine={false} fontSize={11} width={28} />
+          <Tooltip
+            contentStyle={tooltipStyle}
+            formatter={(v: number) => [v, series.unit ?? series.label]}
+          />
+          <Bar dataKey="value" fill={MQL_COLOR} radius={[4, 4, 0, 0]} maxBarSize={32} />
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+function MetricFamilyCard({
+  group,
+  callLeads,
+  tooltipStyle,
+}: {
+  group: MetricFamilyGroup;
+  callLeads: number;
+  tooltipStyle: React.CSSProperties;
+}) {
+  // Call-intent reconciliation: click-to-call metrics count intent, and each
+  // real call should surface as a phone lead. Keyed on family/unit from the
+  // registry, not on metric names.
+  const clickToCall = group.family === "calls"
+    ? group.series.filter((s) => s.unit === "clicks").reduce((sum, s) => sum + s.total, 0)
+    : 0;
+
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <CardTitle className="text-base">{group.label}</CardTitle>
+          <div className="text-right text-xs text-muted-foreground">
+            {group.subtotal != null ? (
+              <>
+                <span className="font-semibold text-foreground text-sm">
+                  {formatMetricValue(group.subtotal)}
+                </span>{" "}
+                {group.unit} total
+              </>
+            ) : group.series.length > 1 ? (
+              <span title="These metrics use different units, so a combined total would be misleading.">
+                not totaled — different units
+              </span>
+            ) : null}
+            {group.family === "calls" && (
+              <>
+                {" · "}
+                <span className="font-semibold text-foreground text-sm">{callLeads}</span> call leads logged
+              </>
+            )}
+          </div>
+        </div>
+        {clickToCall > callLeads && (
+          <p className="text-xs text-amber-600 dark:text-amber-500 mt-1">
+            The website drove {clickToCall} call click{clickToCall === 1 ? "" : "s"} in this
+            period but only {callLeads} call lead{callLeads === 1 ? " is" : "s are"} logged in reporting —
+            compare against the actual call log and report the missing calls so website-driven phone
+            leads get counted.
+          </p>
+        )}
+      </CardHeader>
+      <CardContent className="space-y-5">
+        {group.series.map((s) => (
+          <MetricSeriesBlock key={s.metric} series={s} tooltipStyle={tooltipStyle} />
+        ))}
+      </CardContent>
+    </Card>
+  );
+}
+
 export function ReportingDashboard({ report }: { report: ReportPayload }) {
   const { funnel } = report;
 
@@ -88,17 +214,7 @@ export function ReportingDashboard({ report }: { report: ReportPayload }) {
     unattributed: c.channel === "unattributed",
   }));
 
-  const callMetrics = report.metrics
-    .filter((m) => m.metric === "duda_calls")
-    .map((m) => ({
-      date: new Date(`${m.date}T00:00:00`).toLocaleDateString(undefined, {
-        month: "short",
-        day: "numeric",
-      }),
-      calls: Number(m.value),
-    }));
-
-  const totalCallClicks = callMetrics.reduce((sum, m) => sum + m.calls, 0);
+  const metricGroups = buildMetricGroups(report.metrics, report.metric_definitions ?? []);
   const callLeads = report.call_lead_count ?? 0;
 
   const latestCohort = [...report.mql_to_sql].reverse().find((r) => r.sql_count > 0);
@@ -197,43 +313,14 @@ export function ReportingDashboard({ report }: { report: ReportPayload }) {
         </Card>
       </div>
 
-      {callMetrics.length > 0 && (
-        <Card>
-          <CardHeader className="pb-2">
-            <div className="flex flex-wrap items-start justify-between gap-2">
-              <div>
-                <CardTitle className="text-base">Website call clicks</CardTitle>
-                <p className="text-xs text-muted-foreground">
-                  Click-to-call taps recorded by the website (Duda)
-                </p>
-              </div>
-              <div className="text-right text-xs text-muted-foreground">
-                <span className="font-semibold text-foreground text-sm">{totalCallClicks}</span> call clicks ·{" "}
-                <span className="font-semibold text-foreground text-sm">{callLeads}</span> call leads logged
-              </div>
-            </div>
-            {totalCallClicks > callLeads && (
-              <p className="text-xs text-amber-600 dark:text-amber-500 mt-1">
-                The website drove {totalCallClicks} call click{totalCallClicks === 1 ? "" : "s"} in this
-                period but only {callLeads} call lead{callLeads === 1 ? " is" : "s are"} logged in reporting —
-                compare against the actual call log and report the missing calls so website-driven phone
-                leads get counted.
-              </p>
-            )}
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={180}>
-              <BarChart data={callMetrics}>
-                <CartesianGrid strokeDasharray="0" stroke="hsl(var(--border))" vertical={false} />
-                <XAxis dataKey="date" tickLine={false} axisLine={false} fontSize={11} />
-                <YAxis allowDecimals={false} tickLine={false} axisLine={false} fontSize={11} width={28} />
-                <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => [v, "calls"]} />
-                <Bar dataKey="calls" fill={MQL_COLOR} radius={[4, 4, 0, 0]} maxBarSize={32} />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      )}
+      {metricGroups.map((group) => (
+        <MetricFamilyCard
+          key={group.family ?? "__other__"}
+          group={group}
+          callLeads={callLeads}
+          tooltipStyle={tooltipStyle}
+        />
+      ))}
 
       {funnel.total === 0 && (
         <p className="text-sm text-muted-foreground text-center py-8">

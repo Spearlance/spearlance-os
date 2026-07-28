@@ -36,6 +36,7 @@ import {
   deleteLead,
   deleteMetric,
   fetchLeads,
+  fetchMetricDefinitions,
   fetchMetrics,
   insertLead,
   updateLead,
@@ -43,6 +44,7 @@ import {
   type LeadRow,
   type MetricRow,
 } from "@/lib/reportingApi";
+import type { MetricDefinition } from "@/lib/metricSeries";
 
 const STATUSES = ["new", "mql", "sql", "disqualified"] as const;
 const CHANNELS = [
@@ -72,19 +74,22 @@ export function ManageData({ clientId, from, to, onChanged }: ManageDataProps) {
     name: "", email: "", phone: "", message: "", channel: NONE,
     status: "mql", occurred_at: new Date().toISOString().slice(0, 10),
   });
+  const [defs, setDefs] = useState<MetricDefinition[]>([]);
   const [newMetric, setNewMetric] = useState({
-    metric_date: new Date().toISOString().slice(0, 10), metric: "duda_calls", value: "",
+    metric_date: new Date().toISOString().slice(0, 10), metric: "", value: "",
   });
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [l, m] = await Promise.all([
+      const [l, m, d] = await Promise.all([
         fetchLeads(clientId, from, to),
         fetchMetrics(clientId, from, to),
+        fetchMetricDefinitions(),
       ]);
       setLeads(l);
       setMetrics(m);
+      setDefs(d);
     } catch (error: any) {
       toast.error("Failed to load data", { description: error?.message });
     } finally {
@@ -100,6 +105,9 @@ export function ManageData({ clientId, from, to, onChanged }: ManageDataProps) {
     load();
     onChanged();
   };
+
+  const activeDefs = defs.filter((d) => d.is_active);
+  const defMap = new Map(defs.map((d) => [d.metric, d]));
 
   const patchLead = async (id: string, patch: Partial<LeadRow>, message: string) => {
     try {
@@ -149,12 +157,12 @@ export function ManageData({ clientId, from, to, onChanged }: ManageDataProps) {
 
   const submitNewMetric = async () => {
     const value = Number(newMetric.value);
-    if (!newMetric.metric.trim() || !Number.isFinite(value)) {
-      toast.error("Metric name and numeric value are required");
+    if (!newMetric.metric || !Number.isFinite(value)) {
+      toast.error("Pick a metric and enter a numeric value");
       return;
     }
     try {
-      await upsertMetric(clientId, newMetric.metric_date, newMetric.metric.trim(), value);
+      await upsertMetric(clientId, newMetric.metric_date, newMetric.metric, value);
       toast.success("Metric saved");
       setNewMetric({ ...newMetric, value: "" });
       changed();
@@ -364,8 +372,19 @@ export function ManageData({ clientId, from, to, onChanged }: ManageDataProps) {
               </div>
               <div className="space-y-1">
                 <Label className="text-xs">Metric</Label>
-                <Input className="h-8 w-[150px]" value={newMetric.metric} placeholder="duda_calls"
-                  onChange={(e) => setNewMetric({ ...newMetric, metric: e.target.value })} />
+                <Select value={newMetric.metric || undefined}
+                  onValueChange={(metric) => setNewMetric({ ...newMetric, metric })}>
+                  <SelectTrigger className="h-8 w-[220px]">
+                    <SelectValue placeholder={activeDefs.length ? "Select metric" : "No metrics defined"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {activeDefs.map((d) => (
+                      <SelectItem key={d.metric} value={d.metric}>
+                        {d.label} ({d.unit})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-1">
                 <Label className="text-xs">Value</Label>
@@ -376,7 +395,8 @@ export function ManageData({ clientId, from, to, onChanged }: ManageDataProps) {
                 <Plus className="h-3.5 w-3.5 mr-1" /> Save
               </Button>
               <p className="text-xs text-muted-foreground pb-1.5">
-                Saving an existing date + metric overwrites its value.
+                Saving an existing date + metric overwrites its value. New metric types are added in
+                reporting.metric_definitions — no code change needed.
               </p>
             </div>
 
@@ -391,10 +411,27 @@ export function ManageData({ clientId, from, to, onChanged }: ManageDataProps) {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {metrics.map((m) => (
+                  {metrics.map((m) => {
+                    const def = defMap.get(m.metric);
+                    return (
                     <TableRow key={m.id}>
                       <TableCell className="text-xs whitespace-nowrap">{m.metric_date}</TableCell>
-                      <TableCell className="text-sm">{m.metric}</TableCell>
+                      <TableCell className="text-sm">
+                        {def ? (
+                          <>
+                            {def.label}{" "}
+                            <span className="text-xs text-muted-foreground">({def.unit})</span>
+                          </>
+                        ) : (
+                          <>
+                            {m.metric}{" "}
+                            <Badge variant="outline" className="text-xs text-amber-600 dark:text-amber-500"
+                              title="No entry in reporting.metric_definitions — add one to set a label and unit.">
+                              undefined
+                            </Badge>
+                          </>
+                        )}
+                      </TableCell>
                       <TableCell className="text-sm tabular-nums">{Number(m.value)}</TableCell>
                       <TableCell>
                         {confirmDelete === m.id ? (
@@ -410,7 +447,8 @@ export function ManageData({ clientId, from, to, onChanged }: ManageDataProps) {
                         )}
                       </TableCell>
                     </TableRow>
-                  ))}
+                    );
+                  })}
                   {metrics.length === 0 && !loading && (
                     <TableRow>
                       <TableCell colSpan={4} className="text-center text-sm text-muted-foreground py-6">
