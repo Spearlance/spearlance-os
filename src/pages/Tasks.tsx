@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useClient } from "@/contexts/ClientContext";
+import { useTasksRealtime } from "@/hooks/useTasksRealtime";
 import { supabase } from "@/integrations/supabase/client";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 import { Filter, X, Plus, ChevronLeft, Sparkles, Loader2 } from "lucide-react";
@@ -106,6 +107,11 @@ export default function Tasks() {
     loadUserRole();
     loadCurrentUser();
   }, []);
+
+  // Two-way sync: reload the board when tasks change from anywhere else
+  // (My Tasks, another user, an edge function). The board only shows its
+  // skeleton when the task list is empty, so this refresh is invisible.
+  useTasksRealtime(() => loadTasks(), { clientId: selectedClient?.id, enabled: !!selectedClient });
 
   // Handle URL params for deep-linking to specific tasks (from Designer Workload, etc.)
   useEffect(() => {
