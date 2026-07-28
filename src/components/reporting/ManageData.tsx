@@ -39,12 +39,20 @@ import {
   fetchMetricDefinitions,
   fetchMetrics,
   insertLead,
+  insertMetricDefinition,
   updateLead,
   upsertMetric,
   type LeadRow,
   type MetricRow,
 } from "@/lib/reportingApi";
 import type { MetricDefinition } from "@/lib/metricSeries";
+
+// Key derived from the label ("Yelp Page Views" -> yelp_page_views); editable
+// before saving, immutable after (it's the PK the data rows reference).
+const slugifyMetricKey = (s: string) =>
+  s.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+
+const EMPTY_DEF = { label: "", metric: "", metricTouched: false, unit: "", family: "", description: "" };
 
 const STATUSES = ["new", "mql", "sql", "disqualified"] as const;
 const CHANNELS = [
@@ -78,6 +86,9 @@ export function ManageData({ clientId, from, to, onChanged }: ManageDataProps) {
   const [newMetric, setNewMetric] = useState({
     metric_date: new Date().toISOString().slice(0, 10), metric: "", value: "",
   });
+  const [defOpen, setDefOpen] = useState(false);
+  const [defBusy, setDefBusy] = useState(false);
+  const [newDef, setNewDef] = useState(EMPTY_DEF);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -168,6 +179,37 @@ export function ManageData({ clientId, from, to, onChanged }: ManageDataProps) {
       changed();
     } catch (error: any) {
       toast.error("Failed to save metric", { description: error?.message });
+    }
+  };
+
+  const submitNewDef = async () => {
+    const metric = slugifyMetricKey(newDef.metric);
+    if (!newDef.label.trim() || !metric || !newDef.unit.trim()) {
+      toast.error("Label, key, and unit are required");
+      return;
+    }
+    setDefBusy(true);
+    try {
+      await insertMetricDefinition({
+        metric,
+        label: newDef.label.trim(),
+        unit: newDef.unit.trim().toLowerCase(),
+        family: newDef.family.trim().toLowerCase() || null,
+        description: newDef.description.trim() || null,
+        display_order: Math.max(0, ...defs.map((d) => d.display_order)) + 10,
+      });
+      toast.success(`Metric type "${newDef.label.trim()}" created`);
+      setDefOpen(false);
+      setNewDef(EMPTY_DEF);
+      setNewMetric((m) => ({ ...m, metric }));
+      await load();
+    } catch (error: any) {
+      toast.error(
+        error?.code === "23505" ? `A metric with key "${metric}" already exists` : "Failed to create metric type",
+        { description: error?.code === "23505" ? undefined : error?.message },
+      );
+    } finally {
+      setDefBusy(false);
     }
   };
 
@@ -386,6 +428,81 @@ export function ManageData({ clientId, from, to, onChanged }: ManageDataProps) {
                   </SelectContent>
                 </Select>
               </div>
+              <Dialog open={defOpen} onOpenChange={(open) => { setDefOpen(open); if (!open) setNewDef(EMPTY_DEF); }}>
+                <DialogTrigger asChild>
+                  <Button size="sm" variant="outline" className="h-8">
+                    <Plus className="h-3.5 w-3.5 mr-1" /> New metric type
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>New metric type</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <Label>Label</Label>
+                        <Input value={newDef.label} placeholder="Yelp Page Views"
+                          onChange={(e) => setNewDef((d) => ({
+                            ...d,
+                            label: e.target.value,
+                            metric: d.metricTouched ? d.metric : slugifyMetricKey(e.target.value),
+                          }))} />
+                      </div>
+                      <div className="space-y-1">
+                        <Label>Key</Label>
+                        <Input value={newDef.metric} placeholder="yelp_page_views"
+                          onChange={(e) => setNewDef((d) => ({
+                            ...d,
+                            metric: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, "_"),
+                            metricTouched: true,
+                          }))} />
+                        <p className="text-[11px] text-muted-foreground">
+                          Stored identifier — can't be changed after data is logged against it.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <Label>Unit</Label>
+                        <Input value={newDef.unit} placeholder="views" list="metric-unit-options"
+                          onChange={(e) => setNewDef((d) => ({ ...d, unit: e.target.value }))} />
+                        <datalist id="metric-unit-options">
+                          {[...new Set([...defs.map((d) => d.unit), "calls", "clicks", "emails", "views", "sessions", "leads", "dollars"])].map((u) => (
+                            <option key={u} value={u} />
+                          ))}
+                        </datalist>
+                      </div>
+                      <div className="space-y-1">
+                        <Label>Family <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                        <Input value={newDef.family} placeholder="calls" list="metric-family-options"
+                          onChange={(e) => setNewDef((d) => ({ ...d, family: e.target.value }))} />
+                        <datalist id="metric-family-options">
+                          {[...new Set(defs.map((d) => d.family).filter(Boolean))].map((f) => (
+                            <option key={f as string} value={f as string} />
+                          ))}
+                        </datalist>
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground -mt-1">
+                      Metrics in the same family are grouped on the dashboard, and only totaled
+                      together when their units match.
+                    </p>
+                    <div className="space-y-1">
+                      <Label>Description <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                      <Textarea rows={2} value={newDef.description}
+                        placeholder="What this counts and where it comes from"
+                        onChange={(e) => setNewDef((d) => ({ ...d, description: e.target.value }))} />
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button onClick={submitNewDef} disabled={defBusy}>
+                      {defBusy && <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />}
+                      Create metric type
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
               <div className="space-y-1">
                 <Label className="text-xs">Value</Label>
                 <Input type="number" className="h-8 w-[100px]" value={newMetric.value}

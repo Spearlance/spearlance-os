@@ -94,6 +94,28 @@ export async function fetchMetricDefinitions(): Promise<MetricDefinition[]> {
   return data ?? [];
 }
 
+/** Admin/FMM only (RLS). Plain insert — a duplicate key errors (23505) rather
+ *  than silently overwriting an existing definition. */
+export async function insertMetricDefinition(def: {
+  metric: string;
+  label: string;
+  unit: string;
+  family?: string | null;
+  description?: string | null;
+  display_order?: number;
+}): Promise<void> {
+  const { error } = await reporting().from("metric_definitions").insert({
+    metric: def.metric,
+    label: def.label,
+    unit: def.unit,
+    family: def.family || null,
+    source: "manual",
+    description: def.description || null,
+    display_order: def.display_order ?? 0,
+  });
+  if (error) throw error;
+}
+
 export interface ShareLink {
   id: string;
   client_id: string;
