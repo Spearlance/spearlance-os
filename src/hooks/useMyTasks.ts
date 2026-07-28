@@ -1,6 +1,11 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { isToday, isTomorrow, isThisWeek, isAfter, isBefore, startOfToday, addWeeks } from "date-fns";
+import {
+  GroupedTasks,
+  groupTasksByClient,
+  groupTasksByDueDate,
+  groupTasksByPriority,
+} from "@/lib/myTasksGrouping";
 
 export interface MyTask {
   id: string;
@@ -25,14 +30,6 @@ export interface MyTask {
 }
 
 export type GroupBy = "client" | "due_date" | "priority";
-
-interface GroupedTasks {
-  [key: string]: {
-    label: string;
-    tasks: MyTask[];
-    color?: string;
-  };
-}
 
 export function useMyTasks() {
   const [tasks, setTasks] = useState<MyTask[]>([]);
@@ -188,100 +185,11 @@ export function useMyTasks() {
     fetchTasks();
   }, [fetchTasks]);
 
-  const groupByClient = useMemo((): GroupedTasks => {
-    const grouped: GroupedTasks = {};
-    
-    tasks.forEach(task => {
-      const key = task.client_id;
-      if (!grouped[key]) {
-        grouped[key] = {
-          label: task.client_name,
-          tasks: [],
-        };
-      }
-      grouped[key].tasks.push(task);
-    });
+  const groupByClient = useMemo((): GroupedTasks => groupTasksByClient(tasks), [tasks]);
 
-    // Sort tasks within each group by due date
-    Object.values(grouped).forEach(group => {
-      group.tasks.sort((a, b) => {
-        if (!a.due_date && !b.due_date) return 0;
-        if (!a.due_date) return 1;
-        if (!b.due_date) return -1;
-        return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
-      });
-    });
+  const groupByDueDate = useMemo((): GroupedTasks => groupTasksByDueDate(tasks), [tasks]);
 
-    return grouped;
-  }, [tasks]);
-
-  const groupByDueDate = useMemo((): GroupedTasks => {
-    const today = startOfToday();
-    const nextWeekEnd = addWeeks(today, 1);
-
-    const grouped: GroupedTasks = {
-      overdue: { label: "Overdue", tasks: [], color: "hsl(var(--destructive))" },
-      today: { label: "Today", tasks: [], color: "hsl(var(--primary))" },
-      tomorrow: { label: "Tomorrow", tasks: [], color: "hsl(var(--warning))" },
-      this_week: { label: "This Week", tasks: [], color: "hsl(var(--muted-foreground))" },
-      next_week: { label: "Next Week", tasks: [], color: "hsl(var(--muted-foreground))" },
-      later: { label: "Later", tasks: [], color: "hsl(var(--muted-foreground))" },
-      no_date: { label: "No Due Date", tasks: [], color: "hsl(var(--muted-foreground))" },
-    };
-
-    tasks.forEach(task => {
-      if (!task.due_date) {
-        grouped.no_date.tasks.push(task);
-        return;
-      }
-
-      const dueDate = new Date(task.due_date);
-
-      if (isBefore(dueDate, today)) {
-        grouped.overdue.tasks.push(task);
-      } else if (isToday(dueDate)) {
-        grouped.today.tasks.push(task);
-      } else if (isTomorrow(dueDate)) {
-        grouped.tomorrow.tasks.push(task);
-      } else if (isThisWeek(dueDate, { weekStartsOn: 1 })) {
-        grouped.this_week.tasks.push(task);
-      } else if (isBefore(dueDate, nextWeekEnd)) {
-        grouped.next_week.tasks.push(task);
-      } else {
-        grouped.later.tasks.push(task);
-      }
-    });
-
-    return grouped;
-  }, [tasks]);
-
-  const groupByPriority = useMemo((): GroupedTasks => {
-    const grouped: GroupedTasks = {
-      urgent: { label: "Urgent", tasks: [], color: "#EF4444" },
-      high: { label: "High", tasks: [], color: "#F59E0B" },
-      normal: { label: "Normal", tasks: [], color: "#10B981" },
-      low: { label: "Low", tasks: [], color: "#6B7280" },
-    };
-
-    tasks.forEach(task => {
-      const priority = task.priority || "normal";
-      if (grouped[priority]) {
-        grouped[priority].tasks.push(task);
-      }
-    });
-
-    // Sort tasks within each group by due date
-    Object.values(grouped).forEach(group => {
-      group.tasks.sort((a, b) => {
-        if (!a.due_date && !b.due_date) return 0;
-        if (!a.due_date) return 1;
-        if (!b.due_date) return -1;
-        return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
-      });
-    });
-
-    return grouped;
-  }, [tasks]);
+  const groupByPriority = useMemo((): GroupedTasks => groupTasksByPriority(tasks), [tasks]);
 
   const getGrouped = useCallback((groupBy: GroupBy): GroupedTasks => {
     switch (groupBy) {

@@ -2,7 +2,10 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useClient } from "@/contexts/ClientContext";
 import { useMyTasks, GroupBy, MyTask } from "@/hooks/useMyTasks";
+import { useTasksRealtime } from "@/hooks/useTasksRealtime";
+import { buildClientSummaries } from "@/lib/myTasksGrouping";
 import { MyTaskCard } from "@/components/tasks/MyTaskCard";
+import { ClientTasksCard } from "@/components/tasks/ClientTasksCard";
 import { TaskDrawer } from "@/components/tasks/TaskDrawer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,9 +16,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { 
   ChevronDown, 
   ChevronRight, 
-  Search, 
-  RefreshCw, 
-  ExternalLink,
+  Search,
+  RefreshCw,
   CheckSquare,
   Calendar,
   Building2,
@@ -36,12 +38,15 @@ export default function MyTasks() {
     totalCount 
   } = useMyTasks();
   
-  const [groupBy, setGroupBy] = useState<GroupBy>("due_date");
+  const [groupBy, setGroupBy] = useState<GroupBy>("client");
   const [searchQuery, setSearchQuery] = useState("");
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
   const [selectedTask, setSelectedTask] = useState<any>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Two-way sync: refetch whenever tasks change anywhere (client boards included)
+  useTasksRealtime(refetch);
 
   const handleToggleComplete = async (task: MyTask, complete: boolean) => {
     const error = await markTaskComplete(task.id, task.client_id, complete);
@@ -102,13 +107,19 @@ export default function MyTasks() {
 
   const filteredGroupData = getFilteredGroupData();
 
-  const handleViewInBoard = (task: MyTask) => {
-    // Find the client and switch to it
-    const client = clients.find(c => c.id === task.client_id);
+  // Per-client summaries for the card view (overdue first, then upcoming)
+  const clientSummaries = buildClientSummaries(filteredTasks);
+
+  const handleSeeAllForClient = (clientId: string) => {
+    const client = clients.find(c => c.id === clientId);
     if (client) {
       setSelectedClient(client);
       navigate("/tasks");
     }
+  };
+
+  const handleViewInBoard = (task: MyTask) => {
+    handleSeeAllForClient(task.client_id);
   };
 
   const handleTaskClick = (task: MyTask) => {
@@ -130,8 +141,8 @@ export default function MyTasks() {
   };
 
   const groupByOptions = [
-    { value: "due_date", label: "Due Date", icon: Calendar },
     { value: "client", label: "Client", icon: Building2 },
+    { value: "due_date", label: "Due Date", icon: Calendar },
     { value: "priority", label: "Priority", icon: Flag },
   ];
 
@@ -227,7 +238,7 @@ export default function MyTasks() {
       </div>
 
       {/* Task Groups */}
-      {Object.keys(filteredGroupData).length === 0 ? (
+      {filteredTasks.length === 0 ? (
         <div className="text-center py-12">
           <CheckSquare className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
           <h3 className="text-lg font-medium mb-2">
@@ -240,6 +251,18 @@ export default function MyTasks() {
               ? "Try adjusting your search or filters"
               : "Tasks assigned to you will appear here"}
           </p>
+        </div>
+      ) : groupBy === "client" ? (
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {clientSummaries.map(summary => (
+            <ClientTasksCard
+              key={summary.clientId}
+              summary={summary}
+              onTaskClick={handleTaskClick}
+              onToggleComplete={handleToggleComplete}
+              onSeeAll={() => handleSeeAllForClient(summary.clientId)}
+            />
+          ))}
         </div>
       ) : (
         <div className="space-y-4">
@@ -269,25 +292,6 @@ export default function MyTasks() {
                       </Badge>
                     </Button>
                   </CollapsibleTrigger>
-                  
-                  {/* View All in Board - only for client grouping */}
-                  {groupBy === "client" && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-muted-foreground hover:text-foreground"
-                      onClick={() => {
-                        const client = clients.find(c => c.id === key);
-                        if (client) {
-                          setSelectedClient(client);
-                          navigate("/tasks");
-                        }
-                      }}
-                    >
-                      <ExternalLink className="h-4 w-4 mr-1" />
-                      View Board
-                    </Button>
-                  )}
                 </div>
                 
                 <CollapsibleContent className="mt-3">
