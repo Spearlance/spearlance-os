@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { ReportPayload } from "@/components/reporting/ReportingDashboard";
+import type { MetricDefinition } from "@/lib/metricSeries";
 
 // The generated Database types only cover the public schema; the reporting
 // schema is exposed to PostgREST but untyped, hence the cast.
@@ -11,7 +12,7 @@ const reporting = reportingSchema;
 export async function fetchReport(clientId: string, from: string, to: string): Promise<ReportPayload> {
   const monthFrom = `${from.slice(0, 7)}-01`;
 
-  const [funnelRes, mqlSqlRes, metricsRes] = await Promise.all([
+  const [funnelRes, mqlSqlRes, metricsRes, defsRes] = await Promise.all([
     reporting().from("v_lead_funnel").select("*")
       .eq("client_id", clientId).gte("lead_date", from).lte("lead_date", to),
     reporting().from("v_mql_to_sql").select("*")
@@ -19,9 +20,11 @@ export async function fetchReport(clientId: string, from: string, to: string): P
     reporting().from("v_metrics_daily").select("*")
       .eq("client_id", clientId).gte("metric_date", from).lte("metric_date", to)
       .order("metric_date"),
+    reporting().from("metric_definitions").select("*")
+      .order("display_order").order("metric"),
   ]);
 
-  const firstError = funnelRes.error ?? mqlSqlRes.error ?? metricsRes.error;
+  const firstError = funnelRes.error ?? mqlSqlRes.error ?? metricsRes.error ?? defsRes.error;
   if (firstError) throw firstError;
 
   const funnel = { total: 0, new: 0, mql: 0, sql: 0, disqualified: 0, reached_mql: 0, reached_sql: 0 };
@@ -77,7 +80,18 @@ export async function fetchReport(clientId: string, from: string, to: string): P
       value: r.value,
       meta: r.meta,
     })),
+    metric_definitions: defsRes.data ?? [],
   };
+}
+
+export async function fetchMetricDefinitions(): Promise<MetricDefinition[]> {
+  const { data, error } = await reporting()
+    .from("metric_definitions")
+    .select("*")
+    .order("display_order")
+    .order("metric");
+  if (error) throw error;
+  return data ?? [];
 }
 
 export interface ShareLink {

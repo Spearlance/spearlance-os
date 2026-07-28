@@ -12,7 +12,7 @@
  * {
  *   "client":      "invictus-northwest-group",  // slug, clients.id uuid, or Duda site_id
  *   "metric_date": "2026-07-24",
- *   "metric":      "duda_calls",                // free-form, e.g. duda_calls | ad_spend | lp_sessions
+ *   "metric":      "duda_calls",                // must exist in reporting.metric_definitions (422 otherwise)
  *   "value":       7,
  *   "meta":        { "source": "duda_mcp" }     // optional jsonb
  * }
@@ -78,6 +78,13 @@ Deno.serve(async (req) => {
     .single();
 
   if (error) {
+    // FK to reporting.metric_definitions: unregistered metric names are
+    // rejected so a typo can't create a phantom series.
+    if (error.code === '23503') {
+      return json({
+        error: `unknown metric '${metric}' — register it first: insert into reporting.metric_definitions (metric, label, family, unit, source, display_order) values (...)`,
+      }, 422);
+    }
     console.error('metric upsert error:', error);
     return json({ error: 'failed to upsert metric' }, 500);
   }

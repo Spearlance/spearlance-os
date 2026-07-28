@@ -14,7 +14,7 @@ export async function buildReport(
 ) {
   const monthFrom = `${from.slice(0, 7)}-01`;
 
-  const [funnelRes, mqlSqlRes, metricsRes] = await Promise.all([
+  const [funnelRes, mqlSqlRes, metricsRes, defsRes] = await Promise.all([
     supabase
       .from('v_lead_funnel')
       .select('*')
@@ -34,9 +34,17 @@ export async function buildReport(
       .gte('metric_date', from)
       .lte('metric_date', to)
       .order('metric_date'),
+    // Registry driving metric presentation (labels, units, families). Not
+    // client-scoped; inactive definitions are included so historical data
+    // keeps its label after a metric is retired.
+    supabase
+      .from('metric_definitions')
+      .select('*')
+      .order('display_order')
+      .order('metric'),
   ]);
 
-  const firstError = funnelRes.error ?? mqlSqlRes.error ?? metricsRes.error;
+  const firstError = funnelRes.error ?? mqlSqlRes.error ?? metricsRes.error ?? defsRes.error;
   if (firstError) throw firstError;
 
   const funnelRows = funnelRes.data ?? [];
@@ -101,5 +109,6 @@ export async function buildReport(
       value: r.value,
       meta: r.meta,
     })),
+    metric_definitions: defsRes.data ?? [],
   };
 }
