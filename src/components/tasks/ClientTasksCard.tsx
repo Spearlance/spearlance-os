@@ -59,7 +59,10 @@ const TaskRow = ({
   onToggleComplete: (task: MyTask, complete: boolean) => void;
 }) => {
   const due = getDueLabel(task);
-  const dotColor = task.color || priorityColors[task.priority] || priorityColors.normal;
+  // Dot mirrors the column color from the client's board (To-do/In Progress/
+  // Review/etc.) so status is readable at a glance; falls back to priority.
+  const dotColor =
+    task.column_color || task.color || priorityColors[task.priority] || priorityColors.normal;
 
   return (
     <div
