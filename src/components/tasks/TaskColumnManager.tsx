@@ -321,6 +321,9 @@ export function TaskColumnManager() {
             color: newColumn.color,
             display_order: 9999, // Temporary high value to avoid conflicts
             is_default: newColumn.is_default,
+            // Without this the DB default ('in_progress') silently wins —
+            // Done columns then never mark their tasks as completed
+            mapped_status: newColumn.mapped_status,
           });
 
         if (error) throw error;
