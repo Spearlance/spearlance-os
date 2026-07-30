@@ -10,6 +10,7 @@ import {
   groupTasksByDueDate,
   groupTasksByPriority,
   buildClientSummaries,
+  isTaskDone,
 } from '@/lib/myTasksGrouping';
 
 function makeTask(overrides: Partial<MyTask>): MyTask {
@@ -166,6 +167,25 @@ describe('groupTasksByDueDate', () => {
     Object.values(result).forEach(bucket => {
       expect(bucket.tasks).toHaveLength(0);
     });
+  });
+});
+
+describe('isTaskDone', () => {
+  it('is done when status is done', () => {
+    expect(isTaskDone('done', null)).toBe(true);
+    expect(isTaskDone('done', 'in_progress')).toBe(true);
+  });
+
+  it('is done when the column is mapped to done even if status is stale', () => {
+    expect(isTaskDone('in_progress', 'done')).toBe(true);
+    expect(isTaskDone('to_do', 'done')).toBe(true);
+  });
+
+  it('is open otherwise', () => {
+    expect(isTaskDone('to_do', 'to_do')).toBe(false);
+    expect(isTaskDone('in_progress', null)).toBe(false);
+    expect(isTaskDone('in_progress', undefined)).toBe(false);
+    expect(isTaskDone(null, null)).toBe(false);
   });
 });
 

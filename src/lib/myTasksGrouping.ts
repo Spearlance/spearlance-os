@@ -30,6 +30,16 @@ export function isOverdue(task: MyTask): boolean {
   return !!task.due_date && isBefore(new Date(task.due_date), startOfToday());
 }
 
+/**
+ * A task counts as done when either its status enum says so or the board
+ * column it sits in is mapped to done — the two can disagree (e.g. a task
+ * moved into a Done-mapped column through a path that didn't rewrite status),
+ * and the client board treats the column as the source of truth.
+ */
+export function isTaskDone(status: string | null, columnMappedStatus?: string | null): boolean {
+  return status === "done" || columnMappedStatus === "done";
+}
+
 export function groupTasksByClient(tasks: MyTask[]): GroupedTasks {
   const grouped: GroupedTasks = {};
 

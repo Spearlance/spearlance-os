@@ -5,6 +5,7 @@ import {
   groupTasksByClient,
   groupTasksByDueDate,
   groupTasksByPriority,
+  isTaskDone,
 } from "@/lib/myTasksGrouping";
 
 export interface MyTask {
@@ -20,6 +21,8 @@ export interface MyTask {
   client_id: string;
   client_name: string;
   client_logo_url?: string;
+  /** Color of the board column this task sits in on the client's task board */
+  column_color?: string;
   linked_channel_id: string | null;
   linked_channel_name?: string;
   linked_page_name?: string;
@@ -83,6 +86,10 @@ export function useMyTasks() {
             id,
             name,
             logo_url
+          ),
+          task_column:task_columns!column_id (
+            color,
+            mapped_status
           )
         `)
         .in("id", taskIds)
@@ -104,11 +111,18 @@ export function useMyTasks() {
         client_id: string;
         linked_channel_id: string | null;
         clients: { id: string; name: string; logo_url: string | null } | null;
+        task_column: { color: string | null; mapped_status: string | null } | null;
       };
+
+      // The status enum alone can miss completed tasks — a task sitting in a
+      // Done-mapped column is done regardless of what status says.
+      const openTasks = ((tasksData || []) as RawTask[]).filter(
+        task => !isTaskDone(task.status, task.task_column?.mapped_status)
+      );
 
       // Enrich tasks with additional data
       const enrichedTasks: MyTask[] = await Promise.all(
-        (tasksData || []).map(async (task: RawTask) => {
+        openTasks.map(async (task: RawTask) => {
           // Load subtasks
           const { data: subtasks } = await supabase
             .from("tasks")
@@ -162,6 +176,7 @@ export function useMyTasks() {
             client_id: task.client_id,
             client_name: task.clients?.name || "Unknown Client",
             client_logo_url: task.clients?.logo_url,
+            column_color: task.task_column?.color ?? undefined,
             linked_channel_id: task.linked_channel_id,
             linked_channel_name: linkedChannelName,
             linked_page_name: linkedPageName,
