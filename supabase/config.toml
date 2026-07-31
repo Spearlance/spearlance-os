@@ -305,3 +305,8 @@ verify_jwt = false
 # the app carries a user JWT and is gated to admin/FMM inside the function.
 [functions.windsor-sync]
 verify_jwt = true
+
+# Duda site-comments webhook — public endpoint, authenticated by per-client
+# token in client_webhook_tokens (no Supabase JWT on inbound Duda calls).
+[functions.duda-comments-webhook]
+verify_jwt = false
