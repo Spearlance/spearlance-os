@@ -70,8 +70,12 @@ Deno.serve(async (req) => {
     const secret = Deno.env.get('WEBHOOK_SECRET');
     if (!secret) return json({ error: 'WEBHOOK_SECRET is not configured in this environment' }, 500);
 
+    // SUPABASE_URL is runtime-injected and always the raw *.supabase.co URL;
+    // PUBLIC_SUPABASE_URL (function secret) carries the custom domain on prod.
+    const publicUrl = Deno.env.get('PUBLIC_SUPABASE_URL') ?? Deno.env.get('SUPABASE_URL');
+
     return json({
-      base_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1`,
+      base_url: `${publicUrl}/functions/v1`,
       webhook_secret: secret,
       client: {
         id: client.id,
