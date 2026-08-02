@@ -5,12 +5,19 @@ import type { Database } from './types';
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
+// Pin the auth storage key to the project ref: the default key is derived from
+// the URL hostname, so serving the API from a custom domain (app.os.spearlance.com)
+// would otherwise change the key and sign out every existing session.
+const SUPABASE_PROJECT_ID =
+  import.meta.env.VITE_SUPABASE_PROJECT_ID || new URL(SUPABASE_URL).hostname.split(".")[0];
+
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: {
     storage: localStorage,
+    storageKey: `sb-${SUPABASE_PROJECT_ID}-auth-token`,
     persistSession: true,
     autoRefreshToken: true,
   }
