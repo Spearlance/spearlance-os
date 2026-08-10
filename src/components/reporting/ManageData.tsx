@@ -156,6 +156,19 @@ export function ManageData({ clientId, from, to, onChanged }: ManageDataProps) {
   const activeDefs = defs.filter((d) => d.is_active);
   const defMap = new Map(defs.map((d) => [d.metric, d]));
 
+  // Manual stage changes are retroactive bookkeeping: a lead marked SQL or
+  // SALE from the table reached those stages back when it was a lead, so
+  // missing stage timestamps backfill to the lead's own date. Without this the
+  // DB trigger stamps now(), dropping the lead into the wrong month's cohort.
+  const stageStamps = (lead: LeadRow, status: string): Partial<LeadRow> => {
+    const ts = lead.created_at;
+    const patch: Partial<LeadRow> = {};
+    if (["mql", "sql", "sale"].includes(status) && !lead.mql_at) patch.mql_at = ts;
+    if (["sql", "sale"].includes(status) && !lead.sql_at) patch.sql_at = ts;
+    if (status === "sale" && !lead.sale_at) patch.sale_at = ts;
+    return patch;
+  };
+
   const patchLead = async (id: string, patch: Partial<LeadRow>, message: string) => {
     try {
       await updateLead(id, patch);
@@ -179,11 +192,11 @@ export function ManageData({ clientId, from, to, onChanged }: ManageDataProps) {
     }
     setSaleBusy(true);
     try {
-      // sale_at / sql_at / mql_at are stamped by the DB trigger if unset.
       await updateLead(saleDialog.lead.id, {
         status: "sale",
         status_reason: "manual override",
         sale_value: value,
+        ...stageStamps(saleDialog.lead, "sale"),
       });
       toast.success(value != null ? `Marked SALE — ${formatUsd(value)}` : "Marked SALE");
       setSaleDialog(null);
@@ -218,9 +231,16 @@ export function ManageData({ clientId, from, to, onChanged }: ManageDataProps) {
       message: editDialog.message.trim() || null,
     };
     // Only rewrite created_at when the day actually changed — keeps the
-    // original submission time (and funnel date) otherwise.
-    if (editDialog.occurred_at && editDialog.occurred_at !== editDialog.lead.created_at.slice(0, 10)) {
-      patch.created_at = `${editDialog.occurred_at}T12:00:00Z`;
+    // original submission time (and funnel date) otherwise. Stage timestamps
+    // that were backfilled to the lead's date travel with it, so a re-dated
+    // sale doesn't leave its MQL/SQL/sale stamps stranded in the old month.
+    const { lead } = editDialog;
+    if (editDialog.occurred_at && editDialog.occurred_at !== lead.created_at.slice(0, 10)) {
+      const ts = `${editDialog.occurred_at}T12:00:00Z`;
+      patch.created_at = ts;
+      if (lead.mql_at === lead.created_at) patch.mql_at = ts;
+      if (lead.sql_at === lead.created_at) patch.sql_at = ts;
+      if (lead.sale_at === lead.created_at) patch.sale_at = ts;
     }
     setEditBusy(true);
     try {
@@ -504,7 +524,7 @@ export function ManageData({ clientId, from, to, onChanged }: ManageDataProps) {
                             } else {
                               patchLead(
                                 lead.id,
-                                { status, status_reason: "manual override" },
+                                { status, status_reason: "manual override", ...stageStamps(lead, status) },
                                 status === "spam"
                                   ? "Marked SPAM — hidden from the lead list and not counted"
                                   : `Marked ${status.toUpperCase()}`,
