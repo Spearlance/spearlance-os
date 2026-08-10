@@ -220,9 +220,6 @@ export function ReportingDashboard({ report }: { report: ReportPayload }) {
   const metricGroups = buildMetricGroups(report.metrics, report.metric_definitions ?? []);
   const callLeads = report.call_lead_count ?? 0;
 
-  const latestCohort = [...report.mql_to_sql].reverse().find((r) => r.sql_count > 0);
-  const medianValue = latestCohort?.median_days != null ? `${Number(latestCohort.median_days)} days` : "—";
-
   const sales = funnel.sale ?? 0;
   const saleValue = funnel.sale_value ?? 0;
   const salesNote = funnel.total
@@ -244,7 +241,7 @@ export function ReportingDashboard({ report }: { report: ReportPayload }) {
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
         <StatTile label="Total leads" value={String(funnel.total)} note="all sources" />
         <StatTile
           label="Reached MQL"
@@ -258,7 +255,6 @@ export function ReportingDashboard({ report }: { report: ReportPayload }) {
           value={revenueValue}
           note={sales ? `from ${sales} sale${sales === 1 ? "" : "s"}` : "mark leads as SALE with a value"}
         />
-        <StatTile label="Median MQL → SQL" value={medianValue} note={latestCohort ? "latest converting cohort" : undefined} />
       </div>
 
       <p className="text-sm text-muted-foreground">
