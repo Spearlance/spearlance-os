@@ -31,7 +31,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { ChevronLeft, ChevronRight, Loader2, Plus, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
 import { channelLabel } from "./ReportingDashboard";
 import {
   deleteLead,
@@ -56,7 +56,7 @@ const slugifyMetricKey = (s: string) =>
 
 const EMPTY_DEF = { label: "", metric: "", metricTouched: false, unit: "", family: "", description: "" };
 
-const STATUSES = ["new", "mql", "sql", "sale", "disqualified"] as const;
+const STATUSES = ["new", "mql", "sql", "sale", "disqualified", "spam"] as const;
 const CHANNELS = [
   "website", "google_ads", "facebook_ads", "microsoft_ads",
   "email", "phone", "organic", "referral",
@@ -66,9 +66,12 @@ const NONE = "__none__";
 const statusVariant = (s: string) =>
   s === "sql" || s === "sale" ? "default" : s === "disqualified" ? "destructive" : s === "mql" ? "secondary" : "outline";
 
-// Sale gets its own green so closed deals stand out from SQLs.
+// Sale gets its own green so closed deals stand out from SQLs; spam gets a
+// muted gray — it's junk, not a funnel outcome.
 const statusClass = (s: string) =>
-  s === "sale" ? "border-transparent bg-green-600 text-white" : "";
+  s === "sale" ? "border-transparent bg-green-600 text-white"
+  : s === "spam" ? "border-transparent bg-zinc-500 text-white dark:bg-zinc-600"
+  : "";
 
 const formatUsd = (v: number) =>
   new Intl.NumberFormat(undefined, { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(v);
@@ -85,6 +88,7 @@ export function ManageData({ clientId, from, to, onChanged }: ManageDataProps) {
   const [leadCount, setLeadCount] = useState(0);
   const [page, setPage] = useState(0);
   const [allTime, setAllTime] = useState(false);
+  const [showSpam, setShowSpam] = useState(false);
   const [metrics, setMetrics] = useState<MetricRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
@@ -92,6 +96,10 @@ export function ManageData({ clientId, from, to, onChanged }: ManageDataProps) {
   const [addBusy, setAddBusy] = useState(false);
   const [saleDialog, setSaleDialog] = useState<{ lead: LeadRow; value: string } | null>(null);
   const [saleBusy, setSaleBusy] = useState(false);
+  const [editDialog, setEditDialog] = useState<{
+    lead: LeadRow; name: string; email: string; phone: string; message: string; occurred_at: string;
+  } | null>(null);
+  const [editBusy, setEditBusy] = useState(false);
   const [newLead, setNewLead] = useState({
     name: "", email: "", phone: "", message: "", channel: NONE,
     status: "mql", occurred_at: new Date().toISOString().slice(0, 10),
@@ -114,7 +122,7 @@ export function ManageData({ clientId, from, to, onChanged }: ManageDataProps) {
     setLoading(true);
     try {
       const [l, m, d] = await Promise.all([
-        fetchLeads(clientId, from, to, page, allTime),
+        fetchLeads(clientId, from, to, page, allTime, showSpam),
         fetchMetrics(clientId, from, to),
         fetchMetricDefinitions(),
       ]);
@@ -130,7 +138,7 @@ export function ManageData({ clientId, from, to, onChanged }: ManageDataProps) {
     } finally {
       if (request === requestRef.current) setLoading(false);
     }
-  }, [clientId, from, to, page, allTime]);
+  }, [clientId, from, to, page, allTime, showSpam]);
 
   useEffect(() => {
     load();
@@ -138,7 +146,7 @@ export function ManageData({ clientId, from, to, onChanged }: ManageDataProps) {
 
   useEffect(() => {
     setPage(0);
-  }, [clientId, from, to, allTime]);
+  }, [clientId, from, to, allTime, showSpam]);
 
   const changed = () => {
     load();
@@ -184,6 +192,46 @@ export function ManageData({ clientId, from, to, onChanged }: ManageDataProps) {
       toast.error("Update failed", { description: error?.message });
     } finally {
       setSaleBusy(false);
+    }
+  };
+
+  const openEditDialog = (lead: LeadRow) =>
+    setEditDialog({
+      lead,
+      name: lead.name ?? "",
+      email: lead.email ?? "",
+      phone: lead.phone ?? "",
+      message: lead.message ?? "",
+      occurred_at: lead.created_at.slice(0, 10),
+    });
+
+  const submitEdit = async () => {
+    if (!editDialog) return;
+    if (!editDialog.name.trim() && !editDialog.email.trim() && !editDialog.phone.trim()) {
+      toast.error("Keep at least a name, email, or phone");
+      return;
+    }
+    const patch: Partial<LeadRow> = {
+      name: editDialog.name.trim() || null,
+      email: editDialog.email.trim() || null,
+      phone: editDialog.phone.trim() || null,
+      message: editDialog.message.trim() || null,
+    };
+    // Only rewrite created_at when the day actually changed — keeps the
+    // original submission time (and funnel date) otherwise.
+    if (editDialog.occurred_at && editDialog.occurred_at !== editDialog.lead.created_at.slice(0, 10)) {
+      patch.created_at = `${editDialog.occurred_at}T12:00:00Z`;
+    }
+    setEditBusy(true);
+    try {
+      await updateLead(editDialog.lead.id, patch);
+      toast.success("Lead updated");
+      setEditDialog(null);
+      changed();
+    } catch (error: any) {
+      toast.error("Update failed", { description: error?.message });
+    } finally {
+      setEditBusy(false);
     }
   };
 
@@ -312,10 +360,16 @@ export function ManageData({ clientId, from, to, onChanged }: ManageDataProps) {
 
           <TabsContent value="leads" className="space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
-                <Switch checked={allTime} onCheckedChange={setAllTime} />
-                All time — ignore the date range above
-              </label>
+              <div className="flex flex-wrap items-center gap-4">
+                <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
+                  <Switch checked={allTime} onCheckedChange={setAllTime} />
+                  All time — ignore the date range above
+                </label>
+                <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
+                  <Switch checked={showSpam} onCheckedChange={setShowSpam} />
+                  Show spam
+                </label>
+              </div>
               <Dialog open={addOpen} onOpenChange={setAddOpen}>
                 <DialogTrigger asChild>
                   <Button size="sm"><Plus className="h-3.5 w-3.5 mr-1" /> Add lead</Button>
@@ -404,7 +458,7 @@ export function ManageData({ clientId, from, to, onChanged }: ManageDataProps) {
                     <TableHead>Source</TableHead>
                     <TableHead>Channel</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead className="w-10" />
+                    <TableHead className="w-20" />
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -442,7 +496,13 @@ export function ManageData({ clientId, from, to, onChanged }: ManageDataProps) {
                             if (status === "sale") {
                               openSaleDialog(lead);
                             } else {
-                              patchLead(lead.id, { status, status_reason: "manual override" }, `Marked ${status.toUpperCase()}`);
+                              patchLead(
+                                lead.id,
+                                { status, status_reason: "manual override" },
+                                status === "spam"
+                                  ? "Marked SPAM — hidden from the lead list and not counted"
+                                  : `Marked ${status.toUpperCase()}`,
+                              );
                             }
                           }}
                         >
@@ -474,10 +534,16 @@ export function ManageData({ clientId, from, to, onChanged }: ManageDataProps) {
                             Confirm
                           </Button>
                         ) : (
-                          <Button size="icon" variant="ghost" className="h-8 w-8"
-                            onClick={() => setConfirmDelete(lead.id)} title="Delete lead">
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
+                          <div className="flex items-center">
+                            <Button size="icon" variant="ghost" className="h-8 w-8"
+                              onClick={() => openEditDialog(lead)} title="Edit lead">
+                              <Pencil className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button size="icon" variant="ghost" className="h-8 w-8"
+                              onClick={() => setConfirmDelete(lead.id)} title="Delete lead">
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
                         )}
                       </TableCell>
                     </TableRow>
@@ -542,6 +608,57 @@ export function ManageData({ clientId, from, to, onChanged }: ManageDataProps) {
                   <Button onClick={submitSale} disabled={saleBusy}>
                     {saleBusy && <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />}
                     Mark sale
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
+            <Dialog open={!!editDialog} onOpenChange={(open) => { if (!open) setEditDialog(null); }}>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Edit lead</DialogTitle>
+                </DialogHeader>
+                {editDialog && (
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <Label>Name</Label>
+                        <Input value={editDialog.name}
+                          onChange={(e) => setEditDialog({ ...editDialog, name: e.target.value })} />
+                      </div>
+                      <div className="space-y-1">
+                        <Label>Date</Label>
+                        <Input type="date" value={editDialog.occurred_at}
+                          onChange={(e) => setEditDialog({ ...editDialog, occurred_at: e.target.value })} />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <Label>Email</Label>
+                        <Input type="email" value={editDialog.email}
+                          onChange={(e) => setEditDialog({ ...editDialog, email: e.target.value })} />
+                      </div>
+                      <div className="space-y-1">
+                        <Label>Phone</Label>
+                        <Input value={editDialog.phone}
+                          onChange={(e) => setEditDialog({ ...editDialog, phone: e.target.value })} />
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <Label>Notes</Label>
+                      <Textarea rows={2} value={editDialog.message}
+                        onChange={(e) => setEditDialog({ ...editDialog, message: e.target.value })} />
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Source, channel, and status are edited from the table row. Changing the date
+                      moves the lead in the funnel charts.
+                    </p>
+                  </div>
+                )}
+                <DialogFooter>
+                  <Button onClick={submitEdit} disabled={editBusy}>
+                    {editBusy && <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />}
+                    Save changes
                   </Button>
                 </DialogFooter>
               </DialogContent>
