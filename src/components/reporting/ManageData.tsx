@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,9 +28,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Plus, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2, Plus, Trash2 } from "lucide-react";
 import { channelLabel } from "./ReportingDashboard";
 import {
   deleteLead,
@@ -42,6 +43,7 @@ import {
   insertMetricDefinition,
   updateLead,
   upsertMetric,
+  LEADS_PAGE_SIZE,
   type LeadRow,
   type MetricRow,
 } from "@/lib/reportingApi";
@@ -54,7 +56,7 @@ const slugifyMetricKey = (s: string) =>
 
 const EMPTY_DEF = { label: "", metric: "", metricTouched: false, unit: "", family: "", description: "" };
 
-const STATUSES = ["new", "mql", "sql", "disqualified"] as const;
+const STATUSES = ["new", "mql", "sql", "sale", "disqualified"] as const;
 const CHANNELS = [
   "website", "google_ads", "facebook_ads", "microsoft_ads",
   "email", "phone", "organic", "referral",
@@ -62,7 +64,14 @@ const CHANNELS = [
 const NONE = "__none__";
 
 const statusVariant = (s: string) =>
-  s === "sql" ? "default" : s === "disqualified" ? "destructive" : s === "mql" ? "secondary" : "outline";
+  s === "sql" || s === "sale" ? "default" : s === "disqualified" ? "destructive" : s === "mql" ? "secondary" : "outline";
+
+// Sale gets its own green so closed deals stand out from SQLs.
+const statusClass = (s: string) =>
+  s === "sale" ? "border-transparent bg-green-600 text-white" : "";
+
+const formatUsd = (v: number) =>
+  new Intl.NumberFormat(undefined, { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(v);
 
 interface ManageDataProps {
   clientId: string;
@@ -73,14 +82,20 @@ interface ManageDataProps {
 
 export function ManageData({ clientId, from, to, onChanged }: ManageDataProps) {
   const [leads, setLeads] = useState<LeadRow[]>([]);
+  const [leadCount, setLeadCount] = useState(0);
+  const [page, setPage] = useState(0);
+  const [allTime, setAllTime] = useState(false);
   const [metrics, setMetrics] = useState<MetricRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [addOpen, setAddOpen] = useState(false);
   const [addBusy, setAddBusy] = useState(false);
+  const [saleDialog, setSaleDialog] = useState<{ lead: LeadRow; value: string } | null>(null);
+  const [saleBusy, setSaleBusy] = useState(false);
   const [newLead, setNewLead] = useState({
     name: "", email: "", phone: "", message: "", channel: NONE,
     status: "mql", occurred_at: new Date().toISOString().slice(0, 10),
+    sale_value: "",
   });
   const [defs, setDefs] = useState<MetricDefinition[]>([]);
   const [newMetric, setNewMetric] = useState({
@@ -90,27 +105,40 @@ export function ManageData({ clientId, from, to, onChanged }: ManageDataProps) {
   const [defBusy, setDefBusy] = useState(false);
   const [newDef, setNewDef] = useState(EMPTY_DEF);
 
+  // Guards against a stale response landing after a newer request (e.g. a
+  // range change immediately followed by the page reset below).
+  const requestRef = useRef(0);
+
   const load = useCallback(async () => {
+    const request = ++requestRef.current;
     setLoading(true);
     try {
       const [l, m, d] = await Promise.all([
-        fetchLeads(clientId, from, to),
+        fetchLeads(clientId, from, to, page, allTime),
         fetchMetrics(clientId, from, to),
         fetchMetricDefinitions(),
       ]);
-      setLeads(l);
+      if (request !== requestRef.current) return;
+      setLeads(l.rows);
+      setLeadCount(l.count);
       setMetrics(m);
       setDefs(d);
     } catch (error: any) {
-      toast.error("Failed to load data", { description: error?.message });
+      if (request === requestRef.current) {
+        toast.error("Failed to load data", { description: error?.message });
+      }
     } finally {
-      setLoading(false);
+      if (request === requestRef.current) setLoading(false);
     }
-  }, [clientId, from, to]);
+  }, [clientId, from, to, page, allTime]);
 
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    setPage(0);
+  }, [clientId, from, to, allTime]);
 
   const changed = () => {
     load();
@@ -130,6 +158,35 @@ export function ManageData({ clientId, from, to, onChanged }: ManageDataProps) {
     }
   };
 
+  const openSaleDialog = (lead: LeadRow) =>
+    setSaleDialog({ lead, value: lead.sale_value != null ? String(Number(lead.sale_value)) : "" });
+
+  const submitSale = async () => {
+    if (!saleDialog) return;
+    const raw = saleDialog.value.trim();
+    const value = raw === "" ? null : Number(raw);
+    if (value != null && (!Number.isFinite(value) || value < 0)) {
+      toast.error("Enter a valid dollar amount");
+      return;
+    }
+    setSaleBusy(true);
+    try {
+      // sale_at / sql_at / mql_at are stamped by the DB trigger if unset.
+      await updateLead(saleDialog.lead.id, {
+        status: "sale",
+        status_reason: "manual override",
+        sale_value: value,
+      });
+      toast.success(value != null ? `Marked SALE — ${formatUsd(value)}` : "Marked SALE");
+      setSaleDialog(null);
+      changed();
+    } catch (error: any) {
+      toast.error("Update failed", { description: error?.message });
+    } finally {
+      setSaleBusy(false);
+    }
+  };
+
   const removeLead = async (id: string) => {
     setConfirmDelete(null);
     try {
@@ -146,17 +203,26 @@ export function ManageData({ clientId, from, to, onChanged }: ManageDataProps) {
       toast.error("Add at least a name, email, or phone");
       return;
     }
+    const saleValue = newLead.status === "sale" && newLead.sale_value.trim() !== ""
+      ? Number(newLead.sale_value)
+      : null;
+    if (saleValue != null && (!Number.isFinite(saleValue) || saleValue < 0)) {
+      toast.error("Enter a valid sale value");
+      return;
+    }
     setAddBusy(true);
     try {
       await insertLead(clientId, {
         ...newLead,
         channel: newLead.channel === NONE ? null : newLead.channel,
+        sale_value: saleValue,
       });
       toast.success("Lead added");
       setAddOpen(false);
       setNewLead({
         name: "", email: "", phone: "", message: "", channel: NONE,
         status: "mql", occurred_at: new Date().toISOString().slice(0, 10),
+        sale_value: "",
       });
       changed();
     } catch (error: any) {
@@ -240,12 +306,16 @@ export function ManageData({ clientId, from, to, onChanged }: ManageDataProps) {
       <CardContent>
         <Tabs defaultValue="leads">
           <TabsList className="mb-3">
-            <TabsTrigger value="leads">Leads ({leads.length})</TabsTrigger>
+            <TabsTrigger value="leads">Leads ({leadCount})</TabsTrigger>
             <TabsTrigger value="metrics">Metrics ({metrics.length})</TabsTrigger>
           </TabsList>
 
           <TabsContent value="leads" className="space-y-3">
-            <div className="flex justify-end">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
+                <Switch checked={allTime} onCheckedChange={setAllTime} />
+                All time — ignore the date range above
+              </label>
               <Dialog open={addOpen} onOpenChange={setAddOpen}>
                 <DialogTrigger asChild>
                   <Button size="sm"><Plus className="h-3.5 w-3.5 mr-1" /> Add lead</Button>
@@ -301,6 +371,14 @@ export function ManageData({ clientId, from, to, onChanged }: ManageDataProps) {
                         </Select>
                       </div>
                     </div>
+                    {newLead.status === "sale" && (
+                      <div className="space-y-1">
+                        <Label>Sale value ($)</Label>
+                        <Input type="number" min="0" step="0.01" placeholder="e.g. 2500"
+                          value={newLead.sale_value}
+                          onChange={(e) => setNewLead({ ...newLead, sale_value: e.target.value })} />
+                      </div>
+                    )}
                     <div className="space-y-1">
                       <Label>Notes</Label>
                       <Textarea rows={2} value={newLead.message}
@@ -360,11 +438,17 @@ export function ManageData({ clientId, from, to, onChanged }: ManageDataProps) {
                       <TableCell>
                         <Select
                           value={lead.status}
-                          onValueChange={(status) =>
-                            patchLead(lead.id, { status, status_reason: "manual override" }, `Marked ${status.toUpperCase()}`)}
+                          onValueChange={(status) => {
+                            if (status === "sale") {
+                              openSaleDialog(lead);
+                            } else {
+                              patchLead(lead.id, { status, status_reason: "manual override" }, `Marked ${status.toUpperCase()}`);
+                            }
+                          }}
                         >
                           <SelectTrigger className="h-8 w-[130px] text-xs">
-                            <Badge variant={statusVariant(lead.status)} className="text-xs pointer-events-none">
+                            <Badge variant={statusVariant(lead.status)}
+                              className={`text-xs pointer-events-none ${statusClass(lead.status)}`}>
                               {lead.status.toUpperCase()}
                             </Badge>
                           </SelectTrigger>
@@ -374,6 +458,14 @@ export function ManageData({ clientId, from, to, onChanged }: ManageDataProps) {
                             ))}
                           </SelectContent>
                         </Select>
+                        {lead.status === "sale" && (
+                          <button type="button"
+                            className="mt-1 block text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
+                            onClick={() => openSaleDialog(lead)}
+                            title="Edit sale value">
+                            {lead.sale_value != null ? formatUsd(Number(lead.sale_value)) : "add value"}
+                          </button>
+                        )}
                       </TableCell>
                       <TableCell>
                         {confirmDelete === lead.id ? (
@@ -393,16 +485,67 @@ export function ManageData({ clientId, from, to, onChanged }: ManageDataProps) {
                   {leads.length === 0 && !loading && (
                     <TableRow>
                       <TableCell colSpan={6} className="text-center text-sm text-muted-foreground py-6">
-                        No leads in this date range.
+                        {allTime ? "No leads yet." : "No leads in this date range."}
                       </TableCell>
                     </TableRow>
                   )}
                 </TableBody>
               </Table>
             </div>
-            {leads.length === 100 && (
-              <p className="text-xs text-muted-foreground">Showing the most recent 100 — narrow the date range to see older leads.</p>
+
+            {leadCount > 0 && (
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-xs text-muted-foreground">
+                  Showing {page * LEADS_PAGE_SIZE + 1}–{Math.min((page + 1) * LEADS_PAGE_SIZE, leadCount)} of{" "}
+                  {leadCount} lead{leadCount === 1 ? "" : "s"}{allTime ? " (all time)" : ""}
+                </p>
+                {leadCount > LEADS_PAGE_SIZE && (
+                  <div className="flex items-center gap-2">
+                    <Button size="sm" variant="outline" className="h-8"
+                      disabled={page === 0 || loading} onClick={() => setPage((p) => p - 1)}>
+                      <ChevronLeft className="h-3.5 w-3.5 mr-1" /> Prev
+                    </Button>
+                    <span className="text-xs text-muted-foreground tabular-nums">
+                      Page {page + 1} of {Math.max(1, Math.ceil(leadCount / LEADS_PAGE_SIZE))}
+                    </span>
+                    <Button size="sm" variant="outline" className="h-8"
+                      disabled={(page + 1) * LEADS_PAGE_SIZE >= leadCount || loading}
+                      onClick={() => setPage((p) => p + 1)}>
+                      Next <ChevronRight className="h-3.5 w-3.5 ml-1" />
+                    </Button>
+                  </div>
+                )}
+              </div>
             )}
+
+            <Dialog open={!!saleDialog} onOpenChange={(open) => { if (!open) setSaleDialog(null); }}>
+              <DialogContent className="max-w-sm">
+                <DialogHeader>
+                  <DialogTitle>Mark as sale</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-3">
+                  <p className="text-sm text-muted-foreground">
+                    {saleDialog?.lead.name || saleDialog?.lead.email || saleDialog?.lead.phone || "This lead"}
+                  </p>
+                  <div className="space-y-1">
+                    <Label>Sale value ($)</Label>
+                    <Input type="number" min="0" step="0.01" autoFocus placeholder="e.g. 2500"
+                      value={saleDialog?.value ?? ""}
+                      onChange={(e) => setSaleDialog((d) => (d ? { ...d, value: e.target.value } : d))}
+                      onKeyDown={(e) => { if (e.key === "Enter") submitSale(); }} />
+                    <p className="text-xs text-muted-foreground">
+                      Optional — leave blank if unknown. Click the value under the SALE badge to edit it later.
+                    </p>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button onClick={submitSale} disabled={saleBusy}>
+                    {saleBusy && <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />}
+                    Mark sale
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </TabsContent>
 
           <TabsContent value="metrics" className="space-y-3">
