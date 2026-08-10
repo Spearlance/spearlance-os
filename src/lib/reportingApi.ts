@@ -31,6 +31,9 @@ export async function fetchReport(clientId: string, from: string, to: string): P
   const sourceTotals = new Map<string, number>();
   const channelTotals = new Map<string, number>();
   const dailyTotals = new Map<string, number>();
+  // Nested funnel per lead-arrival month: mql/sql count leads that reached the
+  // stage, sales count closed — a sale appears in all of them.
+  const monthlyTotals = new Map<string, { leads: number; mql: number; sql: number; sales: number; sale_value: number }>();
   let callLeadCount = 0;
 
   for (const row of funnelRes.data ?? []) {
@@ -51,6 +54,14 @@ export async function fetchReport(clientId: string, from: string, to: string): P
     if (row.source === "call" || channel === "phone") callLeadCount += row.total_count;
     const key = `${row.lead_date}|${row.source}`;
     dailyTotals.set(key, (dailyTotals.get(key) ?? 0) + row.total_count);
+    const month = row.lead_date.slice(0, 7);
+    const m = monthlyTotals.get(month) ?? { leads: 0, mql: 0, sql: 0, sales: 0, sale_value: 0 };
+    m.leads += row.total_count;
+    m.mql += row.reached_mql_count;
+    m.sql += row.reached_sql_count;
+    m.sales += row.sale_count ?? 0;
+    m.sale_value += Number(row.sale_value ?? 0);
+    monthlyTotals.set(month, m);
   }
 
   return {
@@ -71,6 +82,10 @@ export async function fetchReport(clientId: string, from: string, to: string): P
     channels: [...channelTotals.entries()]
       .map(([channel, leads]) => ({ channel, leads }))
       .sort((a, b) => b.leads - a.leads),
+    monthly: [...monthlyTotals.entries()]
+      .map(([month, v]) => ({ month, ...v }))
+      .filter((m) => m.leads > 0)
+      .sort((a, b) => b.month.localeCompare(a.month)),
     mql_to_sql: (mqlSqlRes.data ?? []).map((r: any) => ({
       month: r.mql_month,
       mql_count: r.mql_count,

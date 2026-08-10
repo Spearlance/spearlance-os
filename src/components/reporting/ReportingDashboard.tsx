@@ -1,6 +1,15 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
+  Table,
+  TableBody,
+  TableCell,
+  TableFooter,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
   buildMetricGroups,
   type MetricDefinition,
   type MetricFamilyGroup,
@@ -11,7 +20,6 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
-  Legend,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -39,6 +47,17 @@ export interface ReportPayload {
   daily: { date: string; source: string; leads: number }[];
   sources: { source: string; leads: number }[];
   channels: { channel: string; leads: number }[];
+  // Nested funnel per lead-arrival month (a sale counts in leads, mql, and
+  // sql too). Optional so payloads from a not-yet-redeployed edge function
+  // still render.
+  monthly?: {
+    month: string;
+    leads: number;
+    mql: number;
+    sql: number;
+    sales: number;
+    sale_value: number;
+  }[];
   mql_to_sql: {
     month: string;
     mql_count: number;
@@ -53,7 +72,9 @@ export interface ReportPayload {
 }
 
 const MQL_COLOR = "hsl(217 71% 50%)";
-const SQL_COLOR = "hsl(120 100% 26%)";
+
+const formatUsd = (v: number) =>
+  new Intl.NumberFormat(undefined, { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(v);
 
 const CHANNEL_LABELS: Record<string, string> = {
   website: "Website",
@@ -201,16 +222,21 @@ function MetricFamilyCard({
 export function ReportingDashboard({ report }: { report: ReportPayload }) {
   const { funnel } = report;
 
-  const monthly = report.mql_to_sql.map((r) => ({
-    month: new Date(`${r.month}T00:00:00`).toLocaleDateString(undefined, {
-      month: "short",
-      year: "2-digit",
+  const monthly = report.monthly ?? [];
+  const monthlyTotals = monthly.reduce(
+    (acc, m) => ({
+      leads: acc.leads + m.leads,
+      mql: acc.mql + m.mql,
+      sql: acc.sql + m.sql,
+      sales: acc.sales + m.sales,
+      sale_value: acc.sale_value + m.sale_value,
     }),
-    MQL: r.mql_count,
-    SQL: r.sql_count,
-    rate: r.conversion_rate == null ? null : Math.round(Number(r.conversion_rate) * 1000) / 10,
-    median: r.median_days == null ? null : Number(r.median_days),
-  }));
+    { leads: 0, mql: 0, sql: 0, sales: 0, sale_value: 0 },
+  );
+  const monthLabel = (month: string) =>
+    new Date(`${month}-01T00:00:00`).toLocaleDateString(undefined, { month: "short", year: "numeric" });
+  const closeRate = (m: { leads: number; sales: number }) =>
+    m.leads > 0 && m.sales > 0 ? `${Math.round((m.sales / m.leads) * 100)}%` : "—";
 
   const channels = report.channels.map((c) => ({
     name: channelLabel(c.channel),
@@ -226,11 +252,7 @@ export function ReportingDashboard({ report }: { report: ReportPayload }) {
   const salesNote = funnel.total
     ? `${((sales / funnel.total) * 100).toFixed(1)}% of leads converted`
     : undefined;
-  const revenueValue = new Intl.NumberFormat(undefined, {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 0,
-  }).format(saleValue);
+  const revenueValue = formatUsd(saleValue);
 
   const tooltipStyle = {
     backgroundColor: "hsl(var(--popover))",
@@ -270,28 +292,62 @@ export function ReportingDashboard({ report }: { report: ReportPayload }) {
       <div className="grid lg:grid-cols-2 gap-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-base">MQLs and SQLs by month</CardTitle>
-            <p className="text-xs text-muted-foreground">By the month the lead became an MQL</p>
+            <CardTitle className="text-base">Monthly funnel</CardTitle>
+            <p className="text-xs text-muted-foreground">
+              Leads count in the month they arrived. MQL, SQL, and Sales show how far
+              those leads got — a sale counts in all three.
+            </p>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={240}>
-              <BarChart data={monthly} barGap={2}>
-                <CartesianGrid strokeDasharray="0" stroke="hsl(var(--border))" vertical={false} />
-                <XAxis dataKey="month" tickLine={false} axisLine={false} fontSize={11} />
-                <YAxis allowDecimals={false} tickLine={false} axisLine={false} fontSize={11} width={28} />
-                <Tooltip
-                  contentStyle={tooltipStyle}
-                  formatter={(value: number, name: string) => [value, name]}
-                  labelFormatter={(label, payload) => {
-                    const row = payload?.[0]?.payload;
-                    return row?.rate != null ? `${label} — ${row.rate}% conversion` : label;
-                  }}
-                />
-                <Legend wrapperStyle={{ fontSize: 12 }} />
-                <Bar dataKey="MQL" fill={MQL_COLOR} radius={[4, 4, 0, 0]} maxBarSize={28} />
-                <Bar dataKey="SQL" fill={SQL_COLOR} radius={[4, 4, 0, 0]} maxBarSize={28} />
-              </BarChart>
-            </ResponsiveContainer>
+            {monthly.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">
+                No lead activity in this date range yet.
+              </p>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Month</TableHead>
+                      <TableHead className="text-right">Leads</TableHead>
+                      <TableHead className="text-right">MQL</TableHead>
+                      <TableHead className="text-right">SQL</TableHead>
+                      <TableHead className="text-right">Sales</TableHead>
+                      <TableHead className="text-right">Close rate</TableHead>
+                      <TableHead className="text-right">Sales value</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {monthly.map((m) => (
+                      <TableRow key={m.month}>
+                        <TableCell className="text-sm whitespace-nowrap">{monthLabel(m.month)}</TableCell>
+                        <TableCell className="text-right tabular-nums">{m.leads}</TableCell>
+                        <TableCell className="text-right tabular-nums">{m.mql}</TableCell>
+                        <TableCell className="text-right tabular-nums">{m.sql}</TableCell>
+                        <TableCell className="text-right tabular-nums font-medium">{m.sales}</TableCell>
+                        <TableCell className="text-right tabular-nums">{closeRate(m)}</TableCell>
+                        <TableCell className="text-right tabular-nums font-medium">
+                          {m.sale_value > 0 ? formatUsd(m.sale_value) : "—"}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                  <TableFooter>
+                    <TableRow>
+                      <TableCell className="text-sm">Total</TableCell>
+                      <TableCell className="text-right tabular-nums">{monthlyTotals.leads}</TableCell>
+                      <TableCell className="text-right tabular-nums">{monthlyTotals.mql}</TableCell>
+                      <TableCell className="text-right tabular-nums">{monthlyTotals.sql}</TableCell>
+                      <TableCell className="text-right tabular-nums">{monthlyTotals.sales}</TableCell>
+                      <TableCell className="text-right tabular-nums">{closeRate(monthlyTotals)}</TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {monthlyTotals.sale_value > 0 ? formatUsd(monthlyTotals.sale_value) : "—"}
+                      </TableCell>
+                    </TableRow>
+                  </TableFooter>
+                </Table>
+              </div>
+            )}
           </CardContent>
         </Card>
 
