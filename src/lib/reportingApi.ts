@@ -27,7 +27,7 @@ export async function fetchReport(clientId: string, from: string, to: string): P
   const firstError = funnelRes.error ?? mqlSqlRes.error ?? metricsRes.error ?? defsRes.error;
   if (firstError) throw firstError;
 
-  const funnel = { total: 0, new: 0, mql: 0, sql: 0, disqualified: 0, reached_mql: 0, reached_sql: 0 };
+  const funnel = { total: 0, new: 0, mql: 0, sql: 0, disqualified: 0, reached_mql: 0, reached_sql: 0, sale: 0, sale_value: 0 };
   const sourceTotals = new Map<string, number>();
   const channelTotals = new Map<string, number>();
   const dailyTotals = new Map<string, number>();
@@ -41,6 +41,9 @@ export async function fetchReport(clientId: string, from: string, to: string): P
     funnel.disqualified += row.disqualified_count;
     funnel.reached_mql += row.reached_mql_count;
     funnel.reached_sql += row.reached_sql_count;
+    // ?? 0 so a not-yet-migrated database (view without sale columns) still renders.
+    funnel.sale += row.sale_count ?? 0;
+    funnel.sale_value += Number(row.sale_value ?? 0);
     sourceTotals.set(row.source, (sourceTotals.get(row.source) ?? 0) + row.total_count);
     const channel = row.channel ?? "unattributed";
     channelTotals.set(channel, (channelTotals.get(channel) ?? 0) + row.total_count);
@@ -181,19 +184,41 @@ export interface LeadRow {
   status_reason: string | null;
   mql_at: string | null;
   sql_at: string | null;
+  sale_at: string | null;
+  sale_value: number | string | null;
 }
 
-export async function fetchLeads(clientId: string, from: string, to: string): Promise<LeadRow[]> {
-  const { data, error } = await reporting()
+export const LEADS_PAGE_SIZE = 50;
+
+export interface LeadPage {
+  rows: LeadRow[];
+  count: number;
+}
+
+export async function fetchLeads(
+  clientId: string,
+  from: string,
+  to: string,
+  page = 0,
+  allTime = false,
+): Promise<LeadPage> {
+  let query = reporting()
     .from("leads")
-    .select("id, created_at, name, email, phone, message, source, channel, status, status_reason, mql_at, sql_at")
-    .eq("client_id", clientId)
-    .gte("created_at", `${from}T00:00:00Z`)
-    .lte("created_at", `${to}T23:59:59Z`)
+    .select(
+      "id, created_at, name, email, phone, message, source, channel, status, status_reason, mql_at, sql_at, sale_at, sale_value",
+      { count: "exact" },
+    )
+    .eq("client_id", clientId);
+  if (!allTime) {
+    query = query
+      .gte("created_at", `${from}T00:00:00Z`)
+      .lte("created_at", `${to}T23:59:59Z`);
+  }
+  const { data, error, count } = await query
     .order("created_at", { ascending: false })
-    .limit(100);
+    .range(page * LEADS_PAGE_SIZE, (page + 1) * LEADS_PAGE_SIZE - 1);
   if (error) throw error;
-  return data ?? [];
+  return { rows: data ?? [], count: count ?? 0 };
 }
 
 export async function updateLead(id: string, patch: Partial<LeadRow>): Promise<void> {
@@ -204,8 +229,11 @@ export async function updateLead(id: string, patch: Partial<LeadRow>): Promise<v
 export async function insertLead(clientId: string, lead: {
   name?: string; email?: string; phone?: string; message?: string;
   channel?: string | null; status: string; occurred_at: string;
+  sale_value?: number | null;
 }): Promise<void> {
   const ts = `${lead.occurred_at}T12:00:00Z`;
+  // Stage timestamps are set explicitly (backdated to occurred_at) so the DB
+  // trigger doesn't stamp them with now().
   const { error } = await reporting().from("leads").insert({
     client_id: clientId,
     source: "manual",
@@ -215,8 +243,10 @@ export async function insertLead(clientId: string, lead: {
     message: lead.message || null,
     channel: lead.channel || null,
     status: lead.status,
-    mql_at: ["mql", "sql"].includes(lead.status) ? ts : null,
-    sql_at: lead.status === "sql" ? ts : null,
+    mql_at: ["mql", "sql", "sale"].includes(lead.status) ? ts : null,
+    sql_at: ["sql", "sale"].includes(lead.status) ? ts : null,
+    sale_at: lead.status === "sale" ? ts : null,
+    sale_value: lead.status === "sale" ? lead.sale_value ?? null : null,
     created_at: ts,
   });
   if (error) throw error;

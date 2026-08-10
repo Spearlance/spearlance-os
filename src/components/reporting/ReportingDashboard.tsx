@@ -30,6 +30,9 @@ export interface ReportPayload {
     disqualified: number;
     reached_mql: number;
     reached_sql: number;
+    // Optional so payloads from a not-yet-redeployed edge function still render.
+    sale?: number;
+    sale_value?: number;
   };
   call_lead_count?: number;
   daily: { date: string; source: string; leads: number }[];
@@ -218,13 +221,18 @@ export function ReportingDashboard({ report }: { report: ReportPayload }) {
   const callLeads = report.call_lead_count ?? 0;
 
   const latestCohort = [...report.mql_to_sql].reverse().find((r) => r.sql_count > 0);
-  const conversionValue = latestCohort
-    ? `${(Number(latestCohort.conversion_rate) * 100).toFixed(1)}%`
-    : "—";
-  const conversionNote = latestCohort
-    ? `${latestCohort.sql_count} of ${latestCohort.mql_count} MQLs · ${new Date(`${latestCohort.month}T00:00:00`).toLocaleDateString(undefined, { month: "long" })} cohort`
-    : "no SQL conversions yet";
   const medianValue = latestCohort?.median_days != null ? `${Number(latestCohort.median_days)} days` : "—";
+
+  const sales = funnel.sale ?? 0;
+  const saleValue = funnel.sale_value ?? 0;
+  const salesNote = funnel.total
+    ? `${((sales / funnel.total) * 100).toFixed(1)}% of leads converted`
+    : undefined;
+  const revenueValue = new Intl.NumberFormat(undefined, {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 0,
+  }).format(saleValue);
 
   const tooltipStyle = {
     backgroundColor: "hsl(var(--popover))",
@@ -236,7 +244,7 @@ export function ReportingDashboard({ report }: { report: ReportPayload }) {
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         <StatTile label="Total leads" value={String(funnel.total)} note="all sources" />
         <StatTile
           label="Reached MQL"
@@ -244,7 +252,12 @@ export function ReportingDashboard({ report }: { report: ReportPayload }) {
           note={funnel.total ? `${Math.round((funnel.reached_mql / funnel.total) * 100)}% of leads` : undefined}
         />
         <StatTile label="Reached SQL" value={String(funnel.reached_sql)} />
-        <StatTile label="Conversion" value={conversionValue} note={conversionNote} />
+        <StatTile label="Sales" value={String(sales)} note={sales ? salesNote : "no sales yet"} />
+        <StatTile
+          label="Sales value"
+          value={revenueValue}
+          note={sales ? `from ${sales} sale${sales === 1 ? "" : "s"}` : "mark leads as SALE with a value"}
+        />
         <StatTile label="Median MQL → SQL" value={medianValue} note={latestCohort ? "latest converting cohort" : undefined} />
       </div>
 
@@ -252,6 +265,7 @@ export function ReportingDashboard({ report }: { report: ReportPayload }) {
         Current status: <b className="text-foreground">{funnel.new}</b> new ·{" "}
         <b className="text-foreground">{funnel.mql}</b> MQL ·{" "}
         <b className="text-foreground">{funnel.sql}</b> SQL ·{" "}
+        <b className="text-foreground">{sales}</b> sale{sales === 1 ? "" : "s"} ·{" "}
         <b className="text-foreground">{funnel.disqualified}</b> disqualified
       </p>
 
