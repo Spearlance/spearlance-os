@@ -265,7 +265,13 @@ export function ManageData({ clientId, from, to, onChanged }: ManageDataProps) {
         channel: newLead.channel === NONE ? null : newLead.channel,
         sale_value: saleValue,
       });
-      toast.success("Lead added");
+      // A backdated lead can land outside the visible window and look like the
+      // add silently failed — say where it went instead.
+      const outsideRange = !allTime && (newLead.occurred_at < from || newLead.occurred_at > to);
+      toast.success("Lead added", outsideRange ? {
+        description: `Dated ${newLead.occurred_at} — outside the current date range, so it won't appear in the list until you widen the range or turn on "All time".`,
+        duration: 8000,
+      } : undefined);
       setAddOpen(false);
       setNewLead({
         name: "", email: "", phone: "", message: "", channel: NONE,
