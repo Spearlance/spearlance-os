@@ -33,6 +33,7 @@ export interface ReportPayload {
     // Optional so payloads from a not-yet-redeployed edge function still render.
     sale?: number;
     sale_value?: number;
+    spam?: number;
   };
   call_lead_count?: number;
   daily: { date: string; source: string; leads: number }[];
@@ -263,6 +264,7 @@ export function ReportingDashboard({ report }: { report: ReportPayload }) {
         <b className="text-foreground">{funnel.sql}</b> SQL ·{" "}
         <b className="text-foreground">{sales}</b> sale{sales === 1 ? "" : "s"} ·{" "}
         <b className="text-foreground">{funnel.disqualified}</b> disqualified
+        {(funnel.spam ?? 0) > 0 && <> · {funnel.spam} spam (not counted)</>}
       </p>
 
       <div className="grid lg:grid-cols-2 gap-4">
