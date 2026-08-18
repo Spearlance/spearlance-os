@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useClient } from "@/contexts/ClientContext";
 import { useMyTasks, GroupBy, MyTask } from "@/hooks/useMyTasks";
+import { useUserRole } from "@/hooks/useUserRole";
 import { useTasksRealtime } from "@/hooks/useTasksRealtime";
 import { buildClientSummaries } from "@/lib/myTasksGrouping";
 import { MyTaskCard } from "@/components/tasks/MyTaskCard";
@@ -37,7 +38,8 @@ export default function MyTasks() {
     getGrouped, 
     totalCount 
   } = useMyTasks();
-  
+  const { isAdminOrFMM } = useUserRole();
+
   const [groupBy, setGroupBy] = useState<GroupBy>("client");
   const [searchQuery, setSearchQuery] = useState("");
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
@@ -321,6 +323,7 @@ export default function MyTasks() {
           open={!!selectedTask}
           onOpenChange={(open) => !open && setSelectedTask(null)}
           onUpdate={refetch}
+          isAdminOrFMM={isAdminOrFMM}
         />
       )}
     </div>
