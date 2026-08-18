@@ -52,7 +52,6 @@ export function DeleteTaskDialog({
         description="This action cannot be undone."
         confirmText="Delete Task"
         loading={loading}
-        requireTypedConfirm={true}
       >
         <div className="rounded-md bg-destructive/10 p-3 space-y-2">
           <p className="font-semibold text-foreground">
@@ -62,6 +61,7 @@ export function DeleteTaskDialog({
             <li>
               • Task: <strong>{taskTitle}</strong>
             </li>
+            <li>• All subtasks</li>
             <li>• All task comments</li>
             <li>• All channel links (channels themselves will remain)</li>
           </ul>

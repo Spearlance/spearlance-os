@@ -841,8 +841,9 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
               taskId={task.id}
               onConfirm={handleDeleteTask}
               trigger={
-                <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive hover:bg-destructive/10">
-                  <Trash2 className="h-4 w-4" />
+                <Button variant="outline" className="text-destructive border-destructive/40 hover:text-destructive hover:bg-destructive/10">
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete
                 </Button>
               }
             />
