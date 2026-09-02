@@ -35,8 +35,17 @@ Campfire bridge (`../Campfire/bridge`, not a git repo): digest query now exclude
 `status IN (done, cancelled)` and Cancelled columns count as closed
 (`src/handlers.ts`, `src/columns.ts`, `src/supabase.ts`). **Not deployed to the droplet.**
 
-Not built yet: the QA pipeline UI (badge, "Send to QA", runs list in the drawer), the
-`task_qa_dispatch` trigger + `task-qa-run` edge function, and the agent itself.
+QA UI shipped to dev (same day, PR after #51): a **QA tab** in the task drawer with
+acceptance criteria, QA target URL + editor/published, the pipeline state with
+**Send to QA** / **Remove from QA**, a **Record verdict** form that appends a
+`task_qa_runs` row and advances `qa_state` (manual QA, and a stand-in for the agent), and the
+run log with findings. `QaStateBadge` on board cards and My Tasks cards; a QA section in the
+create-task dialog. The drawer re-reads the QA fields from the row on open so callers that
+pass a partial task (My Tasks, Marketing Flowchart, build pages) can't blank them on Save.
+
+Not built yet: the `task_qa_dispatch` trigger + `task-qa-run` edge function, and the agent
+itself. Until then "Send to QA" parks the task at `ready_for_review` for a human or the
+"Record verdict" form.
 
 ## Verdicts
 

@@ -37,6 +37,7 @@ interface Task {
   related_meeting_ids: string[];
   linked_channel_id: string | null;
   color?: string;
+  qa_state?: string | null;
   parent_task_id?: string | null;
   column_id?: string;
   assignees?: Array<{ id: string; name: string; avatar_url?: string }>;

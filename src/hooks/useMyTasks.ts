@@ -16,6 +16,7 @@ export interface MyTask {
   priority: string;
   due_date: string | null;
   color?: string;
+  qa_state?: string | null;
   is_recurring?: boolean;
   is_recurring_instance?: boolean;
   client_id: string;
@@ -78,6 +79,7 @@ export function useMyTasks() {
           priority,
           due_date,
           color,
+          qa_state,
           is_recurring,
           is_recurring_instance,
           client_id,
@@ -108,6 +110,7 @@ export function useMyTasks() {
         priority: string | null;
         due_date: string | null;
         color: string | null;
+        qa_state: string | null;
         is_recurring: boolean | null;
         is_recurring_instance: boolean | null;
         client_id: string;
@@ -173,6 +176,7 @@ export function useMyTasks() {
             priority: task.priority,
             due_date: task.due_date,
             color: task.color,
+            qa_state: task.qa_state,
             is_recurring: task.is_recurring,
             is_recurring_instance: task.is_recurring_instance,
             client_id: task.client_id,
