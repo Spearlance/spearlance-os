@@ -310,3 +310,11 @@ verify_jwt = true
 # token in client_webhook_tokens (no Supabase JWT on inbound Duda calls).
 [functions.duda-comments-webhook]
 verify_jwt = false
+
+# QA pipeline. dispatch is called by the task_qa_dispatch DB trigger with the
+# service-role bearer; agent is the QA agent's endpoint, guarded by x-qa-secret.
+[functions.task-qa-dispatch]
+verify_jwt = true
+
+[functions.task-qa-agent]
+verify_jwt = false
