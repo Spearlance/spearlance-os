@@ -11,6 +11,7 @@ import {
   groupTasksByPriority,
   buildClientSummaries,
   isTaskDone,
+  isTaskClosed,
 } from '@/lib/myTasksGrouping';
 
 function makeTask(overrides: Partial<MyTask>): MyTask {
@@ -186,6 +187,20 @@ describe('isTaskDone', () => {
     expect(isTaskDone('in_progress', null)).toBe(false);
     expect(isTaskDone('in_progress', undefined)).toBe(false);
     expect(isTaskDone(null, null)).toBe(false);
+  });
+
+  it('cancelled is not "done" but it is closed', () => {
+    expect(isTaskDone('cancelled', null)).toBe(false);
+    expect(isTaskClosed('cancelled', null)).toBe(true);
+    expect(isTaskClosed('to_do', 'cancelled')).toBe(true);
+  });
+
+  it('closed covers done from either side, and nothing else', () => {
+    expect(isTaskClosed('done', null)).toBe(true);
+    expect(isTaskClosed('in_progress', 'done')).toBe(true);
+    expect(isTaskClosed('blocked', 'blocked')).toBe(false);
+    expect(isTaskClosed('to_do', 'in_progress')).toBe(false);
+    expect(isTaskClosed(null, null)).toBe(false);
   });
 });
 

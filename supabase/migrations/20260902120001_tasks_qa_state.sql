@@ -1,15 +1,15 @@
--- ============================================================================
--- FALLBACK to STEP 1 — separate qa_state column.  ***GATED: pick ONE of
--- 20260902120000 (enum) or this file; do not apply both.***
--- ============================================================================
--- Zero blast radius: nothing existing reads qa_state; `status` keeps its three
--- values and keeps being derived from the kanban column, so drawer / board
--- saves cannot clobber the QA pipeline state. Fully droppable
--- (down/20260902120001_tasks_qa_state_alt.down.sql).
+-- AI-QA pipeline state on tasks, kept OUT of the task_status enum.
 --
--- This file does NOT solve "not doing this". That still needs either the
--- 'cancelled' enum value (a one-line subset of 20260902120000) or a
--- cancelled_at timestamp; see the audit's recommendation.
+-- Why a separate column: in this app `status` is derived from the kanban
+-- column (TaskDrawer / DetailsTab / board drag all rewrite status to
+-- task_columns.mapped_status), so a pipeline status with no matching column
+-- would be silently reverted on the next save. qa_state is orthogonal to
+-- status/column, is only read by QA-aware code, and is fully droppable
+-- (down/20260902120001_tasks_qa_state.down.sql).
+--
+-- Lifecycle: NULL (not in QA) -> ready_for_review (human hands off)
+--   -> qa_running (agent picked it up) -> revisions_required | qa_approved.
+-- Completing or cancelling the task should clear it back to NULL.
 
 ALTER TABLE public.tasks
   ADD COLUMN IF NOT EXISTS qa_state text,

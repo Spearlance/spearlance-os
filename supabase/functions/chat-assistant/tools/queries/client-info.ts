@@ -62,7 +62,9 @@ export async function assessAccountStatus(supabase: any, clientId: string) {
       total: taskList.length,
       done: taskList.filter((t: any) => t.status === 'done').length,
       in_progress: taskList.filter((t: any) => t.status === 'in_progress').length,
-      to_do: taskList.filter((t: any) => t.status === 'to_do').length
+      to_do: taskList.filter((t: any) => t.status === 'to_do').length,
+      blocked: taskList.filter((t: any) => t.status === 'blocked').length,
+      cancelled: taskList.filter((t: any) => t.status === 'cancelled').length
     };
 
     // Calculate channel metrics

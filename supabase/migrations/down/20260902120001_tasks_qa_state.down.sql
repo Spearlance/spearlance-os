@@ -1,4 +1,4 @@
--- DOWN for gated/20260902120001_tasks_qa_state_alt.sql.
+-- DOWN for 20260902120001_tasks_qa_state.sql.
 DROP TRIGGER IF EXISTS tasks_stamp_qa_state ON public.tasks;
 DROP FUNCTION IF EXISTS public.tasks_stamp_qa_state();
 DROP INDEX IF EXISTS public.idx_tasks_qa_state;

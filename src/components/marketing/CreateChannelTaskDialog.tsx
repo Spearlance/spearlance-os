@@ -9,6 +9,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { AssigneeSelector } from "../tasks/AssigneeSelector";
+import type { TaskStatus } from "@/lib/taskStatus";
 
 interface CreateChannelTaskDialogProps {
   open: boolean;
@@ -29,7 +30,7 @@ interface TaskColumn {
   name: string;
   key: string;
   color: string;
-  mapped_status: 'to_do' | 'in_progress' | 'done';
+  mapped_status: TaskStatus;
 }
 
 export default function CreateChannelTaskDialog({
@@ -48,7 +49,7 @@ export default function CreateChannelTaskDialog({
     title: "",
     description: "",
     column_id: "",
-    status: "to_do" as 'to_do' | 'in_progress' | 'done',
+    status: "to_do" as TaskStatus,
     priority: "normal" as const,
     dueDate: "",
   });

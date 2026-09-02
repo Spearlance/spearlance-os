@@ -10,6 +10,7 @@ import { useNavigate } from "react-router-dom";
 import { DetailsTab } from "./task-drawer/DetailsTab";
 import { CommentsTab } from "./task-drawer/CommentsTab";
 import { RelatedTab } from "./task-drawer/RelatedTab";
+import type { TaskStatus } from "@/lib/taskStatus";
 
 interface TaskDrawerProps {
   task: any;
@@ -65,7 +66,7 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
   const [selectedBuildForPage, setSelectedBuildForPage] = useState<string | null>(null);
   const [availablePages, setAvailablePages] = useState<any[]>([]);
   const [subtasks, setSubtasks] = useState<any[]>([]);
-  const [taskColumns, setTaskColumns] = useState<Array<{ id: string; name: string; key: string; color: string; mapped_status: 'to_do' | 'in_progress' | 'done' }>>([]);
+  const [taskColumns, setTaskColumns] = useState<Array<{ id: string; name: string; key: string; color: string; mapped_status: TaskStatus }>>([]);
   const navigate = useNavigate();
 
   // Normalize editedTask.status based on column_id to prevent enum errors

@@ -11,8 +11,13 @@ import { Plus, GripVertical, Trash2, Edit2, X, Check, AlertCircle, Save } from "
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import type { Database } from "@/integrations/supabase/types";
+import { TASK_STATUSES, TASK_STATUS_LABELS, isTerminalStatus, type TaskStatus } from "@/lib/taskStatus";
 
 type TaskColumn = Database["public"]["Tables"]["task_columns"]["Row"];
+
+// Done / Cancelled columns are pinned to the end of the board and can't be dragged.
+const isPinnedColumn = (col: Pick<TaskColumn, "key" | "mapped_status">) =>
+  col.key === 'done' || col.key === 'cancelled' || isTerminalStatus(col.mapped_status);
 
 type PendingColumn = Omit<TaskColumn, 'id' | 'created_at' | 'updated_at'> & { 
   tempId: string;
@@ -27,7 +32,7 @@ export function TaskColumnManager() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [editColor, setEditColor] = useState("");
-  const [editMappedStatus, setEditMappedStatus] = useState<'to_do' | 'in_progress' | 'done'>('in_progress');
+  const [editMappedStatus, setEditMappedStatus] = useState<TaskStatus>('in_progress');
   const [isSavingEdit, setIsSavingEdit] = useState(false);
   const [showAddNew, setShowAddNew] = useState(false);
   const [newColumnName, setNewColumnName] = useState("");
@@ -120,11 +125,17 @@ export function TaskColumnManager() {
     const tempId = `temp-${Date.now()}`;
 
     // Auto-select mapped status based on column name
-    const inferredMappedStatus = key === 'done' || newColumnName.toLowerCase().includes('done') || newColumnName.toLowerCase().includes('complete')
-      ? 'done'
-      : key === 'to_do' || newColumnName.toLowerCase().includes('todo') || newColumnName.toLowerCase().includes('backlog')
-      ? 'to_do'
-      : 'in_progress';
+    const lowerName = newColumnName.toLowerCase();
+    const inferredMappedStatus: TaskStatus =
+      key === 'cancelled' || lowerName.includes('cancel') || lowerName.includes("won't do") || lowerName.includes('wont do')
+        ? 'cancelled'
+        : key === 'blocked' || lowerName.includes('blocked') || lowerName.includes('waiting') || lowerName.includes('on hold')
+        ? 'blocked'
+        : key === 'done' || lowerName.includes('done') || lowerName.includes('complete')
+        ? 'done'
+        : key === 'to_do' || lowerName.includes('todo') || lowerName.includes('backlog')
+        ? 'to_do'
+        : 'in_progress';
 
     const newColumn: PendingColumn = {
       tempId,
@@ -250,15 +261,13 @@ export function TaskColumnManager() {
     const [reorderedItem] = items.splice(result.source.index, 1);
     items.splice(result.destination.index, 0, reorderedItem);
 
-    // Check if "Done" column was moved
-    const doneIndex = items.findIndex(col => col.key === 'done');
-    
-    if (doneIndex !== -1 && doneIndex !== items.length - 1) {
-      // Move "Done" back to the end
-      const [doneColumn] = items.splice(doneIndex, 1);
-      items.push(doneColumn);
-      
-      toast.info("Note", { description: "'Done' column must remain at the end" });
+    // Done / Cancelled stay pinned at the end (in their existing relative order)
+    const pinned = items.filter(isPinnedColumn);
+    const movable = items.filter(col => !isPinnedColumn(col));
+    const pinnedMoved = pinned.some((col, i) => items[items.length - pinned.length + i]?.id !== col.id);
+    if (pinnedMoved) {
+      items.splice(0, items.length, ...movable, ...pinned);
+      toast.info("Note", { description: "'Done' and 'Cancelled' columns must remain at the end" });
     }
 
     // Update display_order for all items
@@ -486,14 +495,14 @@ export function TaskColumnManager() {
                   key={column.id} 
                   draggableId={column.id} 
                   index={index}
-                  isDragDisabled={column.key === 'done'}
+                  isDragDisabled={isPinnedColumn(column)}
                 >
                   {(provided) => (
                             <div
                               ref={provided.innerRef}
                               {...provided.draggableProps}
                               className={`flex items-center gap-3 p-4 border rounded-lg bg-card hover:bg-accent/50 transition-colors ${
-                                column.key === 'done' ? 'opacity-75 cursor-not-allowed' : ''
+                                isPinnedColumn(column) ? 'opacity-75 cursor-not-allowed' : ''
                               }`}
                             >
                               <div {...provided.dragHandleProps}>
@@ -521,13 +530,13 @@ export function TaskColumnManager() {
                                   </select>
                                   <select
                                     value={editMappedStatus}
-                                    onChange={(e) => setEditMappedStatus(e.target.value as 'to_do' | 'in_progress' | 'done')}
+                                    onChange={(e) => setEditMappedStatus(e.target.value as TaskStatus)}
                                     className="px-3 py-2 border rounded-md bg-background"
                                     title="Database status this column maps to"
                                   >
-                                    <option value="to_do">To Do</option>
-                                    <option value="in_progress">In Progress</option>
-                                    <option value="done">Done</option>
+                                    {TASK_STATUSES.map((status) => (
+                                      <option key={status} value={status}>{TASK_STATUS_LABELS[status]}</option>
+                                    ))}
                                   </select>
                                    <Button 
                                      size="sm" 

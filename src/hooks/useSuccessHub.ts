@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useClient } from "@/contexts/ClientContext";
 import { startOfWeek, format } from "date-fns";
 import { Json } from "@/integrations/supabase/types";
+import { CLOSED_STATUS_IN } from "@/lib/taskStatus";
 
 export interface BusinessOutcome {
   id: string;
@@ -293,7 +294,7 @@ export function useSuccessHub() {
         assignee:profiles!tasks_assignee_user_id_fkey(id, name, avatar_url)
       `)
       .eq('client_id', selectedClient!.id)
-      .neq('status', 'done')
+      .not('status', 'in', CLOSED_STATUS_IN)
       .lte('due_date', endOfWeek.toISOString())
       .order('due_date', { ascending: true });
     setThisWeekTasks(data || []);

@@ -1,4 +1,5 @@
 import { redactForRole, sanitizeDataForPrompt } from '../../validation/sanitize.ts';
+import { CLOSED_STATUS_IN, isOpenStatus } from '../../../_shared/taskStatus.ts';
 
 export async function getTasks(supabase: any, params: any, clientId: string, userId: string) {
   try {
@@ -58,7 +59,7 @@ export async function getTasks(supabase: any, params: any, clientId: string, use
 
     if (overdue) {
       const today = new Date().toISOString().split('T')[0];
-      query = query.lt('due_date', today).neq('status', 'done');
+      query = query.lt('due_date', today).not('status', 'in', CLOSED_STATUS_IN);
     }
 
     // Sort by priority (urgent first), then due date (soonest first)
@@ -74,7 +75,7 @@ export async function getTasks(supabase: any, params: any, clientId: string, use
     // Format tasks with human-readable info
     const formattedTasks = tasks?.map((task: any) => {
       const today = new Date().toISOString().split('T')[0];
-      const isOverdue = task.due_date && task.due_date < today && task.status !== 'done';
+      const isOverdue = task.due_date && task.due_date < today && isOpenStatus(task.status);
 
       return {
         id: task.id,

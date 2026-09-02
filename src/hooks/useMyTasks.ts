@@ -5,8 +5,9 @@ import {
   groupTasksByClient,
   groupTasksByDueDate,
   groupTasksByPriority,
-  isTaskDone,
+  isTaskClosed,
 } from "@/lib/myTasksGrouping";
+import { CLOSED_STATUS_IN } from "@/lib/taskStatus";
 
 export interface MyTask {
   id: string;
@@ -94,7 +95,7 @@ export function useMyTasks() {
         `)
         .in("id", taskIds)
         .is("parent_task_id", null)
-        .neq("status", "done");
+        .not("status", "in", CLOSED_STATUS_IN);
 
       if (tasksError) throw tasksError;
 
@@ -114,10 +115,10 @@ export function useMyTasks() {
         task_column: { color: string | null; mapped_status: string | null } | null;
       };
 
-      // The status enum alone can miss completed tasks — a task sitting in a
-      // Done-mapped column is done regardless of what status says.
+      // The status enum alone can miss closed tasks — a task sitting in a
+      // Done- or Cancelled-mapped column is closed regardless of what status says.
       const openTasks = ((tasksData || []) as RawTask[]).filter(
-        task => !isTaskDone(task.status, task.task_column?.mapped_status)
+        task => !isTaskClosed(task.status, task.task_column?.mapped_status)
       );
 
       // Enrich tasks with additional data

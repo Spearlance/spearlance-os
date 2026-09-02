@@ -205,7 +205,7 @@ export const QUERY_TOOLS: ToolDefinition[] = [
           },
           status: {
             type: "string",
-            enum: ["to_do", "in_progress", "done"],
+            enum: ["to_do", "in_progress", "blocked", "done", "cancelled"],
             description: "Initial task status (default: to_do)",
             default: "to_do"
           }
@@ -224,7 +224,7 @@ export const QUERY_TOOLS: ToolDefinition[] = [
         properties: {
           status: {
             type: "string",
-            enum: ["to_do", "in_progress", "done"],
+            enum: ["to_do", "in_progress", "blocked", "done", "cancelled"],
             description: "Filter by task status"
           },
           priority: {
@@ -307,7 +307,7 @@ export const QUERY_TOOLS: ToolDefinition[] = [
           },
           status: {
             type: "string",
-            enum: ["to_do", "in_progress", "done"],
+            enum: ["to_do", "in_progress", "blocked", "done", "cancelled"],
             description: "Optional: New task status (use 'done' to mark complete)"
           }
         },
@@ -323,7 +323,7 @@ export const QUERY_TOOLS: ToolDefinition[] = [
       parameters: {
         type: "object",
         properties: {
-          status: { type: "string", enum: ["to_do", "in_progress", "done"], description: "Filter by task status" },
+          status: { type: "string", enum: ["to_do", "in_progress", "blocked", "done", "cancelled"], description: "Filter by task status" },
           priority: { type: "string", enum: ["low", "normal", "high"], description: "Filter by priority" },
           due_date_from: { type: "string", format: "date", description: "Filter tasks due on or after this date" },
           due_date_to: { type: "string", format: "date", description: "Filter tasks due on or before this date" },

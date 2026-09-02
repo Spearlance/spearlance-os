@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
+import type { TaskStatus } from "@/lib/taskStatus";
 
-export type TaskStatus = "to_do" | "in_progress" | "done";
+export type { TaskStatus };
 
 export interface CompletionColumn {
   id: string;

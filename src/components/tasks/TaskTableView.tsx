@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
+import { taskStatusLabel } from "@/lib/taskStatus";
 import { Plus, Globe } from "lucide-react";
 import { format } from "date-fns";
 
@@ -93,7 +94,7 @@ export const TaskTableView = ({
                     <Badge variant="secondary">
                       {(taskColumns.find(c => c.id === task.column_id)
                         ?? taskColumns.find(c => c.mapped_status === task.status))?.name
-                        || task.status}
+                        || taskStatusLabel(task.status)}
                     </Badge>
                   </TableCell>
                   <TableCell>

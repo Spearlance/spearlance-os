@@ -1,3 +1,5 @@
+import { isOpenStatus } from '../../_shared/taskStatus.ts';
+
 export async function buildClientSnapshot(
   supabase: any,
   clientId: string,
@@ -36,7 +38,8 @@ export async function buildClientSnapshot(
     for (const t of allTasks) {
       tasksByStatus[t.status] = (tasksByStatus[t.status] || 0) + 1;
     }
-    const openTasks = (tasksByStatus['to_do'] || 0) + (tasksByStatus['in_progress'] || 0);
+    // Open = anything not done/cancelled (includes blocked)
+    const openTasks = allTasks.filter((t: any) => isOpenStatus(t.status)).length;
 
     const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
     const recentLeadCount = leads.filter((l: any) => new Date(l.created_at) > weekAgo).length;

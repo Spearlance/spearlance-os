@@ -1163,6 +1163,9 @@ Status Queries:
 - "tasks in progress" or "what's in progress" or "active tasks" → get_tasks({ status: "in_progress" })
 - "completed tasks" or "done tasks" → get_tasks({ status: "done" })
 - "tasks to do" or "pending tasks" → get_tasks({ status: "to_do" })
+- "blocked tasks" or "what's stuck" or "waiting on" → get_tasks({ status: "blocked" })
+- "cancelled tasks" or "tasks we dropped" → get_tasks({ status: "cancelled" })
+- "cancel this task" / "we're not doing X" → update_task({ status: "cancelled" }) — this is terminal; use it instead of "done" when the work was NOT completed
 
 Assignment Queries:
 - "my tasks" or "tasks assigned to me" or "what do I have" → get_tasks({ assigned_to_me: true })

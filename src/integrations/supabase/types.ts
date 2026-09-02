@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "13.0.5"
+    PostgrestVersion: "14.5"
   }
   public: {
     Tables: {
@@ -640,6 +640,62 @@ export type Database = {
           },
         ]
       }
+      blog_auto_runs: {
+        Row: {
+          articles_flagged: number
+          articles_generated: number
+          articles_passed_gate: number
+          client_id: string
+          completed_at: string | null
+          created_at: string
+          error_log: string | null
+          id: string
+          research_summary: Json | null
+          status: string
+          topics_generated: number
+          trigger_type: string
+          triggered_at: string
+        }
+        Insert: {
+          articles_flagged?: number
+          articles_generated?: number
+          articles_passed_gate?: number
+          client_id: string
+          completed_at?: string | null
+          created_at?: string
+          error_log?: string | null
+          id?: string
+          research_summary?: Json | null
+          status?: string
+          topics_generated?: number
+          trigger_type: string
+          triggered_at?: string
+        }
+        Update: {
+          articles_flagged?: number
+          articles_generated?: number
+          articles_passed_gate?: number
+          client_id?: string
+          completed_at?: string | null
+          created_at?: string
+          error_log?: string | null
+          id?: string
+          research_summary?: Json | null
+          status?: string
+          topics_generated?: number
+          trigger_type?: string
+          triggered_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blog_auto_runs_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       blog_content_strategy: {
         Row: {
           client_id: string
@@ -744,6 +800,7 @@ export type Database = {
       blog_posts: {
         Row: {
           ai_model: string | null
+          auto_run_id: string | null
           avatar_id: string | null
           body_images: Json | null
           client_id: string
@@ -763,7 +820,10 @@ export type Database = {
           last_edited_by: string | null
           meta_description: string | null
           published_at: string | null
+          quality_scores: Json | null
           readability_score: number | null
+          rejection_reason: string | null
+          revision_count: number
           scheduled_for: string | null
           scheduled_publish_date: string | null
           seo_score: number | null
@@ -777,6 +837,7 @@ export type Database = {
         }
         Insert: {
           ai_model?: string | null
+          auto_run_id?: string | null
           avatar_id?: string | null
           body_images?: Json | null
           client_id: string
@@ -796,7 +857,10 @@ export type Database = {
           last_edited_by?: string | null
           meta_description?: string | null
           published_at?: string | null
+          quality_scores?: Json | null
           readability_score?: number | null
+          rejection_reason?: string | null
+          revision_count?: number
           scheduled_for?: string | null
           scheduled_publish_date?: string | null
           seo_score?: number | null
@@ -810,6 +874,7 @@ export type Database = {
         }
         Update: {
           ai_model?: string | null
+          auto_run_id?: string | null
           avatar_id?: string | null
           body_images?: Json | null
           client_id?: string
@@ -829,7 +894,10 @@ export type Database = {
           last_edited_by?: string | null
           meta_description?: string | null
           published_at?: string | null
+          quality_scores?: Json | null
           readability_score?: number | null
+          rejection_reason?: string | null
+          revision_count?: number
           scheduled_for?: string | null
           scheduled_publish_date?: string | null
           seo_score?: number | null
@@ -842,6 +910,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "blog_posts_auto_run_id_fkey"
+            columns: ["auto_run_id"]
+            isOneToOne: false
+            referencedRelation: "blog_auto_runs"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "blog_posts_avatar_id_fkey"
             columns: ["avatar_id"]
@@ -1843,6 +1918,50 @@ export type Database = {
           },
         ]
       }
+      client_knowledge_embeddings: {
+        Row: {
+          client_id: string
+          content_text: string
+          created_at: string | null
+          embedding: string
+          id: string
+          metadata: Json | null
+          source_id: string
+          source_table: string
+          updated_at: string | null
+        }
+        Insert: {
+          client_id: string
+          content_text: string
+          created_at?: string | null
+          embedding: string
+          id?: string
+          metadata?: Json | null
+          source_id: string
+          source_table: string
+          updated_at?: string | null
+        }
+        Update: {
+          client_id?: string
+          content_text?: string
+          created_at?: string | null
+          embedding?: string
+          id?: string
+          metadata?: Json | null
+          source_id?: string
+          source_table?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_knowledge_embeddings_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_primary_contacts: {
         Row: {
           client_id: string
@@ -1919,6 +2038,65 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_service_locations: {
+        Row: {
+          active: boolean | null
+          city: string
+          client_id: string
+          created_at: string | null
+          discovered_by: string | null
+          has_page: boolean | null
+          id: string
+          is_expansion_target: boolean | null
+          location_code: number | null
+          page_url: string | null
+          priority: string | null
+          service_name: string
+          service_slug: string
+          state: string
+        }
+        Insert: {
+          active?: boolean | null
+          city: string
+          client_id: string
+          created_at?: string | null
+          discovered_by?: string | null
+          has_page?: boolean | null
+          id?: string
+          is_expansion_target?: boolean | null
+          location_code?: number | null
+          page_url?: string | null
+          priority?: string | null
+          service_name: string
+          service_slug: string
+          state: string
+        }
+        Update: {
+          active?: boolean | null
+          city?: string
+          client_id?: string
+          created_at?: string | null
+          discovered_by?: string | null
+          has_page?: boolean | null
+          id?: string
+          is_expansion_target?: boolean | null
+          location_code?: number | null
+          page_url?: string | null
+          priority?: string | null
+          service_name?: string
+          service_slug?: string
+          state?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_service_locations_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
             referencedColumns: ["id"]
           },
         ]
@@ -2040,6 +2218,44 @@ export type Database = {
           },
         ]
       }
+      client_webhook_tokens: {
+        Row: {
+          active: boolean
+          client_id: string
+          created_at: string
+          id: string
+          last_used_at: string | null
+          source: string
+          token: string
+        }
+        Insert: {
+          active?: boolean
+          client_id: string
+          created_at?: string
+          id?: string
+          last_used_at?: string | null
+          source?: string
+          token: string
+        }
+        Update: {
+          active?: boolean
+          client_id?: string
+          created_at?: string
+          id?: string
+          last_used_at?: string | null
+          source?: string
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_webhook_tokens_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           access_locked: boolean | null
@@ -2048,6 +2264,8 @@ export type Database = {
           asset_share_expires_at: string | null
           asset_share_password_hash: string | null
           asset_share_token: string | null
+          auto_blog_mode: string
+          auto_blog_schedule: string | null
           billing_method: string | null
           billing_plan_id: string | null
           billing_status: Database["public"]["Enums"]["billing_status"] | null
@@ -2099,6 +2317,8 @@ export type Database = {
           asset_share_expires_at?: string | null
           asset_share_password_hash?: string | null
           asset_share_token?: string | null
+          auto_blog_mode?: string
+          auto_blog_schedule?: string | null
           billing_method?: string | null
           billing_plan_id?: string | null
           billing_status?: Database["public"]["Enums"]["billing_status"] | null
@@ -2150,6 +2370,8 @@ export type Database = {
           asset_share_expires_at?: string | null
           asset_share_password_hash?: string | null
           asset_share_token?: string | null
+          auto_blog_mode?: string
+          auto_blog_schedule?: string | null
           billing_method?: string | null
           billing_plan_id?: string | null
           billing_status?: Database["public"]["Enums"]["billing_status"] | null
@@ -2362,6 +2584,115 @@ export type Database = {
           },
         ]
       }
+      conversion_events: {
+        Row: {
+          client_id: string
+          created_at: string | null
+          engagement_score: number | null
+          event_type: string
+          fbclid: string | null
+          form_name: string | null
+          forwarded_to: Json | null
+          gclid: string | null
+          id: string
+          is_bot: boolean | null
+          li_fat_id: string | null
+          msclkid: string | null
+          page_url: string | null
+          phone_number: string | null
+          session_id: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string | null
+          engagement_score?: number | null
+          event_type: string
+          fbclid?: string | null
+          form_name?: string | null
+          forwarded_to?: Json | null
+          gclid?: string | null
+          id?: string
+          is_bot?: boolean | null
+          li_fat_id?: string | null
+          msclkid?: string | null
+          page_url?: string | null
+          phone_number?: string | null
+          session_id: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string | null
+          engagement_score?: number | null
+          event_type?: string
+          fbclid?: string | null
+          form_name?: string | null
+          forwarded_to?: Json | null
+          gclid?: string | null
+          id?: string
+          is_bot?: boolean | null
+          li_fat_id?: string | null
+          msclkid?: string | null
+          page_url?: string | null
+          phone_number?: string | null
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversion_events_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cwv_metrics: {
+        Row: {
+          client_id: string
+          cls: number | null
+          created_at: string | null
+          device: string | null
+          fcp_ms: number | null
+          id: string
+          inp_ms: number | null
+          lcp_ms: number | null
+          ttfb_ms: number | null
+          url: string
+        }
+        Insert: {
+          client_id: string
+          cls?: number | null
+          created_at?: string | null
+          device?: string | null
+          fcp_ms?: number | null
+          id?: string
+          inp_ms?: number | null
+          lcp_ms?: number | null
+          ttfb_ms?: number | null
+          url: string
+        }
+        Update: {
+          client_id?: string
+          cls?: number | null
+          created_at?: string | null
+          device?: string | null
+          fcp_ms?: number | null
+          id?: string
+          inp_ms?: number | null
+          lcp_ms?: number | null
+          ttfb_ms?: number | null
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cwv_metrics_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       daily_action_plans: {
         Row: {
           avatar_story: string | null
@@ -2401,6 +2732,47 @@ export type Database = {
             foreignKeyName: "daily_action_plans_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dataforseo_configs: {
+        Row: {
+          client_id: string
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          language_code: string | null
+          last_synced_at: string | null
+          location_code: number | null
+          tracked_keywords: string[] | null
+        }
+        Insert: {
+          client_id: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          language_code?: string | null
+          last_synced_at?: string | null
+          location_code?: number | null
+          tracked_keywords?: string[] | null
+        }
+        Update: {
+          client_id?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          language_code?: string | null
+          last_synced_at?: string | null
+          location_code?: number | null
+          tracked_keywords?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dataforseo_configs_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: true
             referencedRelation: "clients"
             referencedColumns: ["id"]
           },
@@ -2656,6 +3028,47 @@ export type Database = {
             columns: ["communication_log_id"]
             isOneToOne: false
             referencedRelation: "communication_logs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ga4_configs: {
+        Row: {
+          api_secret: string
+          client_id: string
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          last_synced_at: string | null
+          measurement_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          api_secret: string
+          client_id: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_synced_at?: string | null
+          measurement_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          api_secret?: string
+          client_id?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_synced_at?: string | null
+          measurement_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ga4_configs_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: true
+            referencedRelation: "clients"
             referencedColumns: ["id"]
           },
         ]
@@ -2979,6 +3392,65 @@ export type Database = {
             columns: ["submission_id"]
             isOneToOne: false
             referencedRelation: "website_form_submissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lighthouse_audits: {
+        Row: {
+          audit_data: Json | null
+          client_id: string
+          cls: number | null
+          created_at: string | null
+          fcp_ms: number | null
+          id: string
+          inp_ms: number | null
+          lcp_ms: number | null
+          performance_score: number | null
+          si_ms: number | null
+          strategy: string
+          tbt_ms: number | null
+          ttfb_ms: number | null
+          url: string
+        }
+        Insert: {
+          audit_data?: Json | null
+          client_id: string
+          cls?: number | null
+          created_at?: string | null
+          fcp_ms?: number | null
+          id?: string
+          inp_ms?: number | null
+          lcp_ms?: number | null
+          performance_score?: number | null
+          si_ms?: number | null
+          strategy: string
+          tbt_ms?: number | null
+          ttfb_ms?: number | null
+          url: string
+        }
+        Update: {
+          audit_data?: Json | null
+          client_id?: string
+          cls?: number | null
+          created_at?: string | null
+          fcp_ms?: number | null
+          id?: string
+          inp_ms?: number | null
+          lcp_ms?: number | null
+          performance_score?: number | null
+          si_ms?: number | null
+          strategy?: string
+          tbt_ms?: number | null
+          ttfb_ms?: number | null
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lighthouse_audits_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
             referencedColumns: ["id"]
           },
         ]
@@ -3823,6 +4295,221 @@ export type Database = {
           },
         ]
       }
+      optimization_cycles: {
+        Row: {
+          client_id: string
+          created_at: string | null
+          cycle_date: string
+          data_sources_used: string[] | null
+          doctrine_version: string | null
+          id: string
+          pages_analyzed: number | null
+          recommendations_generated: number | null
+          status: string | null
+          summary: Json | null
+        }
+        Insert: {
+          client_id: string
+          created_at?: string | null
+          cycle_date: string
+          data_sources_used?: string[] | null
+          doctrine_version?: string | null
+          id?: string
+          pages_analyzed?: number | null
+          recommendations_generated?: number | null
+          status?: string | null
+          summary?: Json | null
+        }
+        Update: {
+          client_id?: string
+          created_at?: string | null
+          cycle_date?: string
+          data_sources_used?: string[] | null
+          doctrine_version?: string | null
+          id?: string
+          pages_analyzed?: number | null
+          recommendations_generated?: number | null
+          status?: string | null
+          summary?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "optimization_cycles_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      optimization_recommendations: {
+        Row: {
+          ai_reasoning: string | null
+          applied_at: string | null
+          applied_by: string | null
+          baseline_metrics: Json | null
+          category: string
+          check_14d_at: string | null
+          check_21d_at: string | null
+          check_7d_at: string | null
+          client_id: string
+          created_at: string | null
+          current_value: string | null
+          cycle_id: string | null
+          doctrine_rule: string | null
+          expires_at: string | null
+          id: string
+          outcome_metrics: Json | null
+          page_url: string | null
+          priority: string
+          proposed_value: string | null
+          status: string
+          subcategory: string
+        }
+        Insert: {
+          ai_reasoning?: string | null
+          applied_at?: string | null
+          applied_by?: string | null
+          baseline_metrics?: Json | null
+          category: string
+          check_14d_at?: string | null
+          check_21d_at?: string | null
+          check_7d_at?: string | null
+          client_id: string
+          created_at?: string | null
+          current_value?: string | null
+          cycle_id?: string | null
+          doctrine_rule?: string | null
+          expires_at?: string | null
+          id?: string
+          outcome_metrics?: Json | null
+          page_url?: string | null
+          priority: string
+          proposed_value?: string | null
+          status?: string
+          subcategory: string
+        }
+        Update: {
+          ai_reasoning?: string | null
+          applied_at?: string | null
+          applied_by?: string | null
+          baseline_metrics?: Json | null
+          category?: string
+          check_14d_at?: string | null
+          check_21d_at?: string | null
+          check_7d_at?: string | null
+          client_id?: string
+          created_at?: string | null
+          current_value?: string | null
+          cycle_id?: string | null
+          doctrine_rule?: string | null
+          expires_at?: string | null
+          id?: string
+          outcome_metrics?: Json | null
+          page_url?: string | null
+          priority?: string
+          proposed_value?: string | null
+          status?: string
+          subcategory?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "optimization_recommendations_applied_by_fkey"
+            columns: ["applied_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "optimization_recommendations_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "optimization_recommendations_cycle_id_fkey"
+            columns: ["cycle_id"]
+            isOneToOne: false
+            referencedRelation: "optimization_cycles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      page_audits: {
+        Row: {
+          client_id: string
+          crawled_at: string | null
+          external_link_count: number | null
+          h1_count: number | null
+          h1_text: string | null
+          h2_count: number | null
+          h2_texts: string[] | null
+          has_breadcrumb_schema: boolean | null
+          has_faq_schema: boolean | null
+          has_local_schema: boolean | null
+          has_org_schema: boolean | null
+          id: string
+          internal_link_count: number | null
+          meta_description: string | null
+          page_type: string | null
+          raw_html_hash: string | null
+          title: string | null
+          url: string
+          word_count: number | null
+        }
+        Insert: {
+          client_id: string
+          crawled_at?: string | null
+          external_link_count?: number | null
+          h1_count?: number | null
+          h1_text?: string | null
+          h2_count?: number | null
+          h2_texts?: string[] | null
+          has_breadcrumb_schema?: boolean | null
+          has_faq_schema?: boolean | null
+          has_local_schema?: boolean | null
+          has_org_schema?: boolean | null
+          id?: string
+          internal_link_count?: number | null
+          meta_description?: string | null
+          page_type?: string | null
+          raw_html_hash?: string | null
+          title?: string | null
+          url: string
+          word_count?: number | null
+        }
+        Update: {
+          client_id?: string
+          crawled_at?: string | null
+          external_link_count?: number | null
+          h1_count?: number | null
+          h1_text?: string | null
+          h2_count?: number | null
+          h2_texts?: string[] | null
+          has_breadcrumb_schema?: boolean | null
+          has_faq_schema?: boolean | null
+          has_local_schema?: boolean | null
+          has_org_schema?: boolean | null
+          id?: string
+          internal_link_count?: number | null
+          meta_description?: string | null
+          page_type?: string | null
+          raw_html_hash?: string | null
+          title?: string | null
+          url?: string
+          word_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "page_audits_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       page_content_analysis: {
         Row: {
           analyzed_at: string | null
@@ -4314,6 +5001,62 @@ export type Database = {
           },
         ]
       }
+      serp_snapshots: {
+        Row: {
+          client_id: string
+          competitor_urls: Json | null
+          cpc: number | null
+          id: string
+          keyword: string
+          keyword_difficulty: number | null
+          location: string | null
+          position: number | null
+          search_engine: string | null
+          search_volume: number | null
+          serp_features: string[] | null
+          snapshot_date: string
+          url: string | null
+        }
+        Insert: {
+          client_id: string
+          competitor_urls?: Json | null
+          cpc?: number | null
+          id?: string
+          keyword: string
+          keyword_difficulty?: number | null
+          location?: string | null
+          position?: number | null
+          search_engine?: string | null
+          search_volume?: number | null
+          serp_features?: string[] | null
+          snapshot_date?: string
+          url?: string | null
+        }
+        Update: {
+          client_id?: string
+          competitor_urls?: Json | null
+          cpc?: number | null
+          id?: string
+          keyword?: string
+          keyword_difficulty?: number | null
+          location?: string | null
+          position?: number | null
+          search_engine?: string | null
+          search_volume?: number | null
+          serp_features?: string[] | null
+          snapshot_date?: string
+          url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "serp_snapshots_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       services: {
         Row: {
           client_id: string
@@ -4797,6 +5540,50 @@ export type Database = {
           },
         ]
       }
+      support_article_translations: {
+        Row: {
+          article_id: string
+          created_at: string | null
+          id: string
+          lang: string
+          source_hash: string
+          translated_content: string
+          translated_excerpt: string | null
+          translated_title: string
+          updated_at: string | null
+        }
+        Insert: {
+          article_id: string
+          created_at?: string | null
+          id?: string
+          lang: string
+          source_hash: string
+          translated_content: string
+          translated_excerpt?: string | null
+          translated_title: string
+          updated_at?: string | null
+        }
+        Update: {
+          article_id?: string
+          created_at?: string | null
+          id?: string
+          lang?: string
+          source_hash?: string
+          translated_content?: string
+          translated_excerpt?: string | null
+          translated_title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_article_translations_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "support_articles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       support_article_views: {
         Row: {
           article_id: string
@@ -5082,6 +5869,79 @@ export type Database = {
           },
         ]
       }
+      task_qa_runs: {
+        Row: {
+          agent_thread_path: string | null
+          client_id: string | null
+          client_record_hash: string | null
+          doctrine_version: string | null
+          evidence: Json
+          findings: Json
+          finished_at: string | null
+          id: string
+          started_at: string
+          submitted_by: string | null
+          target_state: string | null
+          target_url: string | null
+          task_id: string
+          verdict: string | null
+        }
+        Insert: {
+          agent_thread_path?: string | null
+          client_id?: string | null
+          client_record_hash?: string | null
+          doctrine_version?: string | null
+          evidence?: Json
+          findings?: Json
+          finished_at?: string | null
+          id?: string
+          started_at?: string
+          submitted_by?: string | null
+          target_state?: string | null
+          target_url?: string | null
+          task_id: string
+          verdict?: string | null
+        }
+        Update: {
+          agent_thread_path?: string | null
+          client_id?: string | null
+          client_record_hash?: string | null
+          doctrine_version?: string | null
+          evidence?: Json
+          findings?: Json
+          finished_at?: string | null
+          id?: string
+          started_at?: string
+          submitted_by?: string | null
+          target_state?: string | null
+          target_url?: string | null
+          task_id?: string
+          verdict?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_qa_runs_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_qa_runs_submitted_by_fkey"
+            columns: ["submitted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_qa_runs_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       task_recurrence_history: {
         Row: {
           created_at: string | null
@@ -5224,79 +6084,6 @@ export type Database = {
           },
         ]
       }
-      task_qa_runs: {
-        Row: {
-          agent_thread_path: string | null
-          client_id: string | null
-          client_record_hash: string | null
-          doctrine_version: string | null
-          evidence: Json
-          findings: Json
-          finished_at: string | null
-          id: string
-          started_at: string
-          submitted_by: string | null
-          target_state: string | null
-          target_url: string | null
-          task_id: string
-          verdict: string | null
-        }
-        Insert: {
-          agent_thread_path?: string | null
-          client_id?: string | null
-          client_record_hash?: string | null
-          doctrine_version?: string | null
-          evidence?: Json
-          findings?: Json
-          finished_at?: string | null
-          id?: string
-          started_at?: string
-          submitted_by?: string | null
-          target_state?: string | null
-          target_url?: string | null
-          task_id: string
-          verdict?: string | null
-        }
-        Update: {
-          agent_thread_path?: string | null
-          client_id?: string | null
-          client_record_hash?: string | null
-          doctrine_version?: string | null
-          evidence?: Json
-          findings?: Json
-          finished_at?: string | null
-          id?: string
-          started_at?: string
-          submitted_by?: string | null
-          target_state?: string | null
-          target_url?: string | null
-          task_id?: string
-          verdict?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "task_qa_runs_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "task_qa_runs_submitted_by_fkey"
-            columns: ["submitted_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "task_qa_runs_task_id_fkey"
-            columns: ["task_id"]
-            isOneToOne: false
-            referencedRelation: "tasks"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       tasks: {
         Row: {
           acceptance_criteria: string | null
@@ -5310,6 +6097,8 @@ export type Database = {
           creator_user_id: string | null
           description: string | null
           due_date: string | null
+          external_ref: string | null
+          external_source: string | null
           id: string
           is_recurring: boolean | null
           is_recurring_instance: boolean | null
@@ -5319,6 +6108,8 @@ export type Database = {
           parent_recurring_task_id: string | null
           parent_task_id: string | null
           priority: Database["public"]["Enums"]["task_priority"] | null
+          qa_state: string | null
+          qa_state_changed_at: string | null
           qa_target_state: string | null
           qa_target_url: string | null
           recurrence_pattern: Json | null
@@ -5343,6 +6134,8 @@ export type Database = {
           creator_user_id?: string | null
           description?: string | null
           due_date?: string | null
+          external_ref?: string | null
+          external_source?: string | null
           id?: string
           is_recurring?: boolean | null
           is_recurring_instance?: boolean | null
@@ -5352,6 +6145,8 @@ export type Database = {
           parent_recurring_task_id?: string | null
           parent_task_id?: string | null
           priority?: Database["public"]["Enums"]["task_priority"] | null
+          qa_state?: string | null
+          qa_state_changed_at?: string | null
           qa_target_state?: string | null
           qa_target_url?: string | null
           recurrence_pattern?: Json | null
@@ -5376,6 +6171,8 @@ export type Database = {
           creator_user_id?: string | null
           description?: string | null
           due_date?: string | null
+          external_ref?: string | null
+          external_source?: string | null
           id?: string
           is_recurring?: boolean | null
           is_recurring_instance?: boolean | null
@@ -5385,6 +6182,8 @@ export type Database = {
           parent_recurring_task_id?: string | null
           parent_task_id?: string | null
           priority?: Database["public"]["Enums"]["task_priority"] | null
+          qa_state?: string | null
+          qa_state_changed_at?: string | null
           qa_target_state?: string | null
           qa_target_url?: string | null
           recurrence_pattern?: Json | null
@@ -5740,15 +6539,21 @@ export type Database = {
           client_id: string
           content_type: string | null
           created_at: string | null
+          engaged_seconds: number | null
           entry: boolean | null
+          fbclid: string | null
           form: string | null
+          gclid: string | null
           id: number
           ip_hash: string | null
+          is_bot: boolean | null
           medium: string | null
           meta: Json | null
+          msclkid: string | null
           path: string | null
           received_at: string
           referrer: string | null
+          scroll_depth: number | null
           sid: string
           slug: string | null
           source: string | null
@@ -5770,15 +6575,21 @@ export type Database = {
           client_id: string
           content_type?: string | null
           created_at?: string | null
+          engaged_seconds?: number | null
           entry?: boolean | null
+          fbclid?: string | null
           form?: string | null
+          gclid?: string | null
           id?: number
           ip_hash?: string | null
+          is_bot?: boolean | null
           medium?: string | null
           meta?: Json | null
+          msclkid?: string | null
           path?: string | null
           received_at?: string
           referrer?: string | null
+          scroll_depth?: number | null
           sid: string
           slug?: string | null
           source?: string | null
@@ -5800,15 +6611,21 @@ export type Database = {
           client_id?: string
           content_type?: string | null
           created_at?: string | null
+          engaged_seconds?: number | null
           entry?: boolean | null
+          fbclid?: string | null
           form?: string | null
+          gclid?: string | null
           id?: number
           ip_hash?: string | null
+          is_bot?: boolean | null
           medium?: string | null
           meta?: Json | null
+          msclkid?: string | null
           path?: string | null
           received_at?: string
           referrer?: string | null
+          scroll_depth?: number | null
           sid?: string
           slug?: string | null
           source?: string | null
@@ -6269,6 +7086,7 @@ export type Database = {
         Args: { p_client_id: string; p_user_id: string }
         Returns: string
       }
+      is_internal_staff: { Args: { _user_id: string }; Returns: boolean }
       match_assets: {
         Args: {
           match_client_id: string
@@ -6283,6 +7101,23 @@ export type Database = {
           preview_url: string
           similarity: number
           title: string
+        }[]
+      }
+      match_knowledge: {
+        Args: {
+          match_client_id: string
+          match_count?: number
+          match_threshold?: number
+          query_embedding: string
+          source_types?: string[]
+        }
+        Returns: {
+          content_text: string
+          id: string
+          metadata: Json
+          similarity: number
+          source_id: string
+          source_table: string
         }[]
       }
       refresh_materialized_view: {
@@ -6315,16 +7150,7 @@ export type Database = {
         | "complete"
       storage_type: "upload" | "url"
       task_priority: "low" | "normal" | "high" | "urgent"
-      task_status:
-        | "to_do"
-        | "in_progress"
-        | "blocked"
-        | "ready_for_review"
-        | "qa_running"
-        | "revisions_required"
-        | "qa_approved"
-        | "done"
-        | "cancelled"
+      task_status: "to_do" | "in_progress" | "blocked" | "done" | "cancelled"
       ticket_category: "website" | "ads" | "seo" | "billing" | "other"
       ticket_status: "open" | "in_progress" | "waiting_on_client" | "resolved"
     }
@@ -6342,12 +7168,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -6371,11 +7197,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -6396,11 +7222,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -6421,11 +7247,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -6438,11 +7264,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -6480,17 +7306,7 @@ export const Constants = {
       ],
       storage_type: ["upload", "url"],
       task_priority: ["low", "normal", "high", "urgent"],
-      task_status: [
-        "to_do",
-        "in_progress",
-        "blocked",
-        "ready_for_review",
-        "qa_running",
-        "revisions_required",
-        "qa_approved",
-        "done",
-        "cancelled",
-      ],
+      task_status: ["to_do", "in_progress", "blocked", "done", "cancelled"],
       ticket_category: ["website", "ads", "seo", "billing", "other"],
       ticket_status: ["open", "in_progress", "waiting_on_client", "resolved"],
     },
