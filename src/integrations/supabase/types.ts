@@ -5224,8 +5224,82 @@ export type Database = {
           },
         ]
       }
+      task_qa_runs: {
+        Row: {
+          agent_thread_path: string | null
+          client_id: string | null
+          client_record_hash: string | null
+          doctrine_version: string | null
+          evidence: Json
+          findings: Json
+          finished_at: string | null
+          id: string
+          started_at: string
+          submitted_by: string | null
+          target_state: string | null
+          target_url: string | null
+          task_id: string
+          verdict: string | null
+        }
+        Insert: {
+          agent_thread_path?: string | null
+          client_id?: string | null
+          client_record_hash?: string | null
+          doctrine_version?: string | null
+          evidence?: Json
+          findings?: Json
+          finished_at?: string | null
+          id?: string
+          started_at?: string
+          submitted_by?: string | null
+          target_state?: string | null
+          target_url?: string | null
+          task_id: string
+          verdict?: string | null
+        }
+        Update: {
+          agent_thread_path?: string | null
+          client_id?: string | null
+          client_record_hash?: string | null
+          doctrine_version?: string | null
+          evidence?: Json
+          findings?: Json
+          finished_at?: string | null
+          id?: string
+          started_at?: string
+          submitted_by?: string | null
+          target_state?: string | null
+          target_url?: string | null
+          task_id?: string
+          verdict?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_qa_runs_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_qa_runs_submitted_by_fkey"
+            columns: ["submitted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_qa_runs_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tasks: {
         Row: {
+          acceptance_criteria: string | null
           activity_log: string | null
           assignee_user_id: string | null
           client_id: string
@@ -5245,6 +5319,8 @@ export type Database = {
           parent_recurring_task_id: string | null
           parent_task_id: string | null
           priority: Database["public"]["Enums"]["task_priority"] | null
+          qa_target_state: string | null
+          qa_target_url: string | null
           recurrence_pattern: Json | null
           related_asset_ids: string[] | null
           related_meeting_ids: string[] | null
@@ -5253,8 +5329,10 @@ export type Database = {
           subtask_order: number | null
           title: string
           updated_at: string | null
+          viktor_thread_path: string | null
         }
         Insert: {
+          acceptance_criteria?: string | null
           activity_log?: string | null
           assignee_user_id?: string | null
           client_id: string
@@ -5274,6 +5352,8 @@ export type Database = {
           parent_recurring_task_id?: string | null
           parent_task_id?: string | null
           priority?: Database["public"]["Enums"]["task_priority"] | null
+          qa_target_state?: string | null
+          qa_target_url?: string | null
           recurrence_pattern?: Json | null
           related_asset_ids?: string[] | null
           related_meeting_ids?: string[] | null
@@ -5282,8 +5362,10 @@ export type Database = {
           subtask_order?: number | null
           title: string
           updated_at?: string | null
+          viktor_thread_path?: string | null
         }
         Update: {
+          acceptance_criteria?: string | null
           activity_log?: string | null
           assignee_user_id?: string | null
           client_id?: string
@@ -5303,6 +5385,8 @@ export type Database = {
           parent_recurring_task_id?: string | null
           parent_task_id?: string | null
           priority?: Database["public"]["Enums"]["task_priority"] | null
+          qa_target_state?: string | null
+          qa_target_url?: string | null
           recurrence_pattern?: Json | null
           related_asset_ids?: string[] | null
           related_meeting_ids?: string[] | null
@@ -5311,6 +5395,7 @@ export type Database = {
           subtask_order?: number | null
           title?: string
           updated_at?: string | null
+          viktor_thread_path?: string | null
         }
         Relationships: [
           {
@@ -6230,7 +6315,16 @@ export type Database = {
         | "complete"
       storage_type: "upload" | "url"
       task_priority: "low" | "normal" | "high" | "urgent"
-      task_status: "to_do" | "in_progress" | "done"
+      task_status:
+        | "to_do"
+        | "in_progress"
+        | "blocked"
+        | "ready_for_review"
+        | "qa_running"
+        | "revisions_required"
+        | "qa_approved"
+        | "done"
+        | "cancelled"
       ticket_category: "website" | "ads" | "seo" | "billing" | "other"
       ticket_status: "open" | "in_progress" | "waiting_on_client" | "resolved"
     }
@@ -6386,7 +6480,17 @@ export const Constants = {
       ],
       storage_type: ["upload", "url"],
       task_priority: ["low", "normal", "high", "urgent"],
-      task_status: ["to_do", "in_progress", "done"],
+      task_status: [
+        "to_do",
+        "in_progress",
+        "blocked",
+        "ready_for_review",
+        "qa_running",
+        "revisions_required",
+        "qa_approved",
+        "done",
+        "cancelled",
+      ],
       ticket_category: ["website", "ads", "seo", "billing", "other"],
       ticket_status: ["open", "in_progress", "waiting_on_client", "resolved"],
     },
