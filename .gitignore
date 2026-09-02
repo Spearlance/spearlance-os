@@ -59,3 +59,4 @@ scripts/auth-users-insert.sql
 /playwright/.cache/
 e2e/.auth/
 e2e/fixtures/
+docs/*.docx
