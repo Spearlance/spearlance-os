@@ -7,7 +7,6 @@ import {
   groupTasksByPriority,
   isTaskClosed,
 } from "@/lib/myTasksGrouping";
-import { CLOSED_STATUS_IN } from "@/lib/taskStatus";
 
 export interface MyTask {
   id: string;
@@ -95,7 +94,9 @@ export function useMyTasks() {
         `)
         .in("id", taskIds)
         .is("parent_task_id", null)
-        .not("status", "in", CLOSED_STATUS_IN);
+        // Only 'done' is filtered server-side; 'cancelled' is excluded below in
+        // JS so this query also works against a DB whose enum predates it.
+        .neq("status", "done");
 
       if (tasksError) throw tasksError;
 

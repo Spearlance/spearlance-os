@@ -1,5 +1,5 @@
 import { redactForRole, sanitizeDataForPrompt } from '../../validation/sanitize.ts';
-import { CLOSED_STATUS_IN, isOpenStatus } from '../../../_shared/taskStatus.ts';
+import { isOpenStatus } from '../../../_shared/taskStatus.ts';
 
 export async function getTasks(supabase: any, params: any, clientId: string, userId: string) {
   try {
@@ -59,7 +59,8 @@ export async function getTasks(supabase: any, params: any, clientId: string, use
 
     if (overdue) {
       const today = new Date().toISOString().split('T')[0];
-      query = query.lt('due_date', today).not('status', 'in', CLOSED_STATUS_IN);
+      // 'cancelled' is dropped after the fetch (enum-safe); only 'done' here
+      query = query.lt('due_date', today).neq('status', 'done');
     }
 
     // Sort by priority (urgent first), then due date (soonest first)
@@ -68,9 +69,13 @@ export async function getTasks(supabase: any, params: any, clientId: string, use
       .order('due_date', { ascending: true, nullsFirst: false })
       .range(offset, offset + Math.min(limit, 50) - 1);
 
-    const { data: tasks, error, count } = await query;
+    const { data: fetchedTasks, error, count } = await query;
 
     if (error) throw error;
+
+    // Overdue means still open: drop cancelled rows here (not in the query, so
+    // the request also works against a DB whose enum predates 'cancelled').
+    const tasks = overdue ? (fetchedTasks ?? []).filter((t: any) => isOpenStatus(t.status)) : fetchedTasks;
 
     // Format tasks with human-readable info
     const formattedTasks = tasks?.map((task: any) => {

@@ -2,7 +2,6 @@ import { describe, it, expect } from "vitest";
 import {
   TASK_STATUSES,
   TERMINAL_TASK_STATUSES,
-  CLOSED_STATUS_IN,
   isTerminalStatus,
   isOpenStatus,
   taskStatusLabel,
@@ -19,10 +18,6 @@ describe("taskStatus", () => {
     expect(isTerminalStatus(undefined)).toBe(false);
     expect(isOpenStatus("blocked")).toBe(true);
     expect(isOpenStatus("cancelled")).toBe(false);
-  });
-
-  it("keeps the PostgREST filter in sync with the terminal list", () => {
-    expect(CLOSED_STATUS_IN).toBe(`(${TERMINAL_TASK_STATUSES.join(",")})`);
   });
 
   it("lists every terminal status among the known statuses", () => {

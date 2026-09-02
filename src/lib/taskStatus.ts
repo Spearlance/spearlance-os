@@ -24,8 +24,12 @@ export const TASK_STATUSES: readonly TaskStatus[] = [
 
 export const TERMINAL_TASK_STATUSES: readonly TaskStatus[] = ["done", "cancelled"];
 
-/** Value for PostgREST `.not("status", "in", CLOSED_STATUS_IN)` filters. */
-export const CLOSED_STATUS_IN = "(done,cancelled)";
+/**
+ * Do NOT filter on 'cancelled' inside a Supabase query (`.neq`, `.not(...'in'...)`).
+ * A database whose enum doesn't have the value yet (prod before its migration)
+ * rejects the literal and the whole query fails. Query with `.neq("status","done")`
+ * at most, then apply `isOpenStatus` / `isTaskClosed` in JS.
+ */
 
 export const TASK_STATUS_LABELS: Record<TaskStatus, string> = {
   to_do: "To Do",

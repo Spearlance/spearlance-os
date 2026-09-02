@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { AI_CHAT_URL, AI_MODELS, aiHeaders } from '../_shared/aiClient.ts';
-import { CLOSED_STATUS_IN } from '../_shared/taskStatus.ts';
+import { isOpenStatus } from '../_shared/taskStatus.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -106,7 +106,7 @@ serve(async (req) => {
         .from('tasks')
         .select('id, title, status')
         .eq('client_id', client_id)
-        .not('status', 'in', CLOSED_STATUS_IN)
+        .neq('status', 'done')
         .limit(50)
     ]);
 
@@ -122,7 +122,8 @@ serve(async (req) => {
     const recentMeetings = recentMeetingsResult.data || [];
     const communications = communicationsResult.data || [];
     const socialPosts = socialPostsResult.data || [];
-    const existingTasks = existingTasksResult.data || [];
+    // 'cancelled' filtered here rather than in the query (enum-safe on prod)
+    const existingTasks = (existingTasksResult.data || []).filter((t: any) => isOpenStatus(t.status));
 
     // Filter social posts
     const draftPosts = socialPosts.filter(p => p.status === 'draft');
