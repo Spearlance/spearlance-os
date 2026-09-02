@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { AI_CHAT_URL, AI_MODELS, aiHeaders } from '../_shared/aiClient.ts';
+import { CLOSED_STATUS_IN } from '../_shared/taskStatus.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -105,7 +106,7 @@ serve(async (req) => {
         .from('tasks')
         .select('id, title, status')
         .eq('client_id', client_id)
-        .in('status', ['to_do', 'in_progress'])
+        .not('status', 'in', CLOSED_STATUS_IN)
         .limit(50)
     ]);
 

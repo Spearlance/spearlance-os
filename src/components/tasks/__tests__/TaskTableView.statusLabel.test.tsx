@@ -61,7 +61,7 @@ describe('TaskTableView status label', () => {
     expect(screen.getByText('Backlog')).toBeInTheDocument();
   });
 
-  it('shows raw status when no column matches at all', () => {
+  it('falls back to a humanised status when no column matches at all', () => {
     const columns = [
       baseColumn({ id: 'col-1', key: 'done', name: 'Done', mapped_status: 'done' }),
     ];
@@ -76,6 +76,25 @@ describe('TaskTableView status label', () => {
       />
     );
 
-    expect(screen.getByText('unknown_status')).toBeInTheDocument();
+    // Unknown enum values are shown with underscores replaced, never blank
+    expect(screen.getByText('unknown status')).toBeInTheDocument();
+  });
+
+  it('labels a cancelled task by its Cancelled column', () => {
+    const columns = [
+      baseColumn({ id: 'col-cancel', key: 'cancelled', name: 'Cancelled', mapped_status: 'cancelled' }),
+    ];
+    const tasks = [baseTask({ status: 'cancelled', column_id: 'col-cancel' })];
+
+    render(
+      <TaskTableView
+        tasks={tasks}
+        taskColumns={columns}
+        onTaskClick={noop}
+        onCreateTask={noop}
+      />
+    );
+
+    expect(screen.getByText('Cancelled')).toBeInTheDocument();
   });
 });

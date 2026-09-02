@@ -14,6 +14,7 @@ import { useClient } from "@/contexts/ClientContext";
 import { AssigneeSelector } from "./AssigneeSelector";
 import { WatcherSelector } from "./WatcherSelector";
 import { Repeat } from "lucide-react";
+import type { TaskStatus } from "@/lib/taskStatus";
 
 interface CreateTaskDialogProps {
   open: boolean;
@@ -37,7 +38,7 @@ interface TaskColumn {
   name: string;
   key: string;
   color: string;
-  mapped_status: 'to_do' | 'in_progress' | 'done';
+  mapped_status: TaskStatus;
 }
 
 export function CreateTaskDialog({ open, onOpenChange, onSuccess, initialTitle, initialDescription, initialDueDate }: CreateTaskDialogProps) {
@@ -60,7 +61,7 @@ export function CreateTaskDialog({ open, onOpenChange, onSuccess, initialTitle, 
     title: "",
     description: "",
     column_id: "",
-    status: "to_do" as 'to_do' | 'in_progress' | 'done',
+    status: "to_do" as TaskStatus,
     priority: "normal",
     due_date: "",
   });
