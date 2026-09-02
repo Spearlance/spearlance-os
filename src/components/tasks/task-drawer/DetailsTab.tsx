@@ -23,6 +23,9 @@ interface EditedTask {
   recurring_schedule: string;
   linked_channel_id: string;
   column_id: string;
+  acceptance_criteria: string;
+  qa_target_url: string;
+  qa_target_state: string;
 }
 
 interface TaskColumn {

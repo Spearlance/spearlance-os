@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useNavigate } from "react-router-dom";
 import { MyTask } from "@/hooks/useMyTasks";
+import { QaStateBadge } from "@/components/tasks/QaStateBadge";
 
 interface MyTaskCardProps {
   task: MyTask;
@@ -90,6 +91,7 @@ export const MyTaskCard = ({ task, onClick, showClient = true, onViewInBoard, on
           
           {/* Priority & Recurring indicators */}
           <div className="flex-shrink-0 flex items-center gap-1">
+            <QaStateBadge qaState={task.qa_state} />
             {task.priority === 'urgent' && (
               <Badge variant="destructive" className="text-xs">!</Badge>
             )}

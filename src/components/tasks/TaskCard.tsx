@@ -4,6 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import { Calendar, Paperclip, MessageSquare, CheckCircle2, Repeat, Link, Globe } from "lucide-react";
 import { format } from "date-fns";
+import { QaStateBadge } from "@/components/tasks/QaStateBadge";
 
 interface TaskCardProps {
   task: {
@@ -24,6 +25,7 @@ interface TaskCardProps {
     attachment_count?: number;
     linked_page_name?: string;
     linked_channel_name?: string;
+    qa_state?: string | null;
   };
   onClick?: () => void;
   isDragging?: boolean;
@@ -74,6 +76,7 @@ export const TaskCard = ({ task, onClick, isDragging }: TaskCardProps) => {
         </div>
         {/* Recurring indicator in top-right */}
         <div className="flex-shrink-0 flex items-center gap-1">
+          <QaStateBadge qaState={task.qa_state} />
           {task.priority === 'urgent' && (
             <Badge variant="destructive" className="text-xs">
               !
