@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { Resend } from "https://esm.sh/resend@2.0.0";
+import { isOpenStatus } from "../_shared/taskStatus.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -144,17 +145,17 @@ serve(async (req) => {
 
       const inProgressTasks = allTasks.filter(t => t.status === 'in_progress');
 
-      const overdueTasks = allTasks.filter(t => 
-        t.due_date && 
-        new Date(t.due_date) < today && 
-        t.status !== 'done'
+      const overdueTasks = allTasks.filter(t =>
+        t.due_date &&
+        new Date(t.due_date) < today &&
+        isOpenStatus(t.status)
       );
 
-      const upcomingTasks = allTasks.filter(t => 
-        t.due_date && 
-        new Date(t.due_date) > today && 
+      const upcomingTasks = allTasks.filter(t =>
+        t.due_date &&
+        new Date(t.due_date) > today &&
         new Date(t.due_date) <= nextWeekEnd &&
-        t.status !== 'done'
+        isOpenStatus(t.status)
       );
 
       // Calculate average duration

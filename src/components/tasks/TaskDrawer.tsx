@@ -10,6 +10,8 @@ import { useNavigate } from "react-router-dom";
 import { DetailsTab } from "./task-drawer/DetailsTab";
 import { CommentsTab } from "./task-drawer/CommentsTab";
 import { RelatedTab } from "./task-drawer/RelatedTab";
+import { QaTab } from "./task-drawer/QaTab";
+import type { TaskStatus } from "@/lib/taskStatus";
 
 interface TaskDrawerProps {
   task: any;
@@ -45,6 +47,9 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
     recurring_schedule: task.recurring_schedule || '',
     linked_channel_id: task.linked_channel_id || '',
     column_id: task.column_id || '',
+    acceptance_criteria: task.acceptance_criteria || '',
+    qa_target_url: task.qa_target_url || '',
+    qa_target_state: task.qa_target_state || 'editor',
   });
   const [comments, setComments] = useState<any[]>([]);
   const [newComment, setNewComment] = useState("");
@@ -65,7 +70,7 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
   const [selectedBuildForPage, setSelectedBuildForPage] = useState<string | null>(null);
   const [availablePages, setAvailablePages] = useState<any[]>([]);
   const [subtasks, setSubtasks] = useState<any[]>([]);
-  const [taskColumns, setTaskColumns] = useState<Array<{ id: string; name: string; key: string; color: string; mapped_status: 'to_do' | 'in_progress' | 'done' }>>([]);
+  const [taskColumns, setTaskColumns] = useState<Array<{ id: string; name: string; key: string; color: string; mapped_status: TaskStatus }>>([]);
   const navigate = useNavigate();
 
   // Normalize editedTask.status based on column_id to prevent enum errors
@@ -111,6 +116,30 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
     });
   };
 
+  // Callers (My Tasks, Marketing Flowchart, build pages) hand the drawer a
+  // partial task object, so the QA context is always re-read from the row.
+  // Without this, Save from those surfaces would blank the criteria.
+  const [qaMeta, setQaMeta] = useState<{ qa_state: string | null; qa_state_changed_at: string | null }>({
+    qa_state: task.qa_state ?? null,
+    qa_state_changed_at: task.qa_state_changed_at ?? null,
+  });
+
+  const loadQaContext = async () => {
+    const { data } = await supabase
+      .from("tasks")
+      .select("acceptance_criteria, qa_target_url, qa_target_state, qa_state, qa_state_changed_at")
+      .eq("id", task.id)
+      .maybeSingle();
+    if (!data) return;
+    setEditedTask(prev => ({
+      ...prev,
+      acceptance_criteria: data.acceptance_criteria || '',
+      qa_target_url: data.qa_target_url || '',
+      qa_target_state: data.qa_target_state || 'editor',
+    }));
+    setQaMeta({ qa_state: data.qa_state, qa_state_changed_at: data.qa_state_changed_at });
+  };
+
   useEffect(() => {
     loadComments();
     loadUsers();
@@ -120,7 +149,8 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
     loadSubtasks();
     loadTaskColumns();
     loadLinkedWebsitePage();
-    
+    loadQaContext();
+
     // Listen for column updates
     const handleColumnUpdate = () => {
       loadTaskColumns();
@@ -560,6 +590,9 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
         due_date: editedTask.due_date || null,
         color: editedTask.color || null,
         column_id: editedTask.column_id || null,
+        acceptance_criteria: editedTask.acceptance_criteria || null,
+        qa_target_url: editedTask.qa_target_url || null,
+        qa_target_state: editedTask.qa_target_state || null,
       })
       .eq("id", task.id);
 
@@ -754,8 +787,12 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
         </SheetHeader>
 
         <Tabs defaultValue="details" className="mt-6 flex-1 flex flex-col overflow-hidden">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="details">Details</TabsTrigger>
+            <TabsTrigger value="qa" className="gap-1.5">
+              QA
+              {qaMeta.qa_state && <span className="h-1.5 w-1.5 rounded-full bg-primary" aria-hidden />}
+            </TabsTrigger>
             <TabsTrigger value="comments">Comments</TabsTrigger>
             <TabsTrigger value="related">Related</TabsTrigger>
           </TabsList>
@@ -777,6 +814,20 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
               }}
               isAdminOrFMM={isAdminOrFMM}
               task={task}
+            />
+          </TabsContent>
+
+          <TabsContent value="qa" className="mt-0 flex-1 flex flex-col overflow-hidden">
+            <QaTab
+              task={{ id: task.id, client_id: task.client_id, status: editedTask.status, ...qaMeta }}
+              onStateChange={(next) => setQaMeta(next)}
+              fields={{
+                acceptance_criteria: editedTask.acceptance_criteria,
+                qa_target_url: editedTask.qa_target_url,
+                qa_target_state: editedTask.qa_target_state,
+              }}
+              setFields={(f) => setEditedTask(prev => ({ ...prev, ...f }))}
+              onUpdate={onUpdate}
             />
           </TabsContent>
 

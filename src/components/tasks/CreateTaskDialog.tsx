@@ -13,7 +13,9 @@ import { toast } from "sonner";
 import { useClient } from "@/contexts/ClientContext";
 import { AssigneeSelector } from "./AssigneeSelector";
 import { WatcherSelector } from "./WatcherSelector";
-import { Repeat } from "lucide-react";
+import { ClipboardCheck, Repeat } from "lucide-react";
+import type { TaskStatus } from "@/lib/taskStatus";
+import { QA_TARGET_STATE_LABELS, type QaTargetState } from "@/lib/taskQa";
 
 interface CreateTaskDialogProps {
   open: boolean;
@@ -37,7 +39,7 @@ interface TaskColumn {
   name: string;
   key: string;
   color: string;
-  mapped_status: 'to_do' | 'in_progress' | 'done';
+  mapped_status: TaskStatus;
 }
 
 export function CreateTaskDialog({ open, onOpenChange, onSuccess, initialTitle, initialDescription, initialDueDate }: CreateTaskDialogProps) {
@@ -60,10 +62,14 @@ export function CreateTaskDialog({ open, onOpenChange, onSuccess, initialTitle, 
     title: "",
     description: "",
     column_id: "",
-    status: "to_do" as 'to_do' | 'in_progress' | 'done',
+    status: "to_do" as TaskStatus,
     priority: "normal",
     due_date: "",
+    acceptance_criteria: "",
+    qa_target_url: "",
+    qa_target_state: "editor" as QaTargetState,
   });
+  const [showQa, setShowQa] = useState(false);
 
   useEffect(() => {
     if (open && selectedClient) {
@@ -181,6 +187,9 @@ export function CreateTaskDialog({ open, onOpenChange, onSuccess, initialTitle, 
           is_recurring: isRecurring,
           recurrence_pattern: recurrencePattern,
           next_occurrence_date: nextOccurrence,
+          acceptance_criteria: formData.acceptance_criteria || null,
+          qa_target_url: formData.qa_target_url || null,
+          qa_target_state: formData.qa_target_url ? formData.qa_target_state : null,
         }])
         .select()
         .single();
@@ -220,7 +229,8 @@ export function CreateTaskDialog({ open, onOpenChange, onSuccess, initialTitle, 
       toast.success("Task created successfully");
 
       onOpenChange(false);
-      setFormData({ title: "", description: "", column_id: "", status: "to_do", priority: "normal", due_date: "" });
+      setFormData({ title: "", description: "", column_id: "", status: "to_do", priority: "normal", due_date: "", acceptance_criteria: "", qa_target_url: "", qa_target_state: "editor" });
+      setShowQa(false);
       setSelectedAssignees([]);
       setSelectedWatchers([]);
       setSelectedColor("#6B7280");
@@ -381,6 +391,64 @@ export function CreateTaskDialog({ open, onOpenChange, onSuccess, initialTitle, 
                 </div>
               </PopoverContent>
             </Popover>
+          </div>
+
+          {/* QA context: what the reviewer checks against */}
+          <div className="space-y-3 border-t pt-4">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="qa-context"
+                checked={showQa}
+                onCheckedChange={(checked) => setShowQa(checked as boolean)}
+              />
+              <Label htmlFor="qa-context" className="flex items-center gap-2 cursor-pointer">
+                <ClipboardCheck className="h-4 w-4" />
+                Add acceptance criteria for QA
+              </Label>
+            </div>
+
+            {showQa && (
+              <div className="space-y-3 pl-6 border-l-2 border-muted">
+                <div>
+                  <Label htmlFor="acceptance_criteria">Acceptance criteria</Label>
+                  <Textarea
+                    id="acceptance_criteria"
+                    value={formData.acceptance_criteria}
+                    onChange={(e) => setFormData({ ...formData, acceptance_criteria: e.target.value })}
+                    placeholder={"One check per line, written so it can be proven false"}
+                    className="min-h-[90px]"
+                  />
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="col-span-2">
+                    <Label htmlFor="qa_target_url">QA target URL</Label>
+                    <Input
+                      id="qa_target_url"
+                      type="url"
+                      value={formData.qa_target_url}
+                      onChange={(e) => setFormData({ ...formData, qa_target_url: e.target.value })}
+                      placeholder={selectedClient?.website_url || "https://my.duda.co/site/..."}
+                    />
+                  </div>
+                  <div>
+                    <Label>Check against</Label>
+                    <Select
+                      value={formData.qa_target_state}
+                      onValueChange={(v) => setFormData({ ...formData, qa_target_state: v as QaTargetState })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(Object.keys(QA_TARGET_STATE_LABELS) as QaTargetState[]).map((s) => (
+                          <SelectItem key={s} value={s}>{QA_TARGET_STATE_LABELS[s]}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Recurring Task Section */}

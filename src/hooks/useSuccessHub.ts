@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useClient } from "@/contexts/ClientContext";
 import { startOfWeek, format } from "date-fns";
 import { Json } from "@/integrations/supabase/types";
+import { isOpenStatus } from "@/lib/taskStatus";
 
 export interface BusinessOutcome {
   id: string;
@@ -296,7 +297,8 @@ export function useSuccessHub() {
       .neq('status', 'done')
       .lte('due_date', endOfWeek.toISOString())
       .order('due_date', { ascending: true });
-    setThisWeekTasks(data || []);
+    // 'cancelled' is excluded here rather than in the query (enum-safe)
+    setThisWeekTasks((data || []).filter(t => isOpenStatus(t.status)));
   };
 
   const loadCompletedTasks = async () => {

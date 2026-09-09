@@ -9,6 +9,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { isOpenStatus, taskStatusLabel } from "@/lib/taskStatus";
 import { 
   ArrowLeft, 
   Users, 
@@ -152,11 +153,11 @@ export default function DesignerWorkload() {
           todo: assignedTasks.filter(t => t.status === 'to_do').length,
           inProgress: assignedTasks.filter(t => t.status === 'in_progress').length,
           done: assignedTasks.filter(t => t.status === 'done').length,
-          overdue: assignedTasks.filter(t => 
-            t.due_date && isPast(new Date(t.due_date)) && !isToday(new Date(t.due_date)) && t.status !== 'done'
+          overdue: assignedTasks.filter(t =>
+            t.due_date && isPast(new Date(t.due_date)) && !isToday(new Date(t.due_date)) && isOpenStatus(t.status)
           ).length,
           dueThisWeek: assignedTasks.filter(t =>
-            t.due_date && isBefore(new Date(t.due_date), weekFromNow) && !isPast(new Date(t.due_date)) && t.status !== 'done'
+            t.due_date && isBefore(new Date(t.due_date), weekFromNow) && !isPast(new Date(t.due_date)) && isOpenStatus(t.status)
           ).length
         };
       });
@@ -343,7 +344,7 @@ export default function DesignerWorkload() {
                 {designers.map((designer) => {
                   const bandwidth = calculateBandwidth(designer);
                   const isExpanded = expandedDesigners.has(designer.id);
-                  const activeTasks = designer.tasks.filter(t => t.status !== 'done');
+                  const activeTasks = designer.tasks.filter(t => isOpenStatus(t.status));
 
                   return (
                     <Collapsible key={designer.id} asChild open={isExpanded}>
@@ -418,7 +419,7 @@ export default function DesignerWorkload() {
                                     >
                                       <div className="flex items-center gap-3">
                                         <Badge variant={task.status === 'in_progress' ? 'secondary' : 'outline'} className="text-xs">
-                                          {task.status === 'in_progress' ? 'In Progress' : 'To Do'}
+                                          {taskStatusLabel(task.status)}
                                         </Badge>
                                         <span className="text-sm font-medium">{task.title}</span>
                                         <span className="text-xs text-muted-foreground">

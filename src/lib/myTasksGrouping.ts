@@ -1,5 +1,6 @@
 import { isToday, isTomorrow, isThisWeek, isBefore, startOfToday, addWeeks, subDays } from "date-fns";
 import type { MyTask } from "@/hooks/useMyTasks";
+import { isTerminalStatus } from "@/lib/taskStatus";
 
 export interface GroupedTasks {
   [key: string]: {
@@ -38,6 +39,15 @@ export function isOverdue(task: MyTask): boolean {
  */
 export function isTaskDone(status: string | null, columnMappedStatus?: string | null): boolean {
   return status === "done" || columnMappedStatus === "done";
+}
+
+/**
+ * Closed = nothing left to do about it: done OR cancelled, judged by either the
+ * status enum or the column the task sits in (same two-source rule as above).
+ * This is the predicate every "open tasks" surface should use.
+ */
+export function isTaskClosed(status: string | null, columnMappedStatus?: string | null): boolean {
+  return isTerminalStatus(status) || isTerminalStatus(columnMappedStatus);
 }
 
 export function groupTasksByClient(tasks: MyTask[]): GroupedTasks {

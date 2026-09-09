@@ -10,6 +10,7 @@ import { CreateTaskDialog } from "@/components/tasks/CreateTaskDialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { taskStatusLabel } from "@/lib/taskStatus";
 
 interface BuildLinkedTasksTabProps {
   buildId: string;
@@ -19,7 +20,9 @@ interface BuildLinkedTasksTabProps {
 const statusColors: Record<string, string> = {
   to_do: "bg-blue-500/10 text-blue-500 border-blue-500/20",
   in_progress: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
+  blocked: "bg-red-500/10 text-red-500 border-red-500/20",
   done: "bg-green-500/10 text-green-500 border-green-500/20",
+  cancelled: "bg-muted text-muted-foreground border-border line-through",
 };
 
 export function BuildLinkedTasksTab({ buildId, clientId }: BuildLinkedTasksTabProps) {
@@ -150,9 +153,9 @@ export function BuildLinkedTasksTab({ buildId, clientId }: BuildLinkedTasksTabPr
                 <div className="flex items-center gap-2">
                   <Badge 
                     variant="outline" 
-                    className={statusColors[link.task?.status || "to_do"]}
+                    className={statusColors[link.task?.status || "to_do"] ?? ""}
                   >
-                    {link.task?.status?.replace("_", " ")}
+                    {taskStatusLabel(link.task?.status)}
                   </Badge>
                   <Button
                     variant="ghost"

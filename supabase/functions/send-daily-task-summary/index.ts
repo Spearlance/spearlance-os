@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { Resend } from "https://esm.sh/resend@2.0.0";
+import { isOpenStatus } from "../_shared/taskStatus.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -105,8 +106,8 @@ serve(async (req) => {
       // Categorize tasks
       const overdueTasks = tasks.filter(t => 
         t.due_date && 
-        new Date(t.due_date) < today && 
-        t.status !== 'done'
+        new Date(t.due_date) < today &&
+        isOpenStatus(t.status)
       ).map(t => ({
         title: t.title,
         due_date: new Date(t.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
@@ -115,8 +116,8 @@ serve(async (req) => {
 
       const dueTodayTasks = tasks.filter(t => 
         t.due_date && 
-        t.due_date.startsWith(todayStr) && 
-        t.status !== 'done'
+        t.due_date.startsWith(todayStr) &&
+        isOpenStatus(t.status)
       ).map(t => ({
         title: t.title,
         client_name: (t.clients as any)?.name || 'Unknown'

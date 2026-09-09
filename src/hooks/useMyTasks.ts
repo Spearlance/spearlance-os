@@ -5,7 +5,7 @@ import {
   groupTasksByClient,
   groupTasksByDueDate,
   groupTasksByPriority,
-  isTaskDone,
+  isTaskClosed,
 } from "@/lib/myTasksGrouping";
 
 export interface MyTask {
@@ -16,6 +16,7 @@ export interface MyTask {
   priority: string;
   due_date: string | null;
   color?: string;
+  qa_state?: string | null;
   is_recurring?: boolean;
   is_recurring_instance?: boolean;
   client_id: string;
@@ -78,6 +79,7 @@ export function useMyTasks() {
           priority,
           due_date,
           color,
+          qa_state,
           is_recurring,
           is_recurring_instance,
           client_id,
@@ -94,6 +96,8 @@ export function useMyTasks() {
         `)
         .in("id", taskIds)
         .is("parent_task_id", null)
+        // Only 'done' is filtered server-side; 'cancelled' is excluded below in
+        // JS so this query also works against a DB whose enum predates it.
         .neq("status", "done");
 
       if (tasksError) throw tasksError;
@@ -106,6 +110,7 @@ export function useMyTasks() {
         priority: string | null;
         due_date: string | null;
         color: string | null;
+        qa_state: string | null;
         is_recurring: boolean | null;
         is_recurring_instance: boolean | null;
         client_id: string;
@@ -114,10 +119,10 @@ export function useMyTasks() {
         task_column: { color: string | null; mapped_status: string | null } | null;
       };
 
-      // The status enum alone can miss completed tasks — a task sitting in a
-      // Done-mapped column is done regardless of what status says.
+      // The status enum alone can miss closed tasks — a task sitting in a
+      // Done- or Cancelled-mapped column is closed regardless of what status says.
       const openTasks = ((tasksData || []) as RawTask[]).filter(
-        task => !isTaskDone(task.status, task.task_column?.mapped_status)
+        task => !isTaskClosed(task.status, task.task_column?.mapped_status)
       );
 
       // Enrich tasks with additional data
@@ -171,6 +176,7 @@ export function useMyTasks() {
             priority: task.priority,
             due_date: task.due_date,
             color: task.color,
+            qa_state: task.qa_state,
             is_recurring: task.is_recurring,
             is_recurring_instance: task.is_recurring_instance,
             client_id: task.client_id,

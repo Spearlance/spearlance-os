@@ -8,6 +8,7 @@ import { Clock } from "lucide-react";
 import { AssigneeSelector } from "../AssigneeSelector";
 import { WatcherSelector } from "../WatcherSelector";
 import { SubtaskList } from "../SubtaskList";
+import type { TaskStatus } from "@/lib/taskStatus";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
 import { quillModules, quillFormats } from "./quillConfig";
@@ -22,6 +23,9 @@ interface EditedTask {
   recurring_schedule: string;
   linked_channel_id: string;
   column_id: string;
+  acceptance_criteria: string;
+  qa_target_url: string;
+  qa_target_state: string;
 }
 
 interface TaskColumn {
@@ -29,7 +33,7 @@ interface TaskColumn {
   name: string;
   key: string;
   color: string;
-  mapped_status: 'to_do' | 'in_progress' | 'done';
+  mapped_status: TaskStatus;
 }
 
 interface User {

@@ -24,6 +24,7 @@ import { ApplyTemplateDialog } from "@/components/marketing/ApplyTemplateDialog"
 import { TaskDrawer } from "@/components/tasks/TaskDrawer";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { isOpenStatus, taskStatusLabel } from "@/lib/taskStatus";
 import type { Database } from "@/integrations/supabase/types";
 
 type Channel = Database["public"]["Tables"]["marketing_flow_channels"]["Row"] & {
@@ -304,6 +305,7 @@ const MarketingFlowchart = () => {
       in_progress: "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200",
       done: "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200",
       blocked: "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-200",
+      cancelled: "bg-muted text-muted-foreground line-through",
     };
     return classes[status] || "bg-muted text-muted-foreground";
   };
@@ -477,8 +479,9 @@ const MarketingFlowchart = () => {
                             </div>
 
                     {(() => {
-                      const activeTasks = tasks.filter(t => t.status !== "done");
-                      const completedTasks = tasks.filter(t => t.status === "done");
+                      // Closed = done or cancelled; both fold into the collapsible list
+                      const activeTasks = tasks.filter(t => isOpenStatus(t.status));
+                      const completedTasks = tasks.filter(t => !isOpenStatus(t.status));
                       
                       if (tasks.length === 0) {
                         return <p className="text-sm text-muted-foreground">No tasks yet</p>;
@@ -500,7 +503,7 @@ const MarketingFlowchart = () => {
                                 >
                                   <span className="truncate text-left group-hover:text-primary transition-colors">{task.title}</span>
                                   <Badge className={getTaskStatusClass(task.status || "to_do")}>
-                                    {task.status?.replace("_", " ")}
+                                    {taskStatusLabel(task.status || "to_do")}
                                   </Badge>
                                 </button>
                               ))}
@@ -527,7 +530,7 @@ const MarketingFlowchart = () => {
                                   >
                                     <span className="truncate text-left group-hover:text-primary transition-colors">{task.title}</span>
                                     <Badge className={getTaskStatusClass(task.status || "to_do")}>
-                                      done
+                                      {taskStatusLabel(task.status || "done")}
                                     </Badge>
                                   </button>
                                 ))}

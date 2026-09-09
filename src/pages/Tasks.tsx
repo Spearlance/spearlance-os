@@ -4,7 +4,7 @@ import { useClient } from "@/contexts/ClientContext";
 import { useTasksRealtime } from "@/hooks/useTasksRealtime";
 import { supabase } from "@/integrations/supabase/client";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
-import { Filter, X, Plus, ChevronLeft, Sparkles, Loader2 } from "lucide-react";
+import { Filter, X, Plus, Sparkles, Loader2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TaskDrawer } from "@/components/tasks/TaskDrawer";
 import { TemplateStageManager } from "@/components/tasks/TemplateStageManager";
@@ -16,12 +16,13 @@ import { TaskListView } from "@/components/tasks/TaskListView";
 import { TaskTableView } from "@/components/tasks/TaskTableView";
 import { WeeklyPlanView } from "@/components/tasks/WeeklyPlanView";
 import { RecommendedTasksDialog } from "@/components/tasks/RecommendedTasksDialog";
+import { CollapsibleTaskColumn } from "@/components/tasks/CollapsibleTaskColumn";
+import { isTerminalStatus, type TaskStatus } from "@/lib/taskStatus";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
 
 interface Task {
   id: string;
@@ -36,6 +37,7 @@ interface Task {
   related_meeting_ids: string[];
   linked_channel_id: string | null;
   color?: string;
+  qa_state?: string | null;
   parent_task_id?: string | null;
   column_id?: string;
   assignees?: Array<{ id: string; name: string; avatar_url?: string }>;
@@ -51,7 +53,7 @@ interface Task {
 export default function Tasks() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { selectedClient, setSelectedClient, clients } = useClient();
-  const [taskColumns, setTaskColumns] = useState<Array<{ id: string; name: string; key: string; color: string; mapped_status: 'to_do' | 'in_progress' | 'done' }>>([]);
+  const [taskColumns, setTaskColumns] = useState<Array<{ id: string; name: string; key: string; color: string; mapped_status: TaskStatus }>>([]);
   const [allTasks, setAllTasks] = useState<Task[]>([]);
   const [isLoadingTasks, setIsLoadingTasks] = useState(true);
 
@@ -96,9 +98,14 @@ export default function Tasks() {
   const [showRecommendations, setShowRecommendations] = useState(false);
   const [recommendations, setRecommendations] = useState<any[]>([]);
   const [loadingRecommendations, setLoadingRecommendations] = useState(false);
-  const [doneColumnExpanded, setDoneColumnExpanded] = useState(() => {
-    const saved = localStorage.getItem(`kanban-done-expanded-${selectedClient?.id}`);
-    return saved === 'true';
+  // Terminal columns (Done, Cancelled) collapse to a strip; expanded state is per client+column.
+  const [expandedTerminalColumns, setExpandedTerminalColumns] = useState<Record<string, boolean>>(() => {
+    if (!selectedClient) return {};
+    const saved = localStorage.getItem(`kanban-terminal-expanded-${selectedClient.id}`);
+    if (saved) { try { return JSON.parse(saved); } catch { /* ignore */ } }
+    // Migrate the old single Done flag
+    const legacy = localStorage.getItem(`kanban-done-expanded-${selectedClient.id}`);
+    return legacy === 'true' ? { done: true } : {};
   });
 
   const isAdminOrFMM = userRole === 'admin' || userRole === 'fmm';
@@ -150,18 +157,24 @@ export default function Tasks() {
         loadMarketingChannels();
       };
       initialize();
-      // Load saved done column state for this client
-      const saved = localStorage.getItem(`kanban-done-expanded-${selectedClient.id}`);
-      setDoneColumnExpanded(saved === 'true');
+      // Load saved terminal-column (Done / Cancelled) collapse state for this client
+      const saved = localStorage.getItem(`kanban-terminal-expanded-${selectedClient.id}`);
+      let restored: Record<string, boolean> = {};
+      if (saved) {
+        try { restored = JSON.parse(saved); } catch { /* ignore corrupt value */ }
+      } else if (localStorage.getItem(`kanban-done-expanded-${selectedClient.id}`) === 'true') {
+        restored = { done: true };
+      }
+      setExpandedTerminalColumns(restored);
     }
   }, [selectedClient]);
 
-  // Persist done column expanded state
+  // Persist terminal column expanded state
   useEffect(() => {
     if (selectedClient) {
-      localStorage.setItem(`kanban-done-expanded-${selectedClient.id}`, String(doneColumnExpanded));
+      localStorage.setItem(`kanban-terminal-expanded-${selectedClient.id}`, JSON.stringify(expandedTerminalColumns));
     }
-  }, [doneColumnExpanded, selectedClient]);
+  }, [expandedTerminalColumns, selectedClient]);
 
   useEffect(() => {
     if (selectedClient && currentUserId) {
@@ -583,10 +596,9 @@ export default function Tasks() {
           {currentView === "kanban" && !(isLoadingTasks && allTasks.length === 0) && (
             <DragDropContext onDragEnd={onDragEnd}>
               {(() => {
-                // Separate done column from regular columns
-                const doneColumn = taskColumns.find(col => col.key === 'done');
-                const regularColumns = taskColumns.filter(col => col.key !== 'done');
-                const doneColumnTasks = doneColumn ? tasks[doneColumn.key] || [] : [];
+                // Terminal columns (Done, Cancelled) render collapsed at the right; the rest form the grid
+                const terminalColumns = taskColumns.filter(col => isTerminalStatus(col.mapped_status) || col.key === 'done');
+                const regularColumns = taskColumns.filter(col => !terminalColumns.includes(col));
 
                 return (
                   <div className="flex gap-6">
@@ -639,111 +651,17 @@ export default function Tasks() {
                       ))}
                     </div>
 
-                    {/* Collapsible Done Column */}
-                    {doneColumn && (
-                      <div 
-                        className={`transition-all duration-300 ease-in-out shrink-0 ${
-                          doneColumnExpanded ? "w-[320px]" : "w-[60px]"
-                        }`}
-                      >
-                        {!doneColumnExpanded ? (
-                          // COLLAPSED STATE - Now droppable!
-                          <Droppable droppableId={doneColumn.key}>
-                            {(provided, snapshot) => (
-                              <div
-                                ref={provided.innerRef}
-                                {...provided.droppableProps}
-                                className="h-full"
-                              >
-                                <button
-                                  onClick={() => setDoneColumnExpanded(true)}
-                                  className={cn(
-                                    "h-full w-full rounded-lg border-2 relative overflow-hidden hover:shadow-md transition-all",
-                                    snapshot.isDraggingOver && "ring-2 ring-offset-2"
-                                  )}
-                                  style={{ 
-                                    backgroundColor: `${doneColumn.color}15`, 
-                                    borderColor: snapshot.isDraggingOver 
-                                      ? doneColumn.color 
-                                      : `${doneColumn.color}40`,
-                                    ...(snapshot.isDraggingOver && {
-                                      '--tw-ring-color': doneColumn.color
-                                    } as React.CSSProperties)
-                                  }}
-                                >
-                                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
-                                    <div 
-                                      className="h-8 w-8 rounded-full flex items-center justify-center text-sm font-bold text-white"
-                                      style={{ backgroundColor: doneColumn.color }}
-                                    >
-                                      {doneColumnTasks.length}
-                                    </div>
-                                    <div 
-                                      className="text-sm font-semibold tracking-wider" 
-                                      style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}
-                                    >
-                                      {doneColumn.name.toUpperCase()}
-                                    </div>
-                                  </div>
-                                </button>
-                                {provided.placeholder}
-                              </div>
-                            )}
-                          </Droppable>
-                        ) : (
-                          // EXPANDED STATE
-                          <div className="space-y-4 h-full">
-                            <div className="flex items-center gap-2">
-                              <div className="w-3 h-3 rounded" style={{ backgroundColor: doneColumn.color }} />
-                              <h2 className="font-semibold text-lg flex-1">
-                                {doneColumn.name}
-                              </h2>
-                              <Badge variant="secondary">{doneColumnTasks.length}</Badge>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => setDoneColumnExpanded(false)}
-                                className="h-8 w-8"
-                              >
-                                <ChevronLeft className="h-4 w-4" />
-                              </Button>
-                            </div>
-
-                            <Droppable droppableId={doneColumn.key}>
-                              {(provided, snapshot) => (
-                                <div
-                                  ref={provided.innerRef}
-                                  {...provided.droppableProps}
-                                  className={`space-y-3 min-h-[200px] rounded-lg p-4 transition-colors ${
-                                    snapshot.isDraggingOver ? "bg-accent/50" : "bg-muted/20"
-                                  }`}
-                                  style={{ maxHeight: 'calc(100vh - 300px)', overflowY: 'auto' }}
-                                >
-                                  {doneColumnTasks.map((task, index) => (
-                                    <Draggable key={task.id} draggableId={task.id} index={index}>
-                                      {(provided, snapshot) => (
-                                        <div
-                                          ref={provided.innerRef}
-                                          {...provided.draggableProps}
-                                          {...provided.dragHandleProps}
-                                        >
-                                          <TaskCard
-                                            task={task}
-                                            onClick={() => handleTaskClick(task)}
-                                            isDragging={snapshot.isDragging}
-                                          />
-                                        </div>
-                                      )}
-                                    </Draggable>
-                                  ))}
-                                  {provided.placeholder}
-                                </div>
-                              )}
-                            </Droppable>
-                          </div>
-                        )}
-                      </div>
-                    )}
+                    {/* Collapsible terminal columns: Done, Cancelled */}
+                    {terminalColumns.map((column) => (
+                      <CollapsibleTaskColumn
+                        key={column.key}
+                        column={column}
+                        tasks={tasks[column.key] || []}
+                        expanded={!!expandedTerminalColumns[column.key]}
+                        onToggle={(open) => setExpandedTerminalColumns(prev => ({ ...prev, [column.key]: open }))}
+                        onTaskClick={handleTaskClick}
+                      />
+                    ))}
                   </div>
                 );
               })()}

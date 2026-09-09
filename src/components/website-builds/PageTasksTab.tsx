@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { TaskCard } from "@/components/tasks/TaskCard";
 import { TaskDrawer } from "@/components/tasks/TaskDrawer";
 import { CreateTaskDialog } from "@/components/tasks/CreateTaskDialog";
+import { taskStatusLabel } from "@/lib/taskStatus";
 
 interface PageTasksTabProps {
   pageId: string;
@@ -238,7 +239,7 @@ export default function PageTasksTab({ pageId, buildId, clientId }: PageTasksTab
                       <div>
                         <p className="font-medium text-sm">{task.title}</p>
                         <span className="text-xs text-muted-foreground">
-                          {task.status.replace("_", " ")}
+                          {taskStatusLabel(task.status)}
                         </span>
                       </div>
                       <Link2 className="h-4 w-4 text-muted-foreground" />

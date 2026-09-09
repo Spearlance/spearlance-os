@@ -2,6 +2,7 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.75.0';
 import { AI_CHAT_URL, AI_MODELS, aiHeaders } from '../_shared/aiClient.ts';
+import { isOpenStatus } from '../_shared/taskStatus.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -123,7 +124,7 @@ serve(async (req) => {
 
     // Analyze tasks
     const now = new Date();
-    const overdueTasks = tasks.filter(t => t.due_date && new Date(t.due_date) < now && t.status !== 'done');
+    const overdueTasks = tasks.filter(t => t.due_date && new Date(t.due_date) < now && isOpenStatus(t.status));
     const highPriorityTasks = tasks.filter(t => t.priority === 'high' && t.status === 'to_do');
     const inProgressTasks = tasks.filter(t => t.status === 'in_progress').map(t => ({
       ...t,
@@ -198,7 +199,7 @@ CURRENT TASKS:
 - Overdue: ${overdueTasks.length} tasks ${overdueTasks.length > 0 ? `(${overdueTasks.slice(0, 3).map(t => t.title).join(', ')})` : ''}
 - High Priority To-Do: ${highPriorityTasks.length} tasks
 - In Progress: ${inProgressTasks.length} tasks ${inProgressTasks.length > 0 ? `(${inProgressTasks.slice(0, 2).map(t => `"${t.title}" for ${t.days_in_progress} days`).join(', ')})` : ''}
-- Total tasks: ${tasks.filter(t => t.status !== 'done').length}
+- Total tasks: ${tasks.filter(t => isOpenStatus(t.status)).length}
 
 QUARTERLY GOALS:
 ${goals.length > 0 ? goals.map(g => `- ${g.goal_text} (Status: ${g.status}, Q${g.quarter} ${g.year})`).join('\n') : '- No active goals set'}
@@ -400,7 +401,7 @@ Important:
         
         const tasks = tasksData.data || [];
         const now = new Date();
-        const overdueTasks = tasks.filter(t => t.due_date && new Date(t.due_date) < now && t.status !== 'done');
+        const overdueTasks = tasks.filter(t => t.due_date && new Date(t.due_date) < now && isOpenStatus(t.status));
         const highPriorityTasks = tasks.filter(t => t.priority === 'high' && t.status === 'to_do');
         
         const fallbackActions = [];

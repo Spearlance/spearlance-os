@@ -3,7 +3,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { format, isPast, isToday } from "date-fns";
 import { cn } from "@/lib/utils";
-import { CheckCircle2, Circle, Clock } from "lucide-react";
+import { Ban, CheckCircle2, Circle, Clock, PauseCircle } from "lucide-react";
 import { SuccessHubTask } from "@/hooks/useSuccessHub";
 
 interface WeeklyPlanCardProps {
@@ -19,7 +19,9 @@ function getInitials(name?: string) {
 const statusConfig = {
   to_do: { icon: Circle, label: 'To Do', className: 'text-muted-foreground' },
   in_progress: { icon: Clock, label: 'In Progress', className: 'text-blue-500' },
+  blocked: { icon: PauseCircle, label: 'Blocked', className: 'text-red-500' },
   done: { icon: CheckCircle2, label: 'Done', className: 'text-emerald-500' },
+  cancelled: { icon: Ban, label: 'Cancelled', className: 'text-muted-foreground' },
 };
 
 export function WeeklyPlanCard({ tasks, onTaskClick }: WeeklyPlanCardProps) {
