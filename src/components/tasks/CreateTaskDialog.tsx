@@ -15,7 +15,7 @@ import { AssigneeSelector } from "./AssigneeSelector";
 import { WatcherSelector } from "./WatcherSelector";
 import { ClipboardCheck, Repeat } from "lucide-react";
 import type { TaskStatus } from "@/lib/taskStatus";
-import { QA_TARGET_STATE_LABELS, type QaTargetState } from "@/lib/taskQa";
+import { DEFAULT_QA_TARGET_STATE, QA_TARGET_STATE_LABELS, findCredentialLeak, type QaTargetState } from "@/lib/taskQa";
 
 interface CreateTaskDialogProps {
   open: boolean;
@@ -67,7 +67,7 @@ export function CreateTaskDialog({ open, onOpenChange, onSuccess, initialTitle, 
     due_date: "",
     acceptance_criteria: "",
     qa_target_url: "",
-    qa_target_state: "editor" as QaTargetState,
+    qa_target_state: DEFAULT_QA_TARGET_STATE as QaTargetState,
   });
   const [showQa, setShowQa] = useState(false);
 
@@ -141,6 +141,16 @@ export function CreateTaskDialog({ open, onOpenChange, onSuccess, initialTitle, 
     
     if (!selectedClient) {
       toast.error("Error", { description: "Please select a client first" });
+      return;
+    }
+
+    // Logins never go in the criteria: they'd be sent to the QA agent in
+    // plain text. Vault + qa_credential_ref (drawer > QA tab) is the path.
+    const leak = findCredentialLeak(formData.acceptance_criteria);
+    if (leak) {
+      toast.error("Acceptance criteria contain a secret", {
+        description: `They look like they contain ${leak}. Remove it and set a credential ref on the QA tab after creating the task.`,
+      });
       return;
     }
 
@@ -229,7 +239,7 @@ export function CreateTaskDialog({ open, onOpenChange, onSuccess, initialTitle, 
       toast.success("Task created successfully");
 
       onOpenChange(false);
-      setFormData({ title: "", description: "", column_id: "", status: "to_do", priority: "normal", due_date: "", acceptance_criteria: "", qa_target_url: "", qa_target_state: "editor" });
+      setFormData({ title: "", description: "", column_id: "", status: "to_do", priority: "normal", due_date: "", acceptance_criteria: "", qa_target_url: "", qa_target_state: DEFAULT_QA_TARGET_STATE });
       setShowQa(false);
       setSelectedAssignees([]);
       setSelectedWatchers([]);
