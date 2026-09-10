@@ -1962,6 +1962,86 @@ export type Database = {
           },
         ]
       }
+      client_locations: {
+        Row: {
+          address_line1: string | null
+          address_line2: string | null
+          business_name: string | null
+          city: string | null
+          client_id: string
+          country: string
+          created_at: string
+          email: string | null
+          gbp_location_id: string | null
+          google_place_id: string | null
+          hours: Json
+          hours_note: string | null
+          id: string
+          is_primary: boolean
+          label: string
+          notes: string | null
+          phone: string | null
+          phone_digits: string | null
+          postal_code: string | null
+          state: string | null
+          updated_at: string
+        }
+        Insert: {
+          address_line1?: string | null
+          address_line2?: string | null
+          business_name?: string | null
+          city?: string | null
+          client_id: string
+          country?: string
+          created_at?: string
+          email?: string | null
+          gbp_location_id?: string | null
+          google_place_id?: string | null
+          hours?: Json
+          hours_note?: string | null
+          id?: string
+          is_primary?: boolean
+          label?: string
+          notes?: string | null
+          phone?: string | null
+          phone_digits?: string | null
+          postal_code?: string | null
+          state?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address_line1?: string | null
+          address_line2?: string | null
+          business_name?: string | null
+          city?: string | null
+          client_id?: string
+          country?: string
+          created_at?: string
+          email?: string | null
+          gbp_location_id?: string | null
+          google_place_id?: string | null
+          hours?: Json
+          hours_note?: string | null
+          id?: string
+          is_primary?: boolean
+          label?: string
+          notes?: string | null
+          phone?: string | null
+          phone_digits?: string | null
+          postal_code?: string | null
+          state?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_locations_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_primary_contacts: {
         Row: {
           client_id: string
@@ -7098,6 +7178,10 @@ export type Database = {
       }
     }
     Functions: {
+      client_locations_set_primary: {
+        Args: { p_location: string }
+        Returns: undefined
+      }
       get_public_tables: { Args: never; Returns: string[] }
       has_client_access: {
         Args: { _client_id: string; _user_id: string }

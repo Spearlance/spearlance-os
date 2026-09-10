@@ -150,6 +150,12 @@ Deno.serve(async (req) => {
             website_url: client.website_url,
             duda_site_id: client.site_id,
             industry: client.industry,
+            hq_city: client.hq_city,
+            service_areas: client.service_areas,
+            // Canonical NAP. `nap` is null when no location is on file: then
+            // contact-info checks are unverifiable, not passed.
+            nap: client.nap,
+            locations: client.locations,
           }
         : null,
       // The login for the target, if any, is NOT in this payload. It comes
