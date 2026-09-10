@@ -1,5 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.75.0';
-import { json, loadTaskContext, secretMatches } from '../_shared/taskQa.ts';
+import { json, loadOpenRun, loadTaskContext, secretMatches } from '../_shared/taskQa.ts';
 
 // Called by the task_qa_dispatch DB trigger (pg_net, service-role bearer) when
 // a task enters qa_state = 'ready_for_review'.
@@ -7,14 +7,25 @@ import { json, loadTaskContext, secretMatches } from '../_shared/taskQa.ts';
 //   PUSH mode (QA_AGENT_WEBHOOK_URL set): open a task_qa_runs row, move the
 //     task to 'qa_running', POST the context bundle to the agent's webhook
 //     with the shared secret in `x-qa-secret`. If delivery fails the run is
-//     closed as 'error' and the task goes back to 'ready_for_review'.
+//     closed as 'error' (closed_by = dispatch) and the task goes back to
+//     'ready_for_review'.
 //   PULL / manual mode (no webhook): do nothing. The task waits at
 //     'ready_for_review' for the agent to pull it (task-qa-agent /queue +
 //     /claim) or for a person to record a verdict in the drawer.
 //
-// Loop guard: a task whose latest run errored in the last 10 minutes is not
-// re-dispatched (the 'error' verdict hands the task back to ready_for_review,
-// which would otherwise fire this trigger again immediately).
+// A 2xx from the webhook proves delivery, nothing more. The agent must POST
+// /task-qa-agent/ack { run_id } once it actually starts; task_qa_reap() (pg_cron,
+// every 5 min) closes runs that were never acked or never got a verdict and
+// re-queues the task, giving up after 3 attempts.
+//
+// Guards:
+//   * run_already_open: a run with finished_at IS NULL exists -> nothing inserted.
+//   * recent_error: the latest run is a DELIVERY failure (closed_by = dispatch)
+//     from the last 10 minutes -> not re-dispatched, so a dead webhook cannot
+//     loop. Reaper-closed runs are deliberate retries and are not blocked.
+//
+// The dispatch payload never carries the QA credential; the agent fetches it
+// from /ack or /claim. Nothing in the payload is logged.
 
 const RECENT_ERROR_WINDOW_MS = 10 * 60 * 1000;
 
@@ -51,7 +62,8 @@ Deno.serve(async (req) => {
   }
   if (!body.task_id) return json(400, { error: 'task_id required' });
 
-  const supabase = createClient(Deno.env.get('SUPABASE_URL')!, serviceKey);
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+  const supabase = createClient(supabaseUrl, serviceKey);
   const webhookUrl = Deno.env.get('QA_AGENT_WEBHOOK_URL');
   const secret = Deno.env.get('QA_AGENT_SECRET');
 
@@ -64,20 +76,28 @@ Deno.serve(async (req) => {
       return json(200, { dispatched: false, reason: `qa_state is ${task.qa_state ?? 'null'}, not ready_for_review` });
     }
 
-    // Loop guard
+    // Guard 1: never open a second run on a task that already has one open.
+    const openRun = await loadOpenRun(supabase, task.id);
+    if (openRun) {
+      console.warn(`task ${task.id}: run ${openRun.id} already open, not dispatching`);
+      return json(200, { dispatched: false, reason: 'run_already_open', run_id: openRun.id });
+    }
+
+    // Guard 2: a delivery failure in the last 10 minutes -> don't hammer a dead webhook.
     const { data: lastRun } = await supabase
       .from('task_qa_runs')
-      .select('id, verdict, finished_at')
+      .select('id, verdict, finished_at, closed_by')
       .eq('task_id', task.id)
       .order('started_at', { ascending: false })
       .limit(1)
       .maybeSingle();
+    const lastWasDeliveryFailure = lastRun?.verdict === 'error' && (lastRun.closed_by ?? 'dispatch') === 'dispatch';
     if (
-      lastRun?.verdict === 'error' &&
-      lastRun.finished_at &&
+      lastWasDeliveryFailure &&
+      lastRun?.finished_at &&
       Date.now() - new Date(lastRun.finished_at).getTime() < RECENT_ERROR_WINDOW_MS
     ) {
-      console.warn(`task ${task.id}: last run errored recently, not re-dispatching`);
+      console.warn(`task ${task.id}: last delivery failed recently, not re-dispatching`);
       return json(200, { dispatched: false, reason: 'recent_error' });
     }
 
@@ -102,10 +122,12 @@ Deno.serve(async (req) => {
 
     await supabase.from('tasks').update({ qa_state: 'qa_running' }).eq('id', task.id);
 
+    const agentBase = `${supabaseUrl}/functions/v1/task-qa-agent`;
     const payload = {
       event: 'task.ready_for_review',
       run_id: run.id,
       dispatched_at: run.started_at,
+      attempt: (task.qa_attempts ?? 0) + 1,
       task: {
         id: task.id,
         title: task.title,
@@ -130,8 +152,12 @@ Deno.serve(async (req) => {
             industry: client.industry,
           }
         : null,
+      // The login for the target, if any, is NOT in this payload. It comes
+      // back from /ack (or /claim) as `credential`.
+      has_credential: !!task.qa_credential_ref,
       callback: {
-        verdict_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/task-qa-agent/verdict`,
+        ack_url: `${agentBase}/ack`,
+        verdict_url: `${agentBase}/verdict`,
         header: 'x-qa-secret',
       },
     };
@@ -158,7 +184,8 @@ Deno.serve(async (req) => {
         .update({
           verdict: 'error',
           finished_at: new Date().toISOString(),
-          findings: [{ summary: `Could not reach the QA agent: ${deliveryError}`, severity: 'blocker' }],
+          closed_by: 'dispatch',
+          findings: [{ summary: `Could not reach the QA agent: ${deliveryError}`, severity: 'blocker', code: 'delivery_failed' }],
         })
         .eq('id', run.id);
       await supabase.from('tasks').update({ qa_state: 'ready_for_review' }).eq('id', task.id);

@@ -26,6 +26,7 @@ interface EditedTask {
   acceptance_criteria: string;
   qa_target_url: string;
   qa_target_state: string;
+  qa_credential_ref: string;
 }
 
 interface TaskColumn {

@@ -50,6 +50,8 @@ export async function markTaskComplete(
 
   const patch: Record<string, unknown> = { status: update.status };
   if (update.column_id) patch.column_id = update.column_id;
+  // Completing a task ends any QA in flight (DB trigger backstops this).
+  if (complete) patch.qa_state = null;
 
   const { error } = await supabase.from("tasks").update(patch).eq("id", taskId);
   return error;

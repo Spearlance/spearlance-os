@@ -5836,21 +5836,21 @@ export type Database = {
           created_at: string | null
           id: string
           task_id: string
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           body: string
           created_at?: string | null
           id?: string
           task_id: string
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           body?: string
           created_at?: string | null
           id?: string
           task_id?: string
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -5871,9 +5871,11 @@ export type Database = {
       }
       task_qa_runs: {
         Row: {
+          acked_at: string | null
           agent_thread_path: string | null
           client_id: string | null
           client_record_hash: string | null
+          closed_by: string | null
           doctrine_version: string | null
           evidence: Json
           findings: Json
@@ -5881,15 +5883,19 @@ export type Database = {
           id: string
           started_at: string
           submitted_by: string | null
+          superseded_by: string | null
+          supersedes: string | null
           target_state: string | null
           target_url: string | null
           task_id: string
           verdict: string | null
         }
         Insert: {
+          acked_at?: string | null
           agent_thread_path?: string | null
           client_id?: string | null
           client_record_hash?: string | null
+          closed_by?: string | null
           doctrine_version?: string | null
           evidence?: Json
           findings?: Json
@@ -5897,15 +5903,19 @@ export type Database = {
           id?: string
           started_at?: string
           submitted_by?: string | null
+          superseded_by?: string | null
+          supersedes?: string | null
           target_state?: string | null
           target_url?: string | null
           task_id: string
           verdict?: string | null
         }
         Update: {
+          acked_at?: string | null
           agent_thread_path?: string | null
           client_id?: string | null
           client_record_hash?: string | null
+          closed_by?: string | null
           doctrine_version?: string | null
           evidence?: Json
           findings?: Json
@@ -5913,6 +5923,8 @@ export type Database = {
           id?: string
           started_at?: string
           submitted_by?: string | null
+          superseded_by?: string | null
+          supersedes?: string | null
           target_state?: string | null
           target_url?: string | null
           task_id?: string
@@ -5931,6 +5943,20 @@ export type Database = {
             columns: ["submitted_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_qa_runs_superseded_by_fkey"
+            columns: ["superseded_by"]
+            isOneToOne: false
+            referencedRelation: "task_qa_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_qa_runs_supersedes_fkey"
+            columns: ["supersedes"]
+            isOneToOne: false
+            referencedRelation: "task_qa_runs"
             referencedColumns: ["id"]
           },
           {
@@ -6108,6 +6134,8 @@ export type Database = {
           parent_recurring_task_id: string | null
           parent_task_id: string | null
           priority: Database["public"]["Enums"]["task_priority"] | null
+          qa_attempts: number
+          qa_credential_ref: string | null
           qa_state: string | null
           qa_state_changed_at: string | null
           qa_target_state: string | null
@@ -6145,6 +6173,8 @@ export type Database = {
           parent_recurring_task_id?: string | null
           parent_task_id?: string | null
           priority?: Database["public"]["Enums"]["task_priority"] | null
+          qa_attempts?: number
+          qa_credential_ref?: string | null
           qa_state?: string | null
           qa_state_changed_at?: string | null
           qa_target_state?: string | null
@@ -6182,6 +6212,8 @@ export type Database = {
           parent_recurring_task_id?: string | null
           parent_task_id?: string | null
           priority?: Database["public"]["Enums"]["task_priority"] | null
+          qa_attempts?: number
+          qa_credential_ref?: string | null
           qa_state?: string | null
           qa_state_changed_at?: string | null
           qa_target_state?: string | null
@@ -7122,6 +7154,21 @@ export type Database = {
       }
       refresh_materialized_view: {
         Args: { view_name: string }
+        Returns: undefined
+      }
+      task_qa_reap: {
+        Args: { p_now?: string }
+        Returns: {
+          o_attempts: number
+          o_next_state: string
+          o_reason: string
+          o_run_id: string
+          o_task_id: string
+        }[]
+      }
+      task_qa_resolve_credential: { Args: { p_ref: string }; Returns: string }
+      task_qa_supersede_run: {
+        Args: { p_new: string; p_old: string }
         Returns: undefined
       }
     }
