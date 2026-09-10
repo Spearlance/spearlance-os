@@ -5,9 +5,11 @@ import {
   RUN_SUMMARY_SELECT,
   TASK_QA_SELECT,
   json,
+  loadLocationsByClient,
   loadOpenRun,
   loadTaskContext,
   qaStateForVerdict,
+  withNap,
   resolveCredential,
   secretMatches,
   type QaVerdict,
@@ -117,7 +119,8 @@ Deno.serve(async (req) => {
           ? supabase.from('task_qa_runs').select(RUN_SUMMARY_SELECT).in('task_id', taskIds).is('finished_at', null)
           : Promise.resolve({ data: [] }),
       ]);
-      const clientById = new Map((clients ?? []).map((c) => [c.id, c]));
+      const locationsByClient = await loadLocationsByClient(supabase, clientIds);
+      const clientById = new Map((clients ?? []).map((c) => [c.id, withNap(c, locationsByClient.get(c.id) ?? [])]));
       const runByTask = new Map<string, RunSummary>();
       for (const r of (openRuns ?? []) as RunSummary[]) {
         const prev = runByTask.get(r.task_id);

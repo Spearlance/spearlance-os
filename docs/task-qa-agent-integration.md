@@ -77,7 +77,23 @@ Set `QA_AGENT_WEBHOOK_URL` on the edge functions. When a task enters `ready_for_
     "brand_name": "Acme",
     "website_url": "https://acmeroofing.com",
     "duda_site_id": "abc12345",
-    "industry": "Construction"
+    "industry": "Construction",
+    "hq_city": "Concord, NH",
+    "service_areas": ["Concord", "Manchester"],
+    "nap": {
+      "location_id": "…uuid…",
+      "label": "Main location",
+      "business_name": "Acme Roofing",
+      "phone": "(603) 555-0100",
+      "phone_digits": "6035550100",
+      "email": "office@acmeroofing.com",
+      "address": { "line1": "123 Main St", "line2": null, "city": "Concord", "state": "NH", "postal_code": "03301", "country": "US" },
+      "address_text": "123 Main St, Concord, NH 03301",
+      "hours": { "mon": [{ "open": "08:00", "close": "17:00" }], "sat": [], "sun": [] },
+      "hours_note": null,
+      "google_place_id": "ChIJ…"
+    },
+    "locations": [ { "…every location on file, primary first…": true } ]
   },
   "has_credential": true,
   "callback": {
@@ -159,8 +175,14 @@ the same `run_id` returns 409. Findings are free-form JSON, but the drawer rende
 **Editor targets.** `qa_target_state = "editor"` cannot be checked headless (my.duda.co
 refuses non-browser clients and needs a login). Report it as unverifiable, never as a pass.
 
-**Contact-info checks.** The client block has no canonical phone, address or hours yet, so
-NAP checks can only be reported as unverifiable, not passed.
+**Contact-info (NAP) checks.** `client.nap` is the canonical name / address / phone / hours
+from `client_locations` (the primary location, edited on the client's Marketing Profile →
+Overview → Locations). Compare against it: `phone_digits` for phone in any format,
+`address_text` or the parts for the address, `hours` per day (`[]` = closed, missing key =
+closed). When `nap` is `null` the client has no location on file: report the check as
+**unverifiable**, never as passed. When `nap.hours` is `null` the hours are unknown: same rule
+for hours only. Multi-location clients: `client.locations` has every location, primary first;
+match the page against the location it is about, defaulting to the primary.
 
 ### Correcting a verdict
 
