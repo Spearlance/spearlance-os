@@ -717,6 +717,7 @@ export default function MarketingProfile() {
 
         {/* OVERVIEW TAB */}
         <OverviewTab
+          clientId={selectedClient?.id}
           discoveryData={discoveryData}
           companyDetailsForm={companyDetailsForm}
           setCompanyDetailsForm={setCompanyDetailsForm}

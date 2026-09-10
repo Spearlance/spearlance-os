@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { TabsContent } from "@/components/ui/tabs";
 import { Edit, ExternalLink, Loader2 } from "lucide-react";
 import { DiscoveryData } from "@/lib/launchpadTypes";
+import { ClientLocationsCard } from "@/components/clients/ClientLocationsCard";
 
 interface CompanyDetailsForm {
   brand_name: string;
@@ -22,6 +23,8 @@ interface PrimaryContactForm {
 }
 
 interface OverviewTabProps {
+  /** Renders the Locations (NAP) card when provided. */
+  clientId?: string;
   discoveryData: DiscoveryData;
   companyDetailsForm: CompanyDetailsForm;
   setCompanyDetailsForm: (form: CompanyDetailsForm) => void;
@@ -38,6 +41,7 @@ interface OverviewTabProps {
 }
 
 export function OverviewTab({
+  clientId,
   discoveryData,
   companyDetailsForm,
   setCompanyDetailsForm,
@@ -231,6 +235,8 @@ export function OverviewTab({
           )}
         </CardContent>
       </Card>
+
+      {clientId && <ClientLocationsCard clientId={clientId} />}
 
       <Card>
         <CardHeader>
