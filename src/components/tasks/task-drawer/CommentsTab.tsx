@@ -24,16 +24,20 @@ export function CommentsTab({
     <>
       <ScrollArea className="flex-1 pr-4">
         <div className="space-y-4">
-          {comments.map((comment) => (
+          {comments.map((comment) => {
+            // user_id is null for system comments (e.g. the QA reaper).
+            const isSystem = !comment.user_id;
+            const authorName = isSystem ? "QA system" : comment.profiles?.name;
+            return (
             <div key={comment.id} className="flex gap-3">
               <Avatar className="h-8 w-8">
-                <AvatarFallback>
-                  {comment.profiles?.name?.charAt(0) || "?"}
+                <AvatarFallback className={isSystem ? "bg-muted text-muted-foreground text-[10px]" : undefined}>
+                  {isSystem ? "QA" : comment.profiles?.name?.charAt(0) || "?"}
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="font-medium text-sm">{comment.profiles?.name}</span>
+                  <span className={isSystem ? "font-medium text-sm text-muted-foreground" : "font-medium text-sm"}>{authorName}</span>
                   <span className="text-xs text-muted-foreground">
                     {new Date(comment.created_at).toLocaleDateString()}
                   </span>
@@ -41,7 +45,8 @@ export function CommentsTab({
                 <p className="text-sm">{renderCommentText(comment.body)}</p>
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       </ScrollArea>
 

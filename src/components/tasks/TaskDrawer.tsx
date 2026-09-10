@@ -11,7 +11,8 @@ import { DetailsTab } from "./task-drawer/DetailsTab";
 import { CommentsTab } from "./task-drawer/CommentsTab";
 import { RelatedTab } from "./task-drawer/RelatedTab";
 import { QaTab } from "./task-drawer/QaTab";
-import type { TaskStatus } from "@/lib/taskStatus";
+import { isTerminalStatus, type TaskStatus } from "@/lib/taskStatus";
+import { DEFAULT_QA_TARGET_STATE } from "@/lib/taskQa";
 
 interface TaskDrawerProps {
   task: any;
@@ -49,7 +50,8 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
     column_id: task.column_id || '',
     acceptance_criteria: task.acceptance_criteria || '',
     qa_target_url: task.qa_target_url || '',
-    qa_target_state: task.qa_target_state || 'editor',
+    qa_target_state: task.qa_target_state || DEFAULT_QA_TARGET_STATE,
+    qa_credential_ref: task.qa_credential_ref || '',
   });
   const [comments, setComments] = useState<any[]>([]);
   const [newComment, setNewComment] = useState("");
@@ -119,15 +121,16 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
   // Callers (My Tasks, Marketing Flowchart, build pages) hand the drawer a
   // partial task object, so the QA context is always re-read from the row.
   // Without this, Save from those surfaces would blank the criteria.
-  const [qaMeta, setQaMeta] = useState<{ qa_state: string | null; qa_state_changed_at: string | null }>({
+  const [qaMeta, setQaMeta] = useState<{ qa_state: string | null; qa_state_changed_at: string | null; qa_attempts: number | null }>({
     qa_state: task.qa_state ?? null,
     qa_state_changed_at: task.qa_state_changed_at ?? null,
+    qa_attempts: task.qa_attempts ?? null,
   });
 
   const loadQaContext = async () => {
     const { data } = await supabase
       .from("tasks")
-      .select("acceptance_criteria, qa_target_url, qa_target_state, qa_state, qa_state_changed_at")
+      .select("acceptance_criteria, qa_target_url, qa_target_state, qa_credential_ref, qa_state, qa_state_changed_at, qa_attempts")
       .eq("id", task.id)
       .maybeSingle();
     if (!data) return;
@@ -135,9 +138,10 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
       ...prev,
       acceptance_criteria: data.acceptance_criteria || '',
       qa_target_url: data.qa_target_url || '',
-      qa_target_state: data.qa_target_state || 'editor',
+      qa_target_state: data.qa_target_state || DEFAULT_QA_TARGET_STATE,
+      qa_credential_ref: data.qa_credential_ref || '',
     }));
-    setQaMeta({ qa_state: data.qa_state, qa_state_changed_at: data.qa_state_changed_at });
+    setQaMeta({ qa_state: data.qa_state, qa_state_changed_at: data.qa_state_changed_at, qa_attempts: data.qa_attempts });
   };
 
   useEffect(() => {
@@ -593,6 +597,9 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
         acceptance_criteria: editedTask.acceptance_criteria || null,
         qa_target_url: editedTask.qa_target_url || null,
         qa_target_state: editedTask.qa_target_state || null,
+        qa_credential_ref: editedTask.qa_credential_ref?.trim() || null,
+        // Saving a task into Done / Cancelled ends any QA in flight (DB trigger backstops this).
+        ...(isTerminalStatus(editedTask.status) ? { qa_state: null } : {}),
       })
       .eq("id", task.id);
 
@@ -820,11 +827,12 @@ export function TaskDrawer({ task, open, onOpenChange, onUpdate, isAdminOrFMM = 
           <TabsContent value="qa" className="mt-0 flex-1 flex flex-col overflow-hidden">
             <QaTab
               task={{ id: task.id, client_id: task.client_id, status: editedTask.status, ...qaMeta }}
-              onStateChange={(next) => setQaMeta(next)}
+              onStateChange={(next) => setQaMeta((prev) => ({ ...prev, ...next }))}
               fields={{
                 acceptance_criteria: editedTask.acceptance_criteria,
                 qa_target_url: editedTask.qa_target_url,
                 qa_target_state: editedTask.qa_target_state,
+                qa_credential_ref: editedTask.qa_credential_ref,
               }}
               setFields={(f) => setEditedTask(prev => ({ ...prev, ...f }))}
               onUpdate={onUpdate}

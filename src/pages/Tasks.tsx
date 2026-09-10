@@ -450,12 +450,14 @@ export default function Tasks() {
       )
     );
 
-    // Update task with both status and column_id
+    // Update task with both status and column_id. Dropping into Done or
+    // Cancelled ends any QA in flight (the DB trigger backstops this).
     const { error } = await supabase
       .from("tasks")
-      .update({ 
+      .update({
         status: destTaskColumn.mapped_status,
-        column_id: destTaskColumn.id
+        column_id: destTaskColumn.id,
+        ...(isTerminalStatus(destTaskColumn.mapped_status) ? { qa_state: null } : {}),
       })
       .eq("id", draggableId);
 

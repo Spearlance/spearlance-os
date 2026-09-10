@@ -1,23 +1,29 @@
 # Task QA: agent integration
 
 How the QA agent ("Viktor") gets work from SpearlanceOS and writes verdicts back.
-Everything here is live on **dev** (`https://zlljsdaxsggkasvympku.supabase.co`) as of
-2026-09-02; prod gets it when the task-QA work is promoted.
+Live on **prod** (`https://chikljxwgiskyjsnjelf.supabase.co`) and **dev**
+(`https://zlljsdaxsggkasvympku.supabase.co`) since 2026-09-09; hardening pass (ack,
+reaper, supersession, credential refs) 2026-09-10.
 
 ## The loop
 
 1. A person opens a task, fills in **acceptance criteria** and a **QA target** (URL +
-   editor/published) on the QA tab, and clicks **Send to QA**. `tasks.qa_state` becomes
-   `ready_for_review`.
+   published/editor) on the QA tab, and clicks **Send to QA**. Both fields are required and
+   the criteria are refused if they look like they contain a login or key.
+   `tasks.qa_state` becomes `ready_for_review`.
 2. The database trigger `task_qa_dispatch` posts to the `task-qa-dispatch` edge function.
-3. The agent gets the task one of two ways (below), checks the page, and posts a verdict to
-   `task-qa-agent/verdict`.
+3. The agent gets the task one of two ways (below), **acknowledges the run**, checks the
+   page, and posts a verdict to `task-qa-agent/verdict`.
 4. The verdict is appended to `task_qa_runs` and `qa_state` moves to `qa_approved` or
    `revisions_required` (or back to `ready_for_review` on `error`). The drawer shows the run,
    the card shows the pill.
+5. If the agent never acknowledges (5 min) or never returns a verdict (45 min), the reaper
+   closes the run as `error`, bumps `tasks.qa_attempts` and re-queues the task. After the
+   third stall the task goes to `revisions_required` with a system comment so a human sees it.
 
 Nothing in the loop touches `tasks.status` or the kanban column. Completing the task after
-approval is still a human action (drag to Done).
+approval is still a human action (drag to Done). Moving a task to Done or Cancelled clears
+`qa_state` and closes any open run (`closed_by = task_closed`).
 
 ## Auth: one shared secret
 
@@ -25,6 +31,20 @@ Every call to `task-qa-agent` carries the header `x-qa-secret: <QA_AGENT_SECRET>
 mode, the same header is sent *to* the agent so it can verify the call came from us. No
 Supabase keys are given to the agent. The secret is an edge-function secret
 (`supabase secrets set QA_AGENT_SECRET=...`); it is not in the repo.
+
+## Credentials for the target
+
+Logins never go in `acceptance_criteria` (the UI blocks it). A task may carry
+`qa_credential_ref`, the name of a Vault secret matching `^qa_cred_[a-z0-9_]+$`:
+
+```sql
+select vault.create_secret('editor@acme.com / S3cret', 'qa_cred_acme_editor');
+```
+
+The agent gets the value **only** in the response to `/ack`, `/claim` and `/task/:id`, as
+`credential: { ref, value }` (or `null`). It is never in the dispatch payload, never on the
+task row, never logged. The dispatch payload says `has_credential: true` so the agent knows
+to ack before it needs it.
 
 ## Option A: push (we call the agent)
 
@@ -36,13 +56,14 @@ Set `QA_AGENT_WEBHOOK_URL` on the edge functions. When a task enters `ready_for_
   "event": "task.ready_for_review",
   "run_id": "…uuid…",
   "dispatched_at": "2026-09-02T15:00:00Z",
+  "attempt": 1,
   "task": {
     "id": "…uuid…",
     "title": "Fix hero headline on Concord page",
     "description": "<p>…html…</p>",
     "acceptance_criteria": "- Hero H2 reads \"Roof repair in Concord NH\"\n- Header phone matches client record",
-    "qa_target_url": "https://my.duda.co/site/abc12345",
-    "qa_target_state": "editor",
+    "qa_target_url": "https://www.acmeroofing.com/concord-nh",
+    "qa_target_state": "published",
     "priority": "high",
     "due_date": "2026-09-05",
     "external_source": "duda_comment",
@@ -58,16 +79,33 @@ Set `QA_AGENT_WEBHOOK_URL` on the edge functions. When a task enters `ready_for_
     "duda_site_id": "abc12345",
     "industry": "Construction"
   },
+  "has_credential": true,
   "callback": {
-    "verdict_url": "https://zlljsdaxsggkasvympku.supabase.co/functions/v1/task-qa-agent/verdict",
+    "ack_url": "https://…/functions/v1/task-qa-agent/ack",
+    "verdict_url": "https://…/functions/v1/task-qa-agent/verdict",
     "header": "x-qa-secret"
   }
 }
 ```
 
-If the webhook is unreachable or returns non-2xx, the run is closed as `error` and the task
-returns to `ready_for_review`. A task whose last run errored in the previous 10 minutes is
-not re-dispatched, so a dead webhook cannot loop.
+**A 2xx from your webhook only proves delivery.** Your ingest endpoint should return 200
+immediately and then, when the agent actually starts:
+
+```
+POST /functions/v1/task-qa-agent/ack
+x-qa-secret: …
+{ "run_id": "…" }
+-> { run_id, started_at, acked_at, task, client, credential }
+```
+
+If `/ack` has not been called within 5 minutes of `dispatched_at`, the reaper closes the
+run and re-dispatches (a fresh `run_id`; the old one returns 409 on `/ack` and `/verdict`).
+
+If the webhook is unreachable or returns non-2xx, the run is closed as `error`
+(`closed_by = dispatch`) and the task returns to `ready_for_review`. A task whose last
+delivery failed in the previous 10 minutes is not re-dispatched, so a dead webhook cannot
+loop. A task that already has an open run is never dispatched twice
+(`{ dispatched: false, reason: "run_already_open" }`).
 
 If `QA_AGENT_WEBHOOK_URL` is **not** set, dispatch does nothing and the task simply waits
 (Option B or a human verdict).
@@ -77,11 +115,17 @@ If `QA_AGENT_WEBHOOK_URL` is **not** set, dispatch does nothing and the task sim
 No endpoint needed on the agent's side. Poll on whatever cadence suits:
 
 ```
-GET  /functions/v1/task-qa-agent/queue          -> { count, tasks: [ {…task, client} ] }
-GET  /functions/v1/task-qa-agent/task/<task_id> -> { task, client, runs }
-POST /functions/v1/task-qa-agent/claim          { "task_id": "…" }
-                                                -> { run_id, task, client }  (task -> qa_running)
+GET  /functions/v1/task-qa-agent/queue                      -> { count, states, tasks: [ {…task, client, run} ] }
+GET  /functions/v1/task-qa-agent/queue?state=ready_for_review,qa_running
+GET  /functions/v1/task-qa-agent/task/<task_id>             -> { task, client, credential, open_run, runs }
+POST /functions/v1/task-qa-agent/claim   { "task_id": "…" } -> { run_id, started_at, acked_at, task, client, credential, adopted }
 ```
+
+`/queue` defaults to `ready_for_review`. Ask for `qa_running` too and each row carries
+`run: { id, started_at, acked_at }` for its open run, so an orphaned run (pushed but never
+picked up) can be adopted: `/claim` on a task with an open run acknowledges and returns
+**that** run (`adopted: true`) instead of opening a second one. `/claim` acknowledges
+implicitly, so a pull-mode agent never needs `/ack`.
 
 `claim` is optional; posting a verdict with only `task_id` opens and closes a run in one call.
 
@@ -93,13 +137,13 @@ x-qa-secret: <QA_AGENT_SECRET>
 Content-Type: application/json
 
 {
-  "run_id": "…",                     // from push payload or /claim; or "task_id" instead
+  "run_id": "…",                     // from push payload, /ack or /claim; or "task_id" instead
   "verdict": "revisions_required",   // approved | approved_with_notes | revisions_required | error
   "findings": [
     { "summary": "Hero H2 reads 'Roofing Services', expected 'Roof repair in Concord NH'",
       "severity": "major",           // blocker | major | minor | note
       "location": "Home > hero",
-      "detail": "Checked editor state; published site not compared." }
+      "detail": "Checked published site." }
   ],
   "evidence": [ { "type": "screenshot", "url": "https://…", "label": "hero" } ],
   "doctrine_version": "seo-doctrine@2026-08",
@@ -112,6 +156,37 @@ Response: `{ ok, run_id, task_id, qa_state }`. A run can be closed once; a secon
 the same `run_id` returns 409. Findings are free-form JSON, but the drawer renders
 `summary` / `severity` / `location` / `detail` when present.
 
+**Editor targets.** `qa_target_state = "editor"` cannot be checked headless (my.duda.co
+refuses non-browser clients and needs a login). Report it as unverifiable, never as a pass.
+
+**Contact-info checks.** The client block has no canonical phone, address or hours yet, so
+NAP checks can only be reported as unverifiable, not passed.
+
+### Correcting a verdict
+
+A closed run is immutable. To correct one, post a **new** run that supersedes it:
+
+```json
+{ "task_id": "…", "supersedes_run_id": "<old run_id>", "verdict": "approved", "findings": [] }
+```
+
+This opens and closes a fresh run, sets `supersedes` on it and `superseded_by` on the old
+one, and moves `qa_state` per the new verdict. UIs hide superseded runs by default. A plain
+re-post with the old `run_id` still returns 409 (the error message includes this recipe).
+
+## Reaper (pg_cron, every 5 minutes)
+
+`public.task_qa_reap()` closes stalled runs:
+
+| Condition | Run finding | Then |
+|---|---|---|
+| not acked, `started_at` > 5 min ago | `agent never acknowledged the dispatch` (`code: no_ack`) | `qa_attempts += 1`, task -> `ready_for_review` (re-dispatch) |
+| acked, no verdict, `started_at` > 45 min ago | `agent acknowledged but never returned a verdict` (`code: no_verdict`) | same |
+| either, and `qa_attempts` reaches 3 | same | task -> `revisions_required` + system comment on the task |
+
+`qa_attempts` resets when a run closes with a real verdict or a person sends the task to QA
+again from outside `qa_running`. Run it by hand with `select * from task_qa_reap();`.
+
 ## Testing on dev without an agent
 
 - Flip a task to Ready for review in the drawer, then in Supabase → Edge Functions →
@@ -121,9 +196,11 @@ the same `run_id` returns 409. Findings are free-form JSON, but the drawer rende
 
 ```bash
 SECRET=… ; BASE=https://zlljsdaxsggkasvympku.supabase.co/functions/v1/task-qa-agent
-curl -s -H "x-qa-secret: $SECRET" $BASE/queue
+curl -s -H "x-qa-secret: $SECRET" "$BASE/queue?state=ready_for_review,qa_running"
 curl -s -H "x-qa-secret: $SECRET" -H "content-type: application/json" \
-  -d '{"task_id":"<id>","verdict":"approved_with_notes","findings":[{"summary":"Looks right","severity":"note"}]}' \
+  -d '{"run_id":"<id>"}' $BASE/ack
+curl -s -H "x-qa-secret: $SECRET" -H "content-type: application/json" \
+  -d '{"run_id":"<id>","verdict":"approved_with_notes","findings":[{"summary":"Looks right","severity":"note"}]}' \
   $BASE/verdict
 ```
 
@@ -132,8 +209,12 @@ curl -s -H "x-qa-secret: $SECRET" -H "content-type: application/json" \
 | Piece | Location |
 |---|---|
 | Trigger | `supabase/migrations/20260902140000_task_qa_dispatch_trigger.sql` (Vault-backed `net.http_post`) |
+| Reaper + attempts | `supabase/migrations/20260910100002_task_qa_attempts_reaper.sql` |
+| Clear QA on close | `supabase/migrations/20260910100003_task_qa_clear_on_terminal.sql` |
+| Credential ref + resolver | `supabase/migrations/20260910100000_task_qa_credential_ref.sql` |
+| ack / closed_by / supersession | `supabase/migrations/20260910100001_task_qa_runs_ack_supersede.sql` |
 | Dispatch function | `supabase/functions/task-qa-dispatch/index.ts` |
 | Agent endpoint | `supabase/functions/task-qa-agent/index.ts` |
 | Shared vocabulary | `supabase/functions/_shared/taskQa.ts`, `src/lib/taskQa.ts` |
 | Secrets | `QA_AGENT_SECRET` (required), `QA_AGENT_WEBHOOK_URL` (push mode only) |
-| Down migration | `supabase/migrations/down/20260902140000_task_qa_dispatch_trigger.down.sql` |
+| Down migrations | `supabase/migrations/down/20260910*.down.sql` |
