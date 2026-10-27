@@ -1,4 +1,12 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.75.0';
+import {
+  buildEvent,
+  canDispatch,
+  dispatchFairsEvent,
+  inScope,
+  withTimeout,
+  type Signer,
+} from '../_shared/viktorFairsDispatch.ts';
 
 // Receives Duda site-comment webhooks (NEW_CONVERSATION, NEW_COMMENT,
 // CONVERSATION_UPDATED, COMMENT_EDITED, COMMENT_DELETED) and turns them into
@@ -206,6 +214,49 @@ Deno.serve(async (req) => {
       return task.id;
     };
 
+    // ---- Post-persistence Viktor dispatch (Fairs only, best effort) ----
+    // Called only after the DB write above it has succeeded. Re-reads the
+    // canonical updated_at so the event id matches what the recovery poll sees.
+    // Never fails the Duda request; bounded by the dispatcher timeout.
+    // Signer intentionally unset until Viktor's HMAC convention is verified, so
+    // canDispatch() is false and no extra DB work or network call happens.
+    const viktorSigner: Signer | undefined = undefined;
+    const viktorConfig = {
+      url: Deno.env.get('VIKTOR_FAIRS_WEBHOOK_URL'),
+      secret: Deno.env.get('VIKTOR_FAIRS_WEBHOOK_SECRET'),
+    };
+    const done = async (taskId: string, action: string) => {
+      if (inScope(clientId, EXTERNAL_SOURCE, action) && canDispatch(viktorConfig, viktorSigner)) {
+        try {
+          // Bounded: lookup (≤1.5s) + POST (≤3s) cap the added latency.
+          const res = await withTimeout(
+            supabase.from('tasks').select('updated_at').eq('id', taskId).maybeSingle(),
+            1500
+          );
+          const updatedAt = (res as { data?: { updated_at?: string } } | null)?.data?.updated_at;
+          if (updatedAt) {
+            await dispatchFairsEvent(
+              buildEvent({
+                task_id: taskId,
+                client_id: clientId,
+                event_type: action as Parameters<typeof buildEvent>[0]['event_type'],
+                site_name: siteName,
+                conversation_uuid: conversationUuid,
+                author,
+                updated_at: updatedAt,
+              }),
+              { config: viktorConfig, signer: viktorSigner }
+            );
+          } else {
+            console.warn('[viktor-fairs] canonical lookup timed out or empty; relying on recovery poll');
+          }
+        } catch {
+          console.warn('[viktor-fairs] dispatch skipped after lookup error');
+        }
+      }
+      return json(200, { success: true, task_id: taskId, action });
+    };
+
     // ---- Route by event type ----
     // No event_type = flat/custom payload; treat any payload with text as a new comment.
     if (!eventType || eventType === 'NEW_CONVERSATION') {
@@ -218,7 +269,7 @@ Deno.serve(async (req) => {
         return json(200, { success: true, task_id: existing.id, action: 'duplicate_ignored' });
       }
       const taskId = await createTask();
-      return json(200, { success: true, task_id: taskId, action: 'task_created' });
+      return await done(taskId, 'task_created');
     }
 
     if (eventType === 'NEW_COMMENT') {
@@ -229,11 +280,11 @@ Deno.serve(async (req) => {
           existing.description,
           `<p><strong>Reply</strong> from ${authorLabel} (${timeLabel}):</p><blockquote>${escapeHtml(commentText || '')}</blockquote>`
         );
-        return json(200, { success: true, task_id: existing.id, action: 'reply_appended' });
+        return await done(existing.id, 'reply_appended');
       }
       if (!commentText) return json(400, { error: 'No comment text found in payload' });
       const taskId = await createTask();
-      return json(200, { success: true, task_id: taskId, action: 'task_created' });
+      return await done(taskId, 'task_created');
     }
 
     if (eventType === 'COMMENT_EDITED') {
@@ -244,7 +295,7 @@ Deno.serve(async (req) => {
           existing.description,
           `<p><strong>Comment edited</strong> by ${authorLabel} (${timeLabel}):</p><blockquote>${escapeHtml(commentText || '')}</blockquote>`
         );
-        return json(200, { success: true, task_id: existing.id, action: 'edit_appended' });
+        return await done(existing.id, 'edit_appended');
       }
       return json(200, { success: true, action: 'ignored_no_matching_task' });
     }
@@ -262,7 +313,7 @@ Deno.serve(async (req) => {
           existing.description,
           `<p><strong>Conversation deleted in Duda</strong> by ${authorLabel} (${timeLabel}).</p>`
         );
-        return json(200, { success: true, task_id: existing.id, action: 'deletion_noted' });
+        return await done(existing.id, 'deletion_noted');
       }
 
       if (status.startsWith('resolv')) {
@@ -277,7 +328,7 @@ Deno.serve(async (req) => {
           })
           .eq('id', existing.id);
         if (error) throw new Error(`Failed to complete task: ${error.message}`);
-        return json(200, { success: true, task_id: existing.id, action: 'task_completed' });
+        return await done(existing.id, 'task_completed');
       }
 
       // Reopened in Duda — move back to To Do unless someone already finished it here
@@ -293,7 +344,7 @@ Deno.serve(async (req) => {
           })
           .eq('id', existing.id);
         if (error) throw new Error(`Failed to reopen task: ${error.message}`);
-        return json(200, { success: true, task_id: existing.id, action: 'task_reopened' });
+        return await done(existing.id, 'task_reopened');
       }
       return json(200, { success: true, task_id: existing.id, action: 'no_change' });
     }
@@ -306,7 +357,7 @@ Deno.serve(async (req) => {
           existing.description,
           `<p><strong>A comment in this conversation was deleted in Duda</strong> (${timeLabel}).</p>`
         );
-        return json(200, { success: true, task_id: existing.id, action: 'deletion_noted' });
+        return await done(existing.id, 'deletion_noted');
       }
       return json(200, { success: true, action: 'ignored_no_matching_task' });
     }
