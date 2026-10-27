@@ -1,5 +1,12 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.75.0';
-import { buildEvent, dispatchFairsEvent, inScope } from '../_shared/viktorFairsDispatch.ts';
+import {
+  buildEvent,
+  canDispatch,
+  dispatchFairsEvent,
+  inScope,
+  withTimeout,
+  type Signer,
+} from '../_shared/viktorFairsDispatch.ts';
 
 // Receives Duda site-comment webhooks (NEW_CONVERSATION, NEW_COMMENT,
 // CONVERSATION_UPDATED, COMMENT_EDITED, COMMENT_DELETED) and turns them into
@@ -211,15 +218,23 @@ Deno.serve(async (req) => {
     // Called only after the DB write above it has succeeded. Re-reads the
     // canonical updated_at so the event id matches what the recovery poll sees.
     // Never fails the Duda request; bounded by the dispatcher timeout.
+    // Signer intentionally unset until Viktor's HMAC convention is verified, so
+    // canDispatch() is false and no extra DB work or network call happens.
+    const viktorSigner: Signer | undefined = undefined;
+    const viktorConfig = {
+      url: Deno.env.get('VIKTOR_FAIRS_WEBHOOK_URL'),
+      secret: Deno.env.get('VIKTOR_FAIRS_WEBHOOK_SECRET'),
+    };
     const done = async (taskId: string, action: string) => {
-      if (inScope(clientId, EXTERNAL_SOURCE, action)) {
+      if (inScope(clientId, EXTERNAL_SOURCE, action) && canDispatch(viktorConfig, viktorSigner)) {
         try {
-          const { data: row } = await supabase
-            .from('tasks')
-            .select('updated_at')
-            .eq('id', taskId)
-            .maybeSingle();
-          if (row?.updated_at) {
+          // Bounded: lookup (≤1.5s) + POST (≤3s) cap the added latency.
+          const res = await withTimeout(
+            supabase.from('tasks').select('updated_at').eq('id', taskId).maybeSingle(),
+            1500
+          );
+          const updatedAt = (res as { data?: { updated_at?: string } } | null)?.data?.updated_at;
+          if (updatedAt) {
             await dispatchFairsEvent(
               buildEvent({
                 task_id: taskId,
@@ -228,16 +243,12 @@ Deno.serve(async (req) => {
                 site_name: siteName,
                 conversation_uuid: conversationUuid,
                 author,
-                updated_at: row.updated_at,
+                updated_at: updatedAt,
               }),
-              {
-                config: {
-                  url: Deno.env.get('VIKTOR_FAIRS_WEBHOOK_URL'),
-                  secret: Deno.env.get('VIKTOR_FAIRS_WEBHOOK_SECRET'),
-                },
-                // signer: intentionally unset until Viktor's HMAC convention is verified.
-              }
+              { config: viktorConfig, signer: viktorSigner }
             );
+          } else {
+            console.warn('[viktor-fairs] canonical lookup timed out or empty; relying on recovery poll');
           }
         } catch {
           console.warn('[viktor-fairs] dispatch skipped after lookup error');

@@ -3,6 +3,8 @@ import {
   FAIRS_CLIENT_ID,
   buildEvent,
   buildEventId,
+  canDispatch,
+  withTimeout,
   dispatchFairsEvent,
   inScope,
   isDispatchable,
@@ -30,9 +32,10 @@ describe('viktorFairsDispatch', () => {
     expect(e.event_id).toBe(buildEventId('t1', '2026-01-01T00:00:00.000Z'));
     expect(ev().event_id).toBe(e.event_id);
     expect(Object.keys(e).sort()).toEqual(
-      ['author', 'client_id', 'conversation_uuid', 'event_id', 'event_type', 'external_source', 'site_name', 'task_id', 'updated_at'].sort()
+      ['id', 'author', 'client_id', 'conversation_uuid', 'event_id', 'event_type', 'external_source', 'site_name', 'task_id', 'updated_at'].sort()
     );
     expect(e.external_source).toBe('duda_comment');
+    expect(e.id).toBe(e.event_id);
   });
 
   it('scopes to Fairs + duda_comment + persisted actions only', () => {
@@ -100,5 +103,18 @@ describe('viktorFairsDispatch', () => {
     const start = Date.now();
     expect(await dispatchFairsEvent(ev(), { config: cfg, signer, fetchImpl: f, timeoutMs: 50, log: () => {} })).toBe('timeout');
     expect(Date.now() - start).toBeLessThan(1000);
+  });
+
+  it('canDispatch requires url, secret and a signer (fail closed)', () => {
+    expect(canDispatch({}, signer)).toBe(false);
+    expect(canDispatch({ url: cfg.url }, signer)).toBe(false);
+    expect(canDispatch(cfg)).toBe(false);
+    expect(canDispatch(cfg, signer)).toBe(true);
+  });
+
+  it('withTimeout returns value, or null on hang/reject', async () => {
+    expect(await withTimeout(Promise.resolve(5), 50)).toBe(5);
+    expect(await withTimeout(new Promise(() => {}), 20)).toBeNull();
+    expect(await withTimeout(Promise.reject(new Error('x')), 20)).toBeNull();
   });
 });

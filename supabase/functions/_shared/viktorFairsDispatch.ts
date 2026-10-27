@@ -27,6 +27,8 @@ export const DISPATCHABLE_ACTIONS = [
 export type FairsEventType = (typeof DISPATCHABLE_ACTIONS)[number];
 
 export interface FairsEvent {
+  /** Same as event_id; top-level `id` for generic trigger-provider dedup. */
+  id: string;
   event_id: string;
   task_id: string;
   client_id: string;
@@ -66,9 +68,11 @@ export const inScope = (clientId: string, externalSource: string, action: string
 export const buildEventId = (taskId: string, updatedAt: string) =>
   `${DUDA_COMMENT_SOURCE}:${taskId}:${updatedAt}`;
 
-export function buildEvent(input: Omit<FairsEvent, 'event_id' | 'external_source'>): FairsEvent {
+export function buildEvent(input: Omit<FairsEvent, 'id' | 'event_id' | 'external_source'>): FairsEvent {
+  const id = buildEventId(input.task_id, input.updated_at);
   return {
-    event_id: buildEventId(input.task_id, input.updated_at),
+    id,
+    event_id: id,
     task_id: input.task_id,
     client_id: input.client_id,
     external_source: DUDA_COMMENT_SOURCE,
@@ -127,5 +131,23 @@ export async function dispatchFairsEvent(event: FairsEvent, opts: DispatchOption
     }
     log(`${tag} network_error`);
     return 'network_error';
+  }
+}
+
+/** True only when a send could actually happen (URL + secret + verified signer).
+ * Callers use this to skip any extra DB work on the disabled path. */
+export const canDispatch = (config: DispatchConfig, signer?: Signer) =>
+  Boolean(config.url && config.secret && signer);
+
+/** Resolves to `null` if `p` does not settle within `ms` (or rejects). */
+export async function withTimeout<T>(p: PromiseLike<T>, ms: number): Promise<T | null> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      Promise.resolve(p).catch(() => null),
+      new Promise<null>((r) => { timer = setTimeout(() => r(null), ms); }),
+    ]);
+  } finally {
+    clearTimeout(timer);
   }
 }
