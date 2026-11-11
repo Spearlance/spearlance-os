@@ -98,3 +98,42 @@ export interface LaunchPadSubmission {
   created_at: string;
   updated_at: string;
 }
+
+const STAGE_ORDER: LaunchPadStage[] = ['discovery', 'marketing', 'avatar', 'complete'];
+
+/** Discovery counts as done once the company has a name: the same test the Profile page uses. */
+export function isDiscoveryComplete(responses: ResponsesJson | null | undefined): boolean {
+  const company = responses?.discovery?.company;
+  return Boolean(company?.brand_name?.trim() || company?.legal_name?.trim());
+}
+
+export function isMarketingComplete(responses: ResponsesJson | null | undefined): boolean {
+  return responses?.marketing?.services_completed === true;
+}
+
+/**
+ * Returns the first unfinished stage that blocks moving to `target`, or null if the move is allowed.
+ * Moving backwards is always allowed.
+ */
+export function getBlockingStage(
+  target: LaunchPadStage,
+  responses: ResponsesJson | null | undefined,
+): LaunchPadStage | null {
+  const targetIndex = STAGE_ORDER.indexOf(target);
+  if (targetIndex > STAGE_ORDER.indexOf('discovery') && !isDiscoveryComplete(responses)) return 'discovery';
+  if (targetIndex > STAGE_ORDER.indexOf('marketing') && !isMarketingComplete(responses)) return 'marketing';
+  return null;
+}
+
+/**
+ * completed_at must be an object keyed by stage. Older rows hold an ISO string, or that string
+ * spread into numeric character keys ("0": "2", "1": "0", ...). Keep only the real stage keys.
+ */
+export function normalizeCompletedAt(value: unknown): Record<string, string> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>).filter(
+      ([key, v]) => !/^\d+$/.test(key) && typeof v === 'string',
+    ),
+  ) as Record<string, string>;
+}

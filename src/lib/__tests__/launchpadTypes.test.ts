@@ -109,3 +109,45 @@ describe('launchpadTypes runtime contracts', () => {
     expect(submission.insights_summary).toBeUndefined();
   });
 });
+
+import {
+  getBlockingStage,
+  isDiscoveryComplete,
+  normalizeCompletedAt,
+} from '../launchpadTypes';
+
+describe('launchpad stage gating', () => {
+  const discovery = { company: { brand_name: 'Acme', legal_name: '' } } as unknown as DiscoveryData;
+  const marketing: MarketingData = { services_completed: true };
+
+  it('treats empty or nameless discovery as incomplete', () => {
+    expect(isDiscoveryComplete({})).toBe(false);
+    expect(isDiscoveryComplete(null)).toBe(false);
+    expect(
+      isDiscoveryComplete({ discovery: { company: { brand_name: ' ', legal_name: '' } } as unknown as DiscoveryData }),
+    ).toBe(false);
+    expect(isDiscoveryComplete({ discovery })).toBe(true);
+  });
+
+  it('blocks skipping ahead with no discovery data', () => {
+    expect(getBlockingStage('discovery', {})).toBeNull();
+    expect(getBlockingStage('marketing', {})).toBe('discovery');
+    expect(getBlockingStage('avatar', {})).toBe('discovery');
+    expect(getBlockingStage('complete', {})).toBe('discovery');
+  });
+
+  it('blocks avatar and complete until marketing is done', () => {
+    expect(getBlockingStage('marketing', { discovery })).toBeNull();
+    expect(getBlockingStage('avatar', { discovery })).toBe('marketing');
+    expect(getBlockingStage('avatar', { discovery, marketing })).toBeNull();
+    expect(getBlockingStage('complete', { discovery, marketing })).toBeNull();
+  });
+
+  it('normalizes string and character-spread completed_at values', () => {
+    expect(normalizeCompletedAt('2026-11-11T14:19:04.599Z')).toEqual({});
+    expect(normalizeCompletedAt(null)).toEqual({});
+    expect(
+      normalizeCompletedAt({ 0: '2', 1: '0', avatar: '2026-11-11T14:19:04.180Z', welcome: '2026-11-11T15:25:16.932Z' }),
+    ).toEqual({ avatar: '2026-11-11T14:19:04.180Z', welcome: '2026-11-11T15:25:16.932Z' });
+  });
+});

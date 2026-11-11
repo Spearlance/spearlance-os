@@ -2,7 +2,13 @@ import { useState, useEffect } from "react";
 import { useClient } from "@/contexts/ClientContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { LaunchPadStage, LaunchPadSubmission } from "@/lib/launchpadTypes";
+import {
+  LaunchPadStage,
+  LaunchPadSubmission,
+  ResponsesJson,
+  getBlockingStage,
+  normalizeCompletedAt,
+} from "@/lib/launchpadTypes";
 import { ProgressHeader } from "./ProgressHeader";
 import { LaunchPadModeSelector } from "./LaunchPadModeSelector";
 import { ChatOnboarding } from "./ChatOnboarding";
@@ -41,14 +47,14 @@ export function LaunchPadWizard() {
       if (error && error.code !== "PGRST116") throw error;
 
       if (data) {
+        const completedAt = normalizeCompletedAt(data.completed_at);
         setSubmission({
           ...data,
-          completed_at: data.completed_at || {}
+          completed_at: completedAt
         } as LaunchPadSubmission);
-        
+
         // Check if they've already started (has onboarding_mode OR has progressed past discovery)
         const hasStarted = data.onboarding_mode || data.stage !== 'discovery';
-        const completedAt = data.completed_at as Record<string, any> || {};
         
         if (!hasStarted && !completedAt.welcome) {
           // Brand new submission - show welcome screen
@@ -81,6 +87,25 @@ export function LaunchPadWizard() {
     if (!submission) return;
 
     try {
+      // Read fresh answers: the stage components save to the DB before calling this,
+      // so local state can be stale.
+      const { data: fresh, error: freshError } = await supabase
+        .from("launchpad_submissions")
+        .select("responses_json")
+        .eq("id", submission.id)
+        .maybeSingle();
+
+      if (freshError) throw freshError;
+
+      const blockingStage = getBlockingStage(newStage, fresh?.responses_json as ResponsesJson | null);
+      if (blockingStage) {
+        toast.error(
+          blockingStage === "discovery" ? "Complete Discovery first" : "Complete Marketing first",
+          { description: "Fill in the required fields and click Continue before moving ahead." }
+        );
+        return;
+      }
+
       // Update database with new stage
       const { error } = await supabase
         .from("launchpad_submissions")
@@ -108,18 +133,27 @@ export function LaunchPadWizard() {
     if (!submission) return;
 
     try {
-      // Get current completed_at
+      // Get current completed_at and answers
       const { data: submissionData } = await supabase
         .from("launchpad_submissions")
-        .select("completed_at")
+        .select("completed_at, responses_json")
         .eq("id", submission.id)
         .maybeSingle();
+
+      const blockingStage = getBlockingStage("complete", submissionData?.responses_json as ResponsesJson | null);
+      if (blockingStage) {
+        toast.error(
+          blockingStage === "discovery" ? "Complete Discovery first" : "Complete Marketing first",
+          { description: "The Launchpad can't be finished until that stage is filled in." }
+        );
+        return;
+      }
 
       await supabase
         .from("launchpad_submissions")
         .update({
           stage: "complete",
-          completed_at: { ...((submissionData?.completed_at as Record<string, any>) || {}), complete: new Date().toISOString() } as any,
+          completed_at: { ...normalizeCompletedAt(submissionData?.completed_at), complete: new Date().toISOString() } as any,
         })
         .eq("id", submission.id);
 

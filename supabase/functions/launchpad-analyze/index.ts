@@ -53,6 +53,19 @@ serve(async (req) => {
       throw new Error('Launchpad submission not found');
     }
 
+    // Refuse to analyze (and mark complete) a Launchpad with no Discovery answers.
+    // Without them the model invents a profile from the company name alone.
+    const discoveryCompany = submission.responses_json?.discovery?.company;
+    const hasDiscovery = Boolean(
+      discoveryCompany?.brand_name?.trim() || discoveryCompany?.legal_name?.trim()
+    );
+    if (!hasDiscovery) {
+      return new Response(
+        JSON.stringify({ error: 'Complete the Discovery stage before running the analysis' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Simple website content extraction (simplified for MVP - in production, use actual web scraping)
     let websiteContent = '';
     if (client.website_url) {
@@ -275,6 +288,18 @@ Format your response as JSON:
         });
     }
 
+    // completed_at is an object keyed by stage. Drop anything else (older rows hold a bare
+    // ISO string, or that string spread into numeric character keys).
+    const now = new Date().toISOString();
+    const previousCompletedAt =
+      submission.completed_at && typeof submission.completed_at === 'object' && !Array.isArray(submission.completed_at)
+        ? Object.fromEntries(
+            Object.entries(submission.completed_at as Record<string, unknown>).filter(
+              ([key, value]) => !/^\d+$/.test(key) && typeof value === 'string'
+            )
+          )
+        : {};
+
     // Update launchpad submission
     await supabase
       .from('launchpad_submissions')
@@ -282,8 +307,8 @@ Format your response as JSON:
         insights_summary: analysis.insights_summary,
         ideal_client_story: analysis.ideal_client_story,
         stage: 'complete',
-        completed_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
+        completed_at: { ...previousCompletedAt, avatar: now, complete: now },
+        updated_at: now,
       })
       .eq('id', submission.id);
 

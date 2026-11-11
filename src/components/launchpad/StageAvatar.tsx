@@ -8,6 +8,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useClient } from "@/contexts/ClientContext";
+import { ResponsesJson, isDiscoveryComplete, normalizeCompletedAt } from "@/lib/launchpadTypes";
 import { Loader2, Sparkles, Image as ImageIcon } from "lucide-react";
 
 interface StageAvatarProps {
@@ -90,6 +91,20 @@ export function StageAvatar({ submissionId, onFinish, onBack, onSaveExit }: Stag
 
     setIsAnalyzing(true);
     try {
+      // Never analyze (and mark complete) a Launchpad with no Discovery answers
+      const { data: current } = await supabase
+        .from("launchpad_submissions")
+        .select("responses_json")
+        .eq("id", submissionId)
+        .maybeSingle();
+
+      if (!isDiscoveryComplete(current?.responses_json as ResponsesJson | null)) {
+        toast.error("Complete Discovery first", {
+          description: "The analysis needs your business details. Go back to Discovery and fill in the required fields.",
+        });
+        return;
+      }
+
       const { data, error } = await supabase.functions.invoke("launchpad-analyze", {
         body: { client_id: selectedClient.id },
       });
@@ -113,7 +128,7 @@ export function StageAvatar({ submissionId, onFinish, onBack, onSaveExit }: Stag
         .from("launchpad_submissions")
         .update({
           stage: "complete",
-          completed_at: { ...((submissionData?.completed_at as Record<string, any>) || {}), avatar: new Date().toISOString() } as any,
+          completed_at: { ...normalizeCompletedAt(submissionData?.completed_at), avatar: new Date().toISOString() } as any,
         })
         .eq("id", submissionId);
 
