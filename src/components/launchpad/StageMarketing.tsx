@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useClient } from "@/contexts/ClientContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,8 @@ import { Slider } from "@/components/ui/slider";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useSaveStatus } from "@/hooks/useSaveStatus";
 import { Plus, Info } from "lucide-react";
+import { toast } from "sonner";
+import { MarketingData } from "@/lib/launchpadTypes";
 
 interface Service {
   id: string;
@@ -49,9 +51,22 @@ export function StageMarketing({ submissionId, onContinue, onBack, onSaveExit }:
     quick_tips: 15,
   });
 
+  // Service edits show up in the fields immediately; the DB write is debounced and
+  // serialized so a slow response can never overwrite newer typing.
+  const pendingServiceUpdates = useRef<Record<string, Partial<Service>>>({});
+  const serviceSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const serviceSaveChain = useRef<Promise<boolean>>(Promise.resolve(true));
+
   useEffect(() => {
     loadServices();
   }, [selectedClient]);
+
+  // Keep the last edits when leaving the stage (Back, sidebar navigation, etc.)
+  useEffect(() => {
+    return () => {
+      void flushServiceUpdates();
+    };
+  }, []);
 
   const loadServices = async () => {
     if (!selectedClient) return;
@@ -71,32 +86,72 @@ export function StageMarketing({ submissionId, onContinue, onBack, onSaveExit }:
     if (data && data.length > 0 && !selectedServiceId) {
       setSelectedServiceId(data[0].id);
     }
+
+    // Restore the posting schedule and content mix saved earlier
+    const { data: submissionData } = await supabase
+      .from("launchpad_submissions")
+      .select("responses_json")
+      .eq("id", submissionId)
+      .maybeSingle();
+
+    const saved = (submissionData?.responses_json as { marketing?: MarketingData } | null)?.marketing?.social_strategy;
+    if (saved) {
+      if (saved.posting_frequency) setPostingFrequency(saved.posting_frequency);
+      if (Array.isArray(saved.selected_days)) setSelectedDays(saved.selected_days);
+      if (saved.topic_distribution) setTopicDistribution(prev => ({ ...prev, ...saved.topic_distribution }));
+    }
+
     setLoading(false);
   };
 
-  const updateService = async (serviceId: string, updates: Partial<Service>) => {
-    const { error } = await supabase
-      .from("services")
-      .update(updates)
-      .eq("id", serviceId);
-
-    if (error) {
-      setSaveStatus('error', "Failed to update service");
-      return;
+  const flushServiceUpdates = (): Promise<boolean> => {
+    if (serviceSaveTimer.current) {
+      clearTimeout(serviceSaveTimer.current);
+      serviceSaveTimer.current = null;
     }
 
-    setServices(services.map(s => s.id === serviceId ? { ...s, ...updates } : s));
-    setSaveStatus('saved');
+    serviceSaveChain.current = serviceSaveChain.current.then(async () => {
+      const entries = Object.entries(pendingServiceUpdates.current);
+      pendingServiceUpdates.current = {};
+      if (entries.length === 0) return true;
+
+      const results = await Promise.all(
+        entries.map(([id, updates]) => supabase.from("services").update(updates).eq("id", id))
+      );
+
+      let ok = true;
+      results.forEach((result, i) => {
+        if (!result.error) return;
+        ok = false;
+        // Keep the failed edits queued (newer edits win) so the next save retries them
+        const [id, updates] = entries[i];
+        pendingServiceUpdates.current[id] = { ...updates, ...pendingServiceUpdates.current[id] };
+      });
+
+      if (ok) {
+        setSaveStatus('saved');
+      } else {
+        setSaveStatus('error', "Failed to update service");
+        toast.error("Couldn't save your service details", { description: "Check your connection and try again." });
+      }
+      return ok;
+    });
+
+    return serviceSaveChain.current;
   };
 
-  const handleContinue = async () => {
-    // Validate topic distribution
-    const totalPercentage = Object.values(topicDistribution).reduce((sum, val) => sum + val, 0);
-    if (totalPercentage !== 100) {
-      setSaveStatus('error', "Content mix must total 100%");
-      return;
-    }
+  const updateService = (serviceId: string, updates: Partial<Service>) => {
+    setServices(prev => prev.map(s => s.id === serviceId ? { ...s, ...updates } : s));
+    pendingServiceUpdates.current[serviceId] = { ...pendingServiceUpdates.current[serviceId], ...updates };
 
+    if (serviceSaveTimer.current) clearTimeout(serviceSaveTimer.current);
+    serviceSaveTimer.current = setTimeout(() => {
+      void flushServiceUpdates();
+    }, 600);
+  };
+
+  /** Saves the social strategy into responses_json. With complete=true it also marks the stage done and advances to Avatar. */
+  const saveMarketing = async (complete: boolean): Promise<boolean> => {
     // Get existing responses_json to preserve other stage data
     const { data: submissionData } = await supabase
       .from("launchpad_submissions")
@@ -106,9 +161,11 @@ export function StageMarketing({ submissionId, onContinue, onBack, onSaveExit }:
 
     if (!submissionData) {
       setSaveStatus('error', "Failed to load submission data");
-      return;
+      toast.error("Couldn't save your progress", { description: "Please try again." });
+      return false;
     }
 
+    const existingResponses = (submissionData.responses_json as Record<string, any>) || {};
     const socialStrategy = {
       posting_frequency: postingFrequency,
       selected_days: selectedDays,
@@ -117,39 +174,52 @@ export function StageMarketing({ submissionId, onContinue, onBack, onSaveExit }:
 
     // Merge with existing data instead of overwriting
     const updatedResponses = {
-      ...((submissionData.responses_json as Record<string, any>) || {}),
-      marketing: { 
-        services_completed: true,
+      ...existingResponses,
+      marketing: {
+        ...(existingResponses.marketing || {}),
+        services_completed: complete || existingResponses.marketing?.services_completed === true,
         social_strategy: socialStrategy,
       },
     };
 
     const { error } = await supabase
       .from("launchpad_submissions")
-      .update({ 
-        stage: "avatar",
+      .update({
+        ...(complete ? { stage: "avatar" as const } : {}),
         responses_json: updatedResponses as any,
       })
       .eq("id", submissionId);
 
     if (error) {
       setSaveStatus('error', "Failed to save progress");
-      return;
+      toast.error("Couldn't save your progress", { description: "Please try again." });
+      return false;
     }
 
-    // Also save to social_media_strategy table for immediate use
-    if (selectedClient?.id) {
-      const { error: strategyError } = await supabase
+    // Also save to social_media_strategy table for immediate use (only once the mix is valid)
+    const totalPercentage = Object.values(topicDistribution).reduce((sum, val) => sum + val, 0);
+    if (selectedClient?.id && totalPercentage === 100) {
+      // The one-global-row-per-client rule is a partial unique index, which upsert's
+      // ON CONFLICT can't target, so update the existing row or insert the first one.
+      const strategy = {
+        posting_frequency: postingFrequency,
+        selected_days: selectedDays,
+        topic_distribution: topicDistribution,
+      };
+      const { data: updatedRows, error: updateError } = await supabase
         .from("social_media_strategy")
-        .upsert({
-          client_id: selectedClient.id,
-          is_global: true,
-          posting_frequency: postingFrequency,
-          selected_days: selectedDays,
-          topic_distribution: topicDistribution,
-        }, {
-          onConflict: 'client_id,is_global,month,year',
-        });
+        .update(strategy)
+        .eq("client_id", selectedClient.id)
+        .eq("is_global", true)
+        .select("id");
+
+      let strategyError = updateError;
+      if (!updateError && (!updatedRows || updatedRows.length === 0)) {
+        const { error: insertError } = await supabase
+          .from("social_media_strategy")
+          .insert({ client_id: selectedClient.id, is_global: true, ...strategy });
+        strategyError = insertError;
+      }
 
       if (strategyError) {
         console.error("Error saving social strategy:", strategyError);
@@ -157,7 +227,29 @@ export function StageMarketing({ submissionId, onContinue, onBack, onSaveExit }:
       }
     }
 
+    return true;
+  };
+
+  const handleContinue = async () => {
+    // Validate topic distribution
+    const totalPercentage = Object.values(topicDistribution).reduce((sum, val) => sum + val, 0);
+    if (totalPercentage !== 100) {
+      setSaveStatus('error', "Content mix must total 100%");
+      toast.error("Content mix must total 100%");
+      return;
+    }
+
+    if (!(await flushServiceUpdates())) return;
+    if (!(await saveMarketing(true))) return;
+
     onContinue();
+  };
+
+  const handleSaveExit = async () => {
+    if (!(await flushServiceUpdates())) return;
+    if (!(await saveMarketing(false))) return;
+
+    onSaveExit();
   };
 
   if (loading) {
@@ -383,7 +475,7 @@ export function StageMarketing({ submissionId, onContinue, onBack, onSaveExit }:
         <Button variant="outline" onClick={onBack}>
           Back
         </Button>
-        <Button variant="outline" onClick={onSaveExit}>
+        <Button variant="outline" onClick={handleSaveExit}>
           Save & Exit
         </Button>
         <Button onClick={handleContinue}>
