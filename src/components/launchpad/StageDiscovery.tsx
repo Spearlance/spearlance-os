@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { X, Plus } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { DiscoveryData } from "@/lib/launchpadTypes";
@@ -96,6 +96,8 @@ export function StageDiscovery({ submissionId, initialData, onContinue, onSaveEx
   const [competitorInput, setCompetitorInput] = useState("");
   const [storyModalOpen, setStoryModalOpen] = useState(false);
   const [newService, setNewService] = useState("");
+  const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const saveChain = useRef<Promise<boolean>>(Promise.resolve(true));
 
   const form = useForm<DiscoveryData>({
     resolver: zodResolver(discoverySchema),
@@ -119,10 +121,20 @@ export function StageDiscovery({ submissionId, initialData, onContinue, onSaveEx
     },
   });
 
-  const saveData = async (data: DiscoveryData, showToast = false) => {
+  // Saves run one at a time, in order, so an older snapshot can never land after a newer one.
+  const saveData = (data: DiscoveryData, showToast = false): Promise<boolean> => {
+    if (autoSaveTimer.current) {
+      clearTimeout(autoSaveTimer.current);
+      autoSaveTimer.current = null;
+    }
+    saveChain.current = saveChain.current.then(() => writeData(data, showToast));
+    return saveChain.current;
+  };
+
+  const writeData = async (data: DiscoveryData, showToast: boolean): Promise<boolean> => {
+    if (!selectedClient) return false;
     setSaveStatus("saving");
-    if (!selectedClient) return;
-    
+
     try {
       // 1. Update clients table with company and contact info
       const { error: clientError } = await supabase
@@ -209,9 +221,11 @@ export function StageDiscovery({ submissionId, initialData, onContinue, onSaveEx
       if (showToast) {
         toast.success("Progress saved");
       }
+      return true;
     } catch (error) {
       setSaveStatus("idle");
-      toast.error("Error saving");
+      toast.error("Error saving", { description: "Your latest changes weren't saved. Please try again." });
+      return false;
     }
   };
 
@@ -255,7 +269,7 @@ export function StageDiscovery({ submissionId, initialData, onContinue, onSaveEx
     setIsSaving(true);
     try {
       const data = form.getValues();
-      await saveData(data);
+      if (!(await saveData(data))) return;
 
       // Create service records from service names
       if (selectedClient && data.model.services?.length > 0) {
@@ -340,7 +354,7 @@ export function StageDiscovery({ submissionId, initialData, onContinue, onSaveEx
   };
 
   const handleSaveExit = async () => {
-    await saveData(form.getValues(), true);
+    if (!(await saveData(form.getValues()))) return;
     onSaveExit();
   };
 
@@ -374,15 +388,23 @@ export function StageDiscovery({ submissionId, initialData, onContinue, onSaveEx
     form.setValue("competition.competitors", currentCompetitors.filter((_, i) => i !== index));
   };
 
-  // Auto-save on blur with debounce
+  // Auto-save: one debounced save after typing pauses, flushed when leaving the stage
   useEffect(() => {
-    const subscription = form.watch((value) => {
-      const timer = setTimeout(() => {
-        if (value) saveData(value as DiscoveryData);
-      }, 500);
-      return () => clearTimeout(timer);
+    const subscription = form.watch(() => {
+      if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+      autoSaveTimer.current = setTimeout(() => {
+        autoSaveTimer.current = null;
+        void saveData(form.getValues());
+      }, 800);
     });
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+      if (autoSaveTimer.current) {
+        clearTimeout(autoSaveTimer.current);
+        autoSaveTimer.current = null;
+        void saveData(form.getValues());
+      }
+    };
   }, [form.watch]);
 
   return (
